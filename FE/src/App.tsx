@@ -1,6 +1,8 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/electron-vite.animate.svg'
+// import reactLogo from './assets/react.svg'
+// import viteLogo from '/electron-vite.animate.svg'
+import synapseLogo1 from '/public/synapse_logo_1.png'
+import synapseLogo2 from '/public/synapse_logo_2.png'
 import './App.css'
 
 function App() {
@@ -9,11 +11,11 @@ function App() {
   return (
     <>
       <div>
-        <a href="https://electron-vite.github.io" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
+        <a target="_blank">
+          <img src={synapseLogo1} className="logo" alt="Synapse logo 1" />
         </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
+        <a target="_blank">
+          <img src={synapseLogo2} className="logo react" alt="Synapse logo 2" />
         </a>
       </div>
       <h1>대머리 쫀득 쿠키</h1>
