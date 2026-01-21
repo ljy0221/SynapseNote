@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import './SearchBar.css';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'; // 컴포넌트 임포트
+import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'; // 돋보기 아이콘 임포트
+import './searchBar.css';
 
 const SearchBar: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Searching for:', searchTerm);
-    // 여기에 검색 결과 페이지로 이동하거나 API를 호출하는 로직을 추가하세요.
+    if (!searchTerm.trim()) return;
+    console.log('시냅스 검색어:', searchTerm);
   };
 
   return (
@@ -16,12 +18,12 @@ const SearchBar: React.FC = () => {
         <input
           type="text"
           className="search-input"
-          placeholder="지식의 연결고리를 찾아보세요..."
+          placeholder="Search file by name or content..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-        <button type="submit" className="search-button">
-          <span className="search-icon">🔍</span>
+        <button type="submit" className="search-button" aria-label="검색">
+          <FontAwesomeIcon icon={faMagnifyingGlass} className="search-icon" />
         </button>
       </form>
     </div>
