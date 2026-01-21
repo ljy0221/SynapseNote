@@ -11,15 +11,25 @@
   background: transparent;
   cursor: pointer;
 
-  /* 핵심 */
-  font-size: 22px;      /* ← 이게 제일 중요 */
-  font-weight: 600;
-  line-height: 1;       /* ← 세로 중앙 정렬 */
-  color: #6b7280;       /* gray-500 */
+  /* === theme.css 연동 === */
+  font-family: var(--font-family);
+  color: var(--font-color);
 
-  transition: background-color 0.15s ease;
+  /* 문자 햄버거 크기 */
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1;
+
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
+/* hover */
 .sidebar-active-btn:hover {
-  background-color: rgba(0, 0, 0, 0.06);
+  background-color: var(--color-sub);
+}
+
+/* active 상태 (사이드바 열려 있을 때) */
+.sidebar-active-btn.active {
+  background-color: var(--color-sub);
+  color: var(--color-point);
 }
