@@ -1,0 +1,21 @@
+/* [공통] 모드에 상관없이 고정인 값들 (글꼴 등) */
+:root {
+    --font-family: 'Pretendard', sans-serif;
+}
+
+/* [라이트 모드] 기본 상태 (데이터 속성이 없거나 light일 때) */
+:root,
+[data-theme='light'] {
+    --color-main: #ffffff;
+    --color-sub: #f1f3f5;
+    --color-point: #3b82f6;
+    --font-color: #212529;
+}
+
+/* [다크 모드] 데이터 속성이 dark일 때 */
+[data-theme='dark'] {
+    --color-main: #1a1b1e;
+    --color-sub: #2c2e33;
+    --color-point: #4dadf7;
+    --font-color: #dee2e6;
+}

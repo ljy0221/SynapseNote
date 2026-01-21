@@ -1,0 +1,60 @@
+/* src/common/components/themeToggle/ThemeToggle.css */
+
+.toggle-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 52px;
+    height: 28px;
+}
+
+.toggle-checkbox {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    /* 변수 적용: 라이트/다크 그룹에서 정의한 색상 사용 */
+    background-color: var(--toggle-bg);
+    transition: .4s;
+    border-radius: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 6px;
+    box-sizing: border-box;
+}
+
+/* 스위치 볼 (원) */
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 22px;
+    width: 22px;
+    left: 3px;
+    bottom: 3px;
+    background-color: var(--toggle-ball);
+    transition: .4s;
+    border-radius: 50%;
+    z-index: 2;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2); /* 볼이 더 잘 보이게 그림자 추가 */
+}
+
+/* 체크됐을 때(다크모드)의 변화는 이제 [data-theme='dark'] 그룹에서 관리되므로
+   여기서는 위치 이동 로직만 담당하면 됩니다. */
+.toggle-checkbox:checked + .toggle-slider:before {
+    transform: translateX(24px);
+}
+
+.icon {
+    font-size: 14px;
+    line-height: 1;
+    z-index: 1;
+    user-select: none;
+}
