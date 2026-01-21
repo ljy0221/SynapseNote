@@ -1,8 +1,8 @@
 import { useState } from 'react'
 // import reactLogo from './assets/react.svg'
 // import viteLogo from '/electron-vite.animate.svg'
-import synapseLogo1 from '/public/synapse_logo_1.png'
-import synapseLogo2 from '/public/synapse_logo_2.png'
+import synapseLogo1 from '/src/assets/synapse_logo_1.png'
+import synapseLogo2 from '/src/assets/synapse_logo_2.png'
 import './App.css'
 
 function App() {
