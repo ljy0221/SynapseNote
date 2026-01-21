@@ -9,10 +9,10 @@ interface ThemeToggleProps {
 }
 
 const ThemeToggle: React.FC<ThemeToggleProps> = ({
-                                                     isDark,
-                                                     onToggle,
-                                                     className = ''
-                                                 }) => {
+    isDark,
+    onToggle,
+    className = ''
+}) => {
     return (
         <label
             className={`toggle-wrapper ${className}`}
@@ -29,11 +29,7 @@ const ThemeToggle: React.FC<ThemeToggleProps> = ({
                 aria-checked={isDark}
             />
             <span className="toggle-slider">
-                {/* 순서 주의: CSS에서 justify-content: space-between을 썼다면
-                   아이콘 배치 순서에 따라 달과 해의 위치가 결정됩니다.
-                */}
-                <span className="icon">🌙</span>
-                <span className="icon">☀️</span>
+                {/* 이모지 아이콘 제거됨 - 타원형 디자인 적용 */}
             </span>
         </label>
     );

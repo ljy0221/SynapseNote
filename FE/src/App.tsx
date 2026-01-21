@@ -1,36 +1,17 @@
-import { useState } from 'react'
-// import reactLogo from './assets/react.svg'
-// import viteLogo from '/electron-vite.animate.svg'
-import synapseLogo1 from '/src/assets/synapse_logo_1.png'
-import synapseLogo2 from '/src/assets/synapse_logo_2.png'
-import './App.css'
+import { Header } from './components/layout/header/Header';
+import './App.css';
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a target="_blank">
-          <img src={synapseLogo1} className="logo" alt="Synapse logo 1" />
-        </a>
-        <a target="_blank">
-          <img src={synapseLogo2} className="logo react" alt="Synapse logo 2" />
-        </a>
-      </div>
-      <h1>대머리 쫀득 쿠키</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <div className="app-container">
+      {/* Layout Layer의 헤더 적용 */}
+      <Header />
+
+      <main className="main-content">
+        <h1>대머리 쫀득 쿠키</h1>
+        <p>테마 토글 기능을 테스트해보세요.</p>
+      </main>
+    </div>
   )
 }
 
