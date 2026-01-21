@@ -2,6 +2,7 @@ import React from 'react';
 import './Header.css';
 import { ThemeManager } from '../../features/theme/ThemeManager';
 import SidebarActiveButton from '../../common/sidebarActiveButton/SidebarActiveButton.tsx';
+import SearchBar from '../../common/searchBar/SearchBar.tsx'; // SearchBar 임포트
 
 interface HeaderProps {
   isSidebarActive: boolean;
@@ -28,6 +29,10 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="sidebar-state-text">
                     {isSidebarActive ? '열림' : '닫힘'}
                 </span>
+            </div>
+
+            <div className="header-search-zone">
+                <SearchBar />
             </div>
             <div className="header-right-zone">
                 {/* Feature 레이어의 ThemeManager를 사용하여 테마 기능을 주입합니다 */}

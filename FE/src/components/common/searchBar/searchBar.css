@@ -15,14 +15,14 @@
   padding: 3px 18px;
   transition: all 0.3s ease;
   /* 기본 테두리는 투명하게 유지 */
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border: 1px solid color-mix(in srgb, var(--font-color), transparent 90%);
 }
 
 /* 포커스 되었을 때 포인트 컬러(파란색 계열) 활용 */
 .search-form:focus-within {
   background-color: var(--color-main);
   border-color: var(--color-point);
-  box-shadow: 0 0 5px rgba(59, 130, 246, 0.15);
+  box-shadow: 0 0 5px color-mix(in srgb, var(--color-point), transparent 85%);
 }
 
 .search-input {

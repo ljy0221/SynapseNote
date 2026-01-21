@@ -17,6 +17,15 @@
     -webkit-app-region: drag;
 }
 
+.header-search-zone {
+    flex: 1; /* 가용한 중간 공간을 차지 */
+    display: flex;
+    justify-content: center; /* 내부 SearchBar를 가로 중앙 정렬 */
+    margin: 0 20px;
+    
+    /* 중요: 일렉트론에서 검색창 입력이 가능하도록 드래그 제외 */
+    -webkit-app-region: no-drag;
+
 .header-logo {
     font-weight: bold;
     color: var(--color-point);
