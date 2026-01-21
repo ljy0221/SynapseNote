@@ -1,0 +1,25 @@
+.sidebar-active-btn {
+  width: 36px;
+  height: 36px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+
+  /* 핵심 */
+  font-size: 22px;      /* ← 이게 제일 중요 */
+  font-weight: 600;
+  line-height: 1;       /* ← 세로 중앙 정렬 */
+  color: #6b7280;       /* gray-500 */
+
+  transition: background-color 0.15s ease;
+}
+
+.sidebar-active-btn:hover {
+  background-color: rgba(0, 0, 0, 0.06);
+}
