@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from "electron";
+import { ipcMain, app, BrowserWindow } from "electron";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -13,22 +13,19 @@ let win;
 function createWindow() {
   win = new BrowserWindow({
     width: 1400,
-    // 초기 너비 (픽셀)
     height: 800,
-    // 초기 높이 (픽셀)
     minWidth: 800,
-    // (선택 사항) 창을 줄일 수 있는 최소 너비
     minHeight: 600,
-    // (선택 사항) 창을 줄일 수 있는 최소 높이
     autoHideMenuBar: true,
-    // 상단 메뉴바 제거
     frame: false,
-    // 상단 타이틀 바와 테두리를 완전히 제거
+    // 커스텀 헤더 사용을 위해 프레임 제거
     titleBarStyle: "hidden",
-    // (macOS의 경우) 버튼만 남기고 숨김
     icon: path.join(process.env.VITE_PUBLIC, "electron-vite.svg"),
     webPreferences: {
-      preload: path.join(__dirname$1, "preload.mjs")
+      preload: path.join(__dirname$1, "preload.mjs"),
+      // 보안 설정 (기본값 확인)
+      contextIsolation: true,
+      nodeIntegration: false
     }
   });
   win.webContents.on("did-finish-load", () => {
@@ -40,6 +37,19 @@ function createWindow() {
     win.loadFile(path.join(RENDERER_DIST, "index.html"));
   }
 }
+ipcMain.on("window-minimize", () => {
+  win == null ? void 0 : win.minimize();
+});
+ipcMain.on("window-maximize", () => {
+  if (win == null ? void 0 : win.isMaximized()) {
+    win.unmaximize();
+  } else {
+    win == null ? void 0 : win.maximize();
+  }
+});
+ipcMain.on("window-close", () => {
+  win == null ? void 0 : win.close();
+});
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     app.quit();
