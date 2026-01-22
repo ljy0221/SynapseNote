@@ -1,0 +1,42 @@
+/* src/layout/header/Header.css */
+
+.main-header {
+    height: 60px;
+    display: flex;
+    /* 핵심: 양 끝으로 요소들을 밀어냅니다 */
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+
+    /* Theme.css 변수 활용 */
+    background-color: var(--color-main);
+    color: var(--font-color);
+    border-bottom: 1px solid var(--color-sub);
+
+    /* 일렉트론 창 드래그 영역 설정 */
+    -webkit-app-region: drag;
+}
+
+.header-search-zone {
+    flex: 1; /* 가용한 중간 공간을 차지 */
+    display: flex;
+    justify-content: center; /* 내부 SearchBar를 가로 중앙 정렬 */
+    margin: 0 20px;
+    
+    /* 중요: 일렉트론에서 검색창 입력이 가능하도록 드래그 제외 */
+    -webkit-app-region: no-drag;
+
+.header-logo {
+    font-weight: bold;
+    color: var(--color-point);
+    /* 로고는 클릭할 일이 없으므로 drag 유지 가능 */
+}
+
+.header-right-zone {
+    /* 중요: 토글 버튼을 클릭해야 하므로 이 영역은 드래그에서 제외합니다 */
+    -webkit-app-region: no-drag;
+
+    /* 우측 영역 안에서도 요소가 여러 개일 경우를 대비해 flex 설정 */
+    display: flex;
+    align-items: center;
+}
