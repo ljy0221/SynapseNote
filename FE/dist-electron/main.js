@@ -20,6 +20,12 @@ function createWindow() {
     // (선택 사항) 창을 줄일 수 있는 최소 너비
     minHeight: 600,
     // (선택 사항) 창을 줄일 수 있는 최소 높이
+    autoHideMenuBar: true,
+    // 상단 메뉴바 제거
+    frame: false,
+    // 상단 타이틀 바와 테두리를 완전히 제거
+    titleBarStyle: "hidden",
+    // (macOS의 경우) 버튼만 남기고 숨김
     icon: path.join(process.env.VITE_PUBLIC, "electron-vite.svg"),
     webPreferences: {
       preload: path.join(__dirname$1, "preload.mjs")

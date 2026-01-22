@@ -10,6 +10,7 @@
   border-radius: 8px;
   background: transparent;
   cursor: pointer;
+  -webkit-app-region: no-drag;
 
   /* === theme.css 연동 === */
   font-family: var(--font-family);
