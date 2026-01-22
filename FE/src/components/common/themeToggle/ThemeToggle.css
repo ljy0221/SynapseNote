@@ -50,3 +50,17 @@
 }
 
 /* 아이콘 스타일 제거됨 */
+.theme-toggle-btn {
+  padding: 8px;
+  border-radius: 8px;
+  background-color: var(--color-sub);
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  color: var(--font-color);
+}
+
+.theme-toggle-btn:hover {
+  background-color: var(--color-point);
+  color: #fff;
+}
