@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
-// 스타일 임포트 (Theme.css를 가장 먼저 불러옵니다)
+// 스타일 임포트
 import './components/common/styles/Theme.css';
 import './App.css';
 
+// 레이아웃 컴포넌트 (폴더: camelCase, 파일: PascalCase)
 import { Header } from './components/layout/header/Header';
 import { Sidebar } from './components/layout/sidebar/Sidebar';
 import { SideMenuBar } from './components/layout/sideMenuBar/SideMenuBar';
@@ -22,34 +23,28 @@ import MindMap from './pages/MindMap';
 import Recommend from './pages/Recommend';
 
 function AppContent() {
-    const [isSidebarActive, setIsSidebarActive] = useState(false);
+    const [isSidebarActive, setIsSidebarActive] = useState(false); // 가변 사이드바 상태
     const [isToolbarActive, setIsToolbarActive] = useState(true);
-
-    // Synapse 기본 테마인 'dark'로 초기화
     const [theme, setTheme] = useState<'light' | 'dark'>('dark');
 
     const location = useLocation();
     const isLoginPage = location.pathname === '/login';
 
-    // Theme.css의 변수들이 작동하도록 :root의 data-theme 변경
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', theme);
     }, [theme]);
 
-    const handleThemeToggle = () => {
-        setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
-    };
+    const handleThemeToggle = () => setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
+    const toggleSidebar = () => setIsSidebarActive(prev => !prev);
 
     return (
         <div className="app-container">
+            {/* 1. 헤더 영역 */}
             {isLoginPage ? (
                 <div className="login-window-header">
                     <div className="header-spacer"></div>
                     <div className="header-right-zone">
-                        <ThemeToggle
-                            isDark={theme === 'dark'}
-                            onToggle={handleThemeToggle}
-                        />
+                        <ThemeToggle isDark={theme === 'dark'} onToggle={handleThemeToggle} />
                         <WindowControlButton />
                     </div>
                 </div>
@@ -58,15 +53,25 @@ function AppContent() {
                     theme={theme}
                     onToggleTheme={handleThemeToggle}
                     isSidebarActive={isSidebarActive}
-                    onToggleSidebar={() => setIsSidebarActive(prev => !prev)}
+                    onToggleSidebar={toggleSidebar}
                 />
             )}
 
+            {/* 2. 네비게이션 및 사이드바 영역 (로그인 아닐 때만) */}
             {!isLoginPage && (
                 <>
+                    {/* 최좌측 고정 네비게이션 바 */}
+                    <SideMenuBar />
+
+                    {/* 헤더 버튼으로 열고 닫는 가변 사이드바 (디렉토리 등) */}
                     <Sidebar isOpen={isSidebarActive}>
-                        <SideMenuBar />
+                        <div className="sidebar-content">
+                            {/* 추후 이곳에 디렉토리 구조 등이 들어감 */}
+                            <p>Directory Structure</p>
+                        </div>
                     </Sidebar>
+
+                    {/* 우측 툴바 */}
                     <NoteToolBar isOpen={isToolbarActive}>
                         <div className="toolbar-header">
                             <h4>Note Tool</h4>
@@ -75,7 +80,13 @@ function AppContent() {
                 </>
             )}
 
-            <main className={isLoginPage ? "full-page" : `main-content ${isSidebarActive ? 'sidebar-open' : ''}`}>
+            {/* 3. 메인 콘텐츠 영역 */}
+            {/* 클래스명을 통해 SideMenuBar(고정)와 Sidebar(가변)의 너비만큼 마진 조정 */}
+            <main className={
+                isLoginPage
+                    ? "full-page"
+                    : `main-content ${isSidebarActive ? 'sidebar-open' : ''}`
+            }>
                 <Routes>
                     <Route path="/" element={<Navigate to="/login" replace />} />
                     <Route path="/login" element={<Login />} />
