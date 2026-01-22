@@ -28,6 +28,10 @@ let win: BrowserWindow | null
 
 function createWindow() {
   win = new BrowserWindow({
+    width: 1400,  // 초기 너비 (픽셀)
+    height: 800,  // 초기 높이 (픽셀)
+    minWidth: 800, // (선택 사항) 창을 줄일 수 있는 최소 너비
+    minHeight: 600, // (선택 사항) 창을 줄일 수 있는 최소 높이
     icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
