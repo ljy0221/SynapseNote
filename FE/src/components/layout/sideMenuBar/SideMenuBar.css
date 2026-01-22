@@ -1,0 +1,27 @@
+/* FE/src/components/layout/sideMenuBar/SideMenuBar.css */
+
+.side-menu-bar {
+    padding: 10px 0;
+    width: 100%;
+}
+
+.menu-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px; /* 메뉴 아이템 간의 간격 */
+    width: 100%;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* SideMenuBar 내부의 추가적인 스타일이 필요할 경우 여기에 작성합니다. */
+/* 실제 아이템의 상세 디자인(색상, 호버)은 common/sideMenuItem/SideMenuItem.css에서 담당합니다. */
+
+.side-menu-bar-title {
+    font-size: 0.8rem;
+    color: #666;
+    padding: 0 12px 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}

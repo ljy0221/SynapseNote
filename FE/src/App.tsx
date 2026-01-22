@@ -1,63 +1,98 @@
-import { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'; // Navigate 추가
+import { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+
+// 스타일 임포트 (Theme.css를 가장 먼저 불러옵니다)
+import './components/common/styles/Theme.css';
+import './App.css';
+
 import { Header } from './components/layout/header/Header';
 import { Sidebar } from './components/layout/sidebar/Sidebar';
+import { SideMenuBar } from './components/layout/sideMenuBar/SideMenuBar';
 import { NoteToolBar } from './components/layout/noteToolbar/NoteToolbar';
 
-// 페이지 컴포넌트들 임포트
+// 공통 컴포넌트
+import WindowControlButton from './components/common/windowControlButton/WindowControlButton';
+import ThemeToggle from './components/common/themeToggle/ThemeToggle';
+
+// 페이지 컴포넌트
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Note from './pages/Note';
 import MindMap from './pages/MindMap';
 import Recommend from './pages/Recommend';
 
-import './App.css';
-
-function App() {
+function AppContent() {
     const [isSidebarActive, setIsSidebarActive] = useState(false);
-    const [isToolbarActive] = useState(true);
+    const [isToolbarActive, setIsToolbarActive] = useState(true);
 
-    // 현재 경로가 로그인 페이지인지 확인 (로그인 페이지에서는 레이아웃을 숨기기 위함)
-    // 참고: 윈도우 객체를 직접 참조하므로 간단한 테스트용으로 적합합니다.
-    const isLoginPage = window.location.pathname === '/login';
+    // Synapse 기본 테마인 'dark'로 초기화
+    const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+
+    const location = useLocation();
+    const isLoginPage = location.pathname === '/login';
+
+    // Theme.css의 변수들이 작동하도록 :root의 data-theme 변경
+    useEffect(() => {
+        document.documentElement.setAttribute('data-theme', theme);
+    }, [theme]);
+
+    const handleThemeToggle = () => {
+        setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
+    };
 
     return (
-        <Router>
-            <div className="app-container">
-                {/* 1. 로그인 페이지가 아닐 때만 공통 레이아웃을 렌더링합니다. */}
-                {!isLoginPage && (
-                    <>
-                        <Header
-                            isSidebarActive={isSidebarActive}
-                            onToggleSidebar={() => setIsSidebarActive(prev => !prev)}
+        <div className="app-container">
+            {isLoginPage ? (
+                <div className="login-window-header">
+                    <div className="header-spacer"></div>
+                    <div className="header-right-zone">
+                        <ThemeToggle
+                            isDark={theme === 'dark'}
+                            onToggle={handleThemeToggle}
                         />
-                        <Sidebar isOpen={isSidebarActive}>
-                            <h3>Sidebar</h3>
-                        </Sidebar>
-                        <NoteToolBar isOpen={isToolbarActive}>
-                            <div className="toolbar-header">
-                                <h4>Note Tool</h4>
-                            </div>
-                        </NoteToolBar>
-                    </>
-                )}
+                        <WindowControlButton />
+                    </div>
+                </div>
+            ) : (
+                <Header
+                    theme={theme}
+                    onToggleTheme={handleThemeToggle}
+                    isSidebarActive={isSidebarActive}
+                    onToggleSidebar={() => setIsSidebarActive(prev => !prev)}
+                />
+            )}
 
-                {/* 2. 로그인 여부에 따라 main-content의 스타일 클래스를 조절합니다. */}
-                <main className={isLoginPage ? "full-page" : `main-content ${isSidebarActive ? 'sidebar-open' : ''} ${isToolbarActive ? 'toolbar-active' : ''}`}>
-                    <Routes>
-                        {/* 3. 기본 경로(/)로 접속 시 /login으로 자동 리다이렉트 합니다. */}
-                        <Route path="/" element={<Navigate to="/login" replace />} />
+            {!isLoginPage && (
+                <>
+                    <Sidebar isOpen={isSidebarActive}>
+                        <SideMenuBar />
+                    </Sidebar>
+                    <NoteToolBar isOpen={isToolbarActive}>
+                        <div className="toolbar-header">
+                            <h4>Note Tool</h4>
+                        </div>
+                    </NoteToolBar>
+                </>
+            )}
 
-                        <Route path="/login" element={<Login />} />
-                        <Route path="/home" element={<Home />} />
-                        <Route path="/note" element={<Note />} />
-                        <Route path="/mindmap" element={<MindMap />} />
-                        <Route path="/recommend" element={<Recommend />} />
-                    </Routes>
-                </main>
-            </div>
-        </Router>
+            <main className={isLoginPage ? "full-page" : `main-content ${isSidebarActive ? 'sidebar-open' : ''}`}>
+                <Routes>
+                    <Route path="/" element={<Navigate to="/login" replace />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/home" element={<Home />} />
+                    <Route path="/note" element={<Note />} />
+                    <Route path="/mindmap" element={<MindMap />} />
+                    <Route path="/recommend" element={<Recommend />} />
+                </Routes>
+            </main>
+        </div>
     );
 }
 
-export default App;
+export default function App() {
+    return (
+        <Router>
+            <AppContent />
+        </Router>
+    );
+}

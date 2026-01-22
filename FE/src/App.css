@@ -1,59 +1,57 @@
+/* FE/src/App.css */
+
+/* 전역 스타일: Theme.css의 변수 사용 */
+body {
+  background-color: var(--color-main);
+  color: var(--font-color);
+  font-family: var(--font-family);
+  margin: 0;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
 #root {
   width: 100%;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
+/* 로그인 페이지 중앙 정렬 */
+.full-page {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: var(--color-main); /* Theme.css 변수 */
 }
 
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+/* 로그인 헤더 바 (드래그 영역) */
+.login-window-header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 15px;
+  z-index: 10000;
+  -webkit-app-region: drag;
 }
 
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.header-spacer { flex: 1; }
+
+.header-right-zone {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  -webkit-app-region: no-drag;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
-}
-
-/* Sidebar 관련 스타일 */
+/* 일반 페이지 레이아웃 */
 .main-content {
-  margin-top: 60px; /* Header 아래부터 */
-  margin-left: 0;
+  margin-top: 60px;
   padding: 24px;
   transition: margin-left 0.25s ease;
 }
 
 .main-content.sidebar-open {
   margin-left: 240px;
-}
-
-.sidebar h3 {
-  text-align: center;
-  margin-bottom: 16px;
 }
