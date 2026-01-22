@@ -1,18 +1,22 @@
 .sidebar {
   position: fixed;
-  top: 60px; /* Header 높이 */
-  left: 0;
-  width: 240px;
+  top: 60px;
+  left: 70px;
+
+  width: 240px; /* 고정 */
   height: calc(100vh - 60px);
 
-  background-color: var(--color-sub);
-  color: var(--font-color);
+  background-color: var(--color-main);
+  border-right: 1px solid var(--color-sub);
 
-  transform: translateX(-100%);
+  transform: scaleX(0);
+  transform-origin: left; /* 왼쪽 기준 고정 */
+
   transition: transform 0.25s ease;
-  z-index: 200; /* header보다 낮게 */
+  z-index: 900;
 }
 
 .sidebar.open {
-  transform: translateX(0);
+  transform: scaleX(1);
 }
+
