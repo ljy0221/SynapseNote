@@ -25,10 +25,6 @@ export const Header: React.FC<HeaderProps> = ({
                     isActive={isSidebarActive}
                     onToggle={onToggleSidebar}
                 />
-                {/* ✅ 임시 상태 표시 */}
-                <span className="sidebar-state-text">
-                    {isSidebarActive ? '열림' : '닫힘'}
-                </span>
             </div>
 
             <div className="header-search-zone">

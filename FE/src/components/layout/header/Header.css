@@ -25,6 +25,7 @@
     
     /* 중요: 일렉트론에서 검색창 입력이 가능하도록 드래그 제외 */
     -webkit-app-region: no-drag;
+}
 
 .header-logo {
     font-weight: bold;
