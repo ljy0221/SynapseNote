@@ -1,6 +1,6 @@
 .note-toolbar {
   position: fixed;
-  top: 64px; /* 헤더 높이 */
+  top: 60px; /* 헤더 높이 */
   right: -240px; /* 닫혔을 때 */
   width: 240px;
   height: calc(100vh - 64px);

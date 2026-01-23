@@ -70,13 +70,6 @@ function AppContent() {
                             <p>Directory Structure</p>
                         </div>
                     </Sidebar>
-
-                    {/* 우측 툴바 */}
-                    <NoteToolBar isOpen={isToolbarActive}>
-                        <div className="toolbar-header">
-                            <h4>Note Tool</h4>
-                        </div>
-                    </NoteToolBar>
                 </>
             )}
 
