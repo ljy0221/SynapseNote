@@ -1,0 +1,7 @@
+/* src/pages/Home.css */
+
+.home-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}

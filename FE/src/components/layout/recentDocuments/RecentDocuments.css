@@ -1,0 +1,53 @@
+/* src/components/home/recentDocuments/RecentDocuments.css */
+
+.recent-documents {
+  margin-top: 24px;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--font-color);
+}
+
+.document-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.document-card {
+  padding: 16px;
+  border-radius: 12px;
+  background-color: var(--color-main);
+  border: 1px solid var(--color-sub);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.document-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.document-title {
+  font-size: 15px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.document-date {
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+.document-path {
+  font-size: 12px;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  display: block;
+}
