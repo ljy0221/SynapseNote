@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, FileText, Network, Sparkles, Settings } from 'lucide-react';
+import { LayoutDashboard, FileText, Network, Sparkles, Settings, User } from 'lucide-react';
 import { SideMenuButton } from '../../common/sideMenuButton/SideMenuButton';
 import './SideMenuBar.css';
 
@@ -16,6 +16,7 @@ export const SideMenuBar: React.FC = () => {
 
             {/* 하단: 설정 등 유틸리티 버튼 */}
             <div className="bottom-section">
+                <SideMenuButton to="/profile" icon={<User size={22} />} label="내 정보" />
                 <SideMenuButton to="/settings" icon={<Settings size={22} />} label="설정" />
             </div>
         </nav>
