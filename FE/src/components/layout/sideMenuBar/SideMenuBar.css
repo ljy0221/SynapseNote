@@ -3,10 +3,12 @@
 .side-menu-bar {
     display: flex;
     flex-direction: column;
-    justify-content: space-between; /* 상단 메뉴와 하단 설정 버튼을 양 끝으로 배치 */
+    justify-content: space-between;
+    /* 상단 메뉴와 하단 설정 버튼을 양 끝으로 배치 */
     align-items: center;
-    padding: 24px 0; /* 위아래 내부 여백 */
-    height: 100%;
+    padding: 24px 0;
+    /* 위아래 내부 여백 */
+
     box-sizing: border-box;
 
     /* 배경색과 너비는 App.css의 .side-menu-bar 설정을 따르지만,
@@ -19,7 +21,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 16px; /* 버튼 사이의 세로 간격 */
+    gap: 16px;
+    /* 버튼 사이의 세로 간격 */
     width: 100%;
 }
 
