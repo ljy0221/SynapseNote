@@ -100,11 +100,12 @@ function AppContent() {
             {/* 클래스명을 통해 SideMenuBar(고정)와 Sidebar(가변)의 너비만큼 마진 조정 */}
             <main
                 className={[
-                    'main-content',
-                    isSidebarAllowed && isSidebarActive ? 'sidebar-open' : '',
-                    isToolbarActive ? 'toolbar-open' : '',
+                    !isLoginPage ? 'main-content' : '',
+                    !isLoginPage && isSidebarAllowed && isSidebarActive ? 'sidebar-open' : '',
+                    !isLoginPage && isToolbarActive ? 'toolbar-open' : '',
                 ].join(' ')}
             >
+
 
                 <Routes>
                     <Route path="/" element={<Navigate to="/login" replace />} />
