@@ -1,7 +1,7 @@
 //Home 페이지
 
 import React from 'react';
-import RecentDocuments from '../components/layout/recentDocuments/RecentDocuments';
+import RecentNotes from '../components/layout/recentNotes/RecentNotes';
 import NoteStreak from '../components/layout/noteStreak/NoteStreak';
 import './Home.css';
 
@@ -15,6 +15,9 @@ const mockActivityDates: string[] = [
   '2026-01-15',
   '2026-01-16',
   '2026-01-20',
+  '2026-01-21',
+  '2026-01-22',
+  '2026-01-23',
 ];
 
 /**
@@ -35,7 +38,7 @@ const Home: React.FC = () => {
       <section className="home-grid">
         {/* 최근 작업 문서 카드 */}
         <div className="home-card placeholder-card">
-            <RecentDocuments />
+            <RecentNotes />
         </div>
         {/* 스트릭 카드 */}
         <div className="home-card streak-card">

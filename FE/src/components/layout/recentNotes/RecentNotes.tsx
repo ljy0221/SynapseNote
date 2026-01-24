@@ -1,6 +1,6 @@
-// src/components/home/recentDocuments/RecentDocuments.tsx
+// src/components/home/recentNotes/RecentNotes.tsx
 import React from 'react';
-import './RecentDocuments.css';
+import './RecentNotes.css';
 
 /**
  * 백엔드 API 응답 구조에 맞춘 mock 데이터
@@ -24,8 +24,8 @@ const mockNotes: Note[] = [
     pointX: 100.5,
     pointY: 200.3,
     role: 'OWNER',
-    createdAt: '2025-01-22T10:00:00Z',
-    updatedAt: '2025-01-22T15:30:00Z',
+    createdAt: '2026-01-22T10:00:00Z',
+    updatedAt: '2026-01-22T15:30:00Z',
   },
   {
     noteId: '660e8400-e29b-41d4-a716-446655440001',
@@ -34,8 +34,8 @@ const mockNotes: Note[] = [
     pointX: 150.0,
     pointY: 250.0,
     role: 'EDITOR',
-    createdAt: '2025-01-21T09:00:00Z',
-    updatedAt: '2025-01-21T14:00:00Z',
+    createdAt: '2026-01-21T09:00:00Z',
+    updatedAt: '2026-01-21T14:00:00Z',
   },
   {
     noteId: '770e8400-e29b-41d4-a716-446655440002',
@@ -44,26 +44,26 @@ const mockNotes: Note[] = [
     pointX: 220.2,
     pointY: 180.6,
     role: 'OWNER',
-    createdAt: '2025-01-20T08:30:00Z',
-    updatedAt: '2025-01-22T09:10:00Z',
+    createdAt: '2026-01-20T08:30:00Z',
+    updatedAt: '2026-01-22T09:10:00Z',
   },
 ];
 
-const RecentDocuments: React.FC = () => {
+const RecentNotes: React.FC = () => {
   return (
-    <section className="recent-documents">
-      <h3 className="section-title">최근 작업한 문서</h3>
+    <section className="recent-notes">
+      <h3 className="section-title">최근 작업한 노트</h3>
 
-      <div className="document-list">
+      <div className="note-list">
         {mockNotes.slice(0, 3).map(note => (
-          <div key={note.noteId} className="document-card">
-            <h4 className="document-title">{note.title}</h4>
+          <div key={note.noteId} className="note-card">
+            <h4 className="note-title">{note.title}</h4>
 
-            <span className="document-path">
+            <span className="note-path">
               {note.directoryPath}
             </span>
 
-            <span className="document-date">
+            <span className="note-date">
               마지막 수정: {new Date(note.updatedAt).toLocaleDateString()}
             </span>
           </div>
@@ -73,4 +73,4 @@ const RecentDocuments: React.FC = () => {
   );
 };
 
-export default RecentDocuments;
+export default RecentNotes;
