@@ -22,6 +22,9 @@ import Note from './pages/Note';
 import MindMap from './pages/MindMap';
 import Recommend from './pages/Recommend';
 
+// 사이드바가 허용되는 경로
+const SIDEBAR_ROUTES = ['/mindmap', '/note'];
+
 function AppContent() {
     const [isSidebarActive, setIsSidebarActive] = useState(false); // 가변 사이드바 상태
     const [isToolbarActive, setIsToolbarActive] = useState(true);
@@ -36,6 +39,22 @@ function AppContent() {
 
     const handleThemeToggle = () => setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
     const toggleSidebar = () => setIsSidebarActive(prev => !prev);
+
+
+
+    
+    /** Sidebar */
+    const isSidebarAllowed = SIDEBAR_ROUTES.some(path =>
+        location.pathname.startsWith(path)
+    );
+    useEffect(() => {
+        if (isSidebarAllowed) {
+        setIsSidebarActive(true);
+        } else {
+        setIsSidebarActive(false);
+        }
+    }, [isSidebarAllowed]);
+
 
     return (
         <div className="app-container">
@@ -52,7 +71,6 @@ function AppContent() {
                 <Header
                     theme={theme}
                     onToggleTheme={handleThemeToggle}
-                    isSidebarActive={isSidebarActive}
                     onToggleSidebar={toggleSidebar}
                 />
             )}
@@ -64,22 +82,30 @@ function AppContent() {
                     <SideMenuBar />
 
                     {/* 헤더 버튼으로 열고 닫는 가변 사이드바 (디렉토리 등) */}
-                    <Sidebar isOpen={isSidebarActive}>
+                    {isSidebarAllowed && (
+                    <Sidebar 
+                        isOpen={isSidebarActive}
+                        onToggle={toggleSidebar}
+                    >
                         <div className="sidebar-content">
-                            {/* 추후 이곳에 디렉토리 구조 등이 들어감 */}
-                            <p>Directory Structure</p>
+                        {/* 추후 이곳에 디렉토리 구조 등이 들어감 */}
+                        <p>Directory Structure</p>
                         </div>
                     </Sidebar>
+                    )}
                 </>
             )}
 
             {/* 3. 메인 콘텐츠 영역 */}
             {/* 클래스명을 통해 SideMenuBar(고정)와 Sidebar(가변)의 너비만큼 마진 조정 */}
-            <main className={
-                isLoginPage
-                    ? "full-page"
-                    : `main-content ${isSidebarActive ? 'sidebar-open' : ''}`
-            }>
+            <main
+                className={[
+                    'main-content',
+                    isSidebarAllowed && isSidebarActive ? 'sidebar-open' : '',
+                    isToolbarActive ? 'toolbar-open' : '',
+                ].join(' ')}
+            >
+
                 <Routes>
                     <Route path="/" element={<Navigate to="/login" replace />} />
                     <Route path="/login" element={<Login />} />
