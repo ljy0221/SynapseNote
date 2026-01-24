@@ -1,8 +1,11 @@
 /* FE/src/App.css */
 
 /* 1. 전역 스타일 및 폰트 설정 */
-#root {
-  width: 100%;
+
+:root {
+  --side-menu-width: 70px;
+  --sidebar-width: 240px;
+  --note-toolbar-width: 280px;
 }
 
 body {
@@ -91,23 +94,26 @@ body {
   transform: translateX(0);
 }
 
-/* [중앙] 메인 콘텐츠 영역 */
+
+/* 기본 메인 영역 */
 .main-content {
-  margin-top: 60px;
-  /* Header 높이 */
-  margin-left: 64px;
-  /* SideMenuBar 너비만큼 항상 여백 확보 */
-  padding: 30px;
-  min-height: calc(100vh - 60px);
-  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-left: var(--side-menu-width);
+  padding: 24px;
   box-sizing: border-box;
 }
 
-/* 가변 Sidebar가 열렸을 때 본문 밀기 */
+/* Sidebar 열렸을 때 */
 .main-content.sidebar-open {
-  margin-left: 304px;
-  /* SideMenuBar(64px) + Sidebar(240px) */
+  margin-left: calc(
+    var(--side-menu-width) + var(--sidebar-width)
+  );
 }
+
+/* 🔥 NoteToolBar 열렸을 때만 우측 여백 */
+.main-content.toolbar-open {
+  margin-right: var(--note-toolbar-width);
+}
+
 
 /* [우측] NoteToolBar (너비 280px 기준) */
 .note-toolbar {

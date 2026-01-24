@@ -1,6 +1,6 @@
-/* src/components/home/recentDocuments/RecentDocuments.css */
+/* src/components/home/recentNotes/RecentNotes.css */
 
-.recent-documents {
+.recent-notes {
   margin-top: 24px;
 }
 
@@ -11,16 +11,16 @@
   color: var(--font-color);
 }
 
-.document-list {
+.note-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 16px;
 
   width: 100%;
   box-sizing: border-box;
 }
 
-.document-card {
+.note-card {
   padding: 16px;
   border-radius: 12px;
   background-color: var(--color-main);
@@ -29,23 +29,23 @@
   transition: all 0.2s ease;
 }
 
-.document-card:hover {
+.note-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
-.document-title {
+.note-title {
   font-size: 15px;
   font-weight: 500;
   margin-bottom: 8px;
 }
 
-.document-date {
+.note-date {
   font-size: 12px;
   opacity: 0.6;
 }
 
-.document-path {
+.note-path {
   font-size: 12px;
   opacity: 0.5;
   margin-bottom: 6px;
