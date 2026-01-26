@@ -43,9 +43,7 @@
 }
 
 .home-grid {
-  display: grid;
-  grid-template-columns: minmax(600px, 2fr) 1fr;
-  gap: 24px;
+  grid-template-columns: 1fr;
 }
 
 /* 스트릭 카드 전용 */
