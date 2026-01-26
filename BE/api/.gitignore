@@ -37,6 +37,8 @@ out/
 ### VS Code ###
 .vscode/
 
-/.
+### application.properties ###
+**/application-prod.properties
+
 /CLAUDE.md
 .claude/
