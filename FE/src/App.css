@@ -1,42 +1,151 @@
-#root {
-  width: 100%;
+/* FE/src/App.css */
+
+/* 1. 전역 스타일 및 폰트 설정 */
+
+:root {
+  --side-menu-width: 70px;
+  --sidebar-width: 240px;
+  --note-toolbar-width: 280px;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
+body {
+  background-color: var(--color-main);
+  color: var(--font-color);
+  font-family: var(--font-family);
+  margin: 0;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  overflow-x: hidden;
+  /* 가로 스크롤 방지 */
 }
 
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+/* 2. 로그인 페이지 레이아웃 (중앙 정렬) */
+.full-page {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: var(--color-main);
+  z-index: 1;
 }
 
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+/* 3. 로그인 헤더 (Electron 드래그 바 영역) */
+.login-window-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 15px;
+  z-index: 10000;
+  -webkit-app-region: drag;
+  /* 창 드래그 가능 */
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
+.header-spacer {
+  flex: 1;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.header-right-zone {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  -webkit-app-region: no-drag;
+  /* 버튼 클릭을 위해 필수 */
 }
 
-.card {
-  padding: 2em;
+/* 4. 메인 서비스 레이아웃 구조 */
+
+/* [최좌측] SideMenuBar: 상시 고정 (너비 64px 기준) */
+.side-menu-bar {
+  position: fixed;
+  top: 60px;
+  /* Header 높이 */
+  left: 0;
+  bottom: 0;
+  width: 64px;
+  background-color: var(--color-sub);
+  border-right: 1px solid rgba(0, 0, 0, 0.1);
+  z-index: 200;
 }
 
-.read-the-docs {
-  color: #888;
+/* [가변] Sidebar: 토글형 (너비 240px 기준) */
+/* SideMenuBar 바로 오른쪽에 위치하며 열고 닫힘 */
+.sidebar {
+  position: fixed;
+  top: 60px;
+  left: 64px;
+  /* SideMenuBar 너비 바로 옆 */
+  bottom: 0;
+  width: 240px;
+  background-color: var(--color-main);
+  border-right: 1px solid rgba(0, 0, 0, 0.05);
+  transform: translateX(-100%);
+  /* 기본 숨김 */
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 100;
+}
+
+/* Sidebar가 열렸을 때 (isOpen 상태) */
+.sidebar.open {
+  transform: translateX(0);
+}
+
+
+/* 기본 메인 영역 */
+.main-content {
+  margin-left: var(--side-menu-width);
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+/* Sidebar 열렸을 때 */
+.main-content.sidebar-open {
+  margin-left: calc(
+    var(--side-menu-width) + var(--sidebar-width)
+  );
+}
+
+/* 🔥 NoteToolBar 열렸을 때만 우측 여백 */
+.main-content.toolbar-open {
+  margin-right: var(--note-toolbar-width);
+}
+
+
+/* [우측] NoteToolBar (너비 280px 기준) */
+.note-toolbar {
+  position: fixed;
+  top: 60px;
+  right: 0;
+  bottom: 0;
+  width: 280px;
+  background-color: var(--color-sub);
+  border-left: 1px solid rgba(0, 0, 0, 0.1);
+  transform: translateX(100%);
+  /* 기본 숨김 */
+  transition: transform 0.3s ease;
+  z-index: 150;
+}
+
+.note-toolbar.open {
+  transform: translateX(0);
+}
+
+/* 5. 기타 공통 유틸리티 */
+.toolbar-header {
+  padding: 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.toolbar-header h4 {
+  margin: 0;
+  color: var(--color-point);
+}
+
+/* 버튼 클릭 애니메이션 방지 */
+button {
+  -webkit-app-region: no-drag;
 }

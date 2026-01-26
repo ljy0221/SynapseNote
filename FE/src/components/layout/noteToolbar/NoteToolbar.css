@@ -1,0 +1,38 @@
+.note-toolbar {
+  position: fixed;
+  top: 60px; /* 헤더 높이 */
+  right: -240px; /* 닫혔을 때 */
+  width: 240px;
+  height: calc(100vh - 64px);
+  background-color: var(--color-sub);
+  border-left: 1px solid var(--border-color);
+  transition: right 0.3s ease;
+  padding: 20px;
+  z-index: 10;
+}
+
+.note-toolbar.open {
+  right: 0; /* 열렸을 때 */
+}
+
+.toolbar-items {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.item {
+  background: transparent;
+  border: none;
+  color: var(--font-color);
+  text-align: left;
+  padding: 10px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.item:hover {
+  background-color: var(--color-main);
+  color: var(--color-point);
+}
