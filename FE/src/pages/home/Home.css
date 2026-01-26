@@ -12,7 +12,7 @@
 
 /* Header */
 .home-header {
-  margin-bottom: 24px;
+  margin-top: 48px;
 }
 
 .home-header h2 {
@@ -47,7 +47,7 @@
 }
 
 /* 스트릭 카드 전용 */
-.streak-card {
+.section-card {
   width: 100%;
   max-width: 750px;
   padding: 0;
