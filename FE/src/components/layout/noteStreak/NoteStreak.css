@@ -9,8 +9,17 @@
 
 /* Header */
 .streak-header {
-  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
+
+.streak-count {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-point);
+}
+
 
 /* 월 라벨 */
 .streak-months {
