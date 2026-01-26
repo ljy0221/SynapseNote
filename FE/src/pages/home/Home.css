@@ -43,14 +43,14 @@
 }
 
 .home-grid {
-  grid-template-columns: 1fr;
+  display: grid;
+  grid-template-columns: minmax(600px, 2fr) 1fr;
+  gap: 24px;
 }
 
 /* 스트릭 카드 전용 */
 .streak-card {
-  padding: 0;
-  /* 🔥 핵심 */
   width: 100%;
-  justify-self: start;
-  /* grid에서 왼쪽 정렬 */
+  max-width: 750px;
+  padding: 0;
 }
