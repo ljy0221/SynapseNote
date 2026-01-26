@@ -1,78 +1,97 @@
 /* src/components/layout/noteMain/NoteMain.css */
 
+.note-main-header {
+    margin-bottom: 40px;
+}
+
+.note-main-title-input {
+    width: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 42px;
+    font-weight: 800;
+    color: var(--font-color, #2c2c2c);
+    font-family: var(--font-family, 'Pretendard', sans-serif);
+    transition: color 0.3s ease;
+}
+
+.note-main-title-input::placeholder {
+    color: var(--font-color, #d1d1d1);
+    opacity: 0.3;
+}
+
 .note-main-layout {
     flex: 1;
     display: flex;
     flex-direction: column;
     max-width: 900px;
     margin: 0 auto;
-    padding: 80px 40px; /* 상단 여백 확보 */
+    padding: 80px 40px;
     height: 100%;
     overflow-y: auto;
+    background-color: var(--color-main);
+    /* 테마 배경색 적용 */
+    box-sizing: border-box;
+    /* 중요: padding이 scrollbar와 겹치지 않게 */
 }
 
 .note-content-area {
     flex: 1;
-    overflow-y: auto;  /* 스크롤 가능 */
-    overflow-x: hidden;  /* 가로 스크롤은 숨김 */
-    padding: 20px;
-    /* height 고정 제거 */
+    overflow-y: visible;
+    /* 내부 스크롤 대신 부모(.note-main-layout) 스크롤 사용 권장 */
+    overflow-x: hidden;
+    padding: 10px 0;
 }
 
 /* 텍스트 블록용 스타일 */
 .text-block-wrapper {
     width: 100%;
     display: flex;
-    justify-content: center; /* 중앙 정렬 유지 */
+    /* justify-content: center; 불필요: width 100%이므로 의미 없음 */
+    position: relative;
+    /* 후행 메뉴 위치 잡기 용이 */
 }
 
 .editable-text-area {
     width: 100%;
-    max-width: 100%;       /* 부모 너비를 넘지 않도록 강제 */
+    max-width: 100%;
     min-height: 24px;
     border: none;
     outline: none;
     background: transparent;
+
     font-size: 18px;
     line-height: 1.6;
     color: var(--font-color, #333);
-    
-    /* 핵심 설정: 자동 줄바꿈 활성화 */
-    white-space: pre-wrap;    /* 공백 유지하되 너비 넘으면 자동 줄바꿈 */
-    word-break: break-word;   /* 단어가 너무 길어도 강제로 줄바꿈 */
-    overflow: hidden;         /* 개별 스크롤바 생성 방지 */
-    resize: none;             /* 수동 크기 조절 손잡이 제거 */
-    
-    font-family: 'Pretendard', sans-serif;
-    padding: 10px 0;
-}   
+    font-family: var(--font-family, 'Pretendard', sans-serif);
 
-/* 마우스를 올렸을 때만 삭제 버튼 표시 */
-.text-delete-btn {
-    opacity: 0;
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 20px;
-    color: #ccc;
-    transition: opacity 0.2s;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow: hidden;
+    resize: none;
+    padding: 6px 0;
+    /* 상하 패딩 조금 줄임 */
 }
 
-.text-block-wrapper:hover .text-delete-btn {
-    opacity: 1;
-}
+/* 
+  [Clean Up] 
+  .text-delete-btn 및 관련 hover 스타일은 
+  TextBlock.tsx에서 사용되지 않으므로 삭제 처리함. 
+*/
 
-/* 기존 스크롤바 스타일 유지 */
+/* 스크롤바 커스텀: 테마 색상과 조화 */
 .note-main-layout::-webkit-scrollbar {
-    width: 12px;
+    width: 8px;
+    /* 조금 더 얇게 */
 }
+
 .note-main-layout::-webkit-scrollbar-track {
-    background-color: rgba(0, 0, 0, 0.03); 
-    border-radius: 10px;
+    background-color: transparent;
 }
+
 .note-main-layout::-webkit-scrollbar-thumb {
-    background-color: #bbb; 
-    border-radius: 10px;
-    border: 4px solid transparent; 
-    background-clip: padding-box;
+    background-color: var(--color-sub, #bbb);
+    opacity: 0.5;
+    border-radius: 4px;
 }

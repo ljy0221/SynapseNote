@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import VersionButton from '../../common/versionButton/VersionButton.tsx';
 import BlockRunButton from '../../common/blockRunButton/BlockRunButton.tsx';
 import BlockCopyButton from '../../common/blockCopyButton/BlockCopyButton.tsx';
@@ -17,6 +17,17 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, language, code, onDelete, onC
     // 1. 실행 결과 상태 관리
     const [output, setOutput] = useState<string | null>(null);
 
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    // 3. 코드가 변경될 때마다 높이 자동 조절
+    useEffect(() => {
+        if (textareaRef.current) {
+            // 높이 초기화 후 스크롤 높이만큼 재설정 (줄어들 때도 동작하도록)
+            textareaRef.current.style.height = 'auto';
+            textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+        }
+    }, [code]); // code가 바뀔 때마다 실행
+
+
     const handleCopy = () => {
         navigator.clipboard.writeText(code);
         alert('코드가 클립보드에 복사되었습니다.');
@@ -25,7 +36,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, language, code, onDelete, onC
     // 2. 실행 버튼 클릭 시 호출
     const handleRun = () => {
         // 실제 실행 대신 목업 데이터를 세팅 (추후 API 연결 가능)
-        setOutput("120"); 
+        setOutput("120");
     };
 
     return (
@@ -42,12 +53,14 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, language, code, onDelete, onC
 
             {/* 메인 코드 영역 */}
             <div className="code-content-container">
-                <textarea 
+                <textarea
+                    ref={textareaRef}
                     className="code-editor-input"
                     value={code} // id 대신 반드시 code(또는 content)가 와야 합니다.
-                    onChange={(e) => onChange(e.target.value)}
+                    onChange={(e) => onChange(id, e.target.value)}
                     placeholder="// 새로운 코드를 작성하세요."
                     spellCheck="false"
+                    style={{ overflow: 'hidden' }}
                 />
             </div>
 

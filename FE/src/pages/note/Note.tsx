@@ -19,7 +19,9 @@ export interface BlockData {
 
 const Note: React.FC = () => {
     const [isEditing, setIsEditing] = useState(false);
-    
+
+    const [title, setTitle] = useState("제목 없는 노트");
+
     // 블록 배열 상태 관리 (초기에는 빈 텍스트 블록 하나)
     const [blocks, setBlocks] = useState<BlockData[]>([
         { id: Date.now(), type: 'text', content: '' }
@@ -39,7 +41,7 @@ const Note: React.FC = () => {
     // 특정 블록 뒤에 새 블록 추가 (+ 버튼용)
     const addBlockAfter = (afterId: number, type: BlockType) => {
         const defaultContent = type === 'code' ? '// 코드를 작성하세요.' : '';
-        
+
         const newBlock: BlockData = {
             id: Date.now(),
             type: type,
@@ -55,7 +57,7 @@ const Note: React.FC = () => {
 
     // 블록 내용 업데이트
     const updateBlock = (id: number, content: string) => {
-        setBlocks(blocks.map(block => 
+        setBlocks(blocks.map(block =>
             block.id === id ? { ...block, content } : block
         ));
     };
@@ -79,16 +81,18 @@ const Note: React.FC = () => {
                 </>
             ) : (
                 <div className="editing-layout-wrapper">
-                    <NoteMain 
+                    <NoteMain
+                        title={title}
+                        onUpdateTitle={setTitle}
                         blocks={blocks}
                         onUpdateBlock={updateBlock}
                         onAddBlockAfter={addBlockAfter}
                         onDeleteBlock={deleteBlock}
                     />
-                    <NoteToolBar 
-                        isOpen={true} 
+                    <NoteToolBar
+                        isOpen={true}
                         onAddBlock={addCodeBlock}
-                    /> 
+                    />
                 </div>
             )}
         </div>

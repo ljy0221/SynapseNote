@@ -8,17 +8,22 @@ import { BlockData, BlockType } from '../../../pages/note/Note';
 import './NoteMain.css';
 
 interface NoteMainProps {
+
+    title: string;
+    onUpdateTitle: (newTitle: string) => void;
     blocks: BlockData[];
     onUpdateBlock: (id: number, content: string) => void;
     onAddBlockAfter: (afterId: number, type: BlockType) => void;
     onDeleteBlock: (id: number) => void;
 }
 
-const NoteMain: React.FC<NoteMainProps> = ({ 
-    blocks, 
-    onUpdateBlock, 
-    onAddBlockAfter, 
-    onDeleteBlock 
+const NoteMain: React.FC<NoteMainProps> = ({
+    title,
+    onUpdateTitle,
+    blocks,
+    onUpdateBlock,
+    onAddBlockAfter,
+    onDeleteBlock
 }) => {
     const renderBlock = (block: BlockData) => {
         switch (block.type) {
@@ -26,7 +31,7 @@ const NoteMain: React.FC<NoteMainProps> = ({
             case 'h2':
             case 'h3':
                 return (
-                    <HeadingBlock 
+                    <HeadingBlock
                         key={block.id}
                         id={block.id}
                         level={block.type}
@@ -35,10 +40,10 @@ const NoteMain: React.FC<NoteMainProps> = ({
                         onAddBlockBelow={onAddBlockAfter}
                     />
                 );
-            
+
             case 'text':
                 return (
-                    <TextBlock 
+                    <TextBlock
                         key={block.id}
                         id={block.id}
                         content={block.content}
@@ -46,16 +51,20 @@ const NoteMain: React.FC<NoteMainProps> = ({
                         onAddBlockBelow={onAddBlockAfter}
                     />
                 );
-            
+
             case 'code':
                 return (
-                    <CodeBlock 
+                    <CodeBlock
                         key={block.id}
+                        id={block.id}
                         language={block.language || 'javascript'}
                         code={block.content}
+                        onDelete={onDeleteBlock}
+                        onChange={onUpdateBlock}
+
                     />
                 );
-            
+
             default:
                 return null;
         }
@@ -64,7 +73,12 @@ const NoteMain: React.FC<NoteMainProps> = ({
     return (
         <div className="note-main-layout">
             <header className="note-main-header">
-                <div className="note-title-info"></div>
+                <input
+                    className="note-main-title-input" // CSS 클래스 새로 정의 필요
+                    value={title}
+                    onChange={(e) => onUpdateTitle(e.target.value)}
+                    placeholder="제목 없음"
+                />
             </header>
 
             <div className="note-content-area">
