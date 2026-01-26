@@ -1,18 +1,50 @@
 /* src/components/layout/noteMain/NoteMain.css */
 
+/* src/components/layout/noteMain/NoteMain.css */
+
 .note-main-layout {
+    flex: 1; 
     display: flex;
     flex-direction: column;
-    width: 100%;
-    max-width: 900px;
-    margin: 0 auto;
-    /* 좌우 패딩을 24px -> 16px 정도로 줄여서 콘텐츠 영역을 넓힙니다. */
-    padding: 40px 16px; 
-    box-sizing: border-box;
-    /* 툴바에 밀리지 않도록 최소 너비 해제 */
-    min-width: 0; 
+    height: 100%; /* 부모의 고정 높이를 그대로 받음 */
+    overflow-y: auto !important; /* 콘텐츠가 넘칠 때만 스크롤 생성 */
+    
+    /* 스크롤바가 위치할 오른쪽 공간 확보 */
+    padding-right: 20px; 
 }
 
+/* --- 검은 선 위치에 나타날 시각적 스크롤바 스타일 --- */
+/* 1. 스크롤바 전체 영역 (바탕) */
+.note-main-layout::-webkit-scrollbar {
+    width: 12px;               /* 클릭하기 적당한 두께 */
+}
+
+/* 2. 스크롤바 트랙 (길) */
+.note-main-layout::-webkit-scrollbar-track {
+    /* 트랙을 살짝 어둡게 해서 영역을 구분 */
+    background-color: rgba(0, 0, 0, 0.03); 
+    border-radius: 10px;
+}
+
+/* 3. 스크롤바 핸들 (잡고 움직이는 부분) */
+.note-main-layout::-webkit-scrollbar-thumb {
+    /* 기본 상태에서도 잘 보이도록 진한 회색 적용 */
+    background-color: #bbb; 
+    border-radius: 10px;
+    /* 바 주변에 여백을 주어 트랙 안에서 떠 있는 느낌 강조 */
+    border: 4px solid transparent; 
+    background-clip: padding-box;
+    cursor: pointer;
+}
+
+/* 4. 마우스를 올렸을 때 (Hover) */
+.note-main-layout::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-point, #f59e0b); 
+}
+/* 5. 클릭하고 있을 때 (Active) */
+.note-main-layout::-webkit-scrollbar-thumb:active {
+    background-color: var(--color-point-dark, #e69500); /* 더 진한 색상 */
+}
 /* 카드 공통 스타일 */
 .content-card {
     background-color: var(--bg-secondary, rgba(255, 255, 255, 0.03));
@@ -20,6 +52,16 @@
     border: 1px solid rgba(128, 128, 128, 0.1);
     overflow: hidden;
     margin-bottom: 20px;
+}
+
+/* Note 페이지 전체 레이아웃 (Note.css 또는 App.css) */
+.editing-layout-wrapper {
+    display: flex;
+    /* 헤더 높이가 64px라고 가정할 때, 남은 화면을 꽉 채우고 고정 */
+    height: calc(100vh - 64px); 
+    width: 100%;
+    overflow: hidden; /* ★ 부모가 절대 같이 길어지지 않게 방어 */
+    background-color: var(--bg-primary);
 }
 
 .media-block {
@@ -84,5 +126,5 @@
     width: 100%;
     display: flex;
     flex-direction: column;
+    gap: 32px; /* 블록 사이의 여백 추가 */
 }
-
