@@ -26,3 +26,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   maximize: () => ipcRenderer.send('window-maximize'),
   close: () => ipcRenderer.send('window-close'),
 })
+
+// Docker API 노출
+contextBridge.exposeInMainWorld('dockerAPI', {
+  checkInstalled: () => ipcRenderer.invoke('docker:check-installed'),
+  checkRunning: () => ipcRenderer.invoke('docker:check-running'),
+  executeSingle: (request: any) => ipcRenderer.invoke('docker:execute-single', request),
+})
