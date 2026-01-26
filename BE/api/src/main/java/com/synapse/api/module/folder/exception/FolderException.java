@@ -1,7 +1,8 @@
 package com.synapse.api.module.folder.exception;
 
-import com.synapse.api.module.common.exception.BaseException;
-import com.synapse.api.module.common.exception.ErrorCode;
+
+import com.synapse.api.util.exception.BaseException;
+import com.synapse.api.util.exception.ErrorCode;
 
 public class FolderException extends BaseException {
     public FolderException(ErrorCode errorCode) {

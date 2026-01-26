@@ -1,0 +1,50 @@
+/* 전체 디렉토리 */
+.note-directory {
+  font-size: 13px;
+  user-select: none;
+}
+
+/* 디렉토리 행 */
+.directory-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  cursor: pointer;
+  color: var(--font-color);
+  opacity: 0.85;
+}
+
+.directory-row:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* 화살표 */
+.directory-arrow {
+  width: 12px;
+  text-align: center;
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+/* 디렉토리 이름 */
+.directory-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 노트 행 */
+.note-row {
+  height: 26px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: var(--font-color);
+  opacity: 0.75;
+}
+
+.note-row:hover {
+  background-color: rgba(0, 0, 0, 0.06);
+  opacity: 1;
+}

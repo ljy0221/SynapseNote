@@ -1,0 +1,23 @@
+/* src/components/common/blockRunButton/BlockRunButton.css */
+.block-run-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: var(--color-point, #f0a500); /* 목업의 주황색 */
+  color: white;
+  border: none;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.2s;
+}
+
+.block-run-btn:hover {
+  filter: brightness(1.1);
+}
+
+.run-icon {
+  font-size: 10px;
+}
