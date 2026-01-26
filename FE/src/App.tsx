@@ -30,6 +30,7 @@ function AppContent() {
     const [isSidebarActive, setIsSidebarActive] = useState(false); // 가변 사이드바 상태
     const [isToolbarActive, setIsToolbarActive] = useState(true);
     const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+    const [dockerStatus, setDockerStatus] = useState<'checking' | 'ok' | 'error'>('checking');
 
     const location = useLocation();
     const isLoginPage = location.pathname === '/login';
@@ -37,6 +38,34 @@ function AppContent() {
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', theme);
     }, [theme]);
+
+    // Docker 헬스 체크
+    useEffect(() => {
+        async function checkDocker() {
+            try {
+                const installed = await window.dockerAPI.checkInstalled();
+                if (!installed) {
+                    setDockerStatus('error');
+                    alert('Docker가 설치되지 않았습니다.\n\nDocker Desktop을 설치해주세요.\nhttps://www.docker.com/products/docker-desktop/');
+                    return;
+                }
+
+                const running = await window.dockerAPI.checkRunning();
+                if (!running) {
+                    setDockerStatus('error');
+                    alert('Docker가 실행되지 않았습니다.\n\nDocker Desktop을 실행해주세요.');
+                    return;
+                }
+
+                setDockerStatus('ok');
+            } catch (error) {
+                console.error('Docker 상태 확인 실패:', error);
+                setDockerStatus('error');
+            }
+        }
+
+        checkDocker();
+    }, []);
 
     const handleThemeToggle = () => setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
     const toggleSidebar = () => setIsSidebarActive(prev => !prev);

@@ -2,6 +2,8 @@ import { app, BrowserWindow, ipcMain } from 'electron' // ipcMain 추가
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
+import { DockerHealthService } from './docker/DockerHealthService'
+import { DockerExecService } from './docker/DockerExecService'
 
 const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -77,5 +79,22 @@ app.on('activate', () => {
     createWindow()
   }
 })
+
+// Docker 서비스 초기화
+const healthService = new DockerHealthService();
+const execService = new DockerExecService();
+
+// Docker IPC 핸들러
+ipcMain.handle('docker:check-installed', async () => {
+  return await healthService.checkInstalled();
+});
+
+ipcMain.handle('docker:check-running', async () => {
+  return await healthService.checkRunning();
+});
+
+ipcMain.handle('docker:execute-single', async (event, request) => {
+  return await execService.executeSingle(request);
+});
 
 app.whenReady().then(createWindow)
