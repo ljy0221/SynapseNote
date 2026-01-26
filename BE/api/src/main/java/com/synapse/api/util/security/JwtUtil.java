@@ -50,7 +50,8 @@ public class JwtUtil {
 
     // id 가져오기
     public UUID getId(String token) {
-        return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().get("id", UUID.class);
+        String stringId = Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().get("id", String.class);
+        return UUID.fromString(stringId);
     }
 
     // 발행시간 가져오기
