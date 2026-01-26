@@ -1,7 +1,7 @@
 // src/components/home/NoteStreak.tsx
 import React,{ useMemo } from 'react';
 import './NoteStreak.css';
-import { calculateStreakCount } from '../../features/streakCount/streakcount';
+import { calculateStreakCount } from '../../features/streakCount/StreakCount';
 
 interface NoteStreakProps {
   activityDates: string[]; // ['YYYY-MM-DD']
@@ -65,7 +65,7 @@ const NoteStreak: React.FC<NoteStreakProps> = ({ activityDates }) => {
       <div className="streak-header">
         <h3>Streak</h3>
 
-        {streakCount > 0 && (
+        {streakCount >= 0 && (
           <span className="streak-count">
             🔥 {streakCount}일 연속
           </span>
