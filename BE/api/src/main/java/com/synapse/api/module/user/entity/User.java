@@ -1,14 +1,13 @@
 package com.synapse.api.module.user.entity;
 
+import com.synapse.api.util.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
-import lombok.Builder;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import lombok.experimental.SuperBuilder;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -16,8 +15,10 @@ import java.util.UUID;
         @Index(name = "idx_users_email", columnList = "email")
 })
 @Getter
+@SuperBuilder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class User {
+@AllArgsConstructor(access = AccessLevel.PROTECTED)
+public class User extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -27,26 +28,8 @@ public class User {
     @Column(nullable = false, unique = true, length = 255)
     private String email;
 
-    @Column(name = "password_hash", nullable = false, length = 255)
-    private String passwordHash;
-
     @Column(nullable = false, length = 100)
     private String name;
-
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
-
-    @Builder
-    public User(String email, String passwordHash, String name) {
-        this.email = email;
-        this.passwordHash = passwordHash;
-        this.name = name;
-    }
 
     public void updateName(String name) {
         this.name = name;

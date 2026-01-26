@@ -35,6 +35,8 @@ public class NoteContent {
 
     private LocalDateTime updatedAt;
 
+    private LocalDateTime deletedAt;
+
     public static NoteContent create(String noteId, String content) {
         return NoteContent.builder()
                 .noteId(noteId)
@@ -70,6 +72,14 @@ public class NoteContent {
                 .ifPresent(block -> block.updateCode(code));
         this.updatedAt = LocalDateTime.now();
         incrementVersion();
+    }
+
+    public void delete() {
+        this.deletedAt = LocalDateTime.now();
+    }
+
+    public boolean isDeleted() {
+        return this.deletedAt != null;
     }
 
     private void incrementVersion() {

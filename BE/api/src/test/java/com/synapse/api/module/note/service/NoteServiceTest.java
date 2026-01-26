@@ -1,7 +1,5 @@
 package com.synapse.api.module.note.service;
 
-import com.synapse.api.common.exception.BusinessException;
-import com.synapse.api.common.exception.ErrorCode;
 import com.synapse.api.module.note.document.NoteContent;
 import com.synapse.api.module.note.dto.*;
 import com.synapse.api.module.note.entity.Note;
@@ -12,6 +10,8 @@ import com.synapse.api.module.note.repository.NoteMemberRepository;
 import com.synapse.api.module.note.repository.NoteRepository;
 import com.synapse.api.module.user.entity.User;
 import com.synapse.api.module.user.repository.UserRepository;
+import com.synapse.api.util.exception.BusinessException;
+import com.synapse.api.util.exception.ErrorCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -29,7 +29,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("NoteService 단위 테스트")
@@ -63,7 +64,6 @@ class NoteServiceTest {
 
         testUser = User.builder()
                 .email("test@example.com")
-                .passwordHash("hashed_password")
                 .name("Test User")
                 .build();
         ReflectionTestUtils.setField(testUser, "id", userId);
@@ -160,7 +160,6 @@ class NoteServiceTest {
         UUID otherUserId = UUID.randomUUID();
         User otherUser = User.builder()
                 .email("other@example.com")
-                .passwordHash("hashed")
                 .name("Other User")
                 .build();
         ReflectionTestUtils.setField(otherUser, "id", otherUserId);
@@ -225,7 +224,6 @@ class NoteServiceTest {
         UUID editorId = UUID.randomUUID();
         User editor = User.builder()
                 .email("editor@example.com")
-                .passwordHash("hashed")
                 .name("Editor")
                 .build();
 
@@ -283,19 +281,21 @@ class NoteServiceTest {
     }
 
     @Test
-    @DisplayName("노트 삭제 성공 - OWNER")
+    @DisplayName("노트 삭제 성공 - OWNER (Soft Delete)")
     void deleteNote_Success_AsOwner() {
         // given
         given(noteRepository.findById(noteId)).willReturn(Optional.of(testNote));
-        doNothing().when(noteContentRepository).deleteByNoteId(noteId.toString());
-        doNothing().when(noteRepository).delete(testNote);
+        given(noteContentRepository.findByNoteId(noteId.toString())).willReturn(Optional.of(testNoteContent));
+        given(noteContentRepository.save(any(NoteContent.class))).willReturn(testNoteContent);
 
         // when
         noteService.deleteNote(noteId, userId);
 
         // then
-        verify(noteContentRepository).deleteByNoteId(noteId.toString());
-        verify(noteRepository).delete(testNote);
+        assertThat(testNote.isDeleted()).isTrue();
+        assertThat(testNote.getDeletedAt()).isNotNull();
+        assertThat(testNoteContent.isDeleted()).isTrue();
+        verify(noteContentRepository).save(testNoteContent);
     }
 
     @Test
@@ -305,7 +305,6 @@ class NoteServiceTest {
         UUID otherUserId = UUID.randomUUID();
         User otherUser = User.builder()
                 .email("other@example.com")
-                .passwordHash("hashed")
                 .name("Other User")
                 .build();
         ReflectionTestUtils.setField(otherUser, "id", otherUserId);
