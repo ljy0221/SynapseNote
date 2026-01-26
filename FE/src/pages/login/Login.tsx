@@ -1,9 +1,8 @@
 // src/pages/Login.tsx
 import React from 'react';
 // 1. SocialLoginButton 임포트 추가
-import { SocialLoginButton } from '../components/common/socialLoginButton/SocialLoginButton';
-import HomeButton from "../components/common/homeButton/HomeButton.tsx";
-
+import { SocialLoginButton } from "../../components/common/socialLoginButton/SocialLoginButton";
+import HomeButton from "../../components/common/homeButton/HomeButton.tsx";
 const Login: React.FC = () => {
     return (
         <div style={{ display: 'flex', width: '100vw', height: '100vh', position: 'relative' }}>

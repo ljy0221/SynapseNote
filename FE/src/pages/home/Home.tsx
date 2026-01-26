@@ -1,8 +1,8 @@
 //Home 페이지
 
 import React from 'react';
-import RecentNotes from '../components/layout/recentNotes/RecentNotes';
-import NoteStreak from '../components/layout/noteStreak/NoteStreak';
+import RecentNotes from "../../components/layout/recentNotes/RecentNotes";
+import NoteStreak from "../../components/layout/noteStreak/NoteStreak";
 import './Home.css';
 
 // 임시 더미 데이터

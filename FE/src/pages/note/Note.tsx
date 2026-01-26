@@ -1,8 +1,8 @@
 // src/pages/Note.tsx
 import React, { useState } from 'react';
-import NoteButton from '../components/common/noteButton/NoteButton';
-import NoteMain from '../components/layout/noteMain/NoteMain';
-import { NoteToolBar } from '../components/layout/noteToolbar/NoteToolbar'; // 툴바 임포트
+import NoteButton from "../../components/common/noteButton/NoteButton";
+import NoteMain from "../../components/layout/noteMain/NoteMain";
+import { NoteToolBar } from "../../components/layout/noteToolbar/NoteToolbar";
 import './Note.css';
 
 const Note: React.FC = () => {
