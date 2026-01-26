@@ -1,17 +1,16 @@
 package com.synapse.api.module.note.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.synapse.api.common.exception.BusinessException;
-import com.synapse.api.common.exception.ErrorCode;
 import com.synapse.api.module.note.dto.*;
 import com.synapse.api.module.note.service.NoteService;
+import com.synapse.api.util.exception.BusinessException;
+import com.synapse.api.util.exception.ErrorCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.context.annotation.Import;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -30,10 +29,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(NoteController.class)
+@SpringBootTest
 @AutoConfigureMockMvc(addFilters = false)
-@Import(com.synapse.api.common.exception.GlobalExceptionHandler.class)
-@DisplayName("NoteController 단위 테스트")
+@DisplayName("NoteController 통합 테스트")
 class NoteControllerTest {
 
     @Autowired
