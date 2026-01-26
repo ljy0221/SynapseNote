@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="dataSourceStorageLocal" created-in="IU-233.15619.7">
+  <component name="dataSourceStorageLocal" created-in="WS-253.29346.242">
     <data-source name="mongodb@localhost" uuid="18a82e07-2014-4971-8d52-65ef60c13193">
       <database-info product="" version="" jdbc-version="" driver-name="" driver-version="" dbms="MONGO" />
       <schema-mapping />
