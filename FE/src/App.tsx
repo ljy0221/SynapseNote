@@ -16,12 +16,11 @@ import WindowControlButton from './components/common/windowControlButton/WindowC
 import ThemeToggle from './components/common/themeToggle/ThemeToggle';
 
 // 페이지 컴포넌트
-import Home from './pages/Home';
-import Login from './pages/Login';
-import Note from './pages/Note';
-import MindMap from './pages/MindMap';
-import Recommend from './pages/Recommend';
-
+import Home from './pages/home/Home'; // home 폴더 안에 Home.tsx가 있다고 가정
+import Login from './pages/login/Login';
+import Note from './pages/note/Note';
+import MindMap from './pages/mindmap/MindMap';
+import Recommend from './pages/recommend/Recommend';
 // 사이드바가 허용되는 경로
 const SIDEBAR_ROUTES = ['/mindmap', '/note'];
 
