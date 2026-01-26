@@ -51,6 +51,9 @@ dependencies {
 	// --- AWS ---
 	implementation 'software.amazon.awssdk:s3:2.21.12'
 
+	// --- UUID v7 Generator ---
+	implementation 'com.github.f4b6a3:uuid-creator:6.0.0'
+
 	// --- Test ---
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'
