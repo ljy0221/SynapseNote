@@ -1,0 +1,229 @@
+/* src/pages/mindmap/MindMap.css */
+.mindmap-page {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background-color: var(--color-main);
+    /* 웜톤 베이스 */
+    color: var(--font-color);
+    font-family: var(--font-family);
+
+    /* [Fix] 글로벌 헤더(60px)만큼 상단 여백 확보 */
+    padding-top: 60px;
+    box-sizing: border-box;
+    overflow: hidden;
+    /* 스크롤 방지 */
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    background: var(--color-main);
+    border-bottom: 1px solid var(--color-sub);
+    z-index: 10;
+}
+
+.brand-text {
+    color: var(--color-point);
+    /* 앰버 포인트 컬러 */
+    font-weight: 800;
+}
+
+.mode-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    background-color: var(--color-sub);
+    color: var(--font-color);
+    border: 1px solid var(--color-point);
+}
+
+.action-btn {
+    padding: 8px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    font-family: var(--font-family);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+}
+
+/* 수정 버튼 (읽기 모드 상태) - btn-save와 동일한 로직 적용 */
+.btn-edit {
+    background-color: var(--color-sub);
+    color: var(--font-color);
+    border: 2px solid var(--font-color);
+    opacity: 0.8;
+    transition: all 0.3s ease;
+}
+
+.btn-edit:hover {
+    color: var(--color-point);
+    border-color: var(--color-point);
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+    opacity: 1;
+}
+
+.btn-save {
+    background-color: var(--color-sub);
+    color: var(--font-color);
+    border: 2px solid var(--font-color);
+    opacity: 0.8;
+    transition: all 0.3s ease;
+}
+
+.btn-save:hover {
+    color: var(--color-point);
+    border-color: var(--color-point);
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+    opacity: 1;
+}
+
+.btn-secondary {
+    background-color: transparent;
+    color: var(--font-color);
+    border: 1px solid var(--color-sub);
+}
+
+/* 커스텀 컨트롤 패널 스타일 */
+.mindmap-controls-panel {
+    margin: 0 !important;
+    /* React Flow 기본 마진 제거 */
+    padding: 1rem;
+    z-index: 5;
+}
+
+/* 툴바도 우하단 컨트롤과 동일한 스타일 적용 */
+.mindmap-toolbar-panel {
+    top: 1rem;
+    left: 1rem;
+    position: absolute;
+    margin: 0 !important;
+    padding: 0 !important;
+    z-index: 5;
+}
+
+.controls-group {
+    display: flex;
+    flex-direction: column;
+    /* 세로 배열 */
+    gap: 8px;
+    background-color: var(--color-main);
+    padding: 8px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--color-sub);
+}
+
+.btn-control {
+    background-color: transparent;
+    color: var(--font-color);
+    border: 1px solid transparent;
+}
+
+.btn-control:hover {
+    background-color: var(--color-sub);
+    color: var(--color-point);
+}
+
+.mindmap-canvas-area {
+    flex: 1;
+    position: relative;
+    background-color: var(--color-sub);
+    /* 캔버스는 메인보다 살짝 어두운 톤 */
+
+    /* [New] 테마 색상 테두리 적용 (안쪽으로 생기게 하여 레이아웃 영향 최소화) */
+    box-sizing: border-box;
+    /* color-mix를 사용하여 --color-point의 투명도를 50%로 조절 */
+    border: 3px solid color-mix(in srgb, var(--color-point), transparent 50%);
+    border-radius: 8px;
+    /* 헤더와의 조화를 위해 약간 둥글게 */
+    margin: 4px;
+    /* 헤더와 약간 띄움 */
+    overflow: hidden;
+    /* 둥근 모서리 삐져나감 방지 */
+}
+
+/* [New] 좌상단 모드 라벨 스타일 */
+.mode-label-top-left {
+    position: absolute;
+    top: 1.5rem;
+    left: 1.5rem;
+    z-index: 90;
+    /* 툴바보다는 아래지만 캔버스보단 위 */
+
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+
+    padding: 6px 12px;
+    background-color: var(--color-main);
+    border: 1px solid var(--color-sub);
+    border-radius: 20px;
+    color: var(--font-color);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.mode-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: var(--font-color);
+}
+
+/* 편집 모드일 때 강조 */
+.mode-label-top-left.edit {
+    border-color: var(--color-point);
+    color: var(--color-point);
+}
+
+.mode-label-top-left.edit .mode-dot {
+    background-color: var(--color-point);
+    box-shadow: 0 0 6px var(--color-point);
+}
+
+/* [New] 우상단 플로팅 컨트롤 스타일 */
+.floating-top-right {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    pointer-events: none;
+    /* 컨테이너는 클릭 통과 */
+}
+
+/* 자식 요소들은 클릭 가능해야 함 */
+.floating-top-right>* {
+    pointer-events: auto;
+}
+
+.status-badge-floating {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 1px solid var(--color-sub);
+    color: var(--font-color);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(4px);
+}
+
+.status-badge-floating.edit {
+    color: var(--color-point);
+    border-color: var(--color-point);
+}
