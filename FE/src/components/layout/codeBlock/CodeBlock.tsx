@@ -10,9 +10,10 @@ interface CodeBlockProps {
     language: string;
     code: string;
     onDelete: (id: number) => void; // 삭제 함수 추가
+    onChange: (id: number, newCode: string) => void; // 텍스트 수정을 위한 prop 추가
 }
 
-const CodeBlock: React.FC<CodeBlockProps> = ({ id, language, code, onDelete }) => {
+const CodeBlock: React.FC<CodeBlockProps> = ({ id, language, code, onDelete, onChange }) => {
     // 1. 실행 결과 상태 관리
     const [output, setOutput] = useState<string | null>(null);
 
@@ -41,9 +42,13 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, language, code, onDelete }) =
 
             {/* 메인 코드 영역 */}
             <div className="code-content-container">
-                <pre className="code-content-view">
-                    <code>{code}</code>
-                </pre>
+                <textarea 
+                    className="code-editor-input"
+                    value={code} // id 대신 반드시 code(또는 content)가 와야 합니다.
+                    onChange={(e) => onChange(e.target.value)}
+                    placeholder="// 새로운 코드를 작성하세요."
+                    spellCheck="false"
+                />
             </div>
 
             {/* 3. Output 영역 (결과가 있을 때만 표시) */}
