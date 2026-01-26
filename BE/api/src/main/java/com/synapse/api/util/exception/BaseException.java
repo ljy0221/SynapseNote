@@ -1,5 +1,7 @@
 package com.synapse.api.util.exception;
 
+import com.synapse.api.util.response.ErrorCode;
+
 import java.util.HashMap;
 import java.util.Map;
 
