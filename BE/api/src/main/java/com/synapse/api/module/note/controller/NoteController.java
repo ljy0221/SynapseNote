@@ -14,13 +14,13 @@ import java.util.UUID;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/notes")
+@RequestMapping("/api")
 @RequiredArgsConstructor
 public class NoteController {
 
     private final NoteService noteService;
 
-    @PostMapping
+    @PostMapping("/v1/notes")
     public ResponseEntity<NoteResponse> createNote(
             @RequestHeader("X-User-Id") UUID userId,
             @Valid @RequestBody NoteCreateRequest request) {
@@ -29,7 +29,7 @@ public class NoteController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @GetMapping
+    @GetMapping("/v1/notes")
     public ResponseEntity<List<NoteResponse>> getAllNotes(
             @RequestHeader("X-User-Id") UUID userId) {
         log.info("Getting all notes for user: {}", userId);
@@ -37,7 +37,7 @@ public class NoteController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/{noteId}")
+    @GetMapping("/v1/notes/{noteId}")
     public ResponseEntity<NoteDetailResponse> getNoteById(
             @PathVariable UUID noteId,
             @RequestHeader("X-User-Id") UUID userId) {
@@ -46,7 +46,7 @@ public class NoteController {
         return ResponseEntity.ok(response);
     }
 
-    @PutMapping("/{noteId}")
+    @PutMapping("/v1/notes/{noteId}")
     public ResponseEntity<NoteResponse> updateNote(
             @PathVariable UUID noteId,
             @RequestHeader("X-User-Id") UUID userId,
@@ -56,7 +56,7 @@ public class NoteController {
         return ResponseEntity.ok(response);
     }
 
-    @PatchMapping("/{noteId}/position")
+    @PatchMapping("/v1/notes/{noteId}/position")
     public ResponseEntity<Void> updatePosition(
             @PathVariable UUID noteId,
             @RequestHeader("X-User-Id") UUID userId,
@@ -66,7 +66,7 @@ public class NoteController {
         return ResponseEntity.noContent().build();
     }
 
-    @DeleteMapping("/{noteId}")
+    @DeleteMapping("/v1/notes/{noteId}")
     public ResponseEntity<Void> deleteNote(
             @PathVariable UUID noteId,
             @RequestHeader("X-User-Id") UUID userId) {
@@ -75,7 +75,7 @@ public class NoteController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/search")
+    @GetMapping("/v1/notes/search")
     public ResponseEntity<List<NoteResponse>> searchNotes(
             @RequestHeader("X-User-Id") UUID userId,
             @RequestParam String q) {

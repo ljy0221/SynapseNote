@@ -1,7 +1,5 @@
 package com.synapse.api.module.note.service;
 
-import com.synapse.api.common.exception.BusinessException;
-import com.synapse.api.common.exception.ErrorCode;
 import com.synapse.api.module.note.document.NoteContent;
 import com.synapse.api.module.note.dto.*;
 import com.synapse.api.module.note.entity.Note;
@@ -12,6 +10,8 @@ import com.synapse.api.module.note.repository.NoteMemberRepository;
 import com.synapse.api.module.note.repository.NoteRepository;
 import com.synapse.api.module.user.entity.User;
 import com.synapse.api.module.user.repository.UserRepository;
+import com.synapse.api.util.exception.BusinessException;
+import com.synapse.api.util.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -128,10 +128,16 @@ public class NoteService {
 
         validateOwnership(noteId, userId);
 
-        noteContentRepository.deleteByNoteId(noteId.toString());
-        noteRepository.delete(note);
+        // Soft delete
+        note.delete();
 
-        log.info("Deleted note: {} by user: {}", noteId, userId);
+        // MongoDB도 soft delete
+        NoteContent content = noteContentRepository.findByNoteId(noteId.toString())
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_CONTENT_NOT_FOUND));
+        content.delete();
+        noteContentRepository.save(content);
+
+        log.info("Soft deleted note: {} by user: {}", noteId, userId);
     }
 
     public List<NoteResponse> searchNotes(UUID userId, String query) {
