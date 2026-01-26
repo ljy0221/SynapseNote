@@ -7,6 +7,7 @@ import org.springframework.validation.FieldError;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Getter
 @Builder
@@ -16,7 +17,7 @@ public class ErrorResponse {
     private final LocalDateTime timestamp;
     private final List<FieldErrorDetail> errors;
 
-    public static ErrorResponse of(ErrorCode errorCode) {
+    public static ErrorResponse of(ErrorCode errorCode, String requestURI, Map<String, Object> details) {
         return ErrorResponse.builder()
                 .code(errorCode.getCode())
                 .message(errorCode.getMessage())

@@ -2,9 +2,10 @@
 import React,{ useMemo } from 'react';
 import './NoteStreak.css';
 import { calculateStreakCount } from '../../features/streakCount/streakcount';
+import type { GetStreakResponse } from '../../../types/note/getStreak';
 
 interface NoteStreakProps {
-  activityDates: string[]; // ['YYYY-MM-DD']
+  streak: GetStreakResponse;
 }
 
 /** 로컬 기준 날짜 포맷 */
@@ -17,9 +18,9 @@ const formatDate = (date: Date) => {
 
 const DAYS = 180;
 
+const NoteStreak: React.FC<NoteStreakProps> = ({ streak }) => {
+  const activityDates = streak.dates;
 
-
-const NoteStreak: React.FC<NoteStreakProps> = ({ activityDates }) => {
   const activitySet = new Set(activityDates);
   const today = new Date();
 
@@ -65,7 +66,7 @@ const NoteStreak: React.FC<NoteStreakProps> = ({ activityDates }) => {
       <div className="streak-header">
         <h3>Streak</h3>
 
-        {streakCount > 0 && (
+        {streakCount >= 0 && (
           <span className="streak-count">
             🔥 {streakCount}일 연속
           </span>
