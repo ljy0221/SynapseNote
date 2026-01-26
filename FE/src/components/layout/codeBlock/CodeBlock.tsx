@@ -14,8 +14,22 @@ interface CodeBlockProps {
 }
 
 const CodeBlock: React.FC<CodeBlockProps> = ({ id, language, code, onDelete, onChange }) => {
+function getDefaultVersion(language: Language): string {
+  switch (language) {
+    case 'python': return '3.11';
+    case 'javascript': return '20';
+    case 'java': return '17';
+    default: return '';
+  }
+}
+
+const CodeBlock: React.FC<CodeBlockProps> = ({ id, language: initialLanguage, code, noteId, onDelete, onChange }) => {
     // 1. 실행 결과 상태 관리
     const [output, setOutput] = useState<string | null>(null);
+    const [result, setResult] = useState<ExecutionResult | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [editedCode, setEditedCode] = useState(code);
+    const [language, setLanguage] = useState<Language>(initialLanguage);
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     // 3. 코드가 변경될 때마다 높이 자동 조절
@@ -30,13 +44,50 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, language, code, onDelete, onC
 
     const handleCopy = () => {
         navigator.clipboard.writeText(code);
+        navigator.clipboard.writeText(editedCode);
         alert('코드가 클립보드에 복사되었습니다.');
     };
 
     // 2. 실행 버튼 클릭 시 호출
+<<<<<<< HEAD
     const handleRun = () => {
         // 실제 실행 대신 목업 데이터를 세팅 (추후 API 연결 가능)
         setOutput("120");
+=======
+    const handleRun = async () => {
+        setLoading(true);
+        try {
+            const executionResult = await window.dockerAPI.executeSingle({
+                blockId: id.toString(),
+                language,
+                version: getDefaultVersion(language),
+                code: editedCode,
+            });
+            setResult(executionResult);
+
+            // 백엔드에 히스토리 저장 (비동기, 에러 무시)
+            if (noteId) {
+                saveExecutionToBackend(noteId, id.toString(), executionResult).catch(console.error);
+            }
+        } catch (error: any) {
+            const errorResult: ExecutionResult = {
+                blockId: id.toString(),
+                output: '',
+                error: error.message || '알 수 없는 오류가 발생했습니다.',
+                executionTime: 0,
+                exitCode: -1,
+                status: 'error',
+            };
+            setResult(errorResult);
+
+            // 에러도 히스토리에 저장
+            if (noteId) {
+                saveExecutionToBackend(noteId, id.toString(), errorResult).catch(console.error);
+            }
+        } finally {
+            setLoading(false);
+        }
+>>>>>>> develop
     };
 
     return (
