@@ -1,77 +1,77 @@
 /* src/components/common/codeBlock/CodeBlock.css */
 
-.code-block-wrapper {
-    /* 기존 100%에서 줄여서 오른쪽 여백 확보 */
-    width: 70%; 
-    /* 중앙 정렬 및 하단 간격 */
-    margin: 0 auto 24px 40px; 
-    
-    background-color: var(--bg-secondary, rgba(255, 255, 255, 0.03));
-    border-radius: 12px;
-    border: 1px solid rgba(128, 128, 128, 0.1);
-    overflow: hidden;
-    box-sizing: border-box;
-    /* 그림자를 살짝 추가하면 툴바와 분리된 느낌이 더 명확해집니다 */
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
 .code-block-header {
     display: flex;
-    justify-content: space-between;
-    padding: 10px 16px;
-    background-color: rgba(0, 0, 0, 0.05);
+    justify-content: space-between; /* 언어 뱃지와 버튼 영역을 양 끝으로 */
+    align-items: center; /* 세로 중앙 정렬 */
+    padding: 8px 16px; /* 높이를 조금 줄여서 슬림하게 */
+    background-color: var(--bg-secondary, #F8F7F2);
+    border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.05));
 }
-/* ✅ 뱃지 사이즈 축소 및 디자인 개선 */
-.code-lang-badge {
-    background-color: var(--color-point);
-    color: #fff;
-    padding: 2px 8px; /* 상하를 줄여서 정사각형 현상 해결 */
-    border-radius: 4px;
-    font-size: 11px; /* 글자 크기도 조금 더 작게 */
-    font-weight: 700;
-    line-height: 1; /* 글자 높이만큼만 차지하도록 강제 */
-    display: inline-block;
+
+.code-actions {
+    display: flex; /* 가로 정렬의 핵심 */
+    flex-direction: row; /* 명시적으로 가로 방향 설정 */
+    align-items: center;
+    gap: 12px; /* 버튼 사이의 간격 */
+    flex-shrink: 0; /* 헤더 공간이 좁아져도 버튼 영역이 줄어들지 않게 */
+}
+
+/* 개별 버튼 공통 스타일 보정 (세로로 쌓이는 것 방지) */
+.code-actions > * {
+    display: inline-flex;
+    white-space: nowrap; /* 텍스트가 줄바꿈되어 버튼이 두꺼워지는 것 방지 */
+}
+
+/* --- 나머지 스타일 유지 및 미세 조정 --- */
+
+.code-block-wrapper {
+    width: 90%;
+    max-width: 800px;
+    margin: 20px auto;
+    background-color: var(--bg-primary, #ffffff);
+    border-radius: 12px;
+    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    
+    /* 중요: 내부 요소(Header, Content, Output)들이 위에서 아래로 쌓이게 설정 */
+    display: flex;
+    flex-direction: column; 
+}
+
+.code-content-container {
+    padding: 24px;
+    background-color: transparent;
 }
 
 .code-content-view {
-    padding: 20px;
     margin: 0;
     font-family: 'Fira Code', monospace;
     font-size: 14px;
     color: var(--font-color);
     line-height: 1.6;
-    overflow-x: auto; /* 내부 코드 길이에 따른 스크롤 유지 */
 }
 
-/* 스크롤바가 너무 두꺼우면 답답하므로 얇게 커스텀 */
-.code-content-view::-webkit-scrollbar {
-    height: 4px;
+/* --- Output 영역 구획 복구 --- */
+.code-output-zone {
+    background-color: var(--bg-secondary, #fafafa);
+    padding: 16px 24px 24px 24px;
+    position: relative; /* 구분선을 위한 기준점 */
+    border-top: 1px solid var(--border-color, rgba(0, 0, 0, 0.05)); /* 명확한 구획 선 */
 }
 
-.code-content-view::-webkit-scrollbar-thumb {
-    background: rgba(128, 128, 128, 0.2);
-    border-radius: 10px;
+.output-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--font-secondary, #A0A0A0);
+    margin: 0 0 10px 0;
+    text-transform: uppercase; /* OUTPUT 대문자 강조 */
+    letter-spacing: 1px;
 }
 
-.code-actions {
-    display: flex;
-    gap: 12px; /* 버튼 사이 간격 좁힘 */
-    align-items: center;
-    flex-wrap: nowrap; /* 절대 줄바꿈 되지 않도록 설정 */
-}
-
-.code-action-btn {
-    background: none;
-    border: none;
+.output-content {
+    font-family: 'Fira Code', monospace;
+    font-size: 14px;
     color: var(--font-color);
-    cursor: pointer;
-    margin-left: 10px;
-    font-size: 12px;
-    opacity: 0.6;
-    transition: opacity 0.2s ease;
-}
-
-.code-action-btn:hover {
-    opacity: 1;
-    color: var(--color-point);
 }

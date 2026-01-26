@@ -1,29 +1,55 @@
-// src/pages/Note.tsx
 import React, { useState } from 'react';
 import NoteButton from "../../components/common/noteButton/NoteButton";
 import NoteMain from "../../components/layout/noteMain/NoteMain";
 import { NoteToolBar } from "../../components/layout/noteToolbar/NoteToolbar";
 import './Note.css';
 
+// 블록 데이터 타입 정의
+export interface BlockData {
+    id: number;
+    code: string;
+}
+
 const Note: React.FC = () => {
     const [isEditing, setIsEditing] = useState(false);
+    
+    // 1. 블록 배열 상태 관리
+    const [blocks, setBlocks] = useState<BlockData[]>([
+        { id: Date.now(), code: 'function factorial(n) {\n  if (n <= 1) return 1;\n  return n * factorial(n - 1);\n}' }
+    ]);
+
+    // 2. 블록 추가 함수
+    const addBlock = () => {
+        const newBlock: BlockData = {
+            id: Date.now(),
+            code: '// 새로운 코드를 작성하세요.'
+        };
+        setBlocks([...blocks, newBlock]);
+    };
+
+    // 2. 블록 삭제[] 함수
+    const deleteBlock = (id: number) => {
+        if (window.confirm("이 블록을 삭제하시겠습니까?")) {
+            // 해당 ID가 아닌 블록들만 남김
+            setBlocks(prev => prev.filter(block => block.id !== id));
+        }
+    };
 
     return (
         <div className="page-content-container">
             {!isEditing ? (
                 <>
                     <h2>노트 편집 페이지</h2>
-                    <p>실시간 협업 에디터 영역입니다.</p>
                     <div className="create-note-section">
                         <NoteButton onClick={() => setIsEditing(true)} />
                         <span className="create-note-label">새 노트 작성하기</span>
                     </div>
                 </>
             ) : (
-                /* ✅ 편집 모드일 때만 Main과 Toolbar를 나란히 배치 */
                 <div className="editing-layout-wrapper">
-                    <NoteMain />
-                    <NoteToolBar isOpen={true} /> 
+                    {/* 3. props 전달 */}
+                    <NoteMain blocks={blocks} onDeleteBlock={deleteBlock} />
+                    <NoteToolBar isOpen={true} onAddBlock={addBlock} /> 
                 </div>
             )}
         </div>
