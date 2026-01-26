@@ -1,18 +1,103 @@
-.sidebar {
-  position: fixed;
-  top: 60px; /* Header 높이 */
-  left: 0;
-  width: 240px;
-  height: calc(100vh - 60px);
+/* =========================
+   Sidebar Layout Constants
+========================= */
+:root {
+  --sidebar-width: 240px;
+  --sidebar-toggle-width: 28px;
+  --header-height: 60px;
+  --side-menu-width: 70px;
+}
 
-  background-color: var(--color-sub);
-  color: var(--font-color);
+/* =========================
+   Sidebar Wrapper
+   (SideMenuBar 오른쪽에만 존재)
+========================= */
+.sidebar-wrapper {
+  position: fixed;
+  top: var(--header-height);
+  left: var(--side-menu-width);
+
+  width: calc(var(--sidebar-width) + var(--sidebar-toggle-width));
+  height: calc(100vh - var(--header-height));
+
+  /* SideMenuBar를 덮지 않도록 */
+  pointer-events: none;
+
+  z-index: 900;
+}
+
+/* =========================
+   Sidebar Panel
+========================= */
+.sidebar-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+
+  width: var(--sidebar-width);
+  height: 100%;
+
+  background-color: var(--color-main);
+  border-right: 1px solid var(--color-sub);
 
   transform: translateX(-100%);
   transition: transform 0.25s ease;
-  z-index: 200; /* header보다 낮게 */
+
+  pointer-events: auto;
 }
 
-.sidebar.open {
+.sidebar-panel.open {
   transform: translateX(0);
+}
+
+/* =========================
+   Sidebar Inner (scroll 영역)
+========================= */
+.sidebar-inner {
+  height: 100%;
+  padding: 16px;
+  box-sizing: border-box;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* =========================
+   Toggle Button
+========================= */
+.sidebar-toggle-btn {
+  position: absolute;
+  top: 50%;
+  left: var(--sidebar-width);
+  transform: translateY(-50%);
+
+  width: var(--sidebar-toggle-width);
+  height: 48px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background-color: var(--color-sub);
+  border: 1px solid var(--color-sub);
+  border-left: none;
+
+  border-radius: 0 10px 10px 0;
+  color: var(--font-color);
+
+  cursor: pointer;
+  pointer-events: auto;
+
+  z-index: 1000;
+}
+
+/* 닫힌 상태에서도 버튼은 wrapper 시작점에 고정 */
+.sidebar-toggle-btn:not(.open) {
+  left: 0;
+}
+
+/* Hover 효과 */
+.sidebar-toggle-btn:hover {
+  background-color: var(--color-point);
+  color: #fff;
 }

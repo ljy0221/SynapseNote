@@ -39,3 +39,6 @@ out/
 
 ### application.properties ###
 **/application-prod.properties
+
+/CLAUDE.md
+.claude/
