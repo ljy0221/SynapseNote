@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import './NoteDirectory.css';
 import type { NoteTreeNode } from '../../features/noteDirectory/buildNoteTree';
+import AddRecommendButton from '../../common/addRecommendButton/AddRecommendButton';
 
 interface NoteDirectoryProps {
   node: NoteTreeNode;
@@ -16,7 +17,6 @@ export const NoteDirectory: React.FC<NoteDirectoryProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(true);
 
-  // root는 토글 UI 안 보여줌
   const isRoot = node.name === 'root';
 
   return (
@@ -47,16 +47,31 @@ export const NoteDirectory: React.FC<NoteDirectoryProps> = ({
             />
           ))}
 
-          {node.notes.map(note => (
-            <div
-              key={note.noteId}
-              className="note-row"
-              style={{ paddingLeft: (depth + 1) * 14 }}
-              onClick={() => onSelectNote(note.noteId)}
-            >
-              {note.title}
-            </div>
-          ))}
+          {node.notes.map(note => {
+            const isFavorite = note.noteId === 'n1'; // 🔥 mock 상태
+
+            return (
+              <div
+                key={note.noteId}
+                className="note-row"
+                style={{ paddingLeft: (depth + 1) * 14 }}
+              >
+                {/* 제목 영역 */}
+                <div
+                  className="note-title"
+                  onClick={() => onSelectNote(note.noteId)}
+                >
+                  {note.title}
+                </div>
+
+                {/* 즐겨찾기 버튼 (우측 고정) */}
+                <AddRecommendButton
+                  noteId={note.noteId}
+                  isFavorite={isFavorite}
+                />
+              </div>
+            );
+          })}
         </>
       )}
     </div>
