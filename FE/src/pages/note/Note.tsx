@@ -27,6 +27,14 @@ const Note: React.FC = () => {
         setBlocks([...blocks, newBlock]);
     };
 
+    // 2. 블록 삭제[] 함수
+    const deleteBlock = (id: number) => {
+        if (window.confirm("이 블록을 삭제하시겠습니까?")) {
+            // 해당 ID가 아닌 블록들만 남김
+            setBlocks(prev => prev.filter(block => block.id !== id));
+        }
+    };
+
     return (
         <div className="page-content-container">
             {!isEditing ? (
@@ -40,7 +48,7 @@ const Note: React.FC = () => {
             ) : (
                 <div className="editing-layout-wrapper">
                     {/* 3. props 전달 */}
-                    <NoteMain blocks={blocks} />
+                    <NoteMain blocks={blocks} onDeleteBlock={deleteBlock} />
                     <NoteToolBar isOpen={true} onAddBlock={addBlock} /> 
                 </div>
             )}

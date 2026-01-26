@@ -5,9 +5,10 @@ import './NoteMain.css';
 
 interface NoteMainProps {
     blocks: BlockData[];
+    onDeleteBlock: (id: number) => void; // 이 라인을 추가하세요!
 }
 
-const NoteMain: React.FC<NoteMainProps> = ({ blocks }) => {
+const NoteMain: React.FC<NoteMainProps> = ({ blocks, onDeleteBlock }) => {
     return (
         <div className="note-main-layout">
             <header className="note-main-header">
@@ -19,8 +20,10 @@ const NoteMain: React.FC<NoteMainProps> = ({ blocks }) => {
                 {blocks.map((block) => (
                     <CodeBlock 
                         key={block.id} 
+                        id={block.id} // CodeBlock에도 id를 넘겨줘야 합니다.
                         language="javascript" 
                         code={block.code} 
+                        onDelete={onDeleteBlock} // 삭제 함수도 전달
                     />
                 ))}
             </div>

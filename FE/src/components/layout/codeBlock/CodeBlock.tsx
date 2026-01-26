@@ -2,14 +2,17 @@ import React, { useState } from 'react';
 import VersionButton from '../../common/versionButton/VersionButton.tsx';
 import BlockRunButton from '../../common/blockRunButton/BlockRunButton.tsx';
 import BlockCopyButton from '../../common/blockCopyButton/BlockCopyButton.tsx';
+import BlockDeleteButton from '../../common/blockDeleteButton/BlockDeleteButton';
 import './CodeBlock.css';
 
 interface CodeBlockProps {
+    id: number; // 삭제를 위해 id가 필요합니다.
     language: string;
     code: string;
+    onDelete: (id: number) => void; // 삭제 함수 추가
 }
 
-const CodeBlock: React.FC<CodeBlockProps> = ({ language, code }) => {
+const CodeBlock: React.FC<CodeBlockProps> = ({ id, language, code, onDelete }) => {
     // 1. 실행 결과 상태 관리
     const [output, setOutput] = useState<string | null>(null);
 
@@ -32,6 +35,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ language, code }) => {
                     <BlockRunButton onClick={handleRun} />
                     <BlockCopyButton onCopy={handleCopy} />
                     <VersionButton onClick={() => console.log("버전 관리 실행")} />
+                    <BlockDeleteButton onDelete={() => onDelete(id)} />
                 </div>
             </div>
 
