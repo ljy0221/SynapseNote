@@ -1,0 +1,53 @@
+/* src/components/common/mindmapButton/MindmapCommonButton.css */
+
+.mindmap-common-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px; /* SideMenuButton과 크기 통일 */
+    height: 46px;
+    border-radius: 14px;
+
+    /* 1. 기본 상태: 서브 컬러를 경계선으로 사용 */
+    border: 1px solid var(--color-sub);
+    background-color: transparent;
+    color: var(--font-color);
+
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0.6;
+    cursor: pointer;
+    box-sizing: border-box;
+    padding: 0;
+}
+
+/* 2. 호버 시: 포인트 컬러(Amber) 외곽선이 부드럽게 나타남 */
+.mindmap-common-button:hover {
+    background-color: var(--color-sub);
+    border-color: var(--color-point);
+    opacity: 1;
+    transform: translateY(-2px);
+    filter: brightness(1.1);
+}
+
+/* 3. 활성화 상태: SideMenuButton의 active 스타일 계승 */
+.mindmap-common-button.active {
+    background-color: rgba(245, 158, 11, 0.08); /* Amber 8% 농도 */
+    border-color: var(--color-point);
+    color: var(--color-point);
+    opacity: 1;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.2);
+}
+
+/* 4. 위험 액션 (삭제 버튼 등) */
+.mindmap-common-button.danger:hover {
+    border-color: #ef4444;
+    color: #ef4444;
+    background-color: rgba(239, 68, 68, 0.05);
+}
+
+.btn-icon-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem; /* 아이콘 크기 적정화 */
+}

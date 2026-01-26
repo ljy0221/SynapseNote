@@ -23,6 +23,8 @@ import MindMap from './pages/mindmap/MindMap';
 import Recommend from './pages/recommend/Recommend';
 // 사이드바가 허용되는 경로
 const SIDEBAR_ROUTES = ['/mindmap', '/note'];
+// 툴바가 허용되는 경로 (우측 여백)
+const TOOLBAR_ROUTES = ['/note'];
 
 function AppContent() {
     const [isSidebarActive, setIsSidebarActive] = useState(false); // 가변 사이드바 상태
@@ -41,19 +43,24 @@ function AppContent() {
 
 
 
-    
+
     /** Sidebar */
     const isSidebarAllowed = SIDEBAR_ROUTES.some(path =>
         location.pathname.startsWith(path)
     );
+
     useEffect(() => {
         if (isSidebarAllowed) {
-        setIsSidebarActive(true);
+            setIsSidebarActive(true);
         } else {
-        setIsSidebarActive(false);
+            setIsSidebarActive(false);
         }
     }, [isSidebarAllowed]);
 
+    /** Toolbar */
+    const isToolbarAllowed = TOOLBAR_ROUTES.some(path =>
+        location.pathname.startsWith(path)
+    );
 
     return (
         <div className="app-container">
@@ -82,15 +89,15 @@ function AppContent() {
 
                     {/* 헤더 버튼으로 열고 닫는 가변 사이드바 (디렉토리 등) */}
                     {isSidebarAllowed && (
-                    <Sidebar 
-                        isOpen={isSidebarActive}
-                        onToggle={toggleSidebar}
-                    >
-                        <div className="sidebar-content">
-                        {/* 추후 이곳에 디렉토리 구조 등이 들어감 */}
-                        <p>Directory Structure</p>
-                        </div>
-                    </Sidebar>
+                        <Sidebar
+                            isOpen={isSidebarActive}
+                            onToggle={toggleSidebar}
+                        >
+                            <div className="sidebar-content">
+                                {/* 추후 이곳에 디렉토리 구조 등이 들어감 */}
+                                <p>Directory Structure</p>
+                            </div>
+                        </Sidebar>
                     )}
                 </>
             )}
@@ -101,7 +108,7 @@ function AppContent() {
                 className={[
                     !isLoginPage ? 'main-content' : '',
                     !isLoginPage && isSidebarAllowed && isSidebarActive ? 'sidebar-open' : '',
-                    !isLoginPage && isToolbarActive ? 'toolbar-open' : '',
+                    !isLoginPage && isToolbarActive && isToolbarAllowed ? 'toolbar-open' : '',
                 ].join(' ')}
             >
 
