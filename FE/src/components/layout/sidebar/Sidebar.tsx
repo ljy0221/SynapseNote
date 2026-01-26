@@ -7,7 +7,7 @@ import { buildNoteTree } from '../../features/noteDirectory/buildNoteTree';
 import { NoteDirectory } from './NoteDirectory';
 
 /** 🔥 테스트용 mock 데이터 (나중에 제거) */
-const mockNotes: NoteListItem[] = [
+export const mockNotes: NoteListItem[] = [
   {
     noteId: 'n1',
     title: '이진 탐색',
@@ -53,7 +53,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   /** 🔥 mock 기반 디렉토리 트리 */
   const noteTree = buildNoteTree(mockNotes);
-  
+
   return (
     <div className="sidebar-wrapper">
       {/* 실제 사이드바 패널 */}

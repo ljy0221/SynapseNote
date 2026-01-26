@@ -9,17 +9,15 @@ interface NoteItem {
     summary: string;
 }
 
-// [Mock Data] 현재 백엔드가 없으므로 더미 데이터 사용
-const MOCK_NOTES: NoteItem[] = [
-    { id: 'n1', title: '인공신경망 기초', path: '/AI/DeepLearning/Basics', summary: '퍼셉트론과 활성화 함수에 대한 기본 개념 정리' },
-    { id: 'n2', title: 'React Hooks 심화', path: '/Frontend/React/Hooks', summary: 'useMemo와 useCallback의 정확한 사용 시점' },
-    { id: 'n3', title: '프로젝트 기획서', path: '/Projects/S14/Planning', summary: '시냅스 프로젝트의 핵심 기능 명세 및 일정' },
-    { id: 'n4', title: '알고리즘: DFS/BFS', path: '/CS/Algorithm/Graph', summary: '그래프 탐색 기법의 차이점과 구현 예제' },
-    { id: 'n5', title: 'TypeScript 제네릭', path: '/Frontend/TypeScript', summary: '유연한 컴포넌트 설계를 위한 제네릭 활용법' },
-    { id: 'n6', title: '디자인 시스템 구축', path: '/Design/System', summary: '일관된 UI/UX를 위한 토큰 및 컴포넌트 가이드' },
-    { id: 'n7', title: 'Docker 컨테이너', path: '/DevOps/Docker', summary: '개발 환경 격리 및 배포 자동화 기초' },
-    { id: 'n8', title: 'Spring Boot Security', path: '/Backend/Spring', summary: 'JWT 인증 방식과 필터 체인 이해하기' },
-];
+import { mockNotes } from '../../layout/sidebar/Sidebar'; // Sidebar에서 목업 데이터 임포트
+
+// [Mock Data] Sidebar의 목업 데이터를 NoteItem 형식으로 변환
+const MOCK_NOTES: NoteItem[] = mockNotes.map(note => ({
+    id: note.noteId,
+    title: note.title,
+    path: note.directoryPath,
+    summary: '설명 없음' // 목업 데이터에 설명이 없으므로 기본값 설정
+}));
 
 interface NodeSelectorModalProps {
     isOpen: boolean;
