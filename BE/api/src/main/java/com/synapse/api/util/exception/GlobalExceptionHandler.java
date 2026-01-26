@@ -1,4 +1,4 @@
-package com.synapse.api.module.common.exception;
+package com.synapse.api.util.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -27,10 +27,10 @@ public class GlobalExceptionHandler {
         log.error("BaseException: code={}, message={}, path={}",
                 e.getErrorCode().name(), e.getMessage(), request.getRequestURI(), e);
 
-        ErrorResponse response = ErrorResponse.of(e, request.getRequestURI());
+        ErrorResponse response = ErrorResponse.of(e.getErrorCode(), request.getRequestURI());
 
         return ResponseEntity
-                .status(e.getErrorCode().getStatus())
+                .status(e.getErrorCode().getHttpStatus())
                 .body(response);
     }
 
@@ -48,7 +48,7 @@ public class GlobalExceptionHandler {
         log.warn("Validation failed: {}", details);
 
         ErrorResponse response = ErrorResponse.of(
-                ErrorCode.VALIDATION_INVALID_INPUT,
+                ErrorCode.INVALID_INPUT_VALUE,
                 request.getRequestURI(),
                 details
         );

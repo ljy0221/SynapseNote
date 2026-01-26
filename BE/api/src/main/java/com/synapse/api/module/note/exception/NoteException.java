@@ -1,7 +1,8 @@
 package com.synapse.api.module.note.exception;
 
-import com.synapse.api.module.common.exception.BaseException;
-import com.synapse.api.module.common.exception.ErrorCode;
+
+import com.synapse.api.util.exception.BaseException;
+import com.synapse.api.util.exception.ErrorCode;
 
 public class NoteException extends BaseException {
     public NoteException(ErrorCode errorCode) {

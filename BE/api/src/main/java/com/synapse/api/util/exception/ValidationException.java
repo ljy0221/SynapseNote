@@ -1,4 +1,5 @@
-package com.synapse.api.module.common.exception;
+package com.synapse.api.util.exception;
+
 
 public class ValidationException extends BaseException {
     public ValidationException(ErrorCode errorCode) {
