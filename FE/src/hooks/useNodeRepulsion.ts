@@ -84,6 +84,9 @@ export const useNodeRepulsion = ({ nodes, setNodes, active = true }: UseNodeRepu
             .velocityDecay(0.6);
 
         simulationRef.current.on('tick', () => {
+            // [Modified] 드래그 중일 때는 물리 엔진 업데이트를 아예 중단하여 다른 노드가 움직이는 것을 방지
+            if (dragNodeRef.current) return;
+
             const simNodes: SimNode[] = simulationRef.current.nodes();
             let hasChange = false;
 
@@ -125,6 +128,9 @@ export const useNodeRepulsion = ({ nodes, setNodes, active = true }: UseNodeRepu
     useEffect(() => {
         if (!active || !simulationRef.current) return;
 
+        // [Modified] 드래그 중일 때는 리액트 상태 변경이 물리 엔진을 재시작하지 않도록 차단
+        if (dragNodeRef.current) return;
+
         if (isInternalUpdate.current) {
             isInternalUpdate.current = false;
             return;
@@ -148,7 +154,10 @@ export const useNodeRepulsion = ({ nodes, setNodes, active = true }: UseNodeRepu
         });
 
         simulationRef.current.nodes(newSimNodes);
-        simulationRef.current.alpha(0.3).restart();
+
+        // [Modified] 노드 위치가 변경되어도 물리 엔진을 재시작하지 않음 (정적 배치 유지)
+        // 오직 드래그(manual)나 명시적 호출에 의해서만 위치가 변하도록 함
+        // simulationRef.current.alpha(0.3).restart();
 
     }, [nodes, active]);
 
@@ -163,7 +172,8 @@ export const useNodeRepulsion = ({ nodes, setNodes, active = true }: UseNodeRepu
                 simNode.fx = node.position.x;
                 simNode.fy = node.position.y;
             }
-            simulationRef.current.alpha(0.3).restart();
+            // [Modified] 드래그 시작 시 시뮬레이션 재시작 하지 않음 (다른 노드 정지 유지)
+            // simulationRef.current.alpha(0.3).restart();
         }
     }, []);
 
@@ -229,7 +239,8 @@ export const useNodeRepulsion = ({ nodes, setNodes, active = true }: UseNodeRepu
                     node.position.y = newY;
                 }
             }
-            simulationRef.current.alpha(0.3).restart();
+            // [Modified] 드래그 중 시뮬레이션 재시작 하지 않음
+            // simulationRef.current.alpha(0.3).restart();
         }
     }, [nodes]);
 
@@ -247,7 +258,8 @@ export const useNodeRepulsion = ({ nodes, setNodes, active = true }: UseNodeRepu
                 simNode.x = node.position.x;
                 simNode.y = node.position.y;
             }
-            simulationRef.current.alpha(0.3).restart();
+            // [Modified] 드래그 종료 시에도 시뮬레이션 재시작 하지 않음 (정적 배치 유지)
+            // simulationRef.current.alpha(0.3).restart();
         }
     }, []);
 
