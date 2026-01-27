@@ -9,6 +9,7 @@ interface CodeBlockProps {
     id: number; // 삭제를 위해 id가 필요합니다.
     language: string;
     code: string;
+    noteId?: string; // 백엔드 히스토리 저장용 (선택적)
     onDelete: (id: number) => void; // 삭제 함수 추가
     onChange: (id: number, newCode: string) => void; // 텍스트 수정을 위한 prop 추가
 }
@@ -105,6 +106,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, language: initialLanguage, co
             {/* 메인 코드 영역 */}
             <div className="code-content-container">
                 <textarea
+<<<<<<< HEAD
                     ref={textareaRef}
                     className="code-editor-input"
                     value={code} // id 대신 반드시 code(또는 content)가 와야 합니다.
@@ -112,6 +114,17 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, language: initialLanguage, co
                     placeholder="// 새로운 코드를 작성하세요."
                     spellCheck="false"
                     style={{ overflow: 'hidden' }}
+=======
+                    className="code-editor-input"
+                    value={editedCode}
+                    onChange={(e) => {
+                        setEditedCode(e.target.value);
+                        onChange(id, e.target.value);
+                    }}
+                    placeholder="// 새로운 코드를 작성하세요."
+                    spellCheck="false"
+                    disabled={loading}
+>>>>>>> develop
                 />
             </div>
 
@@ -123,6 +136,19 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, language: initialLanguage, co
                     <div className="output-content">
                         {output}
                     </div>
+                    <p className="output-label">
+                        OUTPUT ({result.status.toUpperCase()}) - {result.executionTime}ms
+                    </p>
+                    <pre className="output-content">
+                        {result.status === 'success' ? result.output : result.error}
+                    </pre>
+                </div>
+            )}
+
+            {/* 로딩 상태 표시 */}
+            {loading && (
+                <div className="code-output-zone">
+                    <p className="output-label">실행 중...</p>
                 </div>
             )}
         </div>
