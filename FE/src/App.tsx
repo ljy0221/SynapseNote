@@ -18,6 +18,7 @@ import ThemeToggle from './components/common/themeToggle/ThemeToggle';
 // 페이지 컴포넌트
 import Home from './pages/home/Home'; // home 폴더 안에 Home.tsx가 있다고 가정
 import Login from './pages/login/Login';
+import OAuthCallback from './pages/login/OAuthCallback';
 import Note from './pages/note/Note';
 import MindMap from './pages/mindmap/MindMap';
 import Bookmark from './pages/bookmark/Bookmark';
@@ -144,6 +145,7 @@ function AppContent() {
 
                 <Routes>
                     <Route path="/" element={<Navigate to="/login" replace />} />
+                    <Route path="/login/oauth/callback/:provider" element={<OAuthCallback />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/home" element={<Home />} />
                     <Route path="/note" element={<Note />} />
