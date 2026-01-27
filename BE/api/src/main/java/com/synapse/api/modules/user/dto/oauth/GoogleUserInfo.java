@@ -16,11 +16,16 @@ public class GoogleUserInfo implements OAuthUserInfo {
 
     private String email;
 
+    private String name;
+
     @Override
     public String getProviderId() { return providerId; }
 
     @Override
     public String getEmail() { return email; }
+
+    @Override
+    public String getName() { return name; }
 
     @Override
     public OAuthProvider getProvider() { return OAuthProvider.GOOGLE; }

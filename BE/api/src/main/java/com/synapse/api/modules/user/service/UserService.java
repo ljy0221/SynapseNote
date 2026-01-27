@@ -70,7 +70,7 @@ public class UserService {
     private UUID saveNewUser(OAuthUserInfo oAuthUserInfo) {
         User user = userRepository.save(User.builder()
                 .email(oAuthUserInfo.getEmail())
-                .name("temp")
+                .name(oAuthUserInfo.getName())
                 .build()
         );
 
