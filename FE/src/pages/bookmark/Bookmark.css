@@ -1,0 +1,13 @@
+.bookmark-page {
+  padding: 24px 28px;
+  max-width: 900px;
+  padding-top: var(--header-height);
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+.bookmark-page h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
