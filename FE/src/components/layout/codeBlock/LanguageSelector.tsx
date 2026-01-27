@@ -11,7 +11,7 @@ interface LanguageSelectorProps {
 export const LanguageSelector: React.FC<LanguageSelectorProps> = ({ value, onChange, disabled }) => {
   return (
     <select
-      className="language-selector"
+      className="code-lang-badge"
       value={value}
       onChange={(e) => onChange(e.target.value as Language)}
       disabled={disabled}
