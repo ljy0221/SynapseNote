@@ -16,7 +16,7 @@ export const DOCKER_SECURITY_CONFIG = {
     timeout: 5000,
   },
   java: {
-    image: 'openjdk:17-alpine',
+    image: 'eclipse-temurin:17-alpine',
     cpus: '1.0',
     memory: '512m',
     memorySwap: '512m',

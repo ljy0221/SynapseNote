@@ -1,31 +1,68 @@
-import { ExecutionResult } from '../types/execution/ExecutionTypes';
+import type { ExecutionResult } from '../types/execution/ExecutionTypes';
 
-// 백엔드 API 엔드포인트 설정 (환경 변수 또는 실제 주소로 변경 필요)
-const API_BASE_URL = 'http://localhost:8080/api';
-
-/**
- * 코드 실행 결과를 백엔드에 저장합니다.
- */
-export const saveExecutionToBackend = async (
-    noteId: string,
-    blockId: string,
-    result: ExecutionResult
-): Promise<void> => {
-    try {
-        // 실제 백엔드 API 명세에 맞춰 URL과 데이터 구조를 수정해야 할 수 있습니다.
-        const response = await fetch(`${API_BASE_URL}/notes/${noteId}/blocks/${blockId}/execution`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(result),
-        });
-
-        if (!response.ok) {
-            // 저장은 실패해도 사용자에게 치명적이지 않으므로 경고만 로그
-            console.warn(`[ExecutionAPI] Failed to save history: ${response.statusText}`);
-        }
-    } catch (error) {
-        console.error('[ExecutionAPI] Error saving execution history:', error);
+export async function saveExecutionToBackend(
+  noteId: string,
+  blockId: string,
+  result: ExecutionResult
+): Promise<void> {
+  try {
+    const authToken = getAuthToken();
+    if (!authToken) {
+      console.warn('인증 토큰이 없어 실행 히스토리를 저장하지 않습니다.');
+      return;
     }
-};
+
+    await fetch(`/api/v1/notes/${noteId}/blocks/${blockId}/executions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({
+        output: result.output,
+        executionTimeMs: result.executionTime,
+        status: result.status,
+      }),
+    });
+  } catch (error) {
+    console.error('실행 히스토리 저장 실패:', error);
+    // 실패해도 사용자 경험에는 영향 없음 (백그라운드 저장)
+  }
+}
+
+export async function getExecutionHistory(
+  noteId: string,
+  blockId: string,
+  page: number = 0,
+  size: number = 10
+): Promise<any[]> {
+  try {
+    const authToken = getAuthToken();
+    if (!authToken) {
+      return [];
+    }
+
+    const response = await fetch(
+      `/api/v1/notes/${noteId}/blocks/${blockId}/executions?page=${page}&size=${size}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('히스토리 조회 실패');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('실행 히스토리 조회 실패:', error);
+    return [];
+  }
+}
+
+function getAuthToken(): string | null {
+  // localStorage에서 JWT 토큰 가져오기
+  return localStorage.getItem('authToken');
+}

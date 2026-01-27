@@ -131,6 +131,7 @@ export const useNodeRepulsion = ({ nodes, setNodes, active = true }: UseNodeRepu
         // [Modified] 드래그 중일 때는 리액트 상태 변경이 물리 엔진을 재시작하지 않도록 차단
         if (dragNodeRef.current) return;
 
+
         if (isInternalUpdate.current) {
             isInternalUpdate.current = false;
             return;
@@ -138,18 +139,22 @@ export const useNodeRepulsion = ({ nodes, setNodes, active = true }: UseNodeRepu
 
         const currentSimNodes = simulationRef.current.nodes() as SimNode[];
 
+        // 노드 개수가 변했거나 ID가 바뀐 경우에만 전체 동기화 진행 (성능 최적화)
+        // 단순 위치 변경은 드래그 상황이 아니면 물리엔진이 위치를 결정하므로 무시 가능하나,
+        // 외부 요인(예: 정렬 버튼)으로 위치가 바뀔 수도 있으므로 전체 동기화 유지하되 드래그만 예외처리
+
         const newSimNodes = nodes.map(node => {
             const existing = currentSimNodes.find(n => n.id === node.id);
             return {
-                ...existing,
+                ...existing, // 기존 물리 상태(속도 등) 보존
                 id: node.id,
                 x: node.position.x,
                 y: node.position.y,
                 width: node.width || 150,
                 height: node.height || 50,
                 // 드래그 중이거나 World Boundary인 경우 고정
-                fx: (node.id === 'world-boundary' || dragNodeRef.current === node.id) ? node.position.x : undefined,
-                fy: (node.id === 'world-boundary' || dragNodeRef.current === node.id) ? node.position.y : undefined,
+                fx: (node.id === 'world-boundary') ? node.position.x : undefined,
+                fy: (node.id === 'world-boundary') ? node.position.y : undefined,
             };
         });
 
@@ -172,8 +177,7 @@ export const useNodeRepulsion = ({ nodes, setNodes, active = true }: UseNodeRepu
                 simNode.fx = node.position.x;
                 simNode.fy = node.position.y;
             }
-            // [Modified] 드래그 시작 시 시뮬레이션 재시작 하지 않음 (다른 노드 정지 유지)
-            // simulationRef.current.alpha(0.3).restart();
+            //simulationRef.current.alpha(0.3).restart();
         }
     }, []);
 
