@@ -1,20 +1,14 @@
 package com.synapse.api.modules.note.dto;
 
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
 
-@Getter
-@NoArgsConstructor
-@AllArgsConstructor
 @Builder
-public class NotePositionUpdateRequest {
+public record NotePositionUpdateRequest(
+        @NotNull(message = "X 좌표는 필수입니다")
+        Double pointX,
 
-    @NotNull(message = "X 좌표는 필수입니다")
-    private Double pointX;
-
-    @NotNull(message = "Y 좌표는 필수입니다")
-    private Double pointY;
+        @NotNull(message = "Y 좌표는 필수입니다")
+        Double pointY
+) {
 }

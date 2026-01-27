@@ -1,5 +1,6 @@
 package com.synapse.api.modules.note.service;
 
+import com.synapse.api.modules.note.document.CodeBlock;
 import com.synapse.api.modules.note.document.NoteContent;
 import com.synapse.api.modules.note.dto.*;
 import com.synapse.api.modules.note.entity.Note;
@@ -37,11 +38,12 @@ public class NoteService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
+        // [변경] Record 접근자 사용 (getXXX() -> xxx())
         Note note = Note.builder()
-                .title(request.getTitle())
-                .directoryPath(request.getDirectoryPath())
-                .pointX(request.getPointX())
-                .pointY(request.getPointY())
+                .title(request.title())
+                .directoryPath(request.directoryPath())
+                .pointX(request.pointX())
+                .pointY(request.pointY())
                 .createdBy(user)
                 .build();
 
@@ -54,7 +56,8 @@ public class NoteService {
                 .build();
         noteMemberRepository.save(noteMember);
 
-        String content = request.getContent() != null ? request.getContent() : "";
+        // [변경] Record 접근자 사용
+        String content = request.content() != null ? request.content() : "";
         NoteContent noteContent = NoteContent.create(savedNote.getId().toString(), content);
         noteContentRepository.save(noteContent);
 
@@ -96,13 +99,15 @@ public class NoteService {
 
         validateEditPermission(noteId, userId);
 
-        note.updateTitle(request.getTitle());
-        note.updateDirectoryPath(request.getDirectoryPath());
+        // [변경] Record 접근자 사용
+        note.updateTitle(request.title());
+        note.updateDirectoryPath(request.directoryPath());
 
-        if (request.getContent() != null) {
+        // [변경] Record 접근자 사용
+        if (request.content() != null) {
             NoteContent noteContent = noteContentRepository.findByNoteId(noteId.toString())
                     .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_CONTENT_NOT_FOUND));
-            noteContent.updateContent(request.getContent());
+            noteContent.updateContent(request.content());
             noteContentRepository.save(noteContent);
         }
 
@@ -117,8 +122,9 @@ public class NoteService {
 
         validateEditPermission(noteId, userId);
 
-        note.updatePosition(request.getPointX(), request.getPointY());
-        log.info("Updated note position: {} to ({}, {})", noteId, request.getPointX(), request.getPointY());
+        // [변경] Record 접근자 사용
+        note.updatePosition(request.pointX(), request.pointY());
+        log.info("Updated note position: {} to ({}, {})", noteId, request.pointX(), request.pointY());
     }
 
     @Transactional
@@ -144,6 +150,70 @@ public class NoteService {
         List<Note> results = noteRepository.searchByUserAndQuery(userId, query);
         return results.stream()
                 .map(NoteResponse::from)
+                .toList();
+    }
+
+    @Transactional
+    public void saveExecutionHistory(UUID noteId, String blockId, UUID userId, ExecutionHistoryRequest request) {
+        // 1. 편집 권한 검증 (EDITOR or OWNER)
+        validateEditPermission(noteId, userId);
+
+        // 2. NoteContent 조회
+        NoteContent noteContent = noteContentRepository.findByNoteId(noteId.toString())
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_CONTENT_NOT_FOUND));
+
+        // 3. CodeBlock 찾기
+        CodeBlock targetBlock = noteContent.getCodeBlocks().stream()
+                .filter(block -> block.getId().equals(blockId))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException(ErrorCode.CODE_BLOCK_NOT_FOUND));
+
+        // 4. 실행 이력 추가 (CodeBlock.execute() 활용)
+        // [변경] Record 접근자 사용
+        targetBlock.execute(
+                request.output(),
+                request.executionTimeMs(),
+                request.status()
+        );
+
+        // 5. 버전 증가 및 저장
+        noteContent.updateContent(noteContent.getContent());
+        noteContentRepository.save(noteContent);
+
+        log.info("Saved execution history for block: {} in note: {}", blockId, noteId);
+    }
+
+    public List<ExecutionHistoryResponse> getExecutionHistory(UUID noteId, String blockId, UUID userId, int page, int size) {
+        // 1. 조회 권한 검증
+        validateAccess(noteId, userId);
+
+        // 2. NoteContent 조회
+        NoteContent noteContent = noteContentRepository.findByNoteId(noteId.toString())
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_CONTENT_NOT_FOUND));
+
+        // 3. CodeBlock 찾기
+        CodeBlock targetBlock = noteContent.getCodeBlocks().stream()
+                .filter(block -> block.getId().equals(blockId))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException(ErrorCode.CODE_BLOCK_NOT_FOUND));
+
+        // 4. 실행 이력 조회 (최신순, 페이징)
+        List<CodeBlock.ExecutionHistory> history = targetBlock.getOutputHistory();
+
+        // 최신순 정렬
+        List<CodeBlock.ExecutionHistory> reversedHistory = new java.util.ArrayList<>(history);
+        java.util.Collections.reverse(reversedHistory);
+
+        // 페이징 적용
+        int start = page * size;
+        int end = Math.min(start + size, reversedHistory.size());
+
+        if (start >= reversedHistory.size()) {
+            return List.of();
+        }
+
+        return reversedHistory.subList(start, end).stream()
+                .map(ExecutionHistoryResponse::from)
                 .toList();
     }
 

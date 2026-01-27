@@ -28,6 +28,12 @@ public class NoteContent {
     private String content;
 
     @Builder.Default
+    private String type = "text"; // 'text' | 'code'
+
+    @Builder.Default
+    private Boolean favorite = false;
+
+    @Builder.Default
     private List<CodeBlock> codeBlocks = new ArrayList<>();
 
     @Builder.Default
@@ -41,6 +47,8 @@ public class NoteContent {
         return NoteContent.builder()
                 .noteId(noteId)
                 .content(content)
+                .type("text")
+                .favorite(false)
                 .codeBlocks(new ArrayList<>())
                 .version(1)
                 .updatedAt(LocalDateTime.now())
@@ -80,6 +88,21 @@ public class NoteContent {
 
     public boolean isDeleted() {
         return this.deletedAt != null;
+    }
+
+    public void updateType(String type) {
+        this.type = type;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void toggleFavorite() {
+        this.favorite = !this.favorite;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void setFavorite(Boolean favorite) {
+        this.favorite = favorite;
+        this.updatedAt = LocalDateTime.now();
     }
 
     private void incrementVersion() {

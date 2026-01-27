@@ -1,30 +1,23 @@
 package com.synapse.api.modules.note.dto;
 
 import com.synapse.api.modules.note.entity.Note;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Getter
-@NoArgsConstructor
-@AllArgsConstructor
 @Builder
-public class NoteResponse {
-
-    private UUID id;
-    private String title;
-    private String directoryPath;
-    private Double pointX;
-    private Double pointY;
-    private UUID createdBy;
-    private String createdByName;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-
+public record NoteResponse(
+        UUID id,
+        String title,
+        String directoryPath,
+        Double pointX,
+        Double pointY,
+        UUID createdBy,
+        String createdByName,
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt
+) {
     public static NoteResponse from(Note note) {
         return NoteResponse.builder()
                 .id(note.getId())
