@@ -2,10 +2,103 @@ import { spawn } from 'child_process';
 import { writeFileSync, unlinkSync, mkdtempSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import type { ExecutionRequest, ExecutionResult, Language } from '../../src/types/execution/ExecutionTypes';
+import type { ExecutionRequest, ExecutionResult, Language, SessionExecutionResult, SessionInfo } from '../../src/types/execution/ExecutionTypes';
 import { DOCKER_SECURITY_CONFIG } from './SecurityConfig';
+import { SessionManager } from './SessionManager';
 
 export class DockerExecService {
+  private sessionManager: SessionManager;
+
+  constructor() {
+    this.sessionManager = new SessionManager();
+  }
+
+  /**
+   * 통합 실행 메서드 (모드 감지 후 라우팅)
+   */
+  async execute(request: ExecutionRequest): Promise<ExecutionResult | SessionExecutionResult> {
+    if (request.mode === 'session') {
+      return this.executeSession(request);
+    }
+    return this.executeSingle(request);
+  }
+
+  /**
+   * 세션 모드 실행
+   */
+  private async executeSession(request: ExecutionRequest): Promise<SessionExecutionResult> {
+    const startTime = Date.now();
+
+    try {
+      // 검증
+      if (!request.noteId) {
+        throw new Error('noteId is required for session mode');
+      }
+      if (request.language === 'java') {
+        throw new Error('Session mode not supported for Java');
+      }
+
+      // 세션 생성 또는 재사용
+      const sessionInfo = await this.sessionManager.createSession(
+        request.noteId,
+        request.language,
+        request.version
+      );
+
+      // 실행
+      const result = await this.sessionManager.executeInSession(
+        request.noteId,
+        request.language,
+        request.code,
+        request.timeout || 5000
+      );
+
+      const isSuccess = result.error === null;
+
+      return {
+        blockId: request.blockId,
+        output: result.output,
+        error: result.error,
+        executionTime: result.executionTime,
+        exitCode: isSuccess ? 0 : 1,
+        status: isSuccess ? 'success' : 'error',
+        sessionId: sessionInfo.sessionId,
+        isSessionActive: true,
+      };
+    } catch (error: any) {
+      console.error(`[Docker] Session execution failed:`, error.message);
+      return {
+        blockId: request.blockId,
+        output: '',
+        error: error.message,
+        executionTime: Date.now() - startTime,
+        exitCode: -1,
+        status: 'error',
+        isSessionActive: false,
+      };
+    }
+  }
+
+  /**
+   * 세션 상태 조회
+   */
+  getSessionStatus(noteId: string, language: Language): SessionInfo | null {
+    return this.sessionManager.getSessionInfo(noteId, language);
+  }
+
+  /**
+   * 세션 종료
+   */
+  async destroySession(noteId: string, language: Language): Promise<void> {
+    return this.sessionManager.destroySession(noteId, language);
+  }
+
+  /**
+   * 앱 종료 시 정리
+   */
+  async cleanup(): Promise<void> {
+    return this.sessionManager.cleanupAll();
+  }
   async executeSingle(request: ExecutionRequest): Promise<ExecutionResult> {
     const startTime = Date.now();
     let tempFilePath: string | null = null;

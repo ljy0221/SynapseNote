@@ -3,7 +3,7 @@ import VersionButton from '../../common/versionButton/VersionButton';
 import BlockRunButton from '../../common/blockRunButton/BlockRunButton';
 import BlockCopyButton from '../../common/blockCopyButton/BlockCopyButton';
 import BlockDeleteButton from '../../common/blockDeleteButton/BlockDeleteButton';
-import type { Language, ExecutionResult } from '../../../types/execution/ExecutionTypes';
+import type { Language, ExecutionResult, ExecutionMode, SessionInfo, SessionExecutionResult } from '../../../types/execution/ExecutionTypes';
 // import { saveExecutionToBackend } from '../../../utils/executionAPI';
 import './CodeBlock.css';
 import {saveExecutionToBackend} from "../../../utils/executionAPI.ts";
@@ -35,6 +35,10 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, language: initialLanguage, co
     const [editedCode, setEditedCode] = useState(code);
     const [language, setLanguage] = useState<Language>(initialLanguage);
 
+    // NEW: 세션 모드 상태
+    const [executionMode, setExecutionMode] = useState<ExecutionMode>('single');
+    const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
+
     // textarea 높이 조절용 Ref
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -46,6 +50,20 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, language: initialLanguage, co
         }
     }, [editedCode]);
 
+    // NEW: 컴포넌트 마운트 시 세션 상태 로드
+    useEffect(() => {
+        if (noteId && language !== 'java') {
+            window.dockerAPI.getSessionStatus(noteId, language)
+                .then(info => {
+                    if (info) {
+                        setSessionInfo(info);
+                        setExecutionMode('session');
+                    }
+                })
+                .catch(console.error);
+        }
+    }, [noteId, language]);
+
     const handleCopy = () => {
         if (typeof editedCode === "string") {
             navigator.clipboard.writeText(editedCode);
@@ -53,17 +71,25 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, language: initialLanguage, co
         alert('코드가 클립보드에 복사되었습니다.');
     };
 
-    // 3. 코드 실행 (API 연동)
+    // 3. 코드 실행 (API 연동) - 세션 모드 지원
     const handleRun = async () => {
         setLoading(true);
         try {
-            const executionResult = await window.dockerAPI.executeSingle({
+            const executionResult = await window.dockerAPI.execute({
                 blockId: id.toString(),
                 language,
                 version: getDefaultVersion(language),
                 code: editedCode,
+                mode: executionMode, // NEW: 모드 전달
+                noteId: noteId, // NEW: noteId 전달
             });
             setResult(executionResult);
+
+            // NEW: 세션 정보 업데이트
+            if (executionMode === 'session' && noteId) {
+                const info = await window.dockerAPI.getSessionStatus(noteId, language);
+                setSessionInfo(info);
+            }
 
             // 백엔드에 히스토리 저장
             if (noteId) {
@@ -88,6 +114,21 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, language: initialLanguage, co
         }
     };
 
+    // NEW: 세션 종료
+    const handleTerminateSession = async () => {
+        if (!noteId) return;
+
+        try {
+            await window.dockerAPI.destroySession(noteId, language);
+            setSessionInfo(null);
+            setExecutionMode('single');
+            alert('세션이 종료되었습니다.');
+        } catch (error: any) {
+            console.error('Failed to terminate session:', error);
+            alert('세션 종료 실패: ' + error.message);
+        }
+    };
+
     return (
         <div className="code-block-wrapper">
             <div className="code-block-header">
@@ -96,8 +137,77 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, language: initialLanguage, co
                     onChange={setLanguage}
                     disabled={loading}
                 />
+
+                {/* NEW: 모드 선택 (Java 제외) */}
+                {language !== 'java' && (
+                    <div className="mode-selector" style={{ marginLeft: '10px', display: 'flex', gap: '5px' }}>
+                        <button
+                            className={`mode-button ${executionMode === 'single' ? 'active' : ''}`}
+                            onClick={() => setExecutionMode('single')}
+                            disabled={loading}
+                            style={{
+                                padding: '4px 10px',
+                                fontSize: '12px',
+                                cursor: loading ? 'not-allowed' : 'pointer',
+                                backgroundColor: executionMode === 'single' ? '#4A90E2' : '#555',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                            }}
+                        >
+                            Single
+                        </button>
+                        <button
+                            className={`mode-button ${executionMode === 'session' ? 'active' : ''}`}
+                            onClick={() => {
+                                if (!noteId) {
+                                    alert('세션 모드를 사용하려면 노트를 먼저 저장해야 합니다.');
+                                    return;
+                                }
+                                setExecutionMode('session');
+                            }}
+                            disabled={loading}
+                            style={{
+                                padding: '4px 10px',
+                                fontSize: '12px',
+                                cursor: loading ? 'not-allowed' : 'pointer',
+                                backgroundColor: executionMode === 'session' ? '#4A90E2' : '#555',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                opacity: !noteId ? 0.5 : 1,
+                            }}
+                            title={!noteId ? '노트를 저장해야 세션 모드를 사용할 수 있습니다' : ''}
+                        >
+                            Session
+                        </button>
+                    </div>
+                )}
+
                 <div className="code-actions">
                     <BlockRunButton onClick={handleRun} disabled={loading} />
+
+                    {/* NEW: 세션 인디케이터 */}
+                    {sessionInfo && executionMode === 'session' && (
+                        <button
+                            className="session-indicator"
+                            onClick={handleTerminateSession}
+                            title="세션 종료"
+                            style={{
+                                padding: '4px 10px',
+                                fontSize: '12px',
+                                cursor: 'pointer',
+                                backgroundColor: '#28a745',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                marginRight: '5px',
+                            }}
+                        >
+                            🟢 Session: {sessionInfo.sessionId.substring(0, 8)}
+                        </button>
+                    )}
+
                     <BlockCopyButton onCopy={handleCopy} />
                     <VersionButton onClick={() => console.log("버전 관리 실행")} />
                     <BlockDeleteButton onDelete={() => onDelete(id)} />
@@ -127,6 +237,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, language: initialLanguage, co
                     <div className="output-divider"></div>
                     <p className="output-label">
                         OUTPUT ({result.status.toUpperCase()}) - {result.executionTime}ms
+                        {executionMode === 'session' && ' [SESSION]'}
                     </p>
                     <pre className="output-content">
                         {result.status === 'success' ? result.output : result.error}

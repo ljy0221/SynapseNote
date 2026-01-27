@@ -30,6 +30,7 @@ public enum ErrorCode {
     NOTE_DELETE_PERMISSION_DENIED(HttpStatus.FORBIDDEN, "NOTE_004", "노트를 삭제할 권한이 없습니다"),
     NOTE_CONTENT_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTE_005", "노트 콘텐츠를 찾을 수 없습니다"),
     NOTE_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTE_006", "노트 멤버를 찾을 수 없습니다"),
+    CODE_BLOCK_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTE_007", "코드 블록을 찾을 수 없습니다"),
 
     // Docker Execution
     DOCKER_NOT_INSTALLED(HttpStatus.SERVICE_UNAVAILABLE, "DOCKER_001", "Docker가 설치되지 않았습니다"),
