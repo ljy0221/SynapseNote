@@ -1,6 +1,6 @@
-package com.synapse.api.module.note.dto;
+package com.synapse.api.modules.note.dto;
 
-import com.synapse.api.module.note.document.CodeBlock;
+import com.synapse.api.modules.note.document.CodeBlock;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
