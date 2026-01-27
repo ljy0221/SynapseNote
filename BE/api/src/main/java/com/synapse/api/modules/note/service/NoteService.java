@@ -1,5 +1,6 @@
 package com.synapse.api.modules.note.service;
 
+import com.synapse.api.modules.note.document.CodeBlock;
 import com.synapse.api.modules.note.document.NoteContent;
 import com.synapse.api.modules.note.dto.*;
 import com.synapse.api.modules.note.entity.Note;

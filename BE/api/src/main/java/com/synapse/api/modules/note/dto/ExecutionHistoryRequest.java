@@ -1,4 +1,4 @@
-package com.synapse.api.module.note.dto;
+package com.synapse.api.modules.note.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
