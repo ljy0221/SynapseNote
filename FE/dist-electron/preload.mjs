@@ -23,3 +23,8 @@ electron.contextBridge.exposeInMainWorld("electronAPI", {
   maximize: () => electron.ipcRenderer.send("window-maximize"),
   close: () => electron.ipcRenderer.send("window-close")
 });
+electron.contextBridge.exposeInMainWorld("dockerAPI", {
+  checkInstalled: () => electron.ipcRenderer.invoke("docker:check-installed"),
+  checkRunning: () => electron.ipcRenderer.invoke("docker:check-running"),
+  executeSingle: (request) => electron.ipcRenderer.invoke("docker:execute-single", request)
+});
