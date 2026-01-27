@@ -4,11 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="840920ff-872c-4257-a9d0-0c460e79700e" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/FE/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/FE/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FE/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/FE/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FE/src/pages/mindmap/MindMap.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/FE/src/pages/mindmap/MindMap.tsx" afterDir="false" />
-    </list>
+    <list default="true" id="840920ff-872c-4257-a9d0-0c460e79700e" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -17,6 +13,22 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GitLabMergeRequestFiltersHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPENED",
+    "assignee": {
+      "type": "org.jetbrains.plugins.gitlab.mergerequest.ui.filters.GitLabMergeRequestsFiltersValue.MergeRequestsMemberFilterValue.MergeRequestsAssigneeFilterValue",
+      "username": "ysw1mst",
+      "fullname": "양수영"
+    }
+  }
+}]]></component>
+  <component name="GitLabMergeRequestsSettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "first": "https://lab.ssafy.com/s14-webmobile1-sub1/S14P11B102.git",
+    "second": "075daaae-fbc1-44d9-a24d-fc0a84383bb4"
+  }
+}]]></component>
   <component name="ProjectColorInfo">{
   &quot;customColor&quot;: &quot;&quot;,
   &quot;associatedIndex&quot;: 5
@@ -38,7 +50,7 @@
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "git-widget-placeholder": "fix/feat/#50-NodeErrorFix",
+    "git-widget-placeholder": "fix/#52-MindMapNodeErrorFix",
     "javascript.preferred.runtime.type.id": "node",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
@@ -86,6 +98,7 @@
       <workItem from="1769131782614" duration="3126000" />
       <workItem from="1769386334812" duration="1095000" />
       <workItem from="1769388435991" duration="14596000" />
+      <workItem from="1769473153392" duration="642000" />
     </task>
     <servers />
   </component>
