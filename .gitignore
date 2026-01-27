@@ -1,3 +1,7 @@
 # Intelligent Idea files
 .idea/workspace.xml
 **/.idea/workspace.xml
+.idea/gradle.xml
+.idea/dataSources.local.xml
+.idea/misc.xml
+.idea/compiler.xml
