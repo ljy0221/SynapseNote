@@ -1,5 +1,7 @@
 package com.synapse.api.util.exception;
 
+import com.synapse.api.util.response.ErrorCode;
+import com.synapse.api.util.response.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
@@ -27,11 +29,9 @@ public class GlobalExceptionHandler {
         log.error("BaseException: code={}, message={}, path={}",
                 e.getErrorCode().name(), e.getMessage(), request.getRequestURI(), e);
 
-        ErrorResponse response = ErrorResponse.of(e.getErrorCode(), request.getRequestURI());
-
         return ResponseEntity
                 .status(e.getErrorCode().getHttpStatus())
-                .body(response);
+                .body(ErrorResponse.of(e.getErrorCode()));
     }
 
     // Validation 예외 처리
@@ -47,11 +47,7 @@ public class GlobalExceptionHandler {
 
         log.warn("Validation failed: {}", details);
 
-        ErrorResponse response = ErrorResponse.of(
-                ErrorCode.INVALID_INPUT_VALUE,
-                request.getRequestURI(),
-                details
-        );
+        ErrorResponse response = ErrorResponse.of(ErrorCode.INVALID_INPUT_VALUE);
 
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
@@ -66,10 +62,7 @@ public class GlobalExceptionHandler {
 
         log.warn("Authentication failed: {}", e.getMessage());
 
-        ErrorResponse response = ErrorResponse.of(
-                ErrorCode.AUTH_UNAUTHORIZED,
-                request.getRequestURI()
-        );
+        ErrorResponse response = ErrorResponse.of(ErrorCode.AUTH_UNAUTHORIZED);
 
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
@@ -84,10 +77,7 @@ public class GlobalExceptionHandler {
 
         log.warn("Access denied: {}", e.getMessage());
 
-        ErrorResponse response = ErrorResponse.of(
-                ErrorCode.AUTH_FORBIDDEN,
-                request.getRequestURI()
-        );
+        ErrorResponse response = ErrorResponse.of(ErrorCode.AUTH_FORBIDDEN);
 
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
@@ -102,10 +92,7 @@ public class GlobalExceptionHandler {
 
         log.warn("Illegal argument: {}", e.getMessage());
 
-        ErrorResponse response = ErrorResponse.of(
-                ErrorCode.VALIDATION_INVALID_PARAMETER,
-                request.getRequestURI()
-        );
+        ErrorResponse response = ErrorResponse.of(ErrorCode.VALIDATION_INVALID_PARAMETER);
 
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
@@ -120,10 +107,7 @@ public class GlobalExceptionHandler {
 
         log.error("Database error", e);
 
-        ErrorResponse response = ErrorResponse.of(
-                ErrorCode.SYSTEM_DATABASE_ERROR,
-                request.getRequestURI()
-        );
+        ErrorResponse response = ErrorResponse.of(ErrorCode.SYSTEM_DATABASE_ERROR);
 
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -138,10 +122,7 @@ public class GlobalExceptionHandler {
 
         log.error("Unhandled exception", e);
 
-        ErrorResponse response = ErrorResponse.of(
-                ErrorCode.SYSTEM_INTERNAL_ERROR,
-                request.getRequestURI()
-        );
+        ErrorResponse response = ErrorResponse.of(ErrorCode.SYSTEM_INTERNAL_ERROR);
 
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)

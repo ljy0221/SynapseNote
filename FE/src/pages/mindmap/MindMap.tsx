@@ -17,6 +17,7 @@ import MindmapCanvas from '../../components/features/mindmap/MindmapCanvas';
 import { NodeSelectorModal } from '../../components/features/mindmap/NodeSelectorModal';
 import { MindmapToolbar } from '../../components/layout/mindmap/MindmapToolbar';
 import ConfirmModal from '../../components/common/modal/ConfirmModal';
+import { ToastNotification } from '../../components/common/toast/ToastNotification'; // [New]
 import { useNodeRepulsion } from '../../hooks/useNodeRepulsion';
 import './MindMap.css';
 
@@ -172,7 +173,27 @@ const MindMapContent: React.FC = () => {
         }));
     }, [onNodeRepulsionDrag, nodes, setEdges, getSmartHandlePosition]);
 
-    // ... (기존 state 유지: nodes, edges, modals, connect modes)
+    // [New] 토스트 알림 상태
+    const [toastMessage, setToastMessage] = useState('');
+    const [isToastVisible, setIsToastVisible] = useState(false);
+
+    // [New] 방향 전환 확인 모달 상태
+    const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
+    const [swapParams, setSwapParams] = useState<{ oldEdgeId: string; newConnection: Connection } | null>(null);
+
+    // ... (기존 state 유지)
+
+    const showToast = useCallback((message: string) => {
+        setToastMessage(message);
+        setIsToastVisible(true);
+    }, []);
+
+    const closeToast = useCallback(() => {
+        setIsToastVisible(false);
+    }, []);
+
+
+    // ... (기존 로직 유지)
 
     /**
      * 기능 1: 노드 추가 버튼 클릭 핸들러
@@ -183,17 +204,102 @@ const MindMapContent: React.FC = () => {
     }, []);
 
     /**
+     * 기능 4: 노드 간 연결 설정
+     * [Modified] 단방향 연결 제약 추가 (역방향 연결 시도 시 교체 확인)
+     */
+    const onConnect = useCallback((params: Connection | Edge) => {
+        // 1. 중복 연결 방지 (이미 같은 방향의 연결이 있으면 무시)
+        const isDuplicate = edges.some(e => e.source === params.source && e.target === params.target);
+        if (isDuplicate) return;
+
+        // [New] 자기 자신 연결 방지 (제약 조건 추가)
+        if (params.source === params.target) {
+            showToast("자기 자신에게는 연결할 수 없습니다.");
+            return;
+        }
+
+        // 2. 역방향 연결 감지 (B -> A 시도 시 A -> B가 있는지 확인)
+        const reverseEdge = edges.find(e => e.source === params.target && e.target === params.source);
+
+        if (reverseEdge) {
+            // 역방향 연결이 존재하면 모달 띄우기
+            setSwapParams({ oldEdgeId: reverseEdge.id, newConnection: params as Connection });
+            setIsSwapModalOpen(true);
+            return;
+        }
+
+        // 3. 정상 연결 (새로운 연결)
+        const newEdge = {
+            ...params,
+            animated: true,
+            style: { stroke: 'var(--color-point)', strokeWidth: 2 }
+        };
+        setEdges((eds) => addEdge(newEdge, eds));
+    }, [edges, setEdges]); // edges 의존성 추가 필요
+
+    // [New] 연결 방향 교체 실행 핸들러
+    const handleConfirmSwap = useCallback(() => {
+        if (!swapParams) return;
+
+        setEdges((eds) => {
+            // 1. 기존 역방향 엣지 삭제
+            const filtered = eds.filter(e => e.id !== swapParams.oldEdgeId);
+
+            // 2. 새로운 방향 엣지 생성 (핸들 계산 로직 필요 시 추가, 여기선 기본값 사용)
+            // 참고: onConnect의 로직을 재사용하거나 단순 추가
+            // 여기선 단순 추가 (onConnect 내부 로직과 동일하게)
+            const newEdge = {
+                ...swapParams.newConnection,
+                id: `e${swapParams.newConnection.source}-${swapParams.newConnection.target}-${Date.now()}`,
+                animated: true,
+                style: { stroke: 'var(--color-point)', strokeWidth: 2 }
+            };
+
+            return addEdge(newEdge, filtered);
+        });
+
+        // 3. 알림 표시 및 초기화
+        showToast("연결 방향이 반대로 변경되었습니다.");
+        setIsSwapModalOpen(false);
+        setSwapParams(null);
+    }, [swapParams, setEdges, showToast]);
+
+    const handleCancelSwap = useCallback(() => {
+        setIsSwapModalOpen(false);
+        setSwapParams(null);
+    }, []);
+
+
+
+    /**
      * 기능 1-1: 모달에서 노트를 선택했을 때 실제 노드 생성
      */
     const handleSelectNote = useCallback((noteData: any) => {
         setNodes((nds) => {
-            // 마지막 노드 위치를 기준으로 새 위치 계산 (없으면 중앙)
-            const lastNode = nds[nds.length - 1];
-            const centerX = window.innerWidth / 2;
-            const centerY = window.innerHeight / 2;
+            // [Modified] 실제 콘텐츠 노드만 필터링 (Boundary 제외)
+            const contentNodes = nds.filter(n => n.id !== 'world-boundary');
+            const lastNode = contentNodes[contentNodes.length - 1];
 
-            const newX = lastNode ? lastNode.position.x + 150 : centerX;
-            const newY = lastNode ? lastNode.position.y : centerY;
+            // 노드가 하나도 없으면 Boundary의 중앙 좌표 계산
+            let startX = 0;
+            let startY = 0;
+
+            const boundaryNode = nds.find(n => n.id === 'world-boundary');
+            if (boundaryNode) {
+                // width/height가 있으면 중앙값 계산: x + width/2
+                if (boundaryNode.style?.width && boundaryNode.style?.height) {
+                    const bx = boundaryNode.position.x;
+                    const by = boundaryNode.position.y;
+                    const bw = Number(boundaryNode.style.width);
+                    const bh = Number(boundaryNode.style.height);
+                    startX = bx + bw / 2;
+                    startY = by + bh / 2;
+                }
+            }
+
+            // 기존 노드가 있으면 마지막 노드 기준 우측 배치, 없으면 계산된 중앙값
+            const newX = lastNode ? lastNode.position.x + 150 : startX;
+            const newY = lastNode ? lastNode.position.y : startY;
 
             const newNode = {
                 id: noteData.id || Date.now().toString(), // 노트 ID 사용 (없으면 타임스탬프)
@@ -262,17 +368,7 @@ const MindMapContent: React.FC = () => {
      */
     // handleFitView unused removed
 
-    /**
-     * 기능 4: 노드 간 연결 설정
-     */
-    const onConnect = useCallback((params: Connection | Edge) => {
-        const newEdge = {
-            ...params,
-            animated: true,
-            style: { stroke: 'var(--color-point)', strokeWidth: 2 }
-        };
-        setEdges((eds) => addEdge(newEdge, eds));
-    }, [setEdges]);
+
 
     /**
      * 기능 5: 노드 클릭 시 화면 중앙으로 부드럽게 이동
@@ -302,7 +398,32 @@ const MindMapContent: React.FC = () => {
                 // [New] 최적의 핸들 방향 계산 로직
                 const { sourceHandle, targetHandle } = getSmartHandlePosition(connectSource, node);
 
-                // 엣지 생성
+                // [Modified] 단방향 연결 제약 추가
+                // 1. 중복 연결 방지
+                const isDuplicate = edges.some(e => e.source === connectSource.id && e.target === node.id);
+                if (isDuplicate) {
+                    setConnectSource(null);
+                    return;
+                }
+
+                // 2. 역방향 연결 감지
+                const reverseEdge = edges.find(e => e.source === node.id && e.target === connectSource.id);
+                if (reverseEdge) {
+                    // 역방향 연결이 존재하면 모달 띄우기
+                    // 주의: 여기서는 params 형태가 아니라 직접 Connection 객체 구조를 만들어야 함
+                    const newConnection: Connection = {
+                        source: connectSource.id,
+                        target: node.id,
+                        sourceHandle: sourceHandle || null,
+                        targetHandle: targetHandle || null
+                    };
+                    setSwapParams({ oldEdgeId: reverseEdge.id, newConnection });
+                    setIsSwapModalOpen(true);
+                    setConnectSource(null); // 연결 소스 초기화
+                    return;
+                }
+
+                // 3. 정상 연결 (엣지 생성)
                 const newEdge = {
                     id: `e${connectSource.id}-${node.id}-${Date.now()}`,
                     source: connectSource.id,
@@ -387,16 +508,59 @@ const MindMapContent: React.FC = () => {
      */
     const handleAutoAlign = useCallback(() => {
         const GRID_SIZE = 50; // 격자 크기
-        setNodes((nds) =>
-            nds.map((node) => ({
+
+        // 1. 노드 위치 정렬 (스냅)
+        setNodes((nds) => {
+            const alignedNodes = nds.map((node) => ({
                 ...node,
                 position: {
                     x: Math.round(node.position.x / GRID_SIZE) * GRID_SIZE,
                     y: Math.round(node.position.y / GRID_SIZE) * GRID_SIZE,
                 }
-            }))
-        );
-    }, [setNodes]);
+            }));
+
+            // 2. 엣지 핸들 최적화 (정렬된 위치 기준)
+            setEdges((eds) => eds.map(edge => {
+                const sourceNode = alignedNodes.find(n => n.id === edge.source);
+                const targetNode = alignedNodes.find(n => n.id === edge.target);
+
+                if (!sourceNode || !targetNode) return edge;
+
+                const dx = targetNode.position.x - sourceNode.position.x;
+                const dy = targetNode.position.y - sourceNode.position.y;
+
+                let sourceHandle = 'bottom-s';
+                let targetHandle = 'top-t';
+
+                // 가로 거리가 더 멀면 좌우 연결 우선
+                if (Math.abs(dx) > Math.abs(dy)) {
+                    if (dx > 0) { // 타겟이 오른쪽에 있음
+                        sourceHandle = 'right-s';
+                        targetHandle = 'left-t';
+                    } else { // 타겟이 왼쪽에 있음
+                        sourceHandle = 'left-s';
+                        targetHandle = 'right-t';
+                    }
+                } else { // 세로 거리가 더 멀면 상하 연결 우선
+                    if (dy > 0) { // 타겟이 아래에 있음
+                        sourceHandle = 'bottom-s';
+                        targetHandle = 'top-t';
+                    } else { // 타겟이 위에 있음
+                        sourceHandle = 'top-s';
+                        targetHandle = 'bottom-t';
+                    }
+                }
+
+                return {
+                    ...edge,
+                    sourceHandle,
+                    targetHandle
+                };
+            }));
+
+            return alignedNodes;
+        });
+    }, [setNodes, setEdges]);
 
     /**
      * 기능 6: 엣지 재연결 (Reconnect)
@@ -472,6 +636,21 @@ const MindMapContent: React.FC = () => {
                     message={deleteMessage}
                     onConfirm={executeDelete}
                     onCancel={cancelDelete}
+                />
+
+                {/* [New] 방향 전환 확인 모달 */}
+                <ConfirmModal
+                    isOpen={isSwapModalOpen}
+                    message={`이미 연결된 관계입니다.\n방향을 반대로 변경하시겠습니까?`}
+                    onConfirm={handleConfirmSwap}
+                    onCancel={handleCancelSwap}
+                />
+
+                {/* [New] 토스트 알림 */}
+                <ToastNotification
+                    message={toastMessage}
+                    isVisible={isToastVisible}
+                    onClose={closeToast}
                 />
             </main>
         </div>
