@@ -8,7 +8,7 @@ public record LoginRequest(
         @NotNull(message = "Provider must not be blank")
         OAuthProvider provider,
 
-        @NotBlank(message = "Access token must not be blank")
-        String accessToken
+        @NotBlank(message = "Authorization code must not be blank")
+        String authorizationCode
 ) {
 }

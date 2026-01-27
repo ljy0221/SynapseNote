@@ -68,7 +68,7 @@ public class UserService {
 
     private OAuthUserInfo getOAuthUserInfo(LoginRequest request) {
         OAuthService oAuthService = oAuthServiceFactory.getService(request.provider());
-        return oAuthService.getUserInfo(request.accessToken());
+        return oAuthService.getUserInfo(request.authorizationCode());
     }
 
     private UUID saveNewUser(OAuthUserInfo oAuthUserInfo) {

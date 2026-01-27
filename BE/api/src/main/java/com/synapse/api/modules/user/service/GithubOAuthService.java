@@ -1,20 +1,23 @@
 package com.synapse.api.modules.user.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.synapse.api.modules.user.dto.oauth.GithubEmail;
-import com.synapse.api.modules.user.dto.oauth.GithubUserInfo;
-import com.synapse.api.modules.user.dto.oauth.OAuthUserInfo;
+import com.synapse.api.modules.user.dto.oauth.*;
 import com.synapse.api.util.exception.BusinessException;
 import com.synapse.api.util.response.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
 
 @Service("githubOAuthService")
 @RequiredArgsConstructor
@@ -24,12 +27,25 @@ public class GithubOAuthService implements OAuthService {
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
 
+    @Value("${github.client.id}")
+    private String clientId;
+
+    @Value("${github.client.secret}")
+    private String clientSecret;
+
+    @Value("${github.redirect.uri}")
+    private String redirectUri;
+
+    private final String TOKEN_URL = "https://github.com/login/oauth/access_token";
+
     private final String USERINFO_URL = "https://api.github.com/user";
     private final String EMAILS_URL = "https://api.github.com/user/emails";
 
 
     @Override
-    public OAuthUserInfo getUserInfo(String accessToken) {
+    public OAuthUserInfo getUserInfo(String authorizationCode) {
+        String accessToken = exchangeAccessToken(authorizationCode);
+
         ResponseEntity<String> response = getResponse(accessToken);
         if (!response.getStatusCode().is2xxSuccessful()) {
             throw new BusinessException(ErrorCode.OAUTH_PROVIDER_ERROR);
@@ -106,6 +122,29 @@ public class GithubOAuthService implements OAuthService {
             log.error("GitHub email 조회 실패", e);
             throw new BusinessException(ErrorCode.OAUTH_PROVIDER_ERROR);
         }
+    }
+
+    public String exchangeAccessToken(String authorizationCode) {
+        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+        form.add("client_id", clientId);
+        form.add("client_secret", clientSecret);
+        form.add("code", authorizationCode);
+        form.add("redirect_uri", redirectUri);
+
+        String accessToken = Objects.requireNonNull(restClient.post()
+                        .uri(TOKEN_URL)
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .body(form)
+                        .retrieve()
+                        .body(GithubTokenResponse.class))
+                .accessToken();
+
+        if (accessToken == null) {
+            throw new BusinessException(ErrorCode.OAUTH_TOKEN_ISSUE);
+        }
+
+        return accessToken;
     }
 
 }
