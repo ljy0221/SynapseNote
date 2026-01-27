@@ -20,7 +20,7 @@ import Home from './pages/home/Home'; // home 폴더 안에 Home.tsx가 있다�
 import Login from './pages/login/Login';
 import Note from './pages/note/Note';
 import MindMap from './pages/mindmap/MindMap';
-import Recommend from './pages/recommend/Recommend';
+import Bookmark from './pages/bookmark/Bookmark';
 // 사이드바가 허용되는 경로
 const SIDEBAR_ROUTES = ['/mindmap', '/note'];
 // 툴바가 허용되는 경로 (우측 여백)
@@ -148,7 +148,7 @@ function AppContent() {
                     <Route path="/home" element={<Home />} />
                     <Route path="/note" element={<Note />} />
                     <Route path="/mindmap" element={<MindMap />} />
-                    <Route path="/recommend" element={<Recommend />} />
+                    <Route path="/recommend" element={<Bookmark />} />
                 </Routes>
             </main>
         </div>
