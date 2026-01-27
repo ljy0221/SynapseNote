@@ -6,10 +6,12 @@ import BlockDeleteButton from '../../common/blockDeleteButton/BlockDeleteButton'
 import type { Language, ExecutionResult } from '../../../types/execution/ExecutionTypes';
 // import { saveExecutionToBackend } from '../../../utils/executionAPI';
 import './CodeBlock.css';
+import {saveExecutionToBackend} from "../../../utils/executionAPI.ts";
+import {LanguageSelector} from "./LanguageSelector.tsx";
 
 interface CodeBlockProps {
     id: number;
-    language: string;
+    language: Language;
     code: string;
     noteId?: string; // 백엔드 히스토리 저장용
     onDelete: (id: number) => void;
@@ -31,7 +33,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, language: initialLanguage, co
     const [result, setResult] = useState<ExecutionResult | null>(null);
     const [loading, setLoading] = useState(false);
     const [editedCode, setEditedCode] = useState(code);
-    const [language, setLanguage] = useState<Language>(initialLanguage as Language);
+    const [language, setLanguage] = useState<Language>(initialLanguage);
 
     // textarea 높이 조절용 Ref
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -45,7 +47,9 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, language: initialLanguage, co
     }, [editedCode]);
 
     const handleCopy = () => {
-        navigator.clipboard.writeText(editedCode);
+        if (typeof editedCode === "string") {
+            navigator.clipboard.writeText(editedCode);
+        }
         alert('코드가 클립보드에 복사되었습니다.');
     };
 
@@ -87,7 +91,11 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, language: initialLanguage, co
     return (
         <div className="code-block-wrapper">
             <div className="code-block-header">
-                <span className="code-lang-badge">{language}</span>
+                <LanguageSelector
+                    value={language}
+                    onChange={setLanguage}
+                    disabled={loading}
+                />
                 <div className="code-actions">
                     <BlockRunButton onClick={handleRun} disabled={loading} />
                     <BlockCopyButton onCopy={handleCopy} />
