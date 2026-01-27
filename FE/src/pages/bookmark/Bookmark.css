@@ -11,3 +11,16 @@
   font-weight: 600;
   margin-bottom: 12px;
 }
+
+/* 공통 섹션 카드 */
+.bookmark-section {
+  background-color: var(--color-sub);
+  border-radius: 16px;
+
+  padding: 20px 22px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+

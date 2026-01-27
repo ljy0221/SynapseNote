@@ -61,9 +61,10 @@
 /* 제거 아이콘 (아이콘 only) */
 .block-bookmark-remove {
   position: absolute;
-  top: 4px;
-  right: 4px;
+  top: 8px;
+  right: 8px;
 
+  
   width: 32px;
   height: 32px;
 
@@ -72,22 +73,24 @@
   justify-content: center;
 
   border: none;
-  background: none;
+  background: none;          /* ✅ 배경 완전 제거 */
   padding: 0;
 
-  color: var(--font-color);
-  opacity: 0;
+  color: var(--font-color);  /* 기본은 폰트색 */
+  opacity: 0;                /* 기본 숨김 */
   z-index: 3;
 
   cursor: pointer;
-  transition: opacity 0.15s ease, color 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    color 0.15s ease;
 }
 
 .block-bookmark-card:hover .block-bookmark-remove {
-  opacity: 0.7;
+  opacity: 1;
 }
 
 .block-bookmark-remove:hover {
-  opacity: 1;
-  color: var(--color-point);
+  background-color: var(--color-point);
+  color: var(--color-main);
 }
