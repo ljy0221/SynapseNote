@@ -44,16 +44,16 @@ public class GithubOAuthService implements OAuthService {
     public OAuthUserInfo getUserInfo(String authorizationCode) {
         String accessToken = exchangeAccessToken(authorizationCode);
 
-        GithubUserInfo userInfo = fetchGithubUserInfo(accessToken);
+        GithubUserInfo userInfo = fetchUserInfo(accessToken);
 
         if (userInfo.getEmail() == null || userInfo.getEmail().isBlank()) {
-            userInfo.setEmail(fetchPrimaryVerifiedEmail(accessToken));
+            userInfo.setEmail(fetchEmail(accessToken));
         }
 
         return userInfo;
     }
 
-    private GithubUserInfo fetchGithubUserInfo(String accessToken) {
+    private GithubUserInfo fetchUserInfo(String accessToken) {
         try {
             GithubUserInfo userInfo = restClient.get()
                     .uri(USERINFO_URL)
@@ -83,7 +83,7 @@ public class GithubOAuthService implements OAuthService {
         }
     }
 
-    private String fetchPrimaryVerifiedEmail(String accessToken) {
+    private String fetchEmail(String accessToken) {
         try {
             GithubEmail[] emails = restClient.get()
                     .uri(EMAILS_URL)
