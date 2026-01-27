@@ -8,7 +8,7 @@ interface WithdrawalModalProps {
     onConfirm: () => void;
 }
 
-const CONFIRMATION_PHRASE = "나는 탈모를 언젠가 극복하여 돌아오겠습니다.";
+const CONFIRMATION_PHRASE = "탈퇴하겠습니다";
 
 export const WithdrawalModal: React.FC<WithdrawalModalProps> = ({ isOpen, onClose, onConfirm }) => {
     const [inputValue, setInputValue] = useState('');

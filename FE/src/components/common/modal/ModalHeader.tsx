@@ -23,8 +23,6 @@ export const ModalHeader: React.FC<ModalHeaderProps> = ({ onClose }) => {
                    
                    여기서는 WindowControlButton.tsx와 동일한 순서(최소-최대-닫기)로 배치하여 통일감을 줍니다.
                 */}
-                <button className="modal-control-btn minimize" title="최소화 (비활성)" />
-                <button className="modal-control-btn maximize" title="최대화 (비활성)" />
                 <button className="modal-control-btn close" onClick={onClose} title="닫기" />
             </div>
         </div>
