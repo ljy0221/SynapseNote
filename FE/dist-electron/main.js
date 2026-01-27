@@ -3,7 +3,7 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { spawn } from "child_process";
-import { writeFileSync, unlinkSync } from "fs";
+import { mkdtempSync, writeFileSync, rmSync, unlinkSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 class DockerHealthService {
@@ -49,7 +49,7 @@ const DOCKER_SECURITY_CONFIG = {
     timeout: 5e3
   },
   java: {
-    image: "openjdk:17-alpine",
+    image: "eclipse-temurin:17-alpine",
     cpus: "1.0",
     memory: "512m",
     memorySwap: "512m",
@@ -61,22 +61,36 @@ class DockerExecService {
   async executeSingle(request) {
     const startTime = Date.now();
     let tempFilePath = null;
+    let tempDir = null;
     try {
       const extension = this.getFileExtension(request.language);
-      const fileName = request.language === "java" ? "Main" : `synapse-${Date.now()}`;
-      tempFilePath = join(tmpdir(), `${fileName}.${extension}`);
-      writeFileSync(tempFilePath, request.code, "utf8");
-      const dockerArgs = this.buildDockerCommand(request, tempFilePath);
+      if (request.language === "java") {
+        tempDir = mkdtempSync(join(tmpdir(), "synapse-java-"));
+        tempFilePath = join(tempDir, "Main.java");
+        writeFileSync(tempFilePath, request.code, "utf8");
+      } else {
+        const fileName = `synapse-${Date.now()}`;
+        tempFilePath = join(tmpdir(), `${fileName}.${extension}`);
+        writeFileSync(tempFilePath, request.code, "utf8");
+      }
+      const dockerArgs = this.buildDockerCommand(request, tempFilePath, tempDir);
+      console.log(`[Docker] Executing ${request.language} code (block: ${request.blockId})`);
       const result = await this.runDocker(dockerArgs, request.timeout || 5e3);
+      if (result.exitCode !== 0) {
+        console.log(`[Docker] Execution failed (exit code: ${result.exitCode})`);
+      }
+      const isSuccess = result.exitCode === 0;
+      const combinedOutput = result.stdout + (result.stderr ? "\n" + result.stderr : "");
       return {
         blockId: request.blockId,
-        output: result.stdout,
-        error: result.stderr || null,
+        output: isSuccess ? result.stdout : combinedOutput,
+        error: isSuccess ? null : result.stderr || combinedOutput || "실행 실패",
         executionTime: Date.now() - startTime,
         exitCode: result.exitCode,
-        status: result.exitCode === 0 ? "success" : "error"
+        status: isSuccess ? "success" : "error"
       };
     } catch (error) {
+      console.error(`[Docker] Error executing ${request.language} code:`, error.message);
       return {
         blockId: request.blockId,
         output: "",
@@ -86,7 +100,12 @@ class DockerExecService {
         status: error.message.includes("timeout") ? "timeout" : "error"
       };
     } finally {
-      if (tempFilePath) {
+      if (tempDir) {
+        try {
+          rmSync(tempDir, { recursive: true, force: true });
+        } catch {
+        }
+      } else if (tempFilePath) {
         try {
           unlinkSync(tempFilePath);
         } catch {
@@ -94,13 +113,9 @@ class DockerExecService {
       }
     }
   }
-  buildDockerCommand(request, filePath) {
+  buildDockerCommand(request, filePath, tempDir = null) {
     const config = DOCKER_SECURITY_CONFIG[request.language];
-    const normalizedPath = this.normalizePath(filePath);
-    const extension = this.getFileExtension(request.language);
-    const containerFileName = request.language === "java" ? "Main" : "main";
-    const containerPath = `/code/${containerFileName}.${extension}`;
-    return [
+    const baseArgs = [
       "run",
       "--rm",
       "--cpus",
@@ -113,18 +128,42 @@ class DockerExecService {
       config.pidsLimit.toString(),
       "--network",
       "none",
-      "--read-only",
-      "--tmpfs",
-      "/tmp:size=64m",
       "--security-opt",
       "no-new-privileges",
       "--cap-drop",
-      "ALL",
-      "-v",
-      `${normalizedPath}:${containerPath}:ro`,
-      config.image,
-      ...this.getExecutionCommand(request.language, containerPath)
+      "ALL"
     ];
+    if (request.language === "java" && tempDir) {
+      const normalizedDir = this.normalizePath(tempDir);
+      return [
+        ...baseArgs,
+        "-v",
+        `${normalizedDir}:/workspace`,
+        // 디렉토리 마운트 (쓰기 가능)
+        "-w",
+        "/workspace",
+        // 작업 디렉토리 설정
+        config.image,
+        "sh",
+        "-c",
+        "javac Main.java 2>&1 && java Main 2>&1"
+      ];
+    } else {
+      const normalizedPath = this.normalizePath(filePath);
+      const extension = this.getFileExtension(request.language);
+      const containerFileName = `main.${extension}`;
+      const containerPath = `/code/${containerFileName}`;
+      return [
+        ...baseArgs,
+        "--read-only",
+        "--tmpfs",
+        "/tmp:size=64m",
+        "-v",
+        `${normalizedPath}:${containerPath}:ro`,
+        config.image,
+        ...this.getExecutionCommand(request.language, containerPath)
+      ];
+    }
   }
   getExecutionCommand(language, filePath) {
     switch (language) {
@@ -132,9 +171,6 @@ class DockerExecService {
         return ["python", filePath];
       case "javascript":
         return ["node", filePath];
-      case "java":
-        const dir = filePath.substring(0, filePath.lastIndexOf("/"));
-        return ["sh", "-c", `cd ${dir} && javac Main.java && java Main`];
       default:
         throw new Error(`Unsupported language: ${language}`);
     }
@@ -145,7 +181,8 @@ class DockerExecService {
       let stderr = "";
       let timedOut = false;
       const child = spawn("docker", args, {
-        shell: true,
+        shell: false,
+        // shell 사용 안 함
         windowsHide: true
       });
       const timeoutId = setTimeout(() => {
@@ -172,9 +209,6 @@ class DockerExecService {
     });
   }
   normalizePath(filePath) {
-    if (process.platform === "win32") {
-      return filePath.replace(/\\/g, "/").replace(/^([A-Z]):/, (_, drive) => `/${drive.toLowerCase()}`);
-    }
     return filePath;
   }
   getFileExtension(language) {

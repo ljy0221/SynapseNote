@@ -4,7 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="840920ff-872c-4257-a9d0-0c460e79700e" name="Changes" comment="" />
+    <list default="true" id="840920ff-872c-4257-a9d0-0c460e79700e" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/FE/dist-electron/main.js" beforeDir="false" afterPath="$PROJECT_DIR$/FE/dist-electron/main.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/FE/src/hooks/useNodeRepulsion.ts" beforeDir="false" afterPath="$PROJECT_DIR$/FE/src/hooks/useNodeRepulsion.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/FE/src/pages/mindmap/MindMap.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/FE/src/pages/mindmap/MindMap.tsx" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -13,22 +18,22 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitLabMergeRequestFiltersHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPENED",
-    "assignee": {
-      "type": "org.jetbrains.plugins.gitlab.mergerequest.ui.filters.GitLabMergeRequestsFiltersValue.MergeRequestsMemberFilterValue.MergeRequestsAssigneeFilterValue",
-      "username": "ysw1mst",
-      "fullname": "양수영"
+  <component name="GitLabMergeRequestFiltersHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPENED&quot;,
+    &quot;assignee&quot;: {
+      &quot;type&quot;: &quot;org.jetbrains.plugins.gitlab.mergerequest.ui.filters.GitLabMergeRequestsFiltersValue.MergeRequestsMemberFilterValue.MergeRequestsAssigneeFilterValue&quot;,
+      &quot;username&quot;: &quot;ysw1mst&quot;,
+      &quot;fullname&quot;: &quot;양수영&quot;
     }
   }
-}]]></component>
-  <component name="GitLabMergeRequestsSettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "first": "https://lab.ssafy.com/s14-webmobile1-sub1/S14P11B102.git",
-    "second": "075daaae-fbc1-44d9-a24d-fc0a84383bb4"
+}</component>
+  <component name="GitLabMergeRequestsSettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;first&quot;: &quot;https://lab.ssafy.com/s14-webmobile1-sub1/S14P11B102.git&quot;,
+    &quot;second&quot;: &quot;075daaae-fbc1-44d9-a24d-fc0a84383bb4&quot;
   }
-}]]></component>
+}</component>
   <component name="ProjectColorInfo">{
   &quot;customColor&quot;: &quot;&quot;,
   &quot;associatedIndex&quot;: 5
@@ -50,7 +55,7 @@
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "git-widget-placeholder": "fix/#52-MindMapNodeErrorFix",
+    "git-widget-placeholder": "feat/#62-addToolTips",
     "javascript.preferred.runtime.type.id": "node",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",

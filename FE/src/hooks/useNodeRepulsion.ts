@@ -1,160 +1,122 @@
-import { useEffect, useRef, useCallback } from 'react';
-import { Node } from 'reactflow';
-import { forceSimulation, forceCollide, SimulationNodeDatum } from 'd3-force';
 
-type SimNode = SimulationNodeDatum & {
-    id: string;
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-};
+import { useCallback, useRef } from 'react';
+import { Node, useReactFlow } from 'reactflow';
+
+// 노드 기본 크기 (스타일과 일치해야 함)
+const DEFAULT_WIDTH = 150;
+const DEFAULT_HEIGHT = 50;
+const BUFFER = 10; // 여유 공간 (충돌 감지 시 약간의 간격 유지)
 
 interface UseNodeRepulsionProps {
-    nodes: Node[];
-    setNodes: (nodes: Node[] | ((nds: Node[]) => Node[])) => void;
+    // nodes와 setNodes는 이제 내부에서 가져오거나 선택적으로 사용
     active?: boolean;
 }
 
-export const useNodeRepulsion = ({ nodes, setNodes, active = true }: UseNodeRepulsionProps) => {
-    const simulationRef = useRef<any>(null);
-    const isInternalUpdate = useRef(false);
+export const useNodeRepulsion = ({ active = true }: UseNodeRepulsionProps = {}) => {
+    const { getNodes, setNodes } = useReactFlow();
+    // 마지막으로 유효했던 위치를 저장 (충돌 시 되돌리기 위함)
+    const lastValidPos = useRef<{ x: number; y: number } | null>(null);
 
-    // 드래그 중인 노드를 추적하여 물리 엔진에서 고정(fx, fy) 처리
-    const dragNodeRef = useRef<string | null>(null);
+    // 드래그 시작 시 현재 위치 유효성 확인
+    const onNodeDragStart = useCallback((_: React.MouseEvent, node: Node) => {
+        if (!active) return;
+        lastValidPos.current = { x: node.position.x, y: node.position.y };
+    }, [active]);
 
-    useEffect(() => {
+    // 드래그 중 충돌 실시간 감지
+    // nodes 의존성을 제거하고 getNodes() 사용
+    const onNodeDrag = useCallback((_: React.MouseEvent, node: Node) => {
         if (!active) return;
 
-        simulationRef.current = forceSimulation<SimNode>([])
-            .force('collide', forceCollide((d: SimNode) => {
-                const w = d.width || 150;
-                const h = d.height || 50;
-                return Math.max(w, h) / 1.5;
-            }).strength(0.7).iterations(1))
-            .velocityDecay(0.6);
+        const currentNodes = getNodes();
 
-        simulationRef.current.on('tick', () => {
-            const simNodes: SimNode[] = simulationRef.current.nodes();
-            let hasChange = false;
+        // 현재 드래그 중인 노드의 예상 범위 (AABB)
+        const nodeW = node.width || DEFAULT_WIDTH;
+        const nodeH = node.height || DEFAULT_HEIGHT;
 
-            setNodes((prevNodes) => {
-                const newNodes = prevNodes.map((node) => {
-                    const simNode = simNodes.find(sn => sn.id === node.id);
-                    if (!simNode || node.id === 'world-boundary') return node;
-
-                    // *중요*: 드래그 중인 노드는 React Flow 위치를 물리 엔진이 덮어쓰지 않도록 함
-                    if (dragNodeRef.current === node.id) return node;
-
-                    const dx = Math.abs(node.position.x - simNode.x);
-                    const dy = Math.abs(node.position.y - simNode.y);
-
-                    if (dx > 0.5 || dy > 0.5) {
-                        hasChange = true;
-                        // 물리 엔진 좌표를 React Flow에 반영
-                        return {
-                            ...node,
-                            position: { x: simNode.x, y: simNode.y }
-                        };
-                    }
-                    return node;
-                });
-
-                if (hasChange) {
-                    isInternalUpdate.current = true;
-                    return newNodes;
-                }
-                return prevNodes;
-            });
-        });
-
-        return () => {
-            simulationRef.current.stop();
+        const rectA = {
+            left: node.position.x,
+            right: node.position.x + nodeW,
+            top: node.position.y,
+            bottom: node.position.y + nodeH
         };
-    }, []);
 
-    useEffect(() => {
-        if (!active || !simulationRef.current) return;
+        // 다른 모든 노드와 충돌 검사
+        const hasCollision = currentNodes.some(otherNode => {
+            if (otherNode.id === node.id || otherNode.id === 'world-boundary') return false;
 
-        // 드래그 중일 때는 리액트 상태 변경(위치 업데이트)이 물리 엔진을 재초기화하지 않도록 차단
-        // (드래그 중인 노드의 위치는 onNodeDrag에서 fx, fy로 직접 제어함)
-        if (dragNodeRef.current) return;
+            const otherW = otherNode.width || DEFAULT_WIDTH;
+            const otherH = otherNode.height || DEFAULT_HEIGHT;
 
-        if (isInternalUpdate.current) {
-            isInternalUpdate.current = false;
-            return;
-        }
-
-        const currentSimNodes = simulationRef.current.nodes() as SimNode[];
-
-        // 노드 개수가 변했거나 ID가 바뀐 경우에만 전체 동기화 진행 (성능 최적화)
-        // 단순 위치 변경은 드래그 상황이 아니면 물리엔진이 위치를 결정하므로 무시 가능하나,
-        // 외부 요인(예: 정렬 버튼)으로 위치가 바뀔 수도 있으므로 전체 동기화 유지하되 드래그만 예외처리
-
-        const newSimNodes = nodes.map(node => {
-            const existing = currentSimNodes.find(n => n.id === node.id);
-            return {
-                ...existing, // 기존 물리 상태(속도 등) 보존
-                id: node.id,
-                x: node.position.x,
-                y: node.position.y,
-                width: node.width || 150,
-                height: node.height || 50,
-                // 드래그 중이거나 World Boundary인 경우 고정
-                fx: (node.id === 'world-boundary') ? node.position.x : undefined,
-                fy: (node.id === 'world-boundary') ? node.position.y : undefined,
+            const rectB = {
+                left: otherNode.position.x - BUFFER,
+                right: otherNode.position.x + otherW + BUFFER,
+                top: otherNode.position.y - BUFFER,
+                bottom: otherNode.position.y + otherH + BUFFER
             };
+
+            // AABB 교차 검사
+            return (
+                rectA.left < rectB.right &&
+                rectA.right > rectB.left &&
+                rectA.top < rectB.bottom &&
+                rectA.bottom > rectB.top
+            );
         });
 
-        simulationRef.current.nodes(newSimNodes);
-        simulationRef.current.alpha(0.3).restart();
+        if (hasCollision) {
+            // 충돌 발생 시: 위치 업데이트를 막고 이전 유효 위치로 강제 복귀
+            if (lastValidPos.current) {
+                // 직접 위치 수정 (React Flow 내부 상태 보정)
+                // React Flow 내부 상태를 강제로 되돌리기 위해 setNodes 호출
+                // 주의: onNodeDrag에서 setNodes를 빈번하게 호출하면 성능 이슈가 있을 수 있으나,
+                // 충돌 시에만 호출하므로 시도해봄.
 
-    }, [nodes, active]);
+                // 다만, React Flow의 Drag 동작은 내부적으로 DOM을 이동시키므로
+                // 여기서 setNodes만으로는 시각적인 "벽에 막히는 느낌"을 완벽히 주기 어려울 수 있음.
+                // 완벽한 구현을 위해서는 reactflow의 onNodeDrag에서 position을 직접 수정해서 리턴하거나 
+                // nodeExtent를 동적으로 계산해야 하지만 복잡함.
 
-    // 드래그 핸들러
-    const onNodeDragStart = useCallback((_: React.MouseEvent, node: Node) => {
-        dragNodeRef.current = node.id;
+                // 차선책: 그냥 위치를 업데이트하지 않음 (React Flow State에는 반영안됨)
+                // 하지만 시각적으로는 마우스를 따라가다가 놓았을 때 튕겨져 나갈 수 있음.
 
-        // 드래그 시작 시 해당 노드를 시뮬레이션에서 고정 (fx, fy 설정)
-        if (simulationRef.current) {
-            const simNode = simulationRef.current.nodes().find((n: SimNode) => n.id === node.id);
-            if (simNode) {
-                simNode.fx = node.position.x;
-                simNode.fy = node.position.y;
+                // 여기서는, 충돌 시 position을 업데이트 하는 로직이 아니라
+                // "유효한 위치일 때만 lastValidPos를 갱신" 하는 방식으로 접근.
+
+                // 진짜 막으려면 node.position을 강제로 lastValidPos로 덮어써야 함.
+                node.position.x = lastValidPos.current.x;
+                node.position.y = lastValidPos.current.y;
             }
-            simulationRef.current.alpha(0.3).restart();
+        } else {
+            // 충돌이 없으면 현재 위치를 유효한 위치로 저장
+            lastValidPos.current = { x: node.position.x, y: node.position.y };
         }
-    }, []);
-
-    const onNodeDrag = useCallback((_: React.MouseEvent, node: Node) => {
-        // 드래그 중: 고정된 위치를 계속 업데이트하여 다른 노드를 밀어내도록 함
-        if (simulationRef.current) {
-            const simNode = simulationRef.current.nodes().find((n: SimNode) => n.id === node.id);
-            if (simNode) {
-                simNode.fx = node.position.x;
-                simNode.fy = node.position.y;
-            }
-            simulationRef.current.alpha(0.3).restart();
-        }
-    }, []);
+    }, [active, getNodes]);
 
     const onNodeDragStop = useCallback((_: React.MouseEvent, node: Node) => {
-        dragNodeRef.current = null;
+        if (!active) return;
 
-        // 드래그 종료 시 고정 해제 (원하는 위치에 안착했다면, 혹은 계속 밀어내길 원하면 fx, fy 유지할 수도 있음)
-        // 여기서는 다시 물리 법칙을 따르도록 해제 (자연스럽게 정착)
-        if (simulationRef.current) {
-            const simNode = simulationRef.current.nodes().find((n: SimNode) => n.id === node.id);
-            if (simNode) {
-                simNode.fx = null;
-                simNode.fy = null;
-                // 단, 현재 위치는 유지해야 튀지 않음
-                simNode.x = node.position.x;
-                simNode.y = node.position.y;
-            }
-            simulationRef.current.alpha(0.3).restart();
+        // 드래그 종료 시 최종 위치가 충돌 상태라면 (드래그가 너무 빨라서 뚫고 들어간 경우)
+        // 마지막 유효 위치로 강제 이동
+        if (lastValidPos.current) {
+            // 충돌 상태로 끝났을 경우를 대비해 안전하게 위치 동기화
+            setNodes((nds) => nds.map(n => {
+                if (n.id === node.id && lastValidPos.current) {
+                    return {
+                        ...n,
+                        position: {
+                            x: lastValidPos.current.x,
+                            y: lastValidPos.current.y
+                        }
+                    };
+                }
+                return n;
+            }));
         }
-    }, []);
+
+        lastValidPos.current = null;
+    }, [active, setNodes]);
 
     return { onNodeDragStart, onNodeDrag, onNodeDragStop };
 };
+
