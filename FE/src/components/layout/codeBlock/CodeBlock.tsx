@@ -1,3 +1,4 @@
+/* src/components/layout/codeBlock/CodeBlock.tsx */
 import React, { useState, useEffect, useRef } from 'react';
 import VersionButton from '../../common/versionButton/VersionButton';
 import BlockRunButton from '../../common/blockRunButton/BlockRunButton';
@@ -6,8 +7,8 @@ import BlockDeleteButton from '../../common/blockDeleteButton/BlockDeleteButton'
 import type { Language, ExecutionResult } from '../../../types/execution/ExecutionTypes';
 // import { saveExecutionToBackend } from '../../../utils/executionAPI';
 import './CodeBlock.css';
-import {saveExecutionToBackend} from "../../../utils/executionAPI.ts";
-import {LanguageSelector} from "./LanguageSelector.tsx";
+import { saveExecutionToBackend } from "../../../utils/executionAPI.ts";
+import { LanguageSelector } from "./LanguageSelector.tsx";
 
 interface CodeBlockProps {
     id: number;

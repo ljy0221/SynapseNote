@@ -69,6 +69,27 @@ const Note: React.FC = () => {
         }
     };
 
+    // 현재 포커스된 블록의 ID
+    const [focusedBlockId, setFocusedBlockId] = useState<number | null>(null);
+
+    // 블록 타입 변경 함수
+    const changeBlockType = (id: number, type: BlockType) => {
+        setBlocks(blocks.map(block => {
+            if (block.id === id) {
+                return {
+                    ...block,
+                    type: type,
+                    // 코드 블록으로 변환 시 언어 설정 초기화, 그 외엔 유지
+                    language: type === 'code' ? 'javascript' : undefined
+                };
+            }
+            return block;
+        }));
+    };
+
+    // 툴바 열림/닫힘 상태
+    const [isToolbarOpen, setIsToolbarOpen] = useState(true);
+
     return (
         <div className="page-content-container">
             {!isEditing ? (
@@ -80,7 +101,6 @@ const Note: React.FC = () => {
                             <span className="create-note-label">새 노트 작성하기</span>
                         </div>
                     </div>
-
                 </>
             ) : (
                 <div className="editing-layout-wrapper">
@@ -91,10 +111,17 @@ const Note: React.FC = () => {
                         onUpdateBlock={updateBlock}
                         onAddBlockAfter={addBlockAfter}
                         onDeleteBlock={deleteBlock}
+                        onFocusBlock={setFocusedBlockId}
                     />
                     <NoteToolBar
-                        isOpen={true}
-                        onAddBlock={addCodeBlock}
+                        isOpen={isToolbarOpen}
+                        onToggle={() => setIsToolbarOpen(!isToolbarOpen)}
+                        onAddCodeBlock={addCodeBlock}
+                        onSelectBlockType={(type) => {
+                            if (focusedBlockId) {
+                                changeBlockType(focusedBlockId, type);
+                            }
+                        }}
                     />
                 </div>
             )}

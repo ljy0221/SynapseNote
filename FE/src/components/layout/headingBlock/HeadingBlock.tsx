@@ -9,14 +9,16 @@ interface HeadingBlockProps {
     content: string;
     onUpdate: (id: number, content: string) => void;
     onAddBlockBelow: (afterId: number, type: BlockType) => void;
+    onFocus: () => void;
 }
 
-const HeadingBlock: React.FC<HeadingBlockProps> = ({ 
-    id, 
-    level, 
-    content, 
-    onUpdate, 
-    onAddBlockBelow 
+const HeadingBlock: React.FC<HeadingBlockProps> = ({
+    id,
+    level,
+    content,
+    onUpdate,
+    onAddBlockBelow,
+    onFocus
 }) => {
     const [showMenu, setShowMenu] = useState(false);
     const [text, setText] = useState(content);
@@ -38,15 +40,15 @@ const HeadingBlock: React.FC<HeadingBlockProps> = ({
     return (
         <div className={`heading-block-wrapper ${level}`}>
             <div className="block-controls">
-                <button 
-                    className="add-block-btn" 
+                <button
+                    className="add-block-btn"
                     onClick={() => setShowMenu(!showMenu)}
                     title="블록 추가"
                 >
                     +
                 </button>
                 {showMenu && (
-                    <BlockTypeMenu 
+                    <BlockTypeMenu
                         onSelect={(type) => {
                             onAddBlockBelow(id, type);
                             setShowMenu(false);
@@ -62,10 +64,11 @@ const HeadingBlock: React.FC<HeadingBlockProps> = ({
                 onChange={(e) => setText(e.target.value)}
                 onBlur={handleBlur}
                 onKeyDown={handleKeyDown}
+                onFocus={onFocus}
                 placeholder={
-                    level === 'h1' ? '제목 1' : 
-                    level === 'h2' ? '제목 2' : 
-                    '제목 3'
+                    level === 'h1' ? '제목 1' :
+                        level === 'h2' ? '제목 2' :
+                            '제목 3'
                 }
             />
         </div>
