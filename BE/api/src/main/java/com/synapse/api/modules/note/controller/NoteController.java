@@ -27,7 +27,7 @@ public class NoteController {
             @AuthenticationPrincipal CustomUserDetails details,
             @Valid @RequestBody NoteCreateRequest request) {
         UUID userId = details.id();
-        log.info("Creating note with title: {} by user: {}", request.getTitle(), userId);
+        log.info("Creating note by user: {}", userId);
         NoteResponse response = noteService.createNote(userId, request);
         return DataResponse.of(SuccessCode.CREATED, response);
     }
@@ -68,7 +68,8 @@ public class NoteController {
             @PathVariable UUID noteId,
             @Valid @RequestBody NotePositionUpdateRequest request) {
         UUID userId = details.id();
-        log.info("Updating note position: {} to ({}, {})", noteId, request.getPointX(), request.getPointY());
+        // [수정됨] Record 접근자 사용: getPointX() -> pointX(), getPointY() -> pointY()
+        log.info("Updating note position: {} to ({}, {})", noteId, request.pointX(), request.pointY());
         noteService.updatePosition(noteId, userId, request);
         return DataResponse.of(SuccessCode.NO_CONTENT, null);
     }

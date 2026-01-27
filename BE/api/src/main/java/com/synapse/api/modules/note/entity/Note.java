@@ -33,7 +33,7 @@ public class Note extends BaseEntity {
     @Column(columnDefinition = "uuid")
     private UUID id;
 
-    @Column(nullable = false, length = 200)
+    @Column(length = 200)
     private String title;
 
     @Column(name = "directory_path", length = 500)

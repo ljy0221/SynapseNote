@@ -1,21 +1,17 @@
 package com.synapse.api.modules.note.dto;
 
 import com.synapse.api.modules.note.document.CodeBlock;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
 
 import java.time.LocalDateTime;
 
-@Getter
-@AllArgsConstructor
 @Builder
-public class ExecutionHistoryResponse {
-    private String output;
-    private LocalDateTime executedAt;
-    private int executionTimeMs;
-    private String status;
-
+public record ExecutionHistoryResponse(
+        String output,
+        LocalDateTime executedAt,
+        int executionTimeMs,
+        String status
+) {
     public static ExecutionHistoryResponse from(CodeBlock.ExecutionHistory history) {
         return ExecutionHistoryResponse.builder()
                 .output(history.getOutput())
