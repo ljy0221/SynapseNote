@@ -3,6 +3,9 @@ import VersionButton from '../../common/versionButton/VersionButton.tsx';
 import BlockRunButton from '../../common/blockRunButton/BlockRunButton.tsx';
 import BlockCopyButton from '../../common/blockCopyButton/BlockCopyButton.tsx';
 import BlockDeleteButton from '../../common/blockDeleteButton/BlockDeleteButton';
+import { LanguageSelector } from './LanguageSelector';
+import type { Language, ExecutionResult } from '../../../types/execution/ExecutionTypes';
+import { saveExecutionToBackend } from '../../../utils/executionAPI';
 import './CodeBlock.css';
 
 interface CodeBlockProps {
@@ -97,6 +100,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, language: initialLanguage, co
                 <span className="code-lang-badge">{language}</span>
                 <div className="code-actions">
                     <BlockRunButton onClick={handleRun} />
+                    <BlockRunButton onClick={handleRun} disabled={loading} />
                     <BlockCopyButton onCopy={handleCopy} />
                     <VersionButton onClick={() => console.log("버전 관리 실행")} />
                     <BlockDeleteButton onDelete={() => onDelete(id)} />
