@@ -57,10 +57,6 @@ public class MindmapService {
         mindmapEdgeRepository.save(mindMapEdge);
     }
 
-    /**
-     * 특정 노드를 삭제 하면 모든 연결을 일괄 삭제하고
-     * x, y 좌표까지 null로 변경해야함
-     */
     @Transactional
     public void deleteNode(UUID userId, UUID nodeId) {
         mindmapEdgeRepository.deleteByTo_Id(nodeId);
@@ -77,6 +73,7 @@ public class MindmapService {
     @Transactional
     public void deleteMindmap(UUID userId) {
         mindmapEdgeRepository.deleteAllByUserId(userId);
+        noteRepository.resetMindmapNodePositions(userId);
     }
 
     @Transactional
@@ -84,8 +81,7 @@ public class MindmapService {
         int deleted = mindmapEdgeRepository.deleteByUserAndEdge(
                 userId,
                 request.parent(),
-                request.child()
-        );
+                request.child());
 
         if (deleted == 0) {
             throw new BusinessException(ErrorCode.MINDMAP_EDGE_NOT_DELETABLE);
@@ -99,8 +95,7 @@ public class MindmapService {
         Map<UUID, Long> fanoutMap = edges.stream()
                 .collect(Collectors.groupingBy(
                         e -> e.getFrom().getId(),
-                        Collectors.counting()
-                ));
+                        Collectors.counting()));
 
         List<MindmapNodeDto> nodeDtos = notes.stream()
                 .map(n -> new MindmapNodeDto(
@@ -109,15 +104,13 @@ public class MindmapService {
                         n.getPointX(),
                         n.getPointY(),
                         fanoutMap.getOrDefault(n.getId(), 0L).intValue(),
-                        n.getDirectoryPath()
-                ))
+                        n.getDirectoryPath()))
                 .toList();
 
         List<MindmapEdgeDto> edgeDtos = edges.stream()
                 .map(e -> new MindmapEdgeDto(
                         e.getFrom().getId(),
-                        e.getTo().getId()
-                ))
+                        e.getTo().getId()))
                 .toList();
 
         return new MindmapResponse(nodeDtos, edgeDtos);

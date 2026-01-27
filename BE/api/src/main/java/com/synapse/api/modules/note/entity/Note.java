@@ -29,10 +29,7 @@ public class Note extends BaseEntity {
 
     @Id
     @GeneratedValue(generator = "uuid-v7")
-    @GenericGenerator(
-        name = "uuid-v7",
-        type = UuidV7Generator.class
-    )
+    @GenericGenerator(name = "uuid-v7", type = UuidV7Generator.class)
     @Column(columnDefinition = "uuid")
     private UUID id;
 
@@ -55,10 +52,10 @@ public class Note extends BaseEntity {
     @JoinColumn(name = "created_by", nullable = false)
     private User createdBy;
 
-    @OneToMany(mappedBy = "from", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    @OneToMany(mappedBy = "from", cascade = CascadeType.REMOVE)
     private List<MindmapEdge> fanoutEdges = new ArrayList<>();
 
-    @OneToMany(mappedBy = "to", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    @OneToMany(mappedBy = "to", cascade = CascadeType.REMOVE)
     private List<MindmapEdge> faninEdges = new ArrayList<>();
 
     public void updateTitle(String title) {

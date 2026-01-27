@@ -11,36 +11,39 @@ import java.util.List;
 import java.util.UUID;
 
 public interface MindmapEdgeRepository extends JpaRepository<MindmapEdge, MindmapEdgeId> {
-    void deleteByFrom_Id(UUID nodeId);
+  void deleteByFrom_Id(UUID nodeId);
 
-    void deleteByTo_Id(UUID nodeId);
+  void deleteByTo_Id(UUID nodeId);
 
-    @Modifying
-    @Query("""
-        DELETE FROM MindmapEdge e
-        WHERE e.from.createdBy.id = :userId
-           OR e.to.createdBy.id = :userId
-    """)
-    int deleteAllByUserId(@Param("userId") UUID userId);
+  @Modifying
+  @Query("""
+          DELETE FROM MindmapEdge e
+          WHERE e.from.createdBy.id = :userId
+             OR e.to.createdBy.id = :userId
+      """)
+  int deleteAllByUserId(@Param("userId") UUID userId);
 
-    @Modifying
-    @Query("""
-    DELETE FROM MindmapEdge e
-    WHERE e.from.id = :parentId
-      AND e.to.id = :childId
-      AND e.from.createdBy.id = :userId
-    """)
-    int deleteByUserAndEdge(
-            @Param("userId") UUID userId,
-            @Param("parentId") UUID parentId,
-            @Param("childId") UUID childId
-    );
+  @Modifying
+  @Query("""
+      DELETE FROM MindmapEdge e
+      WHERE e.from.id = :parentId
+        AND e.to.id = :childId
+        AND e.from.createdBy.id = :userId
+      """)
+  int deleteByUserAndEdge(
+      @Param("userId") UUID userId,
+      @Param("parentId") UUID parentId,
+      @Param("childId") UUID childId);
 
+  @Query("""
+      SELECT e FROM MindmapEdge e
+      WHERE e.from.createdBy.id = :userId
+         OR e.to.createdBy.id = :userId
+      """)
+  List<MindmapEdge> findAllByUser(UUID userId);
 
-    @Query("""
-    SELECT e FROM MindmapEdge e
-    WHERE e.from.createdBy.id = :userId
-       OR e.to.createdBy.id = :userId
-    """)
-    List<MindmapEdge> findAllByUser(UUID userId);
+  @Modifying
+  @Query("UPDATE Note n SET n.pointX = NULL, n.pointY = NULL " +
+      "WHERE n.createdBy.id = :userId AND n.pointX IS NOT NULL")
+  int resetMindmapNodePositions(@Param("userId") UUID userId);
 }
