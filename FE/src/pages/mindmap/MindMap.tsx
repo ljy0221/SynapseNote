@@ -17,6 +17,7 @@ import MindmapCanvas from '../../components/features/mindmap/MindmapCanvas';
 import { NodeSelectorModal } from '../../components/features/mindmap/NodeSelectorModal';
 import { MindmapToolbar } from '../../components/layout/mindmap/MindmapToolbar';
 import ConfirmModal from '../../components/common/modal/ConfirmModal';
+import { useNodeRepulsion } from '../../hooks/useNodeRepulsion';
 import './MindMap.css';
 
 // ... (기존 임포트 유지)
@@ -82,7 +83,8 @@ const MindMapContent: React.FC = () => {
         setNodes((nds) =>
             nds.map((node) => {
                 const newCount = counts[node.id] || 0;
-                if (node.data.connectionCount !== newCount) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                if ((node.data as any).connectionCount !== newCount) {
                     return {
                         ...node,
                         data: { ...node.data, connectionCount: newCount }
@@ -110,6 +112,9 @@ const MindMapContent: React.FC = () => {
         }
     }, [isInitialFitDone, nodes, fitView]);
 
+    // 6. [New] 노드 간 충돌 방지 (물리 엔진 적용)
+    const { onNodeDragStart, onNodeDrag, onNodeDragStop } = useNodeRepulsion({ nodes, setNodes, active: true });
+
     // ... (기존 state 유지: nodes, edges, modals, connect modes)
 
     /**
@@ -133,7 +138,7 @@ const MindMapContent: React.FC = () => {
             const newX = lastNode ? lastNode.position.x + 150 : centerX;
             const newY = lastNode ? lastNode.position.y : centerY;
 
-            const newNode: Node = {
+            const newNode = {
                 id: noteData.id || Date.now().toString(), // 노트 ID 사용 (없으면 타임스탬프)
                 type: 'note',
                 data: {
@@ -151,7 +156,7 @@ const MindMapContent: React.FC = () => {
             }, 50);
 
             // 기존 노드들의 선택 해제 후 새 노드 추가
-            return nds.map(n => ({ ...n, selected: false })).concat(newNode);
+            return nds.map(n => ({ ...n, selected: false })).concat([newNode]);
         });
 
         setIsSelectorOpen(false); // 모달 닫기
@@ -198,9 +203,7 @@ const MindMapContent: React.FC = () => {
     /**
      * 기능 3: 화면 최적화 (Fit View)
      */
-    const handleFitView = useCallback(() => {
-        fitView({ duration: 800, padding: 0.2 });
-    }, [fitView]);
+    // handleFitView unused removed
 
     /**
      * 기능 4: 노드 간 연결 설정
@@ -218,7 +221,7 @@ const MindMapContent: React.FC = () => {
      * 기능 5: 노드 클릭 시 화면 중앙으로 부드럽게 이동
      * + [New] 연결 모드일 경우 소스/타겟 지정하여 연결 생성
      */
-    const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+    const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
         // A. 연결 모드일 때
         if (isConnectMode) {
             if (!connectSource) {
@@ -416,6 +419,9 @@ const MindMapContent: React.FC = () => {
                     onConnect={onConnect}
                     onEdgeUpdate={onEdgeUpdate}
                     onNodeClick={onNodeClick}
+                    onNodeDragStart={onNodeDragStart}
+                    onNodeDrag={onNodeDrag}
+                    onNodeDragStop={onNodeDragStop}
                     isEditMode={isEditMode}
                 />
 

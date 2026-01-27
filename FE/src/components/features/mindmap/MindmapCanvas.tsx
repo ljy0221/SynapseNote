@@ -29,6 +29,9 @@ interface MindmapCanvasProps {
     onConnect: OnConnect;
     onEdgeUpdate?: (oldEdge: Edge, newConnection: Connection) => void;
     onNodeClick?: (event: React.MouseEvent, node: Node) => void;
+    onNodeDragStart?: (event: React.MouseEvent, node: Node) => void;
+    onNodeDrag?: (event: React.MouseEvent, node: Node) => void;
+    onNodeDragStop?: (event: React.MouseEvent, node: Node) => void;
     isEditMode: boolean;
 }
 
@@ -70,6 +73,9 @@ const MindmapCanvas: React.FC<MindmapCanvasProps> = ({
     onConnect,
     onEdgeUpdate,
     onNodeClick,
+    onNodeDragStart,
+    onNodeDrag,
+    onNodeDragStop,
     isEditMode,
 }) => {
 
@@ -91,6 +97,9 @@ const MindmapCanvas: React.FC<MindmapCanvasProps> = ({
                 onConnect={onConnect}
                 onEdgeUpdate={onEdgeUpdate}
                 onNodeClick={onNodeClick} // 노드 클릭 핸들러 연결
+                onNodeDragStart={onNodeDragStart}
+                onNodeDrag={onNodeDrag}
+                onNodeDragStop={onNodeDragStop}
                 nodeTypes={nodeTypes}
                 nodesDraggable={isEditMode}
                 nodesConnectable={isEditMode} // 편집 모드일 때만 선 연결 가능
