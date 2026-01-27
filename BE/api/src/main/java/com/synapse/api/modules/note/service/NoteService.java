@@ -147,6 +147,69 @@ public class NoteService {
                 .toList();
     }
 
+    @Transactional
+    public void saveExecutionHistory(UUID noteId, String blockId, UUID userId, ExecutionHistoryRequest request) {
+        // 1. 편집 권한 검증 (EDITOR or OWNER)
+        validateEditPermission(noteId, userId);
+
+        // 2. NoteContent 조회
+        NoteContent noteContent = noteContentRepository.findByNoteId(noteId.toString())
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_CONTENT_NOT_FOUND));
+
+        // 3. CodeBlock 찾기
+        CodeBlock targetBlock = noteContent.getCodeBlocks().stream()
+                .filter(block -> block.getId().equals(blockId))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException(ErrorCode.CODE_BLOCK_NOT_FOUND));
+
+        // 4. 실행 이력 추가 (CodeBlock.execute() 활용)
+        targetBlock.execute(
+                request.getOutput(),
+                request.getExecutionTimeMs(),
+                request.getStatus()
+        );
+
+        // 5. 버전 증가 및 저장
+        noteContent.updateContent(noteContent.getContent());
+        noteContentRepository.save(noteContent);
+
+        log.info("Saved execution history for block: {} in note: {}", blockId, noteId);
+    }
+
+    public List<ExecutionHistoryResponse> getExecutionHistory(UUID noteId, String blockId, UUID userId, int page, int size) {
+        // 1. 조회 권한 검증
+        validateAccess(noteId, userId);
+
+        // 2. NoteContent 조회
+        NoteContent noteContent = noteContentRepository.findByNoteId(noteId.toString())
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_CONTENT_NOT_FOUND));
+
+        // 3. CodeBlock 찾기
+        CodeBlock targetBlock = noteContent.getCodeBlocks().stream()
+                .filter(block -> block.getId().equals(blockId))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException(ErrorCode.CODE_BLOCK_NOT_FOUND));
+
+        // 4. 실행 이력 조회 (최신순, 페이징)
+        List<CodeBlock.ExecutionHistory> history = targetBlock.getOutputHistory();
+
+        // 최신순 정렬
+        List<CodeBlock.ExecutionHistory> reversedHistory = new java.util.ArrayList<>(history);
+        java.util.Collections.reverse(reversedHistory);
+
+        // 페이징 적용
+        int start = page * size;
+        int end = Math.min(start + size, reversedHistory.size());
+
+        if (start >= reversedHistory.size()) {
+            return List.of();
+        }
+
+        return reversedHistory.subList(start, end).stream()
+                .map(ExecutionHistoryResponse::from)
+                .toList();
+    }
+
     private void validateAccess(UUID noteId, UUID userId) {
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
@@ -184,3 +247,4 @@ public class NoteService {
         }
     }
 }
+
