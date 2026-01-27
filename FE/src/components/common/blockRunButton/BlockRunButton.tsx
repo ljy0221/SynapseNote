@@ -4,12 +4,13 @@ import './BlockRunButton.css';
 
 interface Props {
   onClick: () => void;
+  disabled?: boolean;
 }
 
-const BlockRunButton: React.FC<Props> = ({ onClick }) => {
+const BlockRunButton: React.FC<Props> = ({ onClick, disabled }) => {
   return (
-    <button className="block-run-btn" onClick={onClick}>
-      <span className="run-icon">▶</span> Run
+    <button className="block-run-btn" onClick={onClick} disabled={disabled}>
+      <span className="run-icon">▶</span> {disabled ? 'Running...' : 'Run'}
     </button>
   );
 };

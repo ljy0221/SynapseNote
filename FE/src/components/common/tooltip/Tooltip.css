@@ -1,0 +1,112 @@
+/* src/components/common/tooltip/Tooltip.css */
+
+.tooltip-wrapper {
+    position: relative;
+    display: inline-flex;
+}
+
+.tooltip-container {
+    position: absolute;
+    z-index: 1000;
+    pointer-events: none;
+
+    /* 테마 적용 */
+    background-color: var(--color-sub);
+    color: var(--font-color);
+    border: 1px solid var(--color-point);
+
+    /* 너비 제한 및 줄바꿈 허용 (설명이 길어질 수 있음) */
+    width: max-content;
+    min-width: 300px;
+    max-width: 400px;
+    white-space: normal;
+    text-align: left;
+
+    padding: 10px 12px;
+    border-radius: 8px;
+
+    /* 그림자 효과 */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
+
+    /* 애니메이션 */
+    opacity: 0;
+    transform: scale(0.95);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    visibility: hidden;
+}
+
+.tooltip-container.visible {
+    opacity: 1;
+    transform: scale(1);
+    visibility: visible;
+}
+
+.tooltip-title {
+    display: block;
+    font-size: 0.95rem;
+    /* 기존보다 약간 크게 */
+    font-weight: 700;
+    /* 볼드체 */
+    margin-bottom: 4px;
+    color: var(--color-point);
+    /* 포인트 컬러 강조 */
+}
+
+.tooltip-desc {
+    display: block;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    opacity: 0.9;
+    word-break: keep-all;
+    /* 한글 단어 단위 줄바꿈 */
+}
+
+/* 위치별 스타일링 */
+
+/* 오른쪽 (기본) */
+.tooltip-container.right {
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%) translateX(20px) scale(0.95);
+    margin-left: 20px;
+}
+
+.tooltip-container.visible.right {
+    transform: translateY(-50%) translateX(0) scale(1);
+}
+
+/* 왼쪽 */
+.tooltip-container.left {
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%) translateX(-20px) scale(0.95);
+    margin-right: 20px;
+}
+
+.tooltip-container.visible.left {
+    transform: translateY(-50%) translateX(0) scale(1);
+}
+
+/* 위쪽 */
+.tooltip-container.top {
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-15px) scale(0.95);
+    margin-bottom: 20px;
+}
+
+.tooltip-container.visible.top {
+    transform: translateX(-50%) translateY(0) scale(1);
+}
+
+/* 아래쪽 */
+.tooltip-container.bottom {
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(15px) scale(0.95);
+    margin-top: 20px;
+}
+
+.tooltip-container.visible.bottom {
+    transform: translateX(-50%) translateY(0) scale(1);
+}

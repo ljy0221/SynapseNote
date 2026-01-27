@@ -1,0 +1,33 @@
+.favorite-btn {
+  all: unset;
+  cursor: pointer;
+
+  width: 18px;
+  height: 18px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 14px;
+  line-height: 1;
+
+  opacity: 0.3;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+/* 즐겨찾기된 상태 */
+.favorite-btn.active {
+  color: #f5c542;
+  opacity: 1;
+}
+
+/* hover 시에만 노출 */
+.note-row:hover .favorite-btn {
+  opacity: 0.9;
+}
+
+/* hover + inactive */
+.note-row:hover .favorite-btn:not(.active) {
+  color: #aaa;
+}

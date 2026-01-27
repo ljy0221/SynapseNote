@@ -1,31 +1,92 @@
+// FE/src/components/layout/noteMain/NoteMain.tsx
+
 import React from 'react';
-import CodeBlock from '../codeBlock/CodeBlock';// 경로 확인 필요
-import { BlockData } from '../../../pages/note/Note';
+import CodeBlock from '../codeBlock/CodeBlock';
+import TextBlock from '../textBlock/TextBlock';
+import HeadingBlock from '../headingBlock/HeadingBlock';
+import { BlockData, BlockType } from '../../../pages/note/Note';
 import './NoteMain.css';
 
 interface NoteMainProps {
+
+    title: string;
+    onUpdateTitle: (newTitle: string) => void;
     blocks: BlockData[];
-    onDeleteBlock: (id: number) => void; // 이 라인을 추가하세요!
+    onUpdateBlock: (id: number, content: string) => void;
+    onAddBlockAfter: (afterId: number, type: BlockType) => void;
+    onDeleteBlock: (id: number) => void;
+    onFocusBlock: (id: number) => void;
 }
 
-const NoteMain: React.FC<NoteMainProps> = ({ blocks, onDeleteBlock }) => {
+const NoteMain: React.FC<NoteMainProps> = ({
+    title,
+    onUpdateTitle,
+    blocks,
+    onUpdateBlock,
+    onAddBlockAfter,
+    onDeleteBlock,
+    onFocusBlock
+}) => {
+    const renderBlock = (block: BlockData) => {
+        switch (block.type) {
+            case 'h1':
+            case 'h2':
+            case 'h3':
+                return (
+                    <HeadingBlock
+                        key={block.id}
+                        id={block.id}
+                        level={block.type}
+                        content={block.content}
+                        onUpdate={onUpdateBlock}
+                        onAddBlockBelow={onAddBlockAfter}
+                        onFocus={() => onFocusBlock(block.id)}
+                    />
+                );
+
+            case 'text':
+                return (
+                    <TextBlock
+                        key={block.id}
+                        id={block.id}
+                        content={block.content}
+                        onUpdate={onUpdateBlock}
+                        onAddBlockBelow={onAddBlockAfter}
+                        onFocus={() => onFocusBlock(block.id)}
+                    />
+                );
+
+            case 'code':
+                return (
+                    <CodeBlock
+                        key={block.id}
+                        id={block.id}
+                        language={block.language || 'javascript'}
+                        code={block.content}
+                        onDelete={onDeleteBlock}
+                        onChange={onUpdateBlock}
+
+                    />
+                );
+
+            default:
+                return null;
+        }
+    };
+
     return (
         <div className="note-main-layout">
             <header className="note-main-header">
-                <div className="note-title-info"></div>
+                <input
+                    className="note-main-title-input" // CSS 클래스 새로 정의 필요
+                    value={title}
+                    onChange={(e) => onUpdateTitle(e.target.value)}
+                    placeholder="제목 없음"
+                />
             </header>
 
             <div className="note-content-area">
-                {/* 4. 배열 순회하며 블록 출력 */}
-                {blocks.map((block) => (
-                    <CodeBlock 
-                        key={block.id} 
-                        id={block.id} // CodeBlock에도 id를 넘겨줘야 합니다.
-                        language="javascript" 
-                        code={block.code} 
-                        onDelete={onDeleteBlock} // 삭제 함수도 전달
-                    />
-                ))}
+                {blocks.map(renderBlock)}
             </div>
         </div>
     );

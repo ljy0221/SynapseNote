@@ -1,50 +1,101 @@
-/* 전체 디렉토리 */
 .note-directory {
   font-size: 13px;
   user-select: none;
+  color: var(--font-color);
 }
 
-/* 디렉토리 행 */
-.directory-row {
+/* =========================
+   공통 트리 행
+========================= */
+.tree-row {
   display: flex;
   align-items: center;
   gap: 6px;
+  position: relative;        /* ⭐ 이거 없으면 100% 실패 */
   height: 28px;
+  padding: 0 6px;
+
   cursor: pointer;
-  color: var(--font-color);
-  opacity: 0.85;
+  opacity: 0.9;
 }
 
-.directory-row:hover {
-  background-color: rgba(0, 0, 0, 0.05);
+.tree-row:hover {
+  background-color: rgba(0, 0, 0, 0.035);
 }
 
-/* 화살표 */
-.directory-arrow {
-  width: 12px;
-  text-align: center;
-  font-size: 12px;
+/* =========================
+   아이콘 영역
+========================= */
+.tree-icon {
+  width: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
   opacity: 0.6;
 }
 
-/* 디렉토리 이름 */
-.directory-name {
+/* =========================
+   텍스트
+========================= */
+.tree-title {
+  flex: 1;
+  padding-right: 24px;       /* ⭐ 버튼 자리 확보 */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
 }
 
-/* 노트 행 */
-.note-row {
-  height: 26px;
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  color: var(--font-color);
+/* =========================
+   즐겨찾기 버튼
+========================= */
+.tree-row .add-recommend-button {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.tree-row:hover .add-recommend-button {
+  opacity: 1;
+}
+
+/* =========================
+   Active 노트
+========================= */
+.tree-row.note.active {
+  background-color: rgba(255, 165, 0, 0.14);
+}
+
+.tree-row.note.active .tree-title {
+  opacity: 1;
+}
+
+/* =========================
+   Directory 전용 미세 차이
+========================= */
+.tree-row.directory {
+  opacity: 0.85;
+}
+
+.side-note-title {
+  font-size: 14px;
+  font-weight: bold;
+}
+
+/* 디렉토리는 살짝 더 강조 */
+.tree-row.directory .tree-icon {
   opacity: 0.75;
 }
 
-.note-row:hover {
-  background-color: rgba(0, 0, 0, 0.06);
+/* active 노트 아이콘 강조 */
+.tree-row.note.active .tree-icon {
   opacity: 1;
 }

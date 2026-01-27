@@ -1,25 +1,63 @@
+/* src/components/layout/noteToolbar/NoteToolbar.tsx */
 import React from 'react';
-import BlockAddButton from '../../common/blockAddButton/BlockAddButton';
+import {
+    Heading1,
+    Heading2,
+    Heading3,
+    Type,
+    Code,
+    ChevronRight,
+    ChevronLeft
+} from 'lucide-react';
 import './NoteToolbar.css';
 
 interface NoteToolBarProps {
-    isOpen: boolean;
-    onAddBlock: () => void; // 함수 타입 추가
+    isOpen: boolean;        // 추가
+    onToggle: () => void;   // 추가
+    onSelectBlockType: (type: any) => void;
+    onAddCodeBlock: () => void;
 }
 
-export const NoteToolBar: React.FC<NoteToolBarProps> = ({ isOpen, onAddBlock }) => {
+export const NoteToolBar: React.FC<NoteToolBarProps> = ({
+    isOpen,
+    onToggle,
+    onAddCodeBlock,
+    onSelectBlockType
+}) => {
     return (
-        <aside className={`note-toolbar ${isOpen ? 'open' : ''}`}>
-            <div className="toolbar-content">
-                <p className="toolbar-section-title">COMPONENTS</p>
-                <ul className="component-list">
-                    <li>H1 Heading</li>
-                    <li>H2 Subheading</li>
-                    <li>Code Block</li>
-                </ul>
+        <aside className={`note-floating-toolbar ${isOpen ? 'open' : 'collapsed'}`}>
+            {/* 토글 버튼 (툴바 경계선에 걸치게 배치) */}
+            <button
+                className="toolbar-toggle-btn"
+                onClick={onToggle}
+                title={isOpen ? "툴바 접기" : "툴바 열기"}
+            >
+                {/* 열와 있으면 닫는 화살표, 닫혀 있으면 여는 화살표 (오른쪽 바 기준) */}
+                {isOpen ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+            </button>
 
-                {/* 5. 부모의 추가 함수 실행 */}
-                <BlockAddButton onClick={onAddBlock} />
+            <div className="toolbar-section">
+                <button className="toolbar-btn" onClick={() => onSelectBlockType('h1')} title="제목 1">
+                    <Heading1 size={20} />
+                </button>
+
+                <button className="toolbar-btn" onClick={() => onSelectBlockType('h2')} title="제목 2">
+                    <Heading2 size={20} />
+                </button>
+
+                <button className="toolbar-btn" onClick={() => onSelectBlockType('h3')} title="제목 3">
+                    <Heading3 size={20} />
+                </button>
+
+                <div className="divider" />
+
+                <button className="toolbar-btn" onClick={() => onSelectBlockType('text')} title="텍스트">
+                    <Type size={20} />
+                </button>
+
+                <button className="toolbar-btn" onClick={onAddCodeBlock} title="코드 블록 추가">
+                    <Code size={20} />
+                </button>
             </div>
         </aside>
     );
