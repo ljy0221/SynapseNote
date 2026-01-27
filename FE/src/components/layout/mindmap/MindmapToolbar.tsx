@@ -38,30 +38,35 @@ export const MindmapToolbar: React.FC<MindmapToolbarProps> = ({
                 <MindmapCommonButton
                     icon={<Plus size={20} />}
                     label="새 시냅스 추가"
+                    description="새로운 생각의 단위(노드)를 생성하여 아이디어를 확장합니다."
                     onClick={onAdd}
                     isActive={isEditMode}
                 />
                 <MindmapCommonButton
                     icon={<Link size={20} />}
-                    label="연결 모드 (클릭하여 연결)"
+                    label="연결 모드"
+                    description="두 개의 시냅스를 순서대로 클릭하여 관계를 연결합니다."
                     onClick={onToggleConnectMode}
                     isActive={isConnectMode}
                 />
                 <MindmapCommonButton
                     icon={<Unlink size={20} />}
-                    label="연결 해제 모드 (두 노드 선택하여 끊기)"
+                    label="연결 해제 모드"
+                    description="연결을 끊고 싶은 두 시냅스를 선택하여 관계를 제거합니다."
                     onClick={onToggleDisconnectMode}
                     isActive={isDisconnectMode}
                 />
                 <MindmapCommonButton
                     icon={<LayoutGrid size={20} />}
-                    label="그리드 자동 정렬"
+                    label="그리드 정렬"
+                    description="모든 시냅스를 격자에 맞춰 깔끔하게 자동 정렬합니다."
                     onClick={onAlign}
                 // isActive 상태는 굳이 필요 없음 (일회성 동작)
                 />
                 <MindmapCommonButton
                     icon={<Trash2 size={20} />}
                     label="선택 삭제"
+                    description="선택한 시냅스나 연결을 영구적으로 삭제합니다."
                     onClick={onDelete}
                     isDanger={true}
                 />
