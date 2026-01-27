@@ -16,6 +16,9 @@ public enum ErrorCode {
     // Auth
     AUTH_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "AUTH_001", "인증되지 않은 사용자입니다"),
     AUTH_FORBIDDEN(HttpStatus.FORBIDDEN, "AUTH_002", "접근 권한이 없습니다"),
+    TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "AUTH_003", "토큰이 만료되었습니다"),
+    TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "AUTH_004", "토큰이 잘못되었습니다"),
+    HEADER_INVALID(HttpStatus.FORBIDDEN, "AUTH_005", "인증 헤더가 잘못되었습니다"),
 
     // User
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_001", "사용자를 찾을 수 없습니다"),
@@ -43,7 +46,8 @@ public enum ErrorCode {
 
     // OAuthAccount
     PARSING_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "OAUTH_001", "응답 파싱 중 오류가 발생했습니다"),
-    OAUTH_PROVIDER_ERROR(HttpStatus.BAD_GATEWAY, "OAUTH_002", "OAuthAccount 제공자로부터 오류 응답을 받았습니다");
+    OAUTH_PROVIDER_ERROR(HttpStatus.BAD_GATEWAY, "OAUTH_002", "OAuth2 제공자로부터 오류 응답을 받았습니다"),
+    OAUTH_TOKEN_ISSUE(HttpStatus.BAD_GATEWAY, "OAUTH_003", "OAuth2 제공자로부터 Access Token을 받지 못했습니다");
 
     private final HttpStatus httpStatus;
     private final String code;
