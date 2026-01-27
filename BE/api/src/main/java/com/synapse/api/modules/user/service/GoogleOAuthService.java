@@ -7,7 +7,6 @@ import com.synapse.api.util.exception.BusinessException;
 import com.synapse.api.util.response.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -23,16 +22,6 @@ public class GoogleOAuthService implements OAuthService {
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
 
-    @Value("${google.client.id}")
-    private String clientId;
-
-    @Value("${google.client.secret}")
-    private String clientSecret;
-
-    @Value("${google.redirect.uri}")
-    private String redirectUri;
-
-    private final String TOKEN_URL = "https://oauth2.googleapis.com/token";
     private final String USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo";
 
 

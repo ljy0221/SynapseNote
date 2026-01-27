@@ -21,6 +21,7 @@ public enum ErrorCode {
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, 8000, "사용자를 찾을 수 없습니다"),
     USER_ALREADY_EXISTS(HttpStatus.CONFLICT, 8001, "이미 존재하는 사용자입니다"),
     VALIDATION_INVALID_PARAMETER(HttpStatus.BAD_REQUEST, 8002, "잘못된 요청 파라미터입니다"),
+    USER_ALREADY_EXISTS_ANOTHER_PROVIDER(HttpStatus.CONFLICT, 8003, "이 이메일은 다른 소셜 로그인으로 이미 가입되어 있습니다"),
 
     // Note (3xxx)
     NOTE_NOT_FOUND(HttpStatus.NOT_FOUND, 3000, "노트를 찾을 수 없습니다"),

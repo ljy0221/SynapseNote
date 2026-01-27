@@ -33,19 +33,23 @@ public class UserService {
 
         OAuthUserInfo oAuthUserInfo = getOAuthUserInfo(request);
 
-        Optional<OAuthAccount> optionalOAuth = oAuthRepository.findByProviderIdAndProvider(
-                oAuthUserInfo.getProviderId(),
-                oAuthUserInfo.getProvider()
-        );
+        Optional<User> optionalUser = userRepository.findByEmail(oAuthUserInfo.getEmail());
 
         UUID id;
-        if (optionalOAuth.isPresent()) {
-            OAuthAccount oAuth = optionalOAuth.get();
-            User user = oAuth.getUser();
+        if (optionalUser.isPresent()) {
+            User user = optionalUser.get();
 
             // 탈퇴(soft delete)된 계정인지 체크
-            if (oAuth.getDeletedAt() != null || user.getDeletedAt() != null) {
+            if (user.getDeletedAt() != null) {
                 throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+            }
+
+            // 다른 provider로 가입했는지 체크
+            Optional<OAuthAccount> optionalOAuth = oAuthRepository.findByProviderIdAndProvider(
+                    oAuthUserInfo.getProviderId(), oAuthUserInfo.getProvider()
+            );
+            if (optionalOAuth.isEmpty()) {
+                throw new BusinessException(ErrorCode.USER_ALREADY_EXISTS_ANOTHER_PROVIDER);
             }
 
             id = user.getId();
@@ -73,8 +77,6 @@ public class UserService {
                 .name(oAuthUserInfo.getName())
                 .build()
         );
-
-        System.out.println(oAuthUserInfo.getEmail());
 
         oAuthRepository.save(OAuthAccount.builder()
                 .provider(oAuthUserInfo.getProvider())
