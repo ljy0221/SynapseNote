@@ -2,12 +2,14 @@ package com.synapse.api.modules.note.entity;
 
 import com.synapse.api.modules.user.entity.User;
 import com.synapse.api.util.entity.BaseEntity;
+import com.synapse.api.util.generator.UuidV7Generator;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.GenericGenerator;
 
 import java.util.UUID;
 
@@ -23,7 +25,11 @@ import java.util.UUID;
 public class Note extends BaseEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(generator = "uuid-v7")
+    @GenericGenerator(
+        name = "uuid-v7",
+        type = UuidV7Generator.class
+    )
     @Column(columnDefinition = "uuid")
     private UUID id;
 

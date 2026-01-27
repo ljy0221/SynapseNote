@@ -23,11 +23,14 @@ import MindMap from './pages/mindmap/MindMap';
 import Recommend from './pages/recommend/Recommend';
 // 사이드바가 허용되는 경로
 const SIDEBAR_ROUTES = ['/mindmap', '/note'];
+// 툴바가 허용되는 경로 (우측 여백)
+const TOOLBAR_ROUTES = ['/note'];
 
 function AppContent() {
     const [isSidebarActive, setIsSidebarActive] = useState(false); // 가변 사이드바 상태
     const [isToolbarActive, setIsToolbarActive] = useState(true);
     const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+    const [dockerStatus, setDockerStatus] = useState<'checking' | 'ok' | 'error'>('checking');
 
     const location = useLocation();
     const isLoginPage = location.pathname === '/login';
@@ -36,24 +39,57 @@ function AppContent() {
         document.documentElement.setAttribute('data-theme', theme);
     }, [theme]);
 
+    // Docker 헬스 체크
+    useEffect(() => {
+        async function checkDocker() {
+            try {
+                const installed = await window.dockerAPI.checkInstalled();
+                if (!installed) {
+                    setDockerStatus('error');
+                    alert('Docker가 설치되지 않았습니다.\n\nDocker Desktop을 설치해주세요.\nhttps://www.docker.com/products/docker-desktop/');
+                    return;
+                }
+
+                const running = await window.dockerAPI.checkRunning();
+                if (!running) {
+                    setDockerStatus('error');
+                    alert('Docker가 실행되지 않았습니다.\n\nDocker Desktop을 실행해주세요.');
+                    return;
+                }
+
+                setDockerStatus('ok');
+            } catch (error) {
+                console.error('Docker 상태 확인 실패:', error);
+                setDockerStatus('error');
+            }
+        }
+
+        checkDocker();
+    }, []);
+
     const handleThemeToggle = () => setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
     const toggleSidebar = () => setIsSidebarActive(prev => !prev);
 
 
 
-    
+
     /** Sidebar */
     const isSidebarAllowed = SIDEBAR_ROUTES.some(path =>
         location.pathname.startsWith(path)
     );
+
     useEffect(() => {
         if (isSidebarAllowed) {
-        setIsSidebarActive(true);
+            setIsSidebarActive(true);
         } else {
-        setIsSidebarActive(false);
+            setIsSidebarActive(false);
         }
     }, [isSidebarAllowed]);
 
+    /** Toolbar */
+    const isToolbarAllowed = TOOLBAR_ROUTES.some(path =>
+        location.pathname.startsWith(path)
+    );
 
     return (
         <div className="app-container">
@@ -82,15 +118,15 @@ function AppContent() {
 
                     {/* 헤더 버튼으로 열고 닫는 가변 사이드바 (디렉토리 등) */}
                     {isSidebarAllowed && (
-                    <Sidebar 
-                        isOpen={isSidebarActive}
-                        onToggle={toggleSidebar}
-                    >
-                        <div className="sidebar-content">
-                        {/* 추후 이곳에 디렉토리 구조 등이 들어감 */}
-                        <p>Directory Structure</p>
-                        </div>
-                    </Sidebar>
+                        <Sidebar
+                            isOpen={isSidebarActive}
+                            onToggle={toggleSidebar}
+                        >
+                            <div className="sidebar-content">
+                                {/* 추후 이곳에 디렉토리 구조 등이 들어감 */}
+                                <p>Directory Structure</p>
+                            </div>
+                        </Sidebar>
                     )}
                 </>
             )}
@@ -101,7 +137,7 @@ function AppContent() {
                 className={[
                     !isLoginPage ? 'main-content' : '',
                     !isLoginPage && isSidebarAllowed && isSidebarActive ? 'sidebar-open' : '',
-                    !isLoginPage && isToolbarActive ? 'toolbar-open' : '',
+                    !isLoginPage && isToolbarActive && isToolbarAllowed ? 'toolbar-open' : '',
                 ].join(' ')}
             >
 

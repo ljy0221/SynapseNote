@@ -1,77 +1,127 @@
 /* src/components/common/codeBlock/CodeBlock.css */
 
-.code-block-wrapper {
-    /* 기존 100%에서 줄여서 오른쪽 여백 확보 */
-    width: 70%; 
-    /* 중앙 정렬 및 하단 간격 */
-    margin: 0 auto 24px 40px; 
-    
-    background-color: var(--bg-secondary, rgba(255, 255, 255, 0.03));
-    border-radius: 12px;
-    border: 1px solid rgba(128, 128, 128, 0.1);
-    overflow: hidden;
-    box-sizing: border-box;
-    /* 그림자를 살짝 추가하면 툴바와 분리된 느낌이 더 명확해집니다 */
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
 .code-block-header {
     display: flex;
     justify-content: space-between;
-    padding: 10px 16px;
-    background-color: rgba(0, 0, 0, 0.05);
-}
-/* ✅ 뱃지 사이즈 축소 및 디자인 개선 */
-.code-lang-badge {
-    background-color: var(--color-point);
-    color: #fff;
-    padding: 2px 8px; /* 상하를 줄여서 정사각형 현상 해결 */
-    border-radius: 4px;
-    font-size: 11px; /* 글자 크기도 조금 더 작게 */
-    font-weight: 700;
-    line-height: 1; /* 글자 높이만큼만 차지하도록 강제 */
-    display: inline-block;
-}
-
-.code-content-view {
-    padding: 20px;
-    margin: 0;
-    font-family: 'Fira Code', monospace;
-    font-size: 14px;
-    color: var(--font-color);
-    line-height: 1.6;
-    overflow-x: auto; /* 내부 코드 길이에 따른 스크롤 유지 */
-}
-
-/* 스크롤바가 너무 두꺼우면 답답하므로 얇게 커스텀 */
-.code-content-view::-webkit-scrollbar {
-    height: 4px;
-}
-
-.code-content-view::-webkit-scrollbar-thumb {
-    background: rgba(128, 128, 128, 0.2);
-    border-radius: 10px;
+    /* 언어 뱃지와 버튼 영역을 양 끝으로 */
+    align-items: center;
+    /* 세로 중앙 정렬 */
+    padding: 8px 16px;
+    /* 높이를 조금 줄여서 슬림하게 */
+    background-color: var(--color-sub);
+    border-bottom: 1px solid rgba(128, 128, 128, 0.1);
 }
 
 .code-actions {
     display: flex;
-    gap: 12px; /* 버튼 사이 간격 좁힘 */
+    /* 가로 정렬의 핵심 */
+    flex-direction: row;
+    /* 명시적으로 가로 방향 설정 */
     align-items: center;
-    flex-wrap: nowrap; /* 절대 줄바꿈 되지 않도록 설정 */
+    gap: 12px;
+    /* 버튼 사이의 간격 */
+    flex-shrink: 0;
+    /* 헤더 공간이 좁아져도 버튼 영역이 줄어들지 않게 */
 }
 
-.code-action-btn {
-    background: none;
+/* 개별 버튼 공통 스타일 보정 (세로로 쌓이는 것 방지) */
+.code-actions>* {
+    display: inline-flex;
+    white-space: nowrap;
+    /* 텍스트가 줄바꿈되어 버튼이 두꺼워지는 것 방지 */
+}
+
+/* --- 나머지 스타일 유지 및 미세 조정 --- */
+
+.code-block-wrapper {
+    width: 90%;
+    max-width: 800px;
+    margin: 20px auto;
+
+    /* [수정] 메인 배경 대신 약간 투명한 검정/흰색 오버레이 활용 추천 */
+    background-color: var(--color-sub);
+    border-radius: 12px;
+
+    /* 테두리도 너무 진하지 않게 투명도 활용 */
+    border: 1px solid rgba(128, 128, 128, 0.2);
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+
+    display: flex;
+    flex-direction: column;
+}
+
+.code-content-container {
+    /* [수정] 흰색(#ffffff) 제거 -> 투명하게 하여 부모색 따름 */
+    background-color: transparent;
+    min-height: 120px;
+    display: flex;
+}
+
+.code-editor-input {
+    width: 100%;
+    /* [스타일 제거 권장] min-height: 150px; (JS 자동조절 사용 시 불필요 충돌 방지) */
+    padding: 20px;
     border: none;
+    outline: none;
+    background: none;
+    resize: none;
+    /* Auto-resize 사용 중이므로 none 권장 */
+
+    font-family: 'Fira Code', 'Courier New', monospace;
+    font-size: 15px;
+    line-height: 1.6;
+
+    /* [수정] 폰트 색상을 테마 변수로 변경 */
     color: var(--font-color);
-    cursor: pointer;
-    margin-left: 10px;
-    font-size: 12px;
-    opacity: 0.6;
-    transition: opacity 0.2s ease;
 }
 
-.code-action-btn:hover {
-    opacity: 1;
+/* --- Output 영역 구획 복구 --- */
+.code-output-zone {
+    /* [수정] 배경색을 약간 다르게 주어 구분 (투명도 활용) */
+    background-color: rgba(128, 128, 128, 0.05);
+    padding: 16px 24px 24px 24px;
+    position: relative;
+    border-top: 1px solid rgba(128, 128, 128, 0.1);
+}
+
+.output-label {
+    font-size: 11px;
+    font-weight: 700;
+
+    /* [수정] 너무 밝거나 어두운 회색 대신 투명도 사용 */
+    color: var(--font-color);
+    opacity: 0.6;
+
+    margin: 0 0 10px 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.output-content {
+    font-family: 'Fira Code', monospace;
+    font-size: 14px;
+    /* [수정] 결과값 폰트 색상 */
+    color: var(--font-color);
+}
+
+/* --- [추가] 언어 뱃지 스타일 --- */
+.code-lang-badge {
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'Fira Code', monospace;
+
+    /* 테마 포인트 컬러 활용 */
     color: var(--color-point);
+
+    /* 포인트 컬러를 아주 연하게 배경으로 깔아줌 (투명도 활용) */
+    background-color: rgba(245, 158, 11, 0.1);
+    /* 주의: rgba는 변수 적용이 까다로우므로, 
+       만약 테마별 배경색을 완벽히 맞추려면 --color-sub보다 조금 진한 --bg-hover 등을 Theme.css에 추가하는 것이 정석입니다.
+       하지만 현재 상태에서는 위와 같이 연한 오렌지빛 배경도 다크/라이트 모두 잘 어울립니다. */
+
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-right: auto;
+    /* 버튼들과 거리를 벌리기 위해 우측 여백 자동 */
 }

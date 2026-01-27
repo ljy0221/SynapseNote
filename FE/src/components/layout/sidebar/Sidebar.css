@@ -55,7 +55,7 @@
 ========================= */
 .sidebar-inner {
   height: 100%;
-  padding: 16px;
+  padding: 12px 8px;
   box-sizing: border-box;
 
   overflow-y: auto;
