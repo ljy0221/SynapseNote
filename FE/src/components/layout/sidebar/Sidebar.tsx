@@ -49,24 +49,26 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({
   isOpen,
   onToggle,
-  children,
 }) => {
   /** 🔥 mock 기반 디렉토리 트리 */
   const noteTree = buildNoteTree(mockNotes);
+  const [activeNoteId, setActiveNoteId] = React.useState<string | null>(null);
 
   return (
     <div className="sidebar-wrapper">
-      {/* 실제 사이드바 패널 */}
       <aside className={`sidebar-panel ${isOpen ? 'open' : ''}`}>
         <div className="sidebar-inner">
           <NoteDirectory
             node={noteTree}
+            activeNoteId={activeNoteId}
             onSelectNote={(noteId) => {
+              setActiveNoteId(noteId);
               console.log('선택한 노트:', noteId);
             }}
           />
         </div>
       </aside>
+
 
       {/* 사이드바 토글 버튼 */}
       <button
