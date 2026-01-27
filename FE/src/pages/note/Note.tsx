@@ -27,13 +27,13 @@ const Note: React.FC = () => {
         { id: Date.now(), type: 'text', content: '' }
     ]);
 
-    // 코드블록 추가 (Add Block 버튼용 - 맨 끝에 추가)
-    const addCodeBlock = () => {
+    // [변경] 블록 추가 함수 (툴바용) - 맨 아래에 추가
+    const handleAddBlock = (type: BlockType) => {
         const newBlock: BlockData = {
             id: Date.now(),
-            type: 'code',
-            content: '// 새로운 코드를 작성하세요.',
-            language: 'javascript'
+            type: type,
+            content: type === 'code' ? '// 코드를 작성하세요.' : '',
+            language: type === 'code' ? 'javascript' : undefined,
         };
         setBlocks([...blocks, newBlock]);
     };
@@ -69,23 +69,18 @@ const Note: React.FC = () => {
         }
     };
 
-    // 현재 포커스된 블록의 ID
-    const [focusedBlockId, setFocusedBlockId] = useState<number | null>(null);
-
-    // 블록 타입 변경 함수
-    const changeBlockType = (id: number, type: BlockType) => {
-        setBlocks(blocks.map(block => {
-            if (block.id === id) {
-                return {
-                    ...block,
-                    type: type,
-                    // 코드 블록으로 변환 시 언어 설정 초기화, 그 외엔 유지
-                    language: type === 'code' ? 'javascript' : undefined
-                };
-            }
-            return block;
-        }));
+    // [추가] 블록 순서 변경 (DnD)
+    const handleMoveBlock = (dragIndex: number, hoverIndex: number) => {
+        const dragBlock = blocks[dragIndex];
+        const newBlocks = [...blocks];
+        newBlocks.splice(dragIndex, 1);
+        newBlocks.splice(hoverIndex, 0, dragBlock);
+        setBlocks(newBlocks);
     };
+
+
+
+
 
     // 툴바 열림/닫힘 상태
     const [isToolbarOpen, setIsToolbarOpen] = useState(true);
@@ -111,17 +106,13 @@ const Note: React.FC = () => {
                         onUpdateBlock={updateBlock}
                         onAddBlockAfter={addBlockAfter}
                         onDeleteBlock={deleteBlock}
-                        onFocusBlock={setFocusedBlockId}
+                        onFocusBlock={() => { }} // 임시 포커스 핸들러 (state 제거됨)
+                        onMoveBlock={handleMoveBlock}
                     />
                     <NoteToolBar
                         isOpen={isToolbarOpen}
                         onToggle={() => setIsToolbarOpen(!isToolbarOpen)}
-                        onAddCodeBlock={addCodeBlock}
-                        onSelectBlockType={(type) => {
-                            if (focusedBlockId) {
-                                changeBlockType(focusedBlockId, type);
-                            }
-                        }}
+                        onAddBlock={handleAddBlock}
                     />
                 </div>
             )}

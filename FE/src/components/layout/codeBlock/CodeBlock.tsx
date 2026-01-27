@@ -17,6 +17,11 @@ interface CodeBlockProps {
     noteId?: string; // 백엔드 히스토리 저장용
     onDelete: (id: number) => void;
     onChange: (id: number, newCode: string) => void;
+    // DnD Props
+    draggable?: boolean;
+    onDragStart?: (e: React.DragEvent) => void;
+    onDragOver?: (e: React.DragEvent) => void;
+    onDrop?: (e: React.DragEvent) => void;
 }
 
 // 헬퍼 함수: 언어별 기본 버전 설정
@@ -29,7 +34,18 @@ function getDefaultVersion(language: Language): string {
     }
 }
 
-const CodeBlock: React.FC<CodeBlockProps> = ({ id, language: initialLanguage, code, noteId, onDelete, onChange }) => {
+const CodeBlock: React.FC<CodeBlockProps> = ({
+    id,
+    language: initialLanguage,
+    code,
+    noteId,
+    onDelete,
+    onChange,
+    draggable,
+    onDragStart,
+    onDragOver,
+    onDrop
+}) => {
     // 1. 상태 관리
     const [result, setResult] = useState<ExecutionResult | null>(null);
     const [loading, setLoading] = useState(false);
@@ -90,13 +106,28 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, language: initialLanguage, co
     };
 
     return (
-        <div className="code-block-wrapper">
+        <div
+            className="code-block-wrapper"
+            onDragOver={onDragOver}
+            onDrop={onDrop}
+        >
             <div className="code-block-header">
                 <LanguageSelector
                     value={language}
                     onChange={setLanguage}
                     disabled={loading}
                 />
+
+                {/* 드래그 핸들 (코드블록은 헤더에 위치) */}
+                <div
+                    className="code-drag-handle"
+                    draggable={draggable}
+                    onDragStart={onDragStart}
+                    title="드래그하여 이동"
+                >
+                    ⋮⋮
+                </div>
+
                 <div className="code-actions">
                     <BlockRunButton onClick={handleRun} disabled={loading} />
                     <BlockCopyButton onCopy={handleCopy} />

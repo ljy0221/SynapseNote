@@ -12,6 +12,32 @@
     border-bottom: 1px solid rgba(128, 128, 128, 0.1);
 }
 
+.code-drag-handle {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    color: var(--font-color);
+    opacity: 0.6;
+    transition: all 0.2s;
+    font-size: 24px;
+    user-select: none;
+    margin-right: 8px;
+    border-radius: 4px;
+}
+
+.code-drag-handle:hover {
+    opacity: 1;
+    background-color: rgba(0, 0, 0, 0.08);
+    transform: scale(1.1);
+}
+
+.code-drag-handle:active {
+    cursor: grabbing;
+}
+
 .code-actions {
     display: flex;
     /* 가로 정렬의 핵심 */
