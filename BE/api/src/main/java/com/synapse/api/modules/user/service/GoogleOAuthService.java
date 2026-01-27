@@ -22,7 +22,7 @@ public class GoogleOAuthService implements OAuthService {
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
 
-    private final String USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo";
+    private final String USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo";
 
 
     @Override
