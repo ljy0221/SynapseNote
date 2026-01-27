@@ -29,6 +29,8 @@ public class NoteDetailResponse {
     private LocalDateTime updatedAt;
 
     private String content;
+    private String type;
+    private Boolean favorite;
     private List<CodeBlock> codeBlocks;
     private int version;
 
@@ -44,6 +46,8 @@ public class NoteDetailResponse {
                 .createdAt(note.getCreatedAt())
                 .updatedAt(note.getUpdatedAt())
                 .content(noteContent != null ? noteContent.getContent() : "")
+                .type(noteContent != null ? noteContent.getType() : "text")
+                .favorite(noteContent != null ? noteContent.getFavorite() : false)
                 .codeBlocks(noteContent != null ? noteContent.getCodeBlocks() : List.of())
                 .version(noteContent != null ? noteContent.getVersion() : 0)
                 .build();
