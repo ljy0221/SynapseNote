@@ -114,7 +114,8 @@ public class JwtFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
         return (path.startsWith("/api/") && (
                 path.matches("^/api/v\\d+/login")
-        )) || path.matches(".*\\.(js|css|png|jpg|ico)$");
+        )) || path.matches(".*\\.(js|css|png|jpg|ico)$")
+            || path.matches("^/test/.*");
     }
 
 }
