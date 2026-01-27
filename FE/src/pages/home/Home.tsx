@@ -85,11 +85,11 @@ const Home: React.FC = () => {
       {/* 대시보드 카드 영역 */}
       <section className="home-grid">
         {/* 최근 작업 문서 카드 */}
-        <div className="home-card placeholder-card">
+        <div className="home-card section-card">
             <RecentNotes notes={mockNotesResponse.notes} />
         </div>
         {/* 스트릭 카드 */}
-        <div className="home-card streak-card">
+        <div className="home-card section-card">
           <NoteStreak streak={mockStreak} />
         </div>
 

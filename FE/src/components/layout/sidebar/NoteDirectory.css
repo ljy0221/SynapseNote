@@ -36,15 +36,24 @@
 
 /* 노트 행 */
 .note-row {
-  height: 26px;
   display: flex;
   align-items: center;
-  cursor: pointer;
-  color: var(--font-color);
-  opacity: 0.75;
+  justify-content: space-between;
+
+  height: 28px;
+  padding: 0 6px;
 }
+
+.note-title {
+  font-size: 13px;
+  font-weight: 500;      /* 600 → 500 */
+  line-height: 1.3;
+  opacity: 0.95;
+}
+
 
 .note-row:hover {
   background-color: rgba(0, 0, 0, 0.06);
-  opacity: 1;
 }
+
+/* 제목 영역 */
