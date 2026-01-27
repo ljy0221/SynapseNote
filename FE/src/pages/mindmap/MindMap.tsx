@@ -113,8 +113,65 @@ const MindMapContent: React.FC = () => {
         }
     }, [isInitialFitDone, nodes, fitView]);
 
-    // 6. [New] 노드 간 충돌 방지 (물리 엔진 적용)
-    const { onNodeDragStart, onNodeDrag, onNodeDragStop } = useNodeRepulsion({ nodes, setNodes, active: true });
+    // 6. [New] 노드 간 충돌 방지 (물리 엔진 -> 충돌 방지 로직 대체)
+    const { onNodeDragStart, onNodeDrag: onNodeRepulsionDrag, onNodeDragStop } = useNodeRepulsion({ active: true });
+
+    // [Helper] 두 노드 간 최적의 핸들 위치 계산
+    const getSmartHandlePosition = useCallback((sourceNode: Node, targetNode: Node) => {
+        const sourcePos = sourceNode.position;
+        const targetPos = targetNode.position;
+        const dx = targetPos.x - sourcePos.x;
+        const dy = targetPos.y - sourcePos.y;
+
+        let sourceHandle = 'bottom-s';
+        let targetHandle = 'top-t';
+
+        if (Math.abs(dx) > Math.abs(dy)) {
+            if (dx > 0) { // 타겟이 오른쪽에 있음
+                sourceHandle = 'right-s';
+                targetHandle = 'left-t';
+            } else { // 타겟이 왼쪽에 있음
+                sourceHandle = 'left-s';
+                targetHandle = 'right-t';
+            }
+        } else {
+            if (dy > 0) { // 타겟이 아래에 있음
+                sourceHandle = 'bottom-s';
+                targetHandle = 'top-t';
+            } else { // 타겟이 위에 있음
+                sourceHandle = 'top-s';
+                targetHandle = 'bottom-t';
+            }
+        }
+        return { sourceHandle, targetHandle };
+    }, []);
+
+    // [Wrapper] 통합 드래그 핸들러 (충돌 방지 + 엣지 최적화)
+    const handleNodeDrag = useCallback((event: React.MouseEvent, node: Node) => {
+        // 1. 충돌 방지 로직 실행
+        onNodeRepulsionDrag(event, node);
+
+        // 2. 엣지 최적화 로직 실행
+        setEdges((eds) => eds.map((edge) => {
+            if (edge.source === node.id || edge.target === node.id) {
+                // 연결된 상대방 노드 찾기
+                const targetId = edge.source === node.id ? edge.target : edge.source;
+                const targetNode = nodes.find((n) => n.id === targetId);
+
+                if (targetNode) {
+                    const { sourceHandle, targetHandle } = edge.source === node.id
+                        ? getSmartHandlePosition(node, targetNode)
+                        : getSmartHandlePosition(targetNode, node);
+
+                    // 변경사항이 있을 때만 업데이트 (성능 최적화)
+                    if (edge.sourceHandle !== sourceHandle || edge.targetHandle !== targetHandle) {
+                        return { ...edge, sourceHandle, targetHandle };
+                    }
+                }
+            }
+            return edge;
+        }));
+    }, [onNodeRepulsionDrag, nodes, setEdges, getSmartHandlePosition]);
 
     // [New] 토스트 알림 상태
     const [toastMessage, setToastMessage] = useState('');
@@ -339,33 +396,7 @@ const MindMapContent: React.FC = () => {
 
 
                 // [New] 최적의 핸들 방향 계산 로직
-                const sourcePos = connectSource.position;
-                const targetPos = node.position;
-
-                const dx = targetPos.x - sourcePos.x;
-                const dy = targetPos.y - sourcePos.y;
-
-                let sourceHandle = 'bottom-s'; // 기본값
-                let targetHandle = 'top-t';   // 기본값
-
-                // 가로 거리가 더 멀면 좌우 연결 우선
-                if (Math.abs(dx) > Math.abs(dy)) {
-                    if (dx > 0) { // 타겟이 오른쪽에 있음
-                        sourceHandle = 'right-s';
-                        targetHandle = 'left-t';
-                    } else { // 타겟이 왼쪽에 있음
-                        sourceHandle = 'left-s';
-                        targetHandle = 'right-t';
-                    }
-                } else { // 세로 거리가 더 멀면 상하 연결 우선
-                    if (dy > 0) { // 타겟이 아래에 있음
-                        sourceHandle = 'bottom-s';
-                        targetHandle = 'top-t';
-                    } else { // 타겟이 위에 있음
-                        sourceHandle = 'top-s';
-                        targetHandle = 'bottom-t';
-                    }
-                }
+                const { sourceHandle, targetHandle } = getSmartHandlePosition(connectSource, node);
 
                 // [Modified] 단방향 연결 제약 추가
                 // 1. 중복 연결 방지
@@ -451,7 +482,8 @@ const MindMapContent: React.FC = () => {
         edges,                // [Fix] 엣지 검색을 위해 필수
         setCenter,
         setNodes,
-        setEdges
+        setEdges,
+        getSmartHandlePosition // 의존성 추가
     ]);
 
     /**
@@ -584,7 +616,7 @@ const MindMapContent: React.FC = () => {
                     onEdgeUpdate={onEdgeUpdate}
                     onNodeClick={onNodeClick}
                     onNodeDragStart={onNodeDragStart}
-                    onNodeDrag={onNodeDrag}
+                    onNodeDrag={handleNodeDrag}
                     onNodeDragStop={onNodeDragStop}
                     isEditMode={isEditMode}
                 />

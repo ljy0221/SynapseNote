@@ -5,23 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="840920ff-872c-4257-a9d0-0c460e79700e" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/BE/api/src/main/java/com/synapse/api/module/note/dto/ExecutionHistoryRequest.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/BE/api/src/main/java/com/synapse/api/module/note/dto/ExecutionHistoryResponse.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/FE/src/components/layout/codeBlock/LanguageSelector.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/FE/src/components/layout/codeBlock/LanguageSelector.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FE/dist-electron/main.js" beforeDir="false" afterPath="$PROJECT_DIR$/FE/dist-electron/main.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FE/electron/docker/DockerExecService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/FE/electron/docker/DockerExecService.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FE/electron/docker/SecurityConfig.ts" beforeDir="false" afterPath="$PROJECT_DIR$/FE/electron/docker/SecurityConfig.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FE/src/components/layout/codeBlock/CodeBlock.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/FE/src/components/layout/codeBlock/CodeBlock.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FE/src/components/layout/noteMain/NoteMain.css" beforeDir="false" afterPath="$PROJECT_DIR$/FE/src/components/layout/noteMain/NoteMain.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FE/src/components/layout/sidebar/NoteDirectory.css" beforeDir="false" afterPath="$PROJECT_DIR$/FE/src/components/layout/sidebar/NoteDirectory.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FE/src/components/layout/sidebar/NoteDirectory.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/FE/src/components/layout/sidebar/NoteDirectory.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FE/src/components/layout/sidebar/Sidebar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/FE/src/components/layout/sidebar/Sidebar.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FE/src/hooks/useNodeRepulsion.ts" beforeDir="false" afterPath="$PROJECT_DIR$/FE/src/hooks/useNodeRepulsion.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FE/src/pages/note/Note.css" beforeDir="false" afterPath="$PROJECT_DIR$/FE/src/pages/note/Note.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FE/src/pages/note/Note.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/FE/src/pages/note/Note.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FE/src/utils/executionAPI.ts" beforeDir="false" afterPath="$PROJECT_DIR$/FE/src/utils/executionAPI.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/FE/src/pages/mindmap/MindMap.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/FE/src/pages/mindmap/MindMap.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -31,22 +18,22 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitLabMergeRequestFiltersHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPENED",
-    "assignee": {
-      "type": "org.jetbrains.plugins.gitlab.mergerequest.ui.filters.GitLabMergeRequestsFiltersValue.MergeRequestsMemberFilterValue.MergeRequestsAssigneeFilterValue",
-      "username": "ysw1mst",
-      "fullname": "양수영"
+  <component name="GitLabMergeRequestFiltersHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPENED&quot;,
+    &quot;assignee&quot;: {
+      &quot;type&quot;: &quot;org.jetbrains.plugins.gitlab.mergerequest.ui.filters.GitLabMergeRequestsFiltersValue.MergeRequestsMemberFilterValue.MergeRequestsAssigneeFilterValue&quot;,
+      &quot;username&quot;: &quot;ysw1mst&quot;,
+      &quot;fullname&quot;: &quot;양수영&quot;
     }
   }
-}]]></component>
-  <component name="GitLabMergeRequestsSettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "first": "https://lab.ssafy.com/s14-webmobile1-sub1/S14P11B102.git",
-    "second": "075daaae-fbc1-44d9-a24d-fc0a84383bb4"
+}</component>
+  <component name="GitLabMergeRequestsSettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;first&quot;: &quot;https://lab.ssafy.com/s14-webmobile1-sub1/S14P11B102.git&quot;,
+    &quot;second&quot;: &quot;075daaae-fbc1-44d9-a24d-fc0a84383bb4&quot;
   }
-}]]></component>
+}</component>
   <component name="ProjectColorInfo">{
   &quot;customColor&quot;: &quot;&quot;,
   &quot;associatedIndex&quot;: 5
@@ -68,7 +55,7 @@
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "git-widget-placeholder": "Merging feat/fix/#57-AddNodeConnectRule",
+    "git-widget-placeholder": "feat/#62-addToolTips",
     "javascript.preferred.runtime.type.id": "node",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
