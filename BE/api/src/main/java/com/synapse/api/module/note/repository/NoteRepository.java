@@ -26,4 +26,7 @@ public interface NoteRepository extends JpaRepository<Note, UUID> {
             "AND (n.title ILIKE %:query% OR n.directoryPath ILIKE %:query%) " +
             "AND n.deletedAt IS NULL")
     List<Note> searchByUserAndQuery(@Param("userId") UUID userId, @Param("query") String query);
+
+    @Query("SELECT n FROM Note n WHERE n.createdBy.id = :userId AND n.pointX IS NOT NULL AND n.pointY IS NOT NULL")
+    List<Note> findMindMapNodesByUser(UUID userId);
 }

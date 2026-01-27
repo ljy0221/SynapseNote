@@ -1,5 +1,6 @@
 package com.synapse.api.module.note.entity;
 
+import com.synapse.api.module.mindmap.entity.MindmapEdge;
 import com.synapse.api.module.user.entity.User;
 import com.synapse.api.util.entity.BaseEntity;
 import com.synapse.api.util.generator.UuidV7Generator;
@@ -11,6 +12,8 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.GenericGenerator;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -52,6 +55,12 @@ public class Note extends BaseEntity {
     @JoinColumn(name = "created_by", nullable = false)
     private User createdBy;
 
+    @OneToMany(mappedBy = "from", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<MindmapEdge> fanoutEdges = new ArrayList<>();
+
+    @OneToMany(mappedBy = "to", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<MindmapEdge> faninEdges = new ArrayList<>();
+
     public void updateTitle(String title) {
         this.title = title;
     }
@@ -67,5 +76,15 @@ public class Note extends BaseEntity {
 
     public void updateInvitationUrl(String invitationUrl) {
         this.invitationUrl = invitationUrl;
+    }
+
+    public void setMindMapNode(Double pointX, Double pointY) {
+        this.pointX = pointX;
+        this.pointY = pointY;
+    }
+
+    public void deleteNode() {
+        this.pointX = null;
+        this.pointY = null;
     }
 }
