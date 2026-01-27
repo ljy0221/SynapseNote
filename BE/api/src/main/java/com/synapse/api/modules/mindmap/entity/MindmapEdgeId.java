@@ -1,4 +1,4 @@
-package com.synapse.api.module.mindmap.entity;
+package com.synapse.api.modules.mindmap.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;

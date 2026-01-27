@@ -1,18 +1,18 @@
-package com.synapse.api.module.mindmap.service;
+package com.synapse.api.modules.mindmap.service;
 
-import com.synapse.api.module.mindmap.dto.MindmapEdgeDto;
-import com.synapse.api.module.mindmap.dto.MindmapNodeDto;
-import com.synapse.api.module.mindmap.dto.NodePositionDto;
-import com.synapse.api.module.mindmap.dto.request.MindmapEdgeRequest;
-import com.synapse.api.module.mindmap.dto.request.AddMindmapNodeRequest;
-import com.synapse.api.module.mindmap.dto.request.UpdateMindmapPositionsRequest;
-import com.synapse.api.module.mindmap.dto.response.MindmapResponse;
-import com.synapse.api.module.mindmap.entity.MindmapEdge;
-import com.synapse.api.module.mindmap.repository.MindmapEdgeRepository;
-import com.synapse.api.module.note.entity.Note;
-import com.synapse.api.module.note.repository.NoteRepository;
+import com.synapse.api.modules.mindmap.dto.MindmapEdgeDto;
+import com.synapse.api.modules.mindmap.dto.MindmapNodeDto;
+import com.synapse.api.modules.mindmap.dto.NodePositionDto;
+import com.synapse.api.modules.mindmap.dto.request.MindmapEdgeRequest;
+import com.synapse.api.modules.mindmap.dto.request.AddMindmapNodeRequest;
+import com.synapse.api.modules.mindmap.dto.request.UpdateMindmapPositionsRequest;
+import com.synapse.api.modules.mindmap.dto.response.MindmapResponse;
+import com.synapse.api.modules.mindmap.entity.MindmapEdge;
+import com.synapse.api.modules.mindmap.repository.MindmapEdgeRepository;
+import com.synapse.api.modules.note.entity.Note;
+import com.synapse.api.modules.note.repository.NoteRepository;
 import com.synapse.api.util.exception.BusinessException;
-import com.synapse.api.util.exception.ErrorCode;
+import com.synapse.api.util.response.ErrorCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -88,8 +88,7 @@ public class MindmapService {
         );
 
         if (deleted == 0) {
-            //todo: 권한 없거나 연결이 존재하지않는다라는 예외로 바꾸기
-            throw new BusinessException(ErrorCode.NOTE_ACCESS_DENIED);
+            throw new BusinessException(ErrorCode.MINDMAP_EDGE_NOT_DELETABLE);
         }
     }
 
@@ -150,8 +149,7 @@ public class MindmapService {
             validNoteOwner(userId, note);
 
             if (note.getPointX() == null || note.getPointY() == null) {
-                //todo: NOTE_NOT_IN_MINDMAP 예외로 바꾸기
-                throw new BusinessException(ErrorCode.NOTE_ACCESS_DENIED);
+                throw new BusinessException(ErrorCode.NOTE_NOT_IN_MINDMAP);
             }
         }
 

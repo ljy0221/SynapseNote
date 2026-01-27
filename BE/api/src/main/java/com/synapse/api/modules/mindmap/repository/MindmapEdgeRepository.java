@@ -1,7 +1,7 @@
-package com.synapse.api.module.mindmap.repository;
+package com.synapse.api.modules.mindmap.repository;
 
-import com.synapse.api.module.mindmap.entity.MindmapEdge;
-import com.synapse.api.module.mindmap.entity.MindmapEdgeId;
+import com.synapse.api.modules.mindmap.entity.MindmapEdge;
+import com.synapse.api.modules.mindmap.entity.MindmapEdgeId;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;

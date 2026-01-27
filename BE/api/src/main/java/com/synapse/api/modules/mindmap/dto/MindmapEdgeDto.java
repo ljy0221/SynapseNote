@@ -1,4 +1,4 @@
-package com.synapse.api.module.mindmap.dto;
+package com.synapse.api.modules.mindmap.dto;
 
 import java.util.UUID;
 

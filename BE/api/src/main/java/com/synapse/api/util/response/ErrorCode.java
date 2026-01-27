@@ -31,6 +31,10 @@ public enum ErrorCode {
     NOTE_CONTENT_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTE_005", "노트 콘텐츠를 찾을 수 없습니다"),
     NOTE_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTE_006", "노트 멤버를 찾을 수 없습니다"),
 
+    // Mindmap
+    NOTE_NOT_IN_MINDMAP(HttpStatus.NOT_FOUND, "MINDMAP_001", "노트가 마인드맵에 존재하지않습니다."),
+    MINDMAP_EDGE_NOT_DELETABLE(HttpStatus.FORBIDDEN, "MINDMAP_002", "연결이 존재하지 않거나 삭제 권한이 없습니다."),
+
     // Docker Execution
     DOCKER_NOT_INSTALLED(HttpStatus.SERVICE_UNAVAILABLE, "DOCKER_001", "Docker가 설치되지 않았습니다"),
     DOCKER_NOT_RUNNING(HttpStatus.SERVICE_UNAVAILABLE, "DOCKER_002", "Docker가 실행 중이지 않습니다"),

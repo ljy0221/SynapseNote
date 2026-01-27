@@ -1,10 +1,8 @@
-package com.synapse.api.module.mindmap.entity;
+package com.synapse.api.modules.mindmap.entity;
 
-import com.synapse.api.module.note.entity.Note;
+import com.synapse.api.modules.note.entity.Note;
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.util.UUID;
 
 @Entity
 @Table(name = "mindmap_edges")

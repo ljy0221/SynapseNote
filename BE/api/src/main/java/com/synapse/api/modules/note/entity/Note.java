@@ -1,7 +1,7 @@
-package com.synapse.api.module.note.entity;
+package com.synapse.api.modules.note.entity;
 
-import com.synapse.api.module.mindmap.entity.MindmapEdge;
-import com.synapse.api.module.user.entity.User;
+import com.synapse.api.modules.mindmap.entity.MindmapEdge;
+import com.synapse.api.modules.user.entity.User;
 import com.synapse.api.util.entity.BaseEntity;
 import com.synapse.api.util.generator.UuidV7Generator;
 import jakarta.persistence.*;
