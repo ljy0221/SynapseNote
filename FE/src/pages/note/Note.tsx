@@ -73,11 +73,14 @@ const Note: React.FC = () => {
         <div className="page-content-container">
             {!isEditing ? (
                 <>
-                    <h2>노트 편집 페이지</h2>
-                    <div className="create-note-section">
-                        <NoteButton onClick={() => setIsEditing(true)} />
-                        <span className="create-note-label">새 노트 작성하기</span>
+                    <div className="note-intro-wrapper">
+                        <h2>노트 편집 페이지</h2>
+                        <div className="create-note-section">
+                            <NoteButton onClick={() => setIsEditing(true)} />
+                            <span className="create-note-label">새 노트 작성하기</span>
+                        </div>
                     </div>
+
                 </>
             ) : (
                 <div className="editing-layout-wrapper">

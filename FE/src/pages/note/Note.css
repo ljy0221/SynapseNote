@@ -2,27 +2,30 @@
 
 .page-content-container {
     /* 헤더 높이만큼 위쪽 패딩을 추가하여 콘텐츠가 내려오게 합니다. */
-    padding-top: 80px; /* 헤더 높이 + 여유 공간 */
-    
+    padding-top: 80px;
+    /* 헤더 높이 + 여유 공간 */
+
     height: 100vh;
     width: 100%;
     display: flex;
     flex-direction: column;
-    box-sizing: border-box; /* 패딩이 높이에 포함되도록 설정 */
+    box-sizing: border-box;
+    /* 패딩이 높이에 포함되도록 설정 */
 }
 
 .editing-layout-wrapper {
     display: flex;
-    
+
     /* 
      * 핵심: 화면 전체 높이(100vh)에서 Header의 높이(60px)를 뺀 값을
      * 이 컨테이너의 고정 높이로 직접 지정합니다.
      * 이렇게 하면 부모(App.tsx의 main)의 높이에 의존하지 않게 됩니다.
      */
-    height: calc(100vh - 80px); 
-    
+    height: calc(100vh - 80px);
+
     width: 100%;
-    overflow: hidden; /* 자식 요소가 이 높이를 넘어가지 않도록 방어 */
+    overflow: hidden;
+    /* 자식 요소가 이 높이를 넘어가지 않도록 방어 */
 }
 
 
@@ -41,14 +44,27 @@
 }
 
 .note-main-layout {
-    flex: 1; 
+    flex: 1;
     display: flex;
     flex-direction: column;
     height: 100%;
-    
+
     /* 
      * 핵심: flex 컨테이너 안에서 유연하게 줄어들 수 있도록 설정합니다.
      * min-width: 0을 추가하여 내용이 길어져도 부모 너비를 초과하지 않도록 합니다.
      */
     min-width: 0;
+}
+
+/* Note.css 하단에 추가 */
+
+.note-intro-wrapper {
+    width: 100%;
+    max-width: 900px;
+    /* NoteMain과 동일한 폭 */
+    margin: 0 auto;
+    /* 중앙 정렬 */
+    padding: 0 40px;
+    /* 좌우 여백 */
+    box-sizing: border-box;
 }
