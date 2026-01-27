@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { Node } from 'reactflow';
-import { forceSimulation, forceCollide, SimulationNodeDatum } from 'd3-force';
+import { forceSimulation, SimulationNodeDatum } from 'd3-force';
 
 type SimNode = SimulationNodeDatum & {
     id: string;
@@ -27,14 +27,66 @@ export const useNodeRepulsion = ({ nodes, setNodes, active = true }: UseNodeRepu
         if (!active) return;
 
         simulationRef.current = forceSimulation<SimNode>([])
-            .force('collide', forceCollide((d: SimNode) => {
-                const w = d.width || 150;
-                const h = d.height || 50;
-                return Math.max(w, h) / 1.5;
-            }).strength(0.7).iterations(1))
+            .force('collide', alpha => {
+                const nodes = simulationRef.current?.nodes() as SimNode[];
+                if (!nodes) return;
+
+                // 직사각형 충돌 감지 및 해결 (강도 상수)
+                const STRENGTH = 0.5;
+                const PADDING = 10; // 여유 공간
+
+                for (let i = 0; i < nodes.length; ++i) {
+                    for (let j = i + 1; j < nodes.length; ++j) {
+                        const a = nodes[i];
+                        const b = nodes[j];
+
+                        // [Modified] 드래그 중인 노드를 포함하면 물리 처리 안함
+                        if (dragNodeRef.current === a.id || dragNodeRef.current === b.id) continue;
+
+                        const ax = a.x + a.vx! * alpha; // 예측 위치 포함
+                        const ay = a.y + a.vy! * alpha;
+                        const bx = b.x + b.vx! * alpha;
+                        const by = b.y + b.vy! * alpha;
+
+                        const dx = bx - ax;
+                        const dy = by - ay;
+                        const adx = Math.abs(dx);
+                        const ady = Math.abs(dy);
+
+                        // 각 노드의 반값 너비/높이
+                        const aw = (a.width || 150) / 2 + PADDING;
+                        const ah = (a.height || 50) / 2 + PADDING;
+                        const bw = (b.width || 150) / 2 + PADDING;
+                        const bh = (b.height || 50) / 2 + PADDING;
+
+                        // 충돌 검사 (직사각형)
+                        if (adx < (aw + bw) && ady < (ah + bh)) {
+                            // 충돌 발생! 가장 적게 겹치는 축으로 밀어내기
+                            const overlapX = (aw + bw) - adx;
+                            const overlapY = (ah + bh) - ady;
+
+                            // X축으로 밀어내는 게 더 유리한가, Y축인가? (작은 쪽 선택)
+                            if (overlapX < overlapY) {
+                                const sign = dx > 0 ? 1 : -1;
+                                const move = overlapX * STRENGTH * alpha;
+                                a.vx! -= move * sign;
+                                b.vx! += move * sign;
+                            } else {
+                                const sign = dy > 0 ? 1 : -1;
+                                const move = overlapY * STRENGTH * alpha;
+                                a.vy! -= move * sign;
+                                b.vy! += move * sign;
+                            }
+                        }
+                    }
+                }
+            })
             .velocityDecay(0.6);
 
         simulationRef.current.on('tick', () => {
+            // [Modified] 드래그 중일 때는 물리 엔진 업데이트를 아예 중단하여 다른 노드가 움직이는 것을 방지
+            if (dragNodeRef.current) return;
+
             const simNodes: SimNode[] = simulationRef.current.nodes();
             let hasChange = false;
 
@@ -76,9 +128,9 @@ export const useNodeRepulsion = ({ nodes, setNodes, active = true }: UseNodeRepu
     useEffect(() => {
         if (!active || !simulationRef.current) return;
 
-        // 드래그 중일 때는 리액트 상태 변경(위치 업데이트)이 물리 엔진을 재초기화하지 않도록 차단
-        // (드래그 중인 노드의 위치는 onNodeDrag에서 fx, fy로 직접 제어함)
+        // [Modified] 드래그 중일 때는 리액트 상태 변경이 물리 엔진을 재시작하지 않도록 차단
         if (dragNodeRef.current) return;
+
 
         if (isInternalUpdate.current) {
             isInternalUpdate.current = false;
@@ -107,7 +159,10 @@ export const useNodeRepulsion = ({ nodes, setNodes, active = true }: UseNodeRepu
         });
 
         simulationRef.current.nodes(newSimNodes);
-        simulationRef.current.alpha(0.3).restart();
+
+        // [Modified] 노드 위치가 변경되어도 물리 엔진을 재시작하지 않음 (정적 배치 유지)
+        // 오직 드래그(manual)나 명시적 호출에 의해서만 위치가 변하도록 함
+        // simulationRef.current.alpha(0.3).restart();
 
     }, [nodes, active]);
 
@@ -122,21 +177,76 @@ export const useNodeRepulsion = ({ nodes, setNodes, active = true }: UseNodeRepu
                 simNode.fx = node.position.x;
                 simNode.fy = node.position.y;
             }
-            simulationRef.current.alpha(0.3).restart();
+            //simulationRef.current.alpha(0.3).restart();
         }
     }, []);
 
     const onNodeDrag = useCallback((_: React.MouseEvent, node: Node) => {
-        // 드래그 중: 고정된 위치를 계속 업데이트하여 다른 노드를 밀어내도록 함
+        // [Modified] 드래그 시 좌표 제한 로직 추가
+        // 다른 노드와 겹치려고 하면 해당 위치로 못 가게 막음 (벽돌처럼)
+
+        let newX = node.position.x;
+        let newY = node.position.y;
+
+        const PADDING = 10;
+
+        // 현재 드래그 중인 노드의 크기
+        const w = node.width || 150;
+        const h = node.height || 50;
+        const aw = w / 2 + PADDING;
+        const ah = h / 2 + PADDING;
+
+        // 다른 모든 노드와 충돌 검사
+        nodes.forEach(other => {
+            if (other.id === node.id || other.id === 'world-boundary') return;
+
+            const bw = (other.width || 150) / 2 + PADDING;
+            const bh = (other.height || 50) / 2 + PADDING;
+
+            const dx = other.position.x - newX;
+            const dy = other.position.y - newY;
+            const adx = Math.abs(dx);
+            const ady = Math.abs(dy);
+
+            if (adx < (aw + bw) && ady < (ah + bh)) {
+                // 충돌! 겹치는 깊이 계산
+                const overlapX = (aw + bw) - adx;
+                const overlapY = (ah + bh) - ady;
+
+                // 더 얕게 겹친 쪽으로 밀어내기 (위치 보정)
+                if (overlapX < overlapY) {
+                    if (dx > 0) newX -= overlapX; // 타겟이 오른쪽 -> 왼쪽으로 밀림
+                    else newX += overlapX;        // 타겟이 왼쪽 -> 오른쪽으로 밀림
+                } else {
+                    if (dy > 0) newY -= overlapY; // 타겟이 아래 -> 위로 밀림
+                    else newY += overlapY;        // 타겟이 위 -> 아래로 밀림
+                }
+            }
+        });
+
+        // 보정된 위치를 물리 엔진에 반영
         if (simulationRef.current) {
             const simNode = simulationRef.current.nodes().find((n: SimNode) => n.id === node.id);
             if (simNode) {
-                simNode.fx = node.position.x;
-                simNode.fy = node.position.y;
+                simNode.fx = newX;
+                simNode.fy = newY;
+
+                // 만약 실제로 위치가 보정되었다면, React Flow 노드 상태도 업데이트해야 
+                // 화면상에서 '걸리는' 느낌을 줄 수 있음. 
+                // 하지만 onNodeDrag에서 setNodes를 호출하면 렌더링 루프 위험이 있으므로,
+                // 여기서는 물리 엔진 좌표만 업데이트하고 React Flow의 드래그 자체를 막지는 않음.
+                // (React Flow는 드래그 중인 노드의 UI 위치를 내부적으로 관리함)
+
+                // *중요*: "못 위치하는 느낌"을 주려면 위치를 강제로 덮어써야 함.
+                if (newX !== node.position.x || newY !== node.position.y) {
+                    node.position.x = newX;
+                    node.position.y = newY;
+                }
             }
-            simulationRef.current.alpha(0.3).restart();
+            // [Modified] 드래그 중 시뮬레이션 재시작 하지 않음
+            // simulationRef.current.alpha(0.3).restart();
         }
-    }, []);
+    }, [nodes]);
 
     const onNodeDragStop = useCallback((_: React.MouseEvent, node: Node) => {
         dragNodeRef.current = null;
@@ -152,7 +262,8 @@ export const useNodeRepulsion = ({ nodes, setNodes, active = true }: UseNodeRepu
                 simNode.x = node.position.x;
                 simNode.y = node.position.y;
             }
-            simulationRef.current.alpha(0.3).restart();
+            // [Modified] 드래그 종료 시에도 시뮬레이션 재시작 하지 않음 (정적 배치 유지)
+            // simulationRef.current.alpha(0.3).restart();
         }
     }, []);
 
