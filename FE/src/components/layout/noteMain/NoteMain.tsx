@@ -15,6 +15,7 @@ interface NoteMainProps {
     onUpdateBlock: (id: number, content: string) => void;
     onAddBlockAfter: (afterId: number, type: BlockType) => void;
     onDeleteBlock: (id: number) => void;
+    onFocusBlock: (id: number) => void;
 }
 
 const NoteMain: React.FC<NoteMainProps> = ({
@@ -23,7 +24,8 @@ const NoteMain: React.FC<NoteMainProps> = ({
     blocks,
     onUpdateBlock,
     onAddBlockAfter,
-    onDeleteBlock
+    onDeleteBlock,
+    onFocusBlock
 }) => {
     const renderBlock = (block: BlockData) => {
         switch (block.type) {
@@ -38,6 +40,7 @@ const NoteMain: React.FC<NoteMainProps> = ({
                         content={block.content}
                         onUpdate={onUpdateBlock}
                         onAddBlockBelow={onAddBlockAfter}
+                        onFocus={() => onFocusBlock(block.id)}
                     />
                 );
 
@@ -49,6 +52,7 @@ const NoteMain: React.FC<NoteMainProps> = ({
                         content={block.content}
                         onUpdate={onUpdateBlock}
                         onAddBlockBelow={onAddBlockAfter}
+                        onFocus={() => onFocusBlock(block.id)}
                     />
                 );
 

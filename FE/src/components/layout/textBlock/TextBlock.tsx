@@ -10,13 +10,15 @@ interface TextBlockProps {
     content: string;
     onUpdate: (id: number, content: string) => void;
     onAddBlockBelow: (afterId: number, type: BlockType) => void;
+    onFocus: () => void;
 }
 
-const TextBlock: React.FC<TextBlockProps> = ({ 
-    id, 
-    content, 
-    onUpdate, 
-    onAddBlockBelow 
+const TextBlock: React.FC<TextBlockProps> = ({
+    id,
+    content,
+    onUpdate,
+    onAddBlockBelow,
+    onFocus
 }) => {
     const [showMenu, setShowMenu] = useState(false);
     const [text, setText] = useState(content);
@@ -60,15 +62,15 @@ const TextBlock: React.FC<TextBlockProps> = ({
     return (
         <div className="text-block-wrapper">
             <div className="block-controls">
-                <button 
-                    className="add-block-btn" 
+                <button
+                    className="add-block-btn"
                     onClick={() => setShowMenu(!showMenu)}
                     title="블록 추가"
                 >
                     +
                 </button>
                 {showMenu && (
-                    <BlockTypeMenu 
+                    <BlockTypeMenu
                         onSelect={(type) => {
                             onAddBlockBelow(id, type);
                             setShowMenu(false);
@@ -84,6 +86,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 onChange={handleChange}
                 onBlur={handleBlur}
                 onKeyDown={handleKeyDown}
+                onFocus={onFocus}
                 placeholder="텍스트를 입력하세요..."
                 rows={1}
                 style={{ resize: 'none', overflow: 'hidden' }}

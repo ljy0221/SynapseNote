@@ -1,38 +1,163 @@
-.note-toolbar {
-  position: fixed;
-  top: 60px; /* 헤더 높이 */
-  right: -240px; /* 닫혔을 때 */
-  width: 240px;
-  height: calc(100vh - 64px);
-  background-color: var(--color-sub);
-  border-left: 1px solid var(--border-color);
-  transition: right 0.3s ease;
-  padding: 20px;
-  z-index: 10;
-}
+/* src/components/layout/noteToolbar/NoteToolbar.css */
 
-.note-toolbar.open {
-  right: 0; /* 열렸을 때 */
-}
+.note-floating-toolbar {
+  position: relative;
+  /* 토글 버튼 기준점 */
+  width: 60px;
+  /* 기본 너비 */
+  height: 100%;
 
-.toolbar-items {
+  border-left: 1px solid var(--border-color, #e0e0e0);
+  background-color: var(--bg-sub, #f9f9f9);
+
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-top: 20px;
+  align-items: center;
+  padding-top: 20px;
+  gap: 16px;
+  z-index: 10;
+
+  /* 너비 애니메이션 */
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    padding 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    border 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.item {
+/* 닫혔을 때 */
+.note-floating-toolbar.collapsed {
+  width: 0;
+  padding: 20px 0;
+  /* 패딩은 유지하되 좌우는 0이어야 함 (실제로는 overflow:hidden) */
+  border-left-width: 0;
+  /* 선 제거 */
+  overflow: visible;
+  /* 토글 버튼은 보여야 함 */
+}
+
+/* 내용물 숨김 처리 */
+.note-floating-toolbar.collapsed .toolbar-section {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.toolbar-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  opacity: 1;
+  transition: opacity 0.3s ease 0.1s;
+  /* 열릴 때 약간 딜레이 */
+}
+
+/* 
+   토글 버튼 재설계:
+   툴바의 '왼쪽 경계선'에 걸치도록 배치.
+   transform: translate(-100%)를 사용하여 항상 툴바 밖(왼쪽)에 위치하게 함.
+*/
+.toolbar-toggle-btn {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translate(-100%, -50%);
+  /* 핵심: 왼쪽으로 100% 이동 */
+
+  width: 24px;
+  height: 48px;
+
+  background-color: var(--bg-sub, #f9f9f9);
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-right: none;
+  /* 오른쪽 열림 (툴바와 연결됨) */
+  border-radius: 6px 0 0 6px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 20;
+
+  color: var(--font-color, #888);
+  opacity: 0;
+  /* 평소엔 숨김 (왼쪽 사이드바처럼) */
+  transition: opacity 0.2s ease, background-color 0.2s;
+}
+
+/* 툴바에 마우스를 올리거나, 툴바가 닫혔을 때는 버튼 보임 */
+.note-floating-toolbar:hover .toolbar-toggle-btn,
+.note-floating-toolbar.collapsed .toolbar-toggle-btn {
+  opacity: 1;
+}
+
+.toolbar-toggle-btn:hover {
+  background-color: var(--border-color, #eee);
+  color: var(--font-color, #333);
+}
+
+/* 닫혔을 때 버튼 스타일 조정 */
+.note-floating-toolbar.collapsed .toolbar-toggle-btn {
+  border-right: 1px solid var(--border-color, #e0e0e0);
+  /* 오른쪽 선 생김 */
+  border-radius: 6px;
+  /* 전체 둥글게 */
+  background-color: var(--bg-main, #fff);
+  /* 배경색 변경 */
+  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.05);
+}
+
+/* 나머지 내부 요소 스타일 */
+.divider {
+  width: 60%;
+  height: 1px;
+  background-color: #ddd;
+  margin: 4px 0;
+}
+
+.toolbar-btn {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: transparent;
   border: none;
-  color: var(--font-color);
-  text-align: left;
-  padding: 10px;
+  border-radius: 8px;
   cursor: pointer;
-  border-radius: 4px;
+  color: var(--font-color, #333);
+  transition: all 0.2s ease;
 }
 
-.item:hover {
-  background-color: var(--color-main);
-  color: var(--color-point);
+.toolbar-btn:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: #000;
+}
+
+@media (prefers-color-scheme: dark) {
+  .note-floating-toolbar {
+    background-color: #2c2c2c;
+    border-color: #444;
+  }
+
+  .toolbar-toggle-btn {
+    background-color: #2c2c2c;
+    border-color: #444;
+    color: #aaa;
+  }
+
+  .note-floating-toolbar.collapsed .toolbar-toggle-btn {
+    background-color: #1e1e1e;
+    border-right-color: #444;
+  }
+
+  .toolbar-btn {
+    color: #eee;
+  }
+
+  .toolbar-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
 }
