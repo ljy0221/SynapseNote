@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useReactFlow, Panel } from 'reactflow';
 import { Plus, Minus, Maximize, BoxSelect } from 'lucide-react';
 import '../../../pages/mindmap/MindMap.css'; // 버튼 스타일 재사용
+import { Tooltip } from '../../common/tooltip/Tooltip';
 
 const MindmapControls: React.FC = () => {
     const { fitView, setCenter, getNodes, setNodes, getViewport, setViewport } = useReactFlow();
@@ -83,23 +84,30 @@ const MindmapControls: React.FC = () => {
     return (
         <Panel position="bottom-left" className="mindmap-controls-panel">
             <div className="controls-group">
-                <button className="action-btn btn-control" onClick={handleFastZoomIn} title="빠른 확대 (+)">
-                    <Plus size={20} />
-                </button>
-                <button className="action-btn btn-control" onClick={handleFastZoomOut} title="빠른 축소 (-)">
-                    <Minus size={20} />
-                </button>
-                <button className="action-btn btn-control" onClick={handleSmartFitView} title="화면 맞춤 / 선택 노드 집중">
-                    <Maximize size={20} />
-                </button>
-                <button
-                    className={`action-btn btn-control ${isAllSelected ? 'active' : ''}`}
-                    onClick={handleSelectAll}
-                    title={isAllSelected ? "선택 해제" : "모두 선택 (제목 보기)"}
-                    style={isAllSelected ? { backgroundColor: 'var(--color-sub)', color: 'var(--color-point)' } : {}}
-                >
-                    <BoxSelect size={20} />
-                </button>
+                <Tooltip title="빠른 확대 (+)" content="화면을 확대하여 더 자세히 봅니다." placement="right">
+                    <button className="action-btn btn-control" onClick={handleFastZoomIn}>
+                        <Plus size={20} />
+                    </button>
+                </Tooltip>
+                <Tooltip title="빠른 축소 (-)" content="화면을 축소하여 전체적인 구조를 파악합니다." placement="right">
+                    <button className="action-btn btn-control" onClick={handleFastZoomOut}>
+                        <Minus size={20} />
+                    </button>
+                </Tooltip>
+                <Tooltip title="화면 맞춤 / 선택 집중" content="선택한 시냅스에 집중하거나, 전체 마인드맵을 화면에 꽉 차게 맞춥니다." placement="right">
+                    <button className="action-btn btn-control" onClick={handleSmartFitView}>
+                        <Maximize size={20} />
+                    </button>
+                </Tooltip>
+                <Tooltip title={isAllSelected ? "선택 해제" : "모두 선택"} content="모든 시냅스를 선택하여 제목을 한눈에 확인하거나 일괄 작업을 준비합니다." placement="right">
+                    <button
+                        className={`action-btn btn-control ${isAllSelected ? 'active' : ''}`}
+                        onClick={handleSelectAll}
+                        style={isAllSelected ? { backgroundColor: 'var(--color-sub)', color: 'var(--color-point)' } : {}}
+                    >
+                        <BoxSelect size={20} />
+                    </button>
+                </Tooltip>
             </div>
         </Panel>
     );
