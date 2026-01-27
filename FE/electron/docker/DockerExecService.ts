@@ -1,5 +1,5 @@
 import { spawn } from 'child_process';
-import { writeFileSync, unlinkSync } from 'fs';
+import { writeFileSync, unlinkSync, mkdtempSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import type { ExecutionRequest, ExecutionResult, Language } from '../../src/types/execution/ExecutionTypes';
@@ -9,30 +9,50 @@ export class DockerExecService {
   async executeSingle(request: ExecutionRequest): Promise<ExecutionResult> {
     const startTime = Date.now();
     let tempFilePath: string | null = null;
+    let tempDir: string | null = null;
 
     try {
-      // 1. 임시 파일 생성
+      // 1. 임시 파일/디렉토리 생성
       const extension = this.getFileExtension(request.language);
-      const fileName = request.language === 'java' ? 'Main' : `synapse-${Date.now()}`;
-      tempFilePath = join(tmpdir(), `${fileName}.${extension}`);
-      writeFileSync(tempFilePath, request.code, 'utf8');
+
+      if (request.language === 'java') {
+        // Java는 컴파일을 위해 쓰기 가능한 디렉토리 필요
+        tempDir = mkdtempSync(join(tmpdir(), 'synapse-java-'));
+        tempFilePath = join(tempDir, 'Main.java');
+        writeFileSync(tempFilePath, request.code, 'utf8');
+      } else {
+        // Python, JavaScript는 단일 파일
+        const fileName = `synapse-${Date.now()}`;
+        tempFilePath = join(tmpdir(), `${fileName}.${extension}`);
+        writeFileSync(tempFilePath, request.code, 'utf8');
+      }
 
       // 2. Docker 명령 생성
-      const dockerArgs = this.buildDockerCommand(request, tempFilePath);
+      const dockerArgs = this.buildDockerCommand(request, tempFilePath, tempDir);
+
+      console.log(`[Docker] Executing ${request.language} code (block: ${request.blockId})`);
 
       // 3. 실행
       const result = await this.runDocker(dockerArgs, request.timeout || 5000);
 
+      if (result.exitCode !== 0) {
+        console.log(`[Docker] Execution failed (exit code: ${result.exitCode})`);
+      }
+
       // 4. 결과 반환
+      const isSuccess = result.exitCode === 0;
+      const combinedOutput = result.stdout + (result.stderr ? '\n' + result.stderr : '');
+
       return {
         blockId: request.blockId,
-        output: result.stdout,
-        error: result.stderr || null,
+        output: isSuccess ? result.stdout : combinedOutput,
+        error: isSuccess ? null : (result.stderr || combinedOutput || '실행 실패'),
         executionTime: Date.now() - startTime,
         exitCode: result.exitCode,
-        status: result.exitCode === 0 ? 'success' : 'error',
+        status: isSuccess ? 'success' : 'error',
       };
     } catch (error: any) {
+      console.error(`[Docker] Error executing ${request.language} code:`, error.message);
       return {
         blockId: request.blockId,
         output: '',
@@ -42,23 +62,19 @@ export class DockerExecService {
         status: error.message.includes('timeout') ? 'timeout' : 'error',
       };
     } finally {
-      // 5. 임시 파일 삭제
-      if (tempFilePath) {
+      // 5. 임시 파일/디렉토리 삭제
+      if (tempDir) {
+        try { rmSync(tempDir, { recursive: true, force: true }); } catch {}
+      } else if (tempFilePath) {
         try { unlinkSync(tempFilePath); } catch {}
       }
     }
   }
 
-  private buildDockerCommand(request: ExecutionRequest, filePath: string): string[] {
+  private buildDockerCommand(request: ExecutionRequest, filePath: string, tempDir: string | null = null): string[] {
     const config = DOCKER_SECURITY_CONFIG[request.language];
-    const normalizedPath = this.normalizePath(filePath);
-    const extension = this.getFileExtension(request.language);
 
-    // Java의 경우 파일명을 Main.java로 고정
-    const containerFileName = request.language === 'java' ? 'Main' : 'main';
-    const containerPath = `/code/${containerFileName}.${extension}`;
-
-    return [
+    const baseArgs = [
       'run',
       '--rm',
       '--cpus', config.cpus,
@@ -66,14 +82,36 @@ export class DockerExecService {
       '--memory-swap', config.memorySwap,
       '--pids-limit', config.pidsLimit.toString(),
       '--network', 'none',
-      '--read-only',
-      '--tmpfs', '/tmp:size=64m',
       '--security-opt', 'no-new-privileges',
       '--cap-drop', 'ALL',
-      '-v', `${normalizedPath}:${containerPath}:ro`,
-      config.image,
-      ...this.getExecutionCommand(request.language, containerPath),
     ];
+
+    // Java는 디렉토리 전체를 마운트하고 그 안에서 컴파일/실행
+    if (request.language === 'java' && tempDir) {
+      const normalizedDir = this.normalizePath(tempDir);
+      return [
+        ...baseArgs,
+        '-v', `${normalizedDir}:/workspace`,  // 디렉토리 마운트 (쓰기 가능)
+        '-w', '/workspace',  // 작업 디렉토리 설정
+        config.image,
+        'sh', '-c', 'javac Main.java 2>&1 && java Main 2>&1',
+      ];
+    } else {
+      // Python, JavaScript는 단일 파일
+      const normalizedPath = this.normalizePath(filePath);
+      const extension = this.getFileExtension(request.language);
+      const containerFileName = `main.${extension}`;
+      const containerPath = `/code/${containerFileName}`;
+
+      return [
+        ...baseArgs,
+        '--read-only',
+        '--tmpfs', '/tmp:size=64m',
+        '-v', `${normalizedPath}:${containerPath}:ro`,
+        config.image,
+        ...this.getExecutionCommand(request.language, containerPath),
+      ];
+    }
   }
 
   private getExecutionCommand(language: Language, filePath: string): string[] {
@@ -82,10 +120,6 @@ export class DockerExecService {
         return ['python', filePath];
       case 'javascript':
         return ['node', filePath];
-      case 'java':
-        // Java는 컴파일 후 실행
-        const dir = filePath.substring(0, filePath.lastIndexOf('/'));
-        return ['sh', '-c', `cd ${dir} && javac Main.java && java Main`];
       default:
         throw new Error(`Unsupported language: ${language}`);
     }
@@ -101,8 +135,9 @@ export class DockerExecService {
       let stderr = '';
       let timedOut = false;
 
+      // Windows에서는 shell: false로 설정하여 직접 docker 실행
       const child = spawn('docker', args, {
-        shell: true,
+        shell: false,  // shell 사용 안 함
         windowsHide: true,
       });
 
@@ -130,12 +165,7 @@ export class DockerExecService {
   }
 
   private normalizePath(filePath: string): string {
-    if (process.platform === 'win32') {
-      // Windows: C:\Users\... -> /c/Users/...
-      return filePath
-        .replace(/\\/g, '/')
-        .replace(/^([A-Z]):/, (_, drive) => `/${drive.toLowerCase()}`);
-    }
+    // Docker Desktop은 모든 플랫폼의 네이티브 경로를 처리 가능
     return filePath;
   }
 
