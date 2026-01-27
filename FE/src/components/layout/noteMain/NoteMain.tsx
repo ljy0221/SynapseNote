@@ -117,6 +117,7 @@ const NoteMain: React.FC<NoteMainProps> = ({
                     value={title}
                     onChange={(e) => onUpdateTitle(e.target.value)}
                     placeholder="제목 없음"
+                    autoFocus
                 />
             </header>
 
