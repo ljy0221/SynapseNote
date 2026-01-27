@@ -2,6 +2,7 @@ package com.synapse.api.modules.note.repository;
 
 import com.synapse.api.modules.note.entity.Note;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -26,4 +27,12 @@ public interface NoteRepository extends JpaRepository<Note, UUID> {
             "AND (n.title ILIKE %:query% OR n.directoryPath ILIKE %:query%) " +
             "AND n.deletedAt IS NULL")
     List<Note> searchByUserAndQuery(@Param("userId") UUID userId, @Param("query") String query);
+
+    @Query("SELECT n FROM Note n WHERE n.createdBy.id = :userId AND n.pointX IS NOT NULL AND n.pointY IS NOT NULL")
+    List<Note> findMindMapNodesByUser(UUID userId);
+
+    @Modifying
+    @Query("UPDATE Note n SET n.pointX = NULL, n.pointY = NULL " +
+            "WHERE n.createdBy.id = :userId AND n.pointX IS NOT NULL")
+    int resetMindmapNodePositions(@Param("userId") UUID userId);
 }
