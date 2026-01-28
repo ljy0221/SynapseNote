@@ -9,7 +9,6 @@ import com.synapse.api.modules.user.entity.User;
 import com.synapse.api.modules.user.repository.OAuthRepository;
 import com.synapse.api.modules.user.repository.UserRepository;
 import com.synapse.api.util.exception.BusinessException;
-import com.synapse.api.util.redis.RedisConstant;
 import com.synapse.api.util.response.ErrorCode;
 import com.synapse.api.util.redis.TokenRedisService;
 import com.synapse.api.util.security.JwtUtil;

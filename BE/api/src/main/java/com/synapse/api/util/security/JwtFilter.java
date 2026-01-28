@@ -2,7 +2,6 @@ package com.synapse.api.util.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.synapse.api.util.Constant;
-import com.synapse.api.util.redis.RedisConstant;
 import com.synapse.api.util.redis.TokenRedisService;
 import com.synapse.api.util.response.ErrorCode;
 import com.synapse.api.util.response.ErrorResponse;

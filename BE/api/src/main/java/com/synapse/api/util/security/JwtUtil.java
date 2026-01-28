@@ -1,7 +1,6 @@
 package com.synapse.api.util.security;
 
 import com.synapse.api.util.Constant;
-import com.synapse.api.util.redis.TokenRedisService;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
@@ -18,12 +17,10 @@ import java.util.UUID;
 public class JwtUtil {
 
     private final SecretKey secretKey;
-    private final TokenRedisService tokenRedisService;
 
     // secret key 가져오기
-    public JwtUtil(@Value("${spring.jwt.secret}") String secret, TokenRedisService tokenRedisService) {
+    public JwtUtil(@Value("${spring.jwt.secret}") String secret) {
         this.secretKey = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), Jwts.SIG.HS256.key().build().getAlgorithm());
-        this.tokenRedisService = tokenRedisService;
     }
 
     // Access Token 토큰 발급
