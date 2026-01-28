@@ -1,5 +1,6 @@
 import type { ExecutionResult } from '../types/execution/ExecutionTypes';
 
+// "/v1/notes/{noteId}/blocks/{blockId}/executions"
 export async function saveExecutionToBackend(
   noteId: string,
   blockId: string,
@@ -11,7 +12,7 @@ export async function saveExecutionToBackend(
       console.warn('인증 토큰이 없어 실행 히스토리를 저장하지 않습니다.');
       return;
     }
-
+    // "/v1/notes/{noteId}/blocks/{blockId}/executions"
     await fetch(`/api/v1/notes/${noteId}/blocks/${blockId}/executions`, {
       method: 'POST',
       headers: {

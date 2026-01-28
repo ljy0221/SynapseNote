@@ -1,13 +1,21 @@
-export interface SearchNoteItem {
-  noteId: string;
+// 검색 결과 단일 노트
+export interface SearchedNote {
+  id: string;
   title: string;
   directoryPath: string;
-  pointX: number;
-  pointY: number;
+  pointX: number | null;
+  pointY: number | null;
+  createdBy: string;
+  createdByName: string;
   createdAt: string;
   updatedAt: string;
 }
 
+// 공통 API 응답 래퍼
 export interface SearchNotesResponse {
-  notes: SearchNoteItem[];
+  success: boolean;
+  code: string;
+  message: string;
+  path: string;
+  data: SearchedNote[];
 }

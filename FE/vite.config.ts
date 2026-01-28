@@ -35,5 +35,14 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins,
+    server: {
+      proxy: {
+        '/api': {
+          target: 'https://i14b102.p.ssafy.io/backend',
+          changeOrigin: true,
+          secure: false,
+        },
+      },
+    },
   }
 })

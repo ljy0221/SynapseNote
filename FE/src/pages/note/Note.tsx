@@ -22,18 +22,20 @@ const Note: React.FC = () => {
 
     const [title, setTitle] = useState("제목 없는 노트");
 
+    const [focusedBlockId, setFocusedBlockId] = useState<number | null>(null);
+
     // 블록 배열 상태 관리 (초기에는 빈 텍스트 블록 하나)
     const [blocks, setBlocks] = useState<BlockData[]>([
         { id: Date.now(), type: 'text', content: '' }
     ]);
 
-    // 코드블록 추가 (Add Block 버튼용 - 맨 끝에 추가)
-    const addCodeBlock = () => {
+    // [변경] 블록 추가 함수 (툴바용) - 맨 아래에 추가
+    const handleAddBlock = (type: BlockType) => {
         const newBlock: BlockData = {
             id: Date.now(),
-            type: 'code',
-            content: '// 새로운 코드를 작성하세요.',
-            language: 'javascript'
+            type: type,
+            content: type === 'code' ? '// 코드를 작성하세요.' : '',
+            language: type === 'code' ? 'javascript' : undefined,
         };
         setBlocks([...blocks, newBlock]);
     };
@@ -55,6 +57,18 @@ const Note: React.FC = () => {
         setBlocks(newBlocks);
     };
 
+    // 2. 타입 변경 함수 추가
+    const handleChangeBlockType = (type: BlockType) => {
+        if (!focusedBlockId) return; // 선택된 게 없으면 무시
+
+        setBlocks(blocks.map(block =>
+            block.id === focusedBlockId
+                ? { ...block, type: type } // 타입 교체!
+                : block
+        ));
+    };
+
+
     // 블록 내용 업데이트
     const updateBlock = (id: number, content: string) => {
         setBlocks(blocks.map(block =>
@@ -69,26 +83,30 @@ const Note: React.FC = () => {
         }
     };
 
-    // 현재 포커스된 블록의 ID
-    const [focusedBlockId, setFocusedBlockId] = useState<number | null>(null);
-
-    // 블록 타입 변경 함수
-    const changeBlockType = (id: number, type: BlockType) => {
-        setBlocks(blocks.map(block => {
-            if (block.id === id) {
-                return {
-                    ...block,
-                    type: type,
-                    // 코드 블록으로 변환 시 언어 설정 초기화, 그 외엔 유지
-                    language: type === 'code' ? 'javascript' : undefined
-                };
-            }
-            return block;
-        }));
+    // [추가] 블록 순서 변경 (DnD)
+    const handleMoveBlock = (dragIndex: number, hoverIndex: number) => {
+        const dragBlock = blocks[dragIndex];
+        const newBlocks = [...blocks];
+        newBlocks.splice(dragIndex, 1);
+        newBlocks.splice(hoverIndex, 0, dragBlock);
+        setBlocks(newBlocks);
     };
+
+
+
+
 
     // 툴바 열림/닫힘 상태
     const [isToolbarOpen, setIsToolbarOpen] = useState(true);
+
+    // 툴바 버튼 클릭 핸들러: 포커스된 블록이 있으면 타입 변경, 없으면 새 블록 추가
+    const handleToolbarAction = (type: BlockType) => {
+        if (focusedBlockId) {
+            handleChangeBlockType(type);
+        } else {
+            handleAddBlock(type);
+        }
+    };
 
     return (
         <div className="page-content-container">
@@ -112,16 +130,12 @@ const Note: React.FC = () => {
                         onAddBlockAfter={addBlockAfter}
                         onDeleteBlock={deleteBlock}
                         onFocusBlock={setFocusedBlockId}
+                        onMoveBlock={handleMoveBlock}
                     />
                     <NoteToolBar
                         isOpen={isToolbarOpen}
                         onToggle={() => setIsToolbarOpen(!isToolbarOpen)}
-                        onAddCodeBlock={addCodeBlock}
-                        onSelectBlockType={(type) => {
-                            if (focusedBlockId) {
-                                changeBlockType(focusedBlockId, type);
-                            }
-                        }}
+                        onButtonClick={handleToolbarAction}
                     />
                 </div>
             )}
