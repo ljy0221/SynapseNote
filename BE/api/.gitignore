@@ -43,3 +43,4 @@ out/
 /CLAUDE.md
 .claude/
 **/test/*
+/src/main/java/com/synapse/api/test/
