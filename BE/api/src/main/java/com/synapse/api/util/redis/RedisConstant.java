@@ -8,7 +8,7 @@ public class RedisConstant {
     public static final String REDIS_TOKEN_EXPIRED = "token:expired:";  // token:expired:{token} = true
     public static final String REDIS_TOKEN_USED = "token:used:";  // token:used:{token} = true
 
-    // 회원에 대한 Refresh Token
-    public static final String REDIS_REFRESH_TOKEN = "token:refresh:";  //token:refresh:{role}:{userId} = {refreshToken}
+    // 회원에 대한 Token
+    public static final String REDIS_REFRESH_TOKEN = "token:refresh:";  //token:refresh:{userId} = {refreshToken}
 
 }

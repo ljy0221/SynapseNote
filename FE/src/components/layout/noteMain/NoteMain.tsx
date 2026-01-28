@@ -16,6 +16,7 @@ interface NoteMainProps {
     onAddBlockAfter: (afterId: number, type: BlockType) => void;
     onDeleteBlock: (id: number) => void;
     onFocusBlock: (id: number) => void;
+    onMoveBlock: (dragIndex: number, hoverIndex: number) => void;
 }
 
 const NoteMain: React.FC<NoteMainProps> = ({
@@ -25,9 +26,39 @@ const NoteMain: React.FC<NoteMainProps> = ({
     onUpdateBlock,
     onAddBlockAfter,
     onDeleteBlock,
-    onFocusBlock
+    onFocusBlock,
+    onMoveBlock // [수정] Props에서 구조 분해 할당
 }) => {
-    const renderBlock = (block: BlockData) => {
+
+    // [추가] DnD 상태 관리
+    const [dragIndex, setDragIndex] = React.useState<number | null>(null);
+
+    const onDragStart = (e: React.DragEvent, index: number) => {
+        // [수정] 드래그 데이터 설정 (필수)
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", index.toString());
+        setDragIndex(index);
+    };
+
+    const onDragOver = (e: React.DragEvent) => {
+        e.preventDefault(); // 드롭 허용
+    };
+
+    const onDrop = (dropIndex: number) => {
+        if (dragIndex === null || dragIndex === dropIndex) return;
+        onMoveBlock(dragIndex, dropIndex);
+        setDragIndex(null);
+    };
+
+    const renderBlock = (block: BlockData, index: number) => {
+        // [추가] 공통 DnD Props 생성
+        const commonProps = {
+            draggable: true,
+            onDragStart: (e: React.DragEvent) => onDragStart(e, index),
+            onDragOver: onDragOver,
+            onDrop: () => onDrop(index),
+        };
+
         switch (block.type) {
             case 'h1':
             case 'h2':
@@ -35,11 +66,13 @@ const NoteMain: React.FC<NoteMainProps> = ({
                 return (
                     <HeadingBlock
                         key={block.id}
+                        {...commonProps} // [추가] Props 전달
                         id={block.id}
                         level={block.type}
                         content={block.content}
                         onUpdate={onUpdateBlock}
                         onAddBlockBelow={onAddBlockAfter}
+                        onDelete={onDeleteBlock}
                         onFocus={() => onFocusBlock(block.id)}
                     />
                 );
@@ -48,10 +81,12 @@ const NoteMain: React.FC<NoteMainProps> = ({
                 return (
                     <TextBlock
                         key={block.id}
+                        {...commonProps} // [추가] Props 전달
                         id={block.id}
                         content={block.content}
                         onUpdate={onUpdateBlock}
                         onAddBlockBelow={onAddBlockAfter}
+                        onDelete={onDeleteBlock}
                         onFocus={() => onFocusBlock(block.id)}
                     />
                 );
@@ -60,14 +95,15 @@ const NoteMain: React.FC<NoteMainProps> = ({
                 return (
                     <CodeBlock
                         key={block.id}
+                        {...commonProps} // [추가] Props 전달
                         id={block.id}
-                        language={block.language || 'javascript'}
+                        language={(block.language as any) || 'javascript'}
                         code={block.content}
                         onDelete={onDeleteBlock}
                         onChange={onUpdateBlock}
-
-                    />
-                );
+                        onFocus={() => onFocusBlock(block.id)}
+                        onAddBlockBelow={onAddBlockAfter}
+                    />);
 
             default:
                 return null;
@@ -78,15 +114,17 @@ const NoteMain: React.FC<NoteMainProps> = ({
         <div className="note-main-layout">
             <header className="note-main-header">
                 <input
-                    className="note-main-title-input" // CSS 클래스 새로 정의 필요
+                    className="note-main-title-input"
                     value={title}
                     onChange={(e) => onUpdateTitle(e.target.value)}
                     placeholder="제목 없음"
+                    autoFocus
                 />
             </header>
 
             <div className="note-content-area">
-                {blocks.map(renderBlock)}
+                {/* [수정] index를 전달하도록 변경 */}
+                {blocks.map((block, index) => renderBlock(block, index))}
             </div>
         </div>
     );
