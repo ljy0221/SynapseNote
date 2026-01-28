@@ -1,0 +1,32 @@
+# Node modules
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+dist
+dist-electron
+build
+
+# Electron specific files (not needed for web deployment)
+electron
+electron-builder.json5
+*.md
+*.md.txt
+
+# IDE
+.vscode
+.idea
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env.local
+.env.*.local
+
+# Git
+.git
+.gitignore

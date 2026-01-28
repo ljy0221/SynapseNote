@@ -1,6 +1,6 @@
 // BlockBookmarkSection.tsx
 import BlockBookmarkList from './BlockBookmarkList';
-import './blockBookmark.css';
+import './BlockBookmark.css';
 
 const BlockBookmarkSection = () => {
   return (

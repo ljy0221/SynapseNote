@@ -12,8 +12,13 @@ import { SideMenuBar } from './components/layout/sideMenuBar/SideMenuBar';
 import { NoteToolBar } from './components/layout/noteToolbar/NoteToolbar';
 
 // 공통 컴포넌트
-import WindowControlButton from './components/common/windowControlButton/WindowControlButton';
 import ThemeToggle from './components/common/themeToggle/ThemeToggle';
+
+// Electron 전용 컴포넌트 (웹 빌드에서는 사용 안 함)
+const isElectron = typeof window !== 'undefined' && (window as any).electronAPI !== undefined;
+const WindowControlButton = isElectron
+    ? require('./components/common/windowControlButton/WindowControlButton').default
+    : () => null;
 
 // 페이지 컴포넌트
 import Home from './pages/home/Home'; // home 폴더 안에 Home.tsx가 있다고 가정
@@ -40,18 +45,23 @@ function AppContent() {
         document.documentElement.setAttribute('data-theme', theme);
     }, [theme]);
 
-    // Docker 헬스 체크
+    // Docker 헬스 체크 (Electron 환경에서만)
     useEffect(() => {
+        if (!isElectron) {
+            setDockerStatus('ok'); // 웹 환경에서는 Docker 체크 건너뛰기
+            return;
+        }
+
         async function checkDocker() {
             try {
-                const installed = await window.dockerAPI.checkInstalled();
+                const installed = await (window as any).dockerAPI.checkInstalled();
                 if (!installed) {
                     setDockerStatus('error');
                     alert('Docker가 설치되지 않았습니다.\n\nDocker Desktop을 설치해주세요.\nhttps://www.docker.com/products/docker-desktop/');
                     return;
                 }
 
-                const running = await window.dockerAPI.checkRunning();
+                const running = await (window as any).dockerAPI.checkRunning();
                 if (!running) {
                     setDockerStatus('error');
                     alert('Docker가 실행되지 않았습니다.\n\nDocker Desktop을 실행해주세요.');
