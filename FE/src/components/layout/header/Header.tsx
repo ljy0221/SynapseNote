@@ -29,6 +29,12 @@ export const Header: React.FC<HeaderProps> = () => {
 
       {/* 왼쪽과 중앙 사이의 드래그 핸들 */}
       <div className="drag-handle" />
+=======
+    return (
+        <header className="main-header">
+            {/* 왼쪽과 중앙 사이의 드래그 핸들 */}
+            <div className="drag-handle" />
+>>>>>>> develop
 
       <div className="header-search-zone">
         <div className="search-bar-wrapper">
