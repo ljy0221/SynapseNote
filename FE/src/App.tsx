@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 // 스타일 임포트
 import './components/common/styles/Theme.css';
@@ -67,6 +67,20 @@ function AppContent() {
 
         checkDocker();
     }, []);
+
+    // Deep Link 리스너
+    const navigate = useNavigate(); // AppContent는 Router 내부이므로 사용 가능
+    useEffect(() => {
+        // 일렉트론 메인에서 전달받은 Deep Link URL 처리
+        window.ipcRenderer.on('deep-link-url', (_event, url: any) => {
+            console.log('[App] Received deep link:', url);
+            if (typeof url === 'string' && url.startsWith('synapse://')) {
+                // "synapse://auth/google/callback?code=..." -> "/auth/google/callback?code=..."
+                const path = url.replace('synapse://', '/');
+                navigate(path);
+            }
+        });
+    }, [navigate]);
 
     const handleThemeToggle = () => setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
     const toggleSidebar = () => setIsSidebarActive(prev => !prev);

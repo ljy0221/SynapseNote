@@ -2,7 +2,6 @@
 
 export interface LoginResult {
     accessToken: string;
-    refreshToken?: string;
 }
 
 export const socialLogin = async (provider: string, code: string): Promise<LoginResult> => {
@@ -11,6 +10,7 @@ export const socialLogin = async (provider: string, code: string): Promise<Login
         headers: {
             'Content-Type': 'application/json',
         },
+        credentials: 'include', // 쿠키(RefreshToken) 처리를 위해 필수
         body: JSON.stringify({
             provider: provider.toUpperCase(),
             authorizationCode: code,

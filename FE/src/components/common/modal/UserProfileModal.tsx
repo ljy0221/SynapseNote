@@ -65,7 +65,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
     const handleLogout = () => {
         // 토큰 삭제
         localStorage.removeItem('authToken');
-        localStorage.removeItem('refreshToken');
+        // RefreshToken은 HttpOnly Cookie로 관리되므로 클라이언트에서 삭제 불가 (브라우저 정책 따름)
 
         // 로그인 페이지로 이동
         navigate('/login');
