@@ -4,13 +4,12 @@ import { ThemeManager } from '../../features/theme/ThemeManager';
 import SearchBar from '../../common/searchBar/searchBar.tsx';
 import SearchResultDropdown from '../../common/searchResultModal/SearchResultDropdown.tsx';
 import type { SearchedNote } from '../../../types/note/searchNotes';
+import WindowControlButton from '../../common/WindowControlButton/WindowControlButton.tsx';
 import { searchNotes } from '../../../utils/noteAPI';
 
 // Electron 전용 컴포넌트 (웹 빌드에서는 사용 안 함)
 const isElectron = typeof window !== 'undefined' && (window as any).electronAPI !== undefined;
-const WindowControlButton = isElectron
-    ? require('../../common/WindowControlButton/WindowControlButton.tsx').default
-    : () => null;
+
 
 interface HeaderProps {
   isSidebarActive: boolean;
@@ -22,19 +21,12 @@ export const Header: React.FC<HeaderProps> = () => {
   const [searchResults, setSearchResults] = useState<SearchedNote[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
-<<<<<<< HEAD
 
   return (
     <header className="main-header">
 
       {/* 왼쪽과 중앙 사이의 드래그 핸들 */}
       <div className="drag-handle" />
-=======
-    return (
-        <header className="main-header">
-            {/* 왼쪽과 중앙 사이의 드래그 핸들 */}
-            <div className="drag-handle" />
->>>>>>> develop
 
       <div className="header-search-zone">
         <div className="search-bar-wrapper">
@@ -70,14 +62,8 @@ export const Header: React.FC<HeaderProps> = () => {
         </div>
       </div>
 
-<<<<<<< HEAD
-
       {/* 중앙과 오른쪽 사이의 드래그 핸들 */}
       <div className="drag-handle" />
-=======
-            {/* 중앙과 오른쪽 사이의 드래그 핸들 */}
-            <div className="drag-handle" />
->>>>>>> develop
 
       <div className="header-right-zone">
         {/* 테마 토글 버튼 */}
