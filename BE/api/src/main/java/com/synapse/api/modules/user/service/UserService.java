@@ -2,6 +2,7 @@ package com.synapse.api.modules.user.service;
 
 import com.synapse.api.modules.user.dto.oauth.OAuthUserInfo;
 import com.synapse.api.modules.user.dto.request.LoginRequest;
+import com.synapse.api.modules.user.dto.response.LoginResponse;
 import com.synapse.api.modules.user.dto.response.LoginResult;
 import com.synapse.api.modules.user.dto.response.ProfileResponse;
 import com.synapse.api.modules.user.entity.OAuthAccount;
@@ -36,9 +37,9 @@ public class UserService {
 
         Optional<User> optionalUser = userRepository.findByEmail(oAuthUserInfo.getEmail());
 
-        UUID id;
+        User user;
         if (optionalUser.isPresent()) {
-            User user = optionalUser.get();
+            user = optionalUser.get();
 
             // 탈퇴(soft delete)된 계정인지 체크
             if (user.getDeletedAt() != null) {
@@ -52,21 +53,33 @@ public class UserService {
             if (optionalOAuth.isEmpty()) {
                 throw new BusinessException(ErrorCode.USER_ALREADY_EXISTS_ANOTHER_PROVIDER);
             }
-
-            id = user.getId();
         } else {
             // 가입하지 않은 유저 -> 신규 회원가입
-            id = saveNewUser(oAuthUserInfo);
+            user = saveNewUser(oAuthUserInfo);
         }
 
-        boolean sessionReplaced = invalidSession(id);
+        boolean sessionReplaced = invalidSession(user.getId());
 
-        String access = jwtUtil.generateAccessToken(id);
-        String refresh = tokenRedisService.generateRefreshToken(id);
-        return LoginResult.builder()
+        String access = jwtUtil.generateAccessToken(user.getId());
+        String refresh = tokenRedisService.generateRefreshToken(user.getId());
+        OAuthAccount oauth = oAuthRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        LoginResponse response = LoginResponse.builder()
                 .accessToken(access)
-                .refreshToken(refresh)
+                .isNewUser(optionalUser.isEmpty())
+                .user(LoginResponse.User.builder()
+                        .email(user.getEmail())
+                        .name(user.getName())
+                        .provider(oauth.getProvider())
+                        .build()
+                )
                 .sessionReplaced(sessionReplaced)
+                .build();
+
+        return LoginResult.builder()
+                .response(response)
+                .refreshToken(refresh)
                 .build();
     }
 
@@ -84,7 +97,7 @@ public class UserService {
         return oAuthService.getUserInfo(request.authorizationCode());
     }
 
-    private UUID saveNewUser(OAuthUserInfo oAuthUserInfo) {
+    private User saveNewUser(OAuthUserInfo oAuthUserInfo) {
         User user = userRepository.save(User.builder()
                 .email(oAuthUserInfo.getEmail())
                 .name(oAuthUserInfo.getName())
@@ -98,7 +111,7 @@ public class UserService {
                 .build()
         );
 
-        return user.getId();
+        return user;
     }
 
     @Transactional(readOnly = true)
