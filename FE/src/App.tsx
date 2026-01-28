@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 // 스타일 임포트
 import './components/common/styles/Theme.css';
@@ -18,6 +18,7 @@ import ThemeToggle from './components/common/themeToggle/ThemeToggle';
 // 페이지 컴포넌트
 import Home from './pages/home/Home'; // home 폴더 안에 Home.tsx가 있다고 가정
 import Login from './pages/login/Login';
+import OAuthCallback from './pages/login/OAuthCallback';
 import Note from './pages/note/Note';
 import MindMap from './pages/mindmap/MindMap';
 import Bookmark from './pages/bookmark/Bookmark';
@@ -66,6 +67,20 @@ function AppContent() {
 
         checkDocker();
     }, []);
+
+    // Deep Link 리스너
+    const navigate = useNavigate(); // AppContent는 Router 내부이므로 사용 가능
+    useEffect(() => {
+        // 일렉트론 메인에서 전달받은 Deep Link URL 처리
+        window.ipcRenderer.on('deep-link-url', (_event, url: any) => {
+            console.log('[App] Received deep link:', url);
+            if (typeof url === 'string' && url.startsWith('synapse://')) {
+                // "synapse://auth/google/callback?code=..." -> "/auth/google/callback?code=..."
+                const path = url.replace('synapse://', '/');
+                navigate(path);
+            }
+        });
+    }, [navigate]);
 
     const handleThemeToggle = () => setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
     const toggleSidebar = () => setIsSidebarActive(prev => !prev);
@@ -144,6 +159,7 @@ function AppContent() {
 
                 <Routes>
                     <Route path="/" element={<Navigate to="/login" replace />} />
+                    <Route path="/auth/:provider/callback" element={<OAuthCallback />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/home" element={<Home />} />
                     <Route path="/note" element={<Note />} />
