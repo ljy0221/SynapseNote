@@ -1,18 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { LayoutDashboard, FileText, Network, Sparkles, Settings, User } from 'lucide-react';
 import { SideMenuButton } from '../../common/sideMenuButton/SideMenuButton';
 import { UserProfileModal } from '../../common/modal/UserProfileModal';
+import { getUserInfo } from '../../../api/authApi';
 import './SideMenuBar.css';
 
 export const SideMenuBar: React.FC = () => {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [userInfo, setUserInfo] = useState<{ name: string; email: string; imageUrl?: string } | undefined>(undefined);
 
-    // TODO: 실제 유저 정보는 전역 상태(Context/Redux/Zustand)에서 가져와야 함
-    const mockUser = {
-        name: '사용자',
-        email: 'user@example.com',
-        // imageUrl: 'https://via.placeholder.com/150'
+    const fetchUserInfo = async () => {
+        try {
+            const info = await getUserInfo();
+            setUserInfo({
+                name: info.name,
+                email: info.email,
+                // imageUrl: info.profileImage // API에 profileImage가 없으므로 생략
+            });
+        } catch (error) {
+            console.error('Failed to fetch user info:', error);
+        }
     };
+
+    useEffect(() => {
+        fetchUserInfo();
+    }, []);
+
+    useEffect(() => {
+        if (isProfileOpen) {
+            fetchUserInfo();
+        }
+    }, [isProfileOpen]);
 
     return (
         <>
@@ -41,7 +59,7 @@ export const SideMenuBar: React.FC = () => {
             <UserProfileModal
                 isOpen={isProfileOpen}
                 onClose={() => setIsProfileOpen(false)}
-                user={mockUser}
+                user={userInfo}
             />
         </>
     );
