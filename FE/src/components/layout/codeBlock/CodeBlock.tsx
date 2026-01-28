@@ -4,8 +4,9 @@ import VersionButton from '../../common/versionButton/VersionButton';
 import BlockRunButton from '../../common/blockRunButton/BlockRunButton';
 import BlockCopyButton from '../../common/blockCopyButton/BlockCopyButton';
 import BlockDeleteButton from '../../common/blockDeleteButton/BlockDeleteButton';
+import BlockTypeMenu from '../blockTypeMenu/BlockTypeMenu'; // 메뉴 임포트
+import { BlockType } from '../../../pages/note/Note'; // 타입 임포트
 import type { Language, ExecutionResult } from '../../../types/execution/ExecutionTypes';
-// import { saveExecutionToBackend } from '../../../utils/executionAPI';
 import './CodeBlock.css';
 import { saveExecutionToBackend } from "../../../utils/executionAPI.ts";
 import { LanguageSelector } from "./LanguageSelector.tsx";
@@ -17,6 +18,15 @@ interface CodeBlockProps {
     noteId?: string; // 백엔드 히스토리 저장용
     onDelete: (id: number) => void;
     onChange: (id: number, newCode: string) => void;
+    onFocus: () => void;
+    // [추가] 새 블록 추가 핸들러
+    onAddBlockBelow: (afterId: number, type: BlockType) => void;
+
+    // DnD Props
+    draggable?: boolean;
+    onDragStart?: (e: React.DragEvent) => void;
+    onDragOver?: (e: React.DragEvent) => void;
+    onDrop?: (e: React.DragEvent) => void;
 }
 
 // 헬퍼 함수: 언어별 기본 버전 설정
@@ -29,12 +39,28 @@ function getDefaultVersion(language: Language): string {
     }
 }
 
-const CodeBlock: React.FC<CodeBlockProps> = ({ id, language: initialLanguage, code, noteId, onDelete, onChange }) => {
+const CodeBlock: React.FC<CodeBlockProps> = ({
+    id,
+    language: initialLanguage,
+    code,
+    noteId,
+    onDelete,
+    onChange,
+    onFocus,
+    onAddBlockBelow,
+    draggable,
+    onDragStart,
+    onDragOver,
+    onDrop
+}) => {
     // 1. 상태 관리
     const [result, setResult] = useState<ExecutionResult | null>(null);
     const [loading, setLoading] = useState(false);
     const [editedCode, setEditedCode] = useState(code);
     const [language, setLanguage] = useState<Language>(initialLanguage);
+
+    // [추가] 메뉴 표시 상태
+    const [showMenu, setShowMenu] = useState(false);
 
     // textarea 높이 조절용 Ref
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -90,13 +116,52 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, language: initialLanguage, co
     };
 
     return (
-        <div className="code-block-wrapper">
+        <div
+            className="code-block-wrapper"
+            onDragOver={onDragOver}
+            onDrop={onDrop}
+        >
             <div className="code-block-header">
+
+                {/* [좌측] 블록 컨트롤 영역 (추가 버튼 + 드래그 핸들) */}
+                <div className="code-left-controls">
+                    <button
+                        className="add-block-btn dark-theme"
+                        onClick={() => setShowMenu(!showMenu)}
+                        title="블록 추가"
+                    >
+                        +
+                    </button>
+
+                    {/* 드래그 핸들 (코드블록은 헤더에 위치) */}
+                    <div
+                        className="code-drag-handle"
+                        draggable={draggable}
+                        onDragStart={onDragStart}
+                        title="드래그하여 이동"
+                    >
+                        ⋮⋮
+                    </div>
+
+                    {showMenu && (
+                        <BlockTypeMenu
+                            onSelect={(type) => {
+                                onAddBlockBelow(id, type);
+                                setShowMenu(false);
+                            }}
+                            onClose={() => setShowMenu(false)}
+                        />
+                    )}
+                </div>
+
+                {/* [중앙] 언어 선택기 */}
                 <LanguageSelector
                     value={language}
                     onChange={setLanguage}
                     disabled={loading}
                 />
+
+                {/* [우측] 액션 버튼들 */}
                 <div className="code-actions">
                     <BlockRunButton onClick={handleRun} disabled={loading} />
                     <BlockCopyButton onCopy={handleCopy} />
@@ -115,6 +180,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, language: initialLanguage, co
                         setEditedCode(e.target.value);
                         onChange(id, e.target.value); // 부모 컴포넌트에도 변경 알림
                     }}
+                    onFocus={onFocus}
                     placeholder="// 새로운 코드를 작성하세요."
                     spellCheck="false"
                     disabled={loading}

@@ -10,6 +10,65 @@
     /* 높이를 조금 줄여서 슬림하게 */
     background-color: var(--color-sub);
     border-bottom: 1px solid rgba(128, 128, 128, 0.1);
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+}
+
+.code-left-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    /* 메뉴 팝업 위치 기준 */
+}
+
+/* 어두운 테마용 추가 버튼 스타일 (기존 add-block-btn 재사용하되 색상 조정) */
+.add-block-btn.dark-theme {
+    width: 20px;
+    height: 20px;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--font-color);
+    opacity: 0.6;
+    transition: all 0.2s;
+    padding: 0;
+}
+
+.add-block-btn.dark-theme:hover {
+    opacity: 1;
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+}
+
+.code-drag-handle {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    color: var(--font-color);
+    opacity: 0.6;
+    transition: all 0.2s;
+    font-size: 24px;
+    user-select: none;
+    margin-right: 8px;
+    border-radius: 4px;
+}
+
+.code-drag-handle:hover {
+    opacity: 1;
+    background-color: rgba(0, 0, 0, 0.08);
+    transform: scale(1.1);
+}
+
+.code-drag-handle:active {
+    cursor: grabbing;
 }
 
 .code-actions {
@@ -44,7 +103,7 @@
 
     /* 테두리도 너무 진하지 않게 투명도 활용 */
     border: 1px solid rgba(128, 128, 128, 0.2);
-    overflow: hidden;
+    /* overflow: hidden; */
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 
     display: flex;
@@ -124,4 +183,9 @@
     border-radius: 4px;
     margin-right: auto;
     /* 버튼들과 거리를 벌리기 위해 우측 여백 자동 */
+}
+
+.code-block-wrapper> :last-child {
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
 }
