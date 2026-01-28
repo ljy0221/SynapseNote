@@ -30,33 +30,17 @@ public class JwtUtil {
     public String generateAccessToken(UUID id) {
         long expiredMs = Constant.ACCESS_EXPIRED * 1000;
         return Jwts.builder()
-                .claim("id", id)
+                .claim("id", id.toString())
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + expiredMs))
                 .signWith(secretKey)
                 .compact();
     }
 
-    // 토큰 파기
-    public void expireToken(String token) {
-        long issuedAt = getIssuedAt(token);
-        Date now = new Date();
-
-        long remainingTime = (Constant.ACCESS_EXPIRED - (now.getTime() - issuedAt)/1000);
-        if (remainingTime > 0) {
-            tokenRedisService.expireToken(token, remainingTime);
-        }
-    }
-
     // id 가져오기
     public UUID getId(String token) {
         String stringId = Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().get("id", String.class);
         return UUID.fromString(stringId);
-    }
-
-    // 발행시간 가져오기
-    public long getIssuedAt(String token) {
-        return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().getIssuedAt().getTime();
     }
 
     // 토큰 만료 확인
