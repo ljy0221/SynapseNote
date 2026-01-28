@@ -1,9 +1,4 @@
 .search-dropdown {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  width: 100%;
-
   background: var(--color-main);
   border: 1px solid var(--color-sub);
   border-radius: 8px;
