@@ -46,9 +46,9 @@ public class UserService {
             }
 
             // 다른 provider로 가입했는지 체크
-            Optional<OAuthAccount> optionalOAuth = oAuthRepository.findByProviderIdAndProvider(
-                    oAuthUserInfo.getProviderId(), oAuthUserInfo.getProvider()
-            );
+            Optional<OAuthAccount> optionalOAuth = oAuthRepository.findByProviderAndProviderId(
+                    oAuthUserInfo.getProvider(), oAuthUserInfo.getProviderId()
+                    );
             if (optionalOAuth.isEmpty()) {
                 throw new BusinessException(ErrorCode.USER_ALREADY_EXISTS_ANOTHER_PROVIDER);
             }
