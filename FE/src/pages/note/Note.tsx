@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import NoteButton from "../../components/common/noteButton/NoteButton";
 import NoteMain from "../../components/layout/noteMain/NoteMain";
 import { NoteToolBar } from "../../components/layout/noteToolbar/NoteToolbar";
+import { createNote } from '../../utils/noteAPI';
+import type { CreateNoteRequest } from '../../types/note/createNote';
 import './Note.css';
 
 // 블록 타입 정의
@@ -108,6 +110,31 @@ const Note: React.FC = () => {
         }
     };
 
+    const handleCreateNote = async () => {
+        try {
+            // 1. 요청 데이터 준비
+            const newNoteReq: CreateNoteRequest = {
+                title: "제목 없는 노트", // 초기 제목
+                directoryPath: "/",      // 기본 경로 (필요 시 수정)
+                pointX: null,
+                pointY: null,
+                content: "",             // 초기 내용
+            };
+            // 2. API 호출
+            const result = await createNote(newNoteReq);
+            console.log("노트 생성 성공:", result);
+            // 3. 성공 시 상태 업데이트
+            // result에 담긴 noteId 등을 활용해 상태를 설정할 수도 있습니다.
+            // 예: setCurrentNoteId(result.noteId);
+
+            setIsEditing(true); // 편집 모드 전환
+
+        } catch (error) {
+            console.error("노트 생성 중 에러 발생:", error);
+            alert("노트를 생성하지 못했습니다.");
+        }
+    };
+
     return (
         <div className="page-content-container">
             {!isEditing ? (
@@ -115,7 +142,7 @@ const Note: React.FC = () => {
                     <div className="note-intro-wrapper">
                         <h2>노트 편집 페이지</h2>
                         <div className="create-note-section">
-                            <NoteButton onClick={() => setIsEditing(true)} />
+                            <NoteButton onClick={handleCreateNote} />
                             <span className="create-note-label">새 노트 작성하기</span>
                         </div>
                     </div>
