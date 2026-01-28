@@ -3,11 +3,13 @@ package com.synapse.api.modules.user.service;
 import com.synapse.api.modules.user.dto.oauth.OAuthUserInfo;
 import com.synapse.api.modules.user.dto.request.LoginRequest;
 import com.synapse.api.modules.user.dto.response.LoginResult;
+import com.synapse.api.modules.user.dto.response.ProfileResponse;
 import com.synapse.api.modules.user.entity.OAuthAccount;
 import com.synapse.api.modules.user.entity.User;
 import com.synapse.api.modules.user.repository.OAuthRepository;
 import com.synapse.api.modules.user.repository.UserRepository;
 import com.synapse.api.util.exception.BusinessException;
+import com.synapse.api.util.redis.RedisConstant;
 import com.synapse.api.util.response.ErrorCode;
 import com.synapse.api.util.redis.TokenRedisService;
 import com.synapse.api.util.security.JwtUtil;
@@ -58,12 +60,24 @@ public class UserService {
             id = saveNewUser(oAuthUserInfo);
         }
 
+        boolean sessionReplaced = invalidSession(id);
+
         String access = jwtUtil.generateAccessToken(id);
         String refresh = tokenRedisService.generateRefreshToken(id);
         return LoginResult.builder()
                 .accessToken(access)
                 .refreshToken(refresh)
+                .sessionReplaced(sessionReplaced)
                 .build();
+    }
+
+    private boolean invalidSession(UUID id) {
+        if (tokenRedisService.getRefreshToken(id) == null) {
+            return false;
+        }
+
+        tokenRedisService.deleteRefreshToken(id);
+        return true;
     }
 
     private OAuthUserInfo getOAuthUserInfo(LoginRequest request) {
@@ -86,6 +100,43 @@ public class UserService {
         );
 
         return user.getId();
+    }
+
+    @Transactional(readOnly = true)
+    public ProfileResponse getProfile(UUID id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        OAuthAccount oauth = oAuthRepository.findByUserId(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        return ProfileResponse.builder()
+                .email(user.getEmail())
+                .name(user.getName())
+                .provider(oauth.getProvider())
+                .createdAt(user.getCreatedAt())
+                .build();
+    }
+
+    public void logout(UUID id) {
+        invalidSession(id);
+    }
+
+    @Transactional
+    public void withdraw(UUID id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        OAuthAccount oauth = oAuthRepository.findByUserId(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        // streak
+        // document members
+        // notes
+        // mindmap_edges
+
+        user.delete();
+        oauth.delete();
+        invalidSession(id);
     }
 
 }
