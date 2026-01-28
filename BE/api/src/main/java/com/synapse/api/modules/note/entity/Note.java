@@ -1,5 +1,6 @@
 package com.synapse.api.modules.note.entity;
 
+import com.synapse.api.modules.mindmap.entity.MindmapEdge;
 import com.synapse.api.modules.user.entity.User;
 import com.synapse.api.util.entity.BaseEntity;
 import com.synapse.api.util.generator.UuidV7Generator;
@@ -11,6 +12,8 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.GenericGenerator;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -26,10 +29,7 @@ public class Note extends BaseEntity {
 
     @Id
     @GeneratedValue(generator = "uuid-v7")
-    @GenericGenerator(
-        name = "uuid-v7",
-        type = UuidV7Generator.class
-    )
+    @GenericGenerator(name = "uuid-v7", type = UuidV7Generator.class)
     @Column(columnDefinition = "uuid")
     private UUID id;
 
@@ -52,6 +52,12 @@ public class Note extends BaseEntity {
     @JoinColumn(name = "created_by", nullable = false)
     private User createdBy;
 
+    @OneToMany(mappedBy = "from", cascade = CascadeType.REMOVE)
+    private List<MindmapEdge> fanoutEdges = new ArrayList<>();
+
+    @OneToMany(mappedBy = "to", cascade = CascadeType.REMOVE)
+    private List<MindmapEdge> faninEdges = new ArrayList<>();
+
     public void updateTitle(String title) {
         this.title = title;
     }
@@ -67,5 +73,15 @@ public class Note extends BaseEntity {
 
     public void updateInvitationUrl(String invitationUrl) {
         this.invitationUrl = invitationUrl;
+    }
+
+    public void setMindMapNode(Double pointX, Double pointY) {
+        this.pointX = pointX;
+        this.pointY = pointY;
+    }
+
+    public void deleteNode() {
+        this.pointX = null;
+        this.pointY = null;
     }
 }
