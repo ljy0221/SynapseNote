@@ -1,9 +1,14 @@
+// src/api/axios.ts
 import axios from 'axios';
 
-export const createNote = async (payload: {
-  title: string;
-  directoryPath: string;
-}) => {
-  const res = await axios.post('/api/v1/notes', payload);
-  return res.data;
-};
+export const api = axios.create({
+  baseURL: '/api',
+});
+
+api.interceptors.request.use(config => {
+  const token = localStorage.getItem('accessToken');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
