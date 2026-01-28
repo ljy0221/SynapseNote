@@ -10,6 +10,12 @@ interface HeadingBlockProps {
     onUpdate: (id: number, content: string) => void;
     onAddBlockBelow: (afterId: number, type: BlockType) => void;
     onFocus: () => void;
+    onDelete: (id: number) => void;
+    // DnD Props
+    draggable?: boolean;
+    onDragStart?: (e: React.DragEvent) => void;
+    onDragOver?: (e: React.DragEvent) => void;
+    onDrop?: (e: React.DragEvent) => void;
 }
 
 const HeadingBlock: React.FC<HeadingBlockProps> = ({
@@ -18,7 +24,12 @@ const HeadingBlock: React.FC<HeadingBlockProps> = ({
     content,
     onUpdate,
     onAddBlockBelow,
-    onFocus
+    onFocus,
+    onDelete,
+    draggable,
+    onDragStart,
+    onDragOver,
+    onDrop
 }) => {
     const [showMenu, setShowMenu] = useState(false);
     const [text, setText] = useState(content);
@@ -35,11 +46,26 @@ const HeadingBlock: React.FC<HeadingBlockProps> = ({
             // Enter 키를 누르면 아래에 새 텍스트 블록 추가
             onAddBlockBelow(id, 'text');
         }
+
+        // Backspace 키: 내용이 비어있으면 블록 삭제
+        if (e.key === 'Backspace' && text === '') {
+            e.preventDefault();
+            onDelete(id);
+        }
     };
 
     return (
-        <div className={`heading-block-wrapper ${level}`}>
-            <div className="block-controls">
+        <div
+            className={`heading-block-wrapper ${level}`}
+            onDragOver={onDragOver}
+            onDrop={onDrop}
+        >
+            <div
+                className="block-controls"
+                draggable={draggable}
+                onDragStart={onDragStart}
+                title="드래그하여 이동"
+            >
                 <button
                     className="add-block-btn"
                     onClick={() => setShowMenu(!showMenu)}
@@ -47,6 +73,10 @@ const HeadingBlock: React.FC<HeadingBlockProps> = ({
                 >
                     +
                 </button>
+                {/* 드래그 핸들 */}
+                <div className="drag-handle-icon">
+                    ⋮⋮
+                </div>
                 {showMenu && (
                     <BlockTypeMenu
                         onSelect={(type) => {
