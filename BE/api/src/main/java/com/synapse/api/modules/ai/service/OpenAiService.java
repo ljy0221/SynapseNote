@@ -23,19 +23,19 @@ public class OpenAiService implements AiService {
 
     private final RestClient restClient;
 
-    @Value("${ai.openai.api.key}")
+    @Value("${ai.gms.api.key}")
     private String apiKey;
 
-    @Value("${ai.openai.api.url}")
+    @Value("${ai.gms.api.url}")
     private String apiUrl;
 
-    @Value("${ai.openai.model}")
+    @Value("${ai.gms.model}")
     private String model;
 
-    @Value("${ai.openai.temperature}")
+    @Value("${ai.gms.temperature}")
     private double temperature;
 
-    @Value("${ai.openai.max.tokens}")
+    @Value("${ai.gms.max.tokens}")
     private int maxTokens;
 
     @Override
