@@ -1,4 +1,4 @@
-import { ipcMain, app, BrowserWindow } from "electron";
+import { ipcMain, shell, app, BrowserWindow } from "electron";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -270,6 +270,9 @@ ipcMain.on("window-maximize", () => {
 ipcMain.on("window-close", () => {
   win == null ? void 0 : win.close();
 });
+ipcMain.on("open-external", (_, url) => {
+  shell.openExternal(url);
+});
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     app.quit();
@@ -292,7 +295,35 @@ ipcMain.handle("docker:check-running", async () => {
 ipcMain.handle("docker:execute-single", async (event, request) => {
   return await execService.executeSingle(request);
 });
-app.whenReady().then(createWindow);
+if (process.defaultApp) {
+  if (process.argv.length >= 2) {
+    app.setAsDefaultProtocolClient("synapse", process.execPath, [path.resolve(process.argv[1])]);
+  }
+} else {
+  app.setAsDefaultProtocolClient("synapse");
+}
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on("second-instance", (event, commandLine, workingDirectory) => {
+    if (win) {
+      if (win.isMinimized()) win.restore();
+      win.focus();
+      const url = commandLine.find((arg) => arg.startsWith("synapse://"));
+      if (url) {
+        win.webContents.send("deep-link-url", url);
+      }
+    }
+  });
+  app.on("open-url", (event, url) => {
+    event.preventDefault();
+    if (win) {
+      win.webContents.send("deep-link-url", url);
+    }
+  });
+  app.whenReady().then(createWindow);
+}
 export {
   MAIN_DIST,
   RENDERER_DIST,
