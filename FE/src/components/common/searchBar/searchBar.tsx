@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'; // 컴포넌트 임포트
-import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'; // 돋보기 아이콘 임포트
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons';
 import './searchBar.css';
 
-const SearchBar: React.FC = () => {
+interface SearchBarProps {
+  onSearch: (query: string) => void;
+}
+
+const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchTerm.trim()) return;
-    console.log('시냅스 검색어:', searchTerm);
+    onSearch(searchTerm.trim());
   };
 
   return (

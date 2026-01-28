@@ -19,6 +19,7 @@ public enum ErrorCode {
     TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "AUTH_003", "토큰이 만료되었습니다"),
     TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "AUTH_004", "토큰이 잘못되었습니다"),
     HEADER_INVALID(HttpStatus.FORBIDDEN, "AUTH_005", "인증 헤더가 잘못되었습니다"),
+    INVALID_REFRESH_TOKEN(HttpStatus.FORBIDDEN, "AUTH_006", "리프레시 토큰이 유효하지 않습니다"),
 
     // User
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_001", "사용자를 찾을 수 없습니다"),
