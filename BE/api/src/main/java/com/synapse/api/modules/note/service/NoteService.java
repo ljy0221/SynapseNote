@@ -5,6 +5,7 @@ import com.synapse.api.modules.note.document.NoteContent;
 import com.synapse.api.modules.note.dto.*;
 import com.synapse.api.modules.note.entity.Note;
 import com.synapse.api.modules.note.entity.NoteMember;
+import com.synapse.api.modules.note.entity.NoteMemberId;
 import com.synapse.api.modules.note.entity.NoteRole;
 import com.synapse.api.modules.note.repository.NoteContentRepository;
 import com.synapse.api.modules.note.repository.NoteMemberRepository;
@@ -49,9 +50,16 @@ public class NoteService {
 
         Note savedNote = noteRepository.save(note);
 
+        // 명시적으로 복합 키 생성
+        NoteMemberId memberId = new NoteMemberId(
+            savedNote.getId(),  // noteId
+            user.getId()        // userId
+        );
+
         NoteMember noteMember = NoteMember.builder()
-                .note(savedNote)
-                .user(user)
+                .id(memberId)         // 명시적 ID 설정
+                .note(savedNote)      // JPA 관계 유지 (lazy loading, cascade 지원)
+                .user(user)           // JPA 관계 유지
                 .role(NoteRole.OWNER)
                 .build();
         noteMemberRepository.save(noteMember);
