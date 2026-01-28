@@ -13,12 +13,10 @@ import { NoteToolBar } from './components/layout/noteToolbar/NoteToolbar';
 
 // 공통 컴포넌트
 import ThemeToggle from './components/common/themeToggle/ThemeToggle';
+import WindowControlButton from './components/common/WindowControlButton/WindowControlButton';
 
 // Electron 전용 컴포넌트 (웹 빌드에서는 사용 안 함)
 const isElectron = typeof window !== 'undefined' && (window as any).electronAPI !== undefined;
-const WindowControlButton = isElectron
-    ? require('./components/common/windowControlButton/WindowControlButton').default
-    : () => null;
 
 // 페이지 컴포넌트
 import Home from './pages/home/Home'; // home 폴더 안에 Home.tsx가 있다고 가정
@@ -81,7 +79,9 @@ function AppContent() {
     // Deep Link 리스너
     const navigate = useNavigate(); // AppContent는 Router 내부이므로 사용 가능
     useEffect(() => {
-        // 일렉트론 메인에서 전달받은 Deep Link URL 처리
+        // 일렉트론 환경에서만 Deep Link URL 처리
+        if (!isElectron || !window.ipcRenderer) return;
+
         window.ipcRenderer.on('deep-link-url', (_event, url: any) => {
             console.log('[App] Received deep link:', url);
             if (typeof url === 'string' && url.startsWith('synapse://')) {
@@ -124,7 +124,7 @@ function AppContent() {
                     <div className="header-spacer"></div>
                     <div className="header-right-zone">
                         <ThemeToggle isDark={theme === 'dark'} onToggle={handleThemeToggle} />
-                        <WindowControlButton />
+                        {isElectron && <WindowControlButton />}
                     </div>
                 </div>
             ) : (
