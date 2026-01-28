@@ -118,12 +118,13 @@ public class UserService {
                 .build();
     }
 
-    public void logout(UUID id) {
+    public void logout(UUID id, String accessToken) {
         invalidSession(id);
+        tokenRedisService.addBlacklist(accessToken);
     }
 
     @Transactional
-    public void withdraw(UUID id) {
+    public void withdraw(UUID id, String accessToken) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         OAuthAccount oauth = oAuthRepository.findByUserId(id)
@@ -137,6 +138,7 @@ public class UserService {
         user.delete();
         oauth.delete();
         invalidSession(id);
+        tokenRedisService.addBlacklist(accessToken);
     }
 
 }

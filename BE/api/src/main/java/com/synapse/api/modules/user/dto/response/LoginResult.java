@@ -5,6 +5,7 @@ import lombok.Builder;
 @Builder
 public record LoginResult(
         String accessToken,
-        String refreshToken
+        String refreshToken,
+        boolean sessionReplaced
 ) {
 }
