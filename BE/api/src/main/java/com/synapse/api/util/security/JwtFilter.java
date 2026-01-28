@@ -56,25 +56,25 @@ public class JwtFilter extends OncePerRequestFilter {
         }
 
         // Bearer 접두사 제거 후 순수 토큰 획득
-        String token = authorization.split(" ")[1];
+        String token = authorization.substring(Constant.BEARER_PREFIX.length()).trim();
 
-        // 토큰 소멸 시간 검증
+        // 토큰 유효성 검증
         try {
             if (jwtUtil.isExpired(token)) {
                 log.info("Token is expired");
                 setErrorResponse(request, response, ErrorCode.TOKEN_EXPIRED);
                 return;
             }
+
+            if (tokenRedisService.isBlacklisted(token)) {
+                log.info("Token is blacklisted");
+                setErrorResponse(request, response, ErrorCode.TOKEN_EXPIRED);
+                return;
+            }
+
         } catch (MalformedJwtException | SignatureException | UnsupportedJwtException | IllegalArgumentException e) {
             log.info("Invalid token");
             setErrorResponse(request, response, ErrorCode.TOKEN_INVALID);
-            return;
-        }
-
-        // 파기된 토큰인지 확인
-        if (tokenRedisService.isExpired(token)) {
-            log.info("Token has been invalidated");
-            setErrorResponse(request, response, ErrorCode.TOKEN_EXPIRED);
             return;
         }
 
