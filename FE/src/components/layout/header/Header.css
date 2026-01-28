@@ -69,3 +69,8 @@
     /* 버튼들이 너무 끝에 붙지 않도록 미세한 여백 */
     padding-left: 10px;
 }
+
+input,
+textarea {
+    -webkit-app-region: no-drag !important;
+}

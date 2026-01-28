@@ -7,8 +7,8 @@
   /* 기본 너비 */
   height: 100%;
 
-  border-left: 1px solid var(--border-color, #e0e0e0);
-  background-color: var(--bg-sub, #f9f9f9);
+  border-left: 1px solid var(--color-border);
+  background-color: var(--color-sub);
 
   display: flex;
   flex-direction: column;
@@ -68,8 +68,8 @@
   width: 24px;
   height: 48px;
 
-  background-color: var(--bg-sub, #f9f9f9);
-  border: 1px solid var(--border-color, #e0e0e0);
+  background-color: var(--color-sub);
+  border: 1px solid var(--color-border);
   border-right: none;
   /* 오른쪽 열림 (툴바와 연결됨) */
   border-radius: 6px 0 0 6px;
@@ -81,30 +81,24 @@
   z-index: 20;
 
   color: var(--font-color, #888);
-  opacity: 0;
-  /* 평소엔 숨김 (왼쪽 사이드바처럼) */
+  /* 항상 보이도록 설정 */
+  opacity: 1;
   transition: opacity 0.2s ease, background-color 0.2s;
 }
 
-/* 툴바에 마우스를 올리거나, 툴바가 닫혔을 때는 버튼 보임 */
-.note-floating-toolbar:hover .toolbar-toggle-btn,
-.note-floating-toolbar.collapsed .toolbar-toggle-btn {
-  opacity: 1;
+/* SVG 아이콘 스타일 보정 */
+.toolbar-toggle-btn svg {
+  color: var(--font-color);
+  /* 명시적으로 색상 상속 */
+  stroke-width: 2.5px;
+  /* 선 굵기 강화 */
 }
 
-.toolbar-toggle-btn:hover {
-  background-color: var(--border-color, #eee);
-  color: var(--font-color, #333);
-}
-
-/* 닫혔을 때 버튼 스타일 조정 */
+/* 닫혔을 때는 박스 그림자 추가로 입체감 주기 */
 .note-floating-toolbar.collapsed .toolbar-toggle-btn {
-  border-right: 1px solid var(--border-color, #e0e0e0);
-  /* 오른쪽 선 생김 */
+  border-right: 1px solid var(--color-border);
   border-radius: 6px;
-  /* 전체 둥글게 */
-  background-color: var(--bg-main, #fff);
-  /* 배경색 변경 */
+  background-color: var(--color-main);
   box-shadow: -2px 0 5px rgba(0, 0, 0, 0.05);
 }
 
