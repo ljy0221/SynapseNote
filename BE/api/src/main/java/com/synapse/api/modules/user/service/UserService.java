@@ -22,6 +22,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class UserService {
 
     private final UserRepository userRepository;
@@ -114,7 +115,6 @@ public class UserService {
         return user;
     }
 
-    @Transactional(readOnly = true)
     public ProfileResponse getProfile(UUID id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
