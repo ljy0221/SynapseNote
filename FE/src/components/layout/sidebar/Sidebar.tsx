@@ -6,6 +6,7 @@ import type { NoteListItem } from '../../../types/note/getNotes';
 import { buildNoteTree } from '../../features/noteDirectory/buildNoteTree';
 import { NoteDirectory } from './NoteDirectory';
 import ContextMenu from '../../common/contextMenu/ContextMenu';
+import { ContextMenuState } from '../../../types/sidebar/contextMenu';
 
 /** 🔥 테스트용 mock 데이터 (나중에 제거) */
 export const mockNotes: NoteListItem[] = [
@@ -40,18 +41,6 @@ export const mockNotes: NoteListItem[] = [
     updatedAt: '2026-01-22T09:10:00Z',
   },
 ];
-
-// 사이드바 우클릭 메뉴
-type ContextMenuState =
-  | { visible: false }
-  | {
-      visible: true;
-      x: number;
-      y: number;
-      type: 'NOTE' | 'DIRECTORY';
-      targetId?: string;
-      directoryPath?: string;
-    };
 
 interface SidebarProps {
   isOpen: boolean;
@@ -114,11 +103,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <ContextMenu
         state={contextMenu}
         onClose={() => setContextMenu({ visible: false })}
-        onDeleteNote={(id) => {
-          console.log('노트 삭제:', id);
+        onDeleteNote={(noteId) => {
+          // noteId: string 보장
         }}
-        onCreateNote={(path) => {
-          console.log('노트 생성 위치:', path);
+        onCreateNote={(directoryPath) => {
+          // directoryPath: string 보장
         }}
       />
     </div>

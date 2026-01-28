@@ -12,7 +12,8 @@ export default function AddRecommendButton({ active, onClick }: Props) {
     <button
       className={`add-recommend-btn ${active ? 'active' : ''}`}
       onClick={onClick}
-      aria-label="즐겨찾기"
+      aria-label={active ? '즐겨찾기 해제' : '즐겨찾기 추가'}
+      title={active ? '즐겨찾기 해제' : '즐겨찾기 추가'}
     >
       <Star size={14} />
     </button>

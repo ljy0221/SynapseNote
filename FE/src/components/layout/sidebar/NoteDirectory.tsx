@@ -4,7 +4,7 @@ import './NoteDirectory.css';
 import type { NoteTreeNode } from '../../features/noteDirectory/buildNoteTree';
 import AddRecommendButton from '../../common/addRecommendButton/AddRecommendButton';
 import { Folder, FolderOpen, FileText } from 'lucide-react';
-
+import { ContextMenuState } from '../../../types/sidebar/contextMenu';
 
 interface NoteDirectoryProps {
   node: NoteTreeNode;
@@ -15,14 +15,7 @@ interface NoteDirectoryProps {
   onToggleFavorite: (noteId: string) => void;
 
   onSelectNote: (noteId: string) => void;
-  onContextMenu: (state: {
-    visible: true;
-    x: number;
-    y: number;
-    type: 'NOTE' | 'DIRECTORY';
-    targetId?: string;
-    directoryPath?: string;
-  }) => void;
+  onContextMenu: (state: ContextMenuState) => void;
 }
 
 export const NoteDirectory: React.FC<NoteDirectoryProps> = ({
@@ -97,7 +90,6 @@ export const NoteDirectory: React.FC<NoteDirectoryProps> = ({
                     y: e.clientY,
                     type: 'NOTE',
                     targetId: note.noteId,
-                    directoryPath: note.directoryPath,
                   });
                 }}
               >

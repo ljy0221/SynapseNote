@@ -1,21 +1,13 @@
 // src/components/common/contextMenu/ContextMenu.tsx
 import { useEffect, useRef } from 'react';
 import './ContextMenu.css';
+import { ContextMenuState } from '../../../types/sidebar/contextMenu';
 
 interface Props {
-  state:
-    | { visible: false }
-    | {
-        visible: true;
-        x: number;
-        y: number;
-        type: 'NOTE' | 'DIRECTORY';
-        targetId?: string;
-        directoryPath?: string;
-      };
+  state: ContextMenuState;
   onClose: () => void;
   onDeleteNote: (noteId: string) => void;
-  onCreateNote: (directoryPath?: string) => void;
+  onCreateNote: (directoryPath: string) => void;
 }
 
 export default function ContextMenu({
@@ -70,7 +62,7 @@ export default function ContextMenu({
         <div
           className="context-menu-item danger"
           onClick={() => {
-            onDeleteNote(state.targetId!);
+            onDeleteNote(state.targetId);
             onClose();
           }}
         >
