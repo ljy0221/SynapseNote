@@ -1,23 +1,20 @@
-// src/common/addRecommendButton/AddRecommendButton.tsx
-import React from 'react';
+// src/components/common/addRecommendButton/AddRecommendButton.tsx
+import { Star } from 'lucide-react';
 import './AddRecommendButton.css';
 
-interface AddRecommendButtonProps {
-  noteId: string;
-  isFavorite: boolean; // 🔥 미리 준비
+interface Props {
+  active: boolean;
+  onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
-const AddRecommendButton: React.FC<AddRecommendButtonProps> = ({
-  isFavorite,
-}) => {
+export default function AddRecommendButton({ active, onClick }: Props) {
   return (
     <button
-      className={`favorite-btn ${isFavorite ? 'active' : ''}`}
-      aria-label={isFavorite ? '즐겨찾기 해제' : '즐겨찾기 추가'}
-      title={isFavorite ? '즐겨찾기 해제' : '즐겨찾기 추가'}
+      className={`add-recommend-btn ${active ? 'active' : ''}`}
+      onClick={onClick}
+      aria-label="즐겨찾기"
     >
-      {isFavorite ? '★' : '☆'}
+      <Star size={14} />
     </button>
   );
-};
-export default AddRecommendButton;
+}
