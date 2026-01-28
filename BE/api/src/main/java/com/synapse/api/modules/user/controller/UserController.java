@@ -46,12 +46,7 @@ public class UserController {
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
-        return DataResponse.of(
-                LoginResponse.builder()
-                        .accessToken(result.accessToken())
-                        .sessionReplaced(result.sessionReplaced())
-                        .build()
-        );
+        return DataResponse.of(result.response());
     }
 
     @GetMapping("/v1/members/me")
