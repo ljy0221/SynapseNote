@@ -29,7 +29,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: 'https://i14b102.p.ssafy.io/backend',
         changeOrigin: true,
         secure: false,
       },
