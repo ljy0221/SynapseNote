@@ -2,22 +2,17 @@ import React, { useState, useMemo } from 'react';
 import { X, Search, FileText, ChevronRight } from 'lucide-react';
 import './NodeSelectorModal.css';
 
+import { useEffect } from 'react';
+import { getNotes } from '../../../api/notes/getNotes';
+import type { NoteListItem } from '../../../types/note/getNotes';
+
+
 interface NoteItem {
     id: string;
     title: string;
     path: string;
     summary: string;
 }
-
-import { mockNotes } from '../../layout/sidebar/Sidebar'; // Sidebar에서 목업 데이터 임포트
-
-// [Mock Data] Sidebar의 목업 데이터를 NoteItem 형식으로 변환
-const MOCK_NOTES: NoteItem[] = mockNotes.map(note => ({
-    id: note.noteId,
-    title: note.title,
-    path: note.directoryPath,
-    summary: '설명 없음' // 목업 데이터에 설명이 없으므로 기본값 설정
-}));
 
 interface NodeSelectorModalProps {
     isOpen: boolean;
@@ -31,16 +26,43 @@ export const NodeSelectorModal: React.FC<NodeSelectorModalProps> = ({
     onSelect
 }) => {
     const [searchTerm, setSearchTerm] = useState('');
+    const [notes, setNotes] = useState<NoteItem[]>([]);
+
+    useEffect(() => {
+      const fetchNotes = async () => {
+        try {
+          const res = await getNotes();
+
+          const mapped: NoteItem[] = res.map((note: NoteListItem) => ({
+            id: note.noteId,
+            title: note.title,
+            path: note.directoryPath,
+            summary: '설명 없음',
+          }));
+
+          setNotes(mapped);
+        } catch (e) {
+          console.error('노트 목록 로딩 실패', e);
+        }
+      };
+
+      if (isOpen) {
+        fetchNotes();
+      }
+}, [isOpen]);
 
     // 검색 로직
     const filteredNotes = useMemo(() => {
-        if (!searchTerm) return MOCK_NOTES;
-        const term = searchTerm.toLowerCase();
-        return MOCK_NOTES.filter(note =>
-            note.title.toLowerCase().includes(term) ||
-            note.path.toLowerCase().includes(term)
-        );
-    }, [searchTerm]);
+      if (!searchTerm) return notes;
+
+      const term = searchTerm.toLowerCase();
+
+      return notes.filter(note =>
+        note.title.toLowerCase().includes(term) ||
+        note.path.toLowerCase().includes(term)
+      );
+    }, [searchTerm, notes]);
+
 
     if (!isOpen) return null;
 
