@@ -1,8 +1,13 @@
 import React from 'react';
 import './Header.css';
 import { ThemeManager } from '../../features/theme/ThemeManager';
-import SearchBar from '../../common/searchBar/SearchBar.tsx';
-import WindowControlButton from '../../common/WindowControlButton/WindowControlButton.tsx'; // 임포트 추가
+import SearchBar from '../../common/searchBar/searchBar.tsx';
+
+// Electron 전용 컴포넌트 (웹 빌드에서는 사용 안 함)
+const isElectron = typeof window !== 'undefined' && (window as any).electronAPI !== undefined;
+const WindowControlButton = isElectron
+    ? require('../../common/WindowControlButton/WindowControlButton.tsx').default
+    : () => null;
 
 interface HeaderProps {
     isSidebarActive: boolean;
