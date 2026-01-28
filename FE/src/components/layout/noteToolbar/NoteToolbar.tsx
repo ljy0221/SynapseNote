@@ -14,13 +14,13 @@ import './NoteToolbar.css';
 interface NoteToolBarProps {
     isOpen: boolean;
     onToggle: () => void;
-    onAddBlock: (type: any) => void;
+    onButtonClick: (type: any) => void;
 }
 
 export const NoteToolBar: React.FC<NoteToolBarProps> = ({
     isOpen,
     onToggle,
-    onAddBlock
+    onButtonClick
 }) => {
     return (
         <aside className={`note-floating-toolbar ${isOpen ? 'open' : 'collapsed'}`}>
@@ -35,25 +35,25 @@ export const NoteToolBar: React.FC<NoteToolBarProps> = ({
             </button>
 
             <div className="toolbar-section">
-                <button className="toolbar-btn" onClick={() => onAddBlock('h1')} title="제목 1">
+                <button className="toolbar-btn" onClick={() => onButtonClick('h1')} title="제목 1">
                     <Heading1 size={20} />
                 </button>
 
-                <button className="toolbar-btn" onClick={() => onAddBlock('h2')} title="제목 2">
+                <button className="toolbar-btn" onClick={() => onButtonClick('h2')} title="제목 2">
                     <Heading2 size={20} />
                 </button>
 
-                <button className="toolbar-btn" onClick={() => onAddBlock('h3')} title="제목 3">
+                <button className="toolbar-btn" onClick={() => onButtonClick('h3')} title="제목 3">
                     <Heading3 size={20} />
                 </button>
 
                 <div className="divider" />
 
-                <button className="toolbar-btn" onClick={() => onAddBlock('text')} title="텍스트">
+                <button className="toolbar-btn" onClick={() => onButtonClick('text')} title="텍스트">
                     <Type size={20} />
                 </button>
 
-                <button className="toolbar-btn" onClick={() => onAddBlock('code')} title="코드 블록 추가">
+                <button className="toolbar-btn" onClick={() => onButtonClick('code')} title="코드 블록 추가">
                     <Code size={20} />
                 </button>
             </div>

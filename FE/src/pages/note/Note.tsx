@@ -22,6 +22,8 @@ const Note: React.FC = () => {
 
     const [title, setTitle] = useState("제목 없는 노트");
 
+    const [focusedBlockId, setFocusedBlockId] = useState<number | null>(null);
+
     // 블록 배열 상태 관리 (초기에는 빈 텍스트 블록 하나)
     const [blocks, setBlocks] = useState<BlockData[]>([
         { id: Date.now(), type: 'text', content: '' }
@@ -55,6 +57,18 @@ const Note: React.FC = () => {
         setBlocks(newBlocks);
     };
 
+    // 2. 타입 변경 함수 추가
+    const handleChangeBlockType = (type: BlockType) => {
+        if (!focusedBlockId) return; // 선택된 게 없으면 무시
+
+        setBlocks(blocks.map(block =>
+            block.id === focusedBlockId
+                ? { ...block, type: type } // 타입 교체!
+                : block
+        ));
+    };
+
+
     // 블록 내용 업데이트
     const updateBlock = (id: number, content: string) => {
         setBlocks(blocks.map(block =>
@@ -85,6 +99,15 @@ const Note: React.FC = () => {
     // 툴바 열림/닫힘 상태
     const [isToolbarOpen, setIsToolbarOpen] = useState(true);
 
+    // 툴바 버튼 클릭 핸들러: 포커스된 블록이 있으면 타입 변경, 없으면 새 블록 추가
+    const handleToolbarAction = (type: BlockType) => {
+        if (focusedBlockId) {
+            handleChangeBlockType(type);
+        } else {
+            handleAddBlock(type);
+        }
+    };
+
     return (
         <div className="page-content-container">
             {!isEditing ? (
@@ -106,13 +129,13 @@ const Note: React.FC = () => {
                         onUpdateBlock={updateBlock}
                         onAddBlockAfter={addBlockAfter}
                         onDeleteBlock={deleteBlock}
-                        onFocusBlock={() => { }} // 임시 포커스 핸들러 (state 제거됨)
+                        onFocusBlock={setFocusedBlockId}
                         onMoveBlock={handleMoveBlock}
                     />
                     <NoteToolBar
                         isOpen={isToolbarOpen}
                         onToggle={() => setIsToolbarOpen(!isToolbarOpen)}
-                        onAddBlock={handleAddBlock}
+                        onButtonClick={handleToolbarAction}
                     />
                 </div>
             )}

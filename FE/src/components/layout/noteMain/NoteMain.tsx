@@ -101,8 +101,9 @@ const NoteMain: React.FC<NoteMainProps> = ({
                         code={block.content}
                         onDelete={onDeleteBlock}
                         onChange={onUpdateBlock}
-                    />
-                );
+                        onFocus={() => onFocusBlock(block.id)}
+                        onAddBlockBelow={onAddBlockAfter}
+                    />);
 
             default:
                 return null;
