@@ -59,7 +59,7 @@ const Login: React.FC = () => {
                             provider="github"
                             onClick={() => {
                                 const clientId = import.meta.env.VITE_GITHUB_CLIENT_ID;
-                                const redirectUri = `${import.meta.env.VITE_REDIRECT_URI}/github`;
+                                const redirectUri = import.meta.env.VITE_GITHUB_REDIRECT_URI;
                                 const authUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email`;
                                 window.location.href = authUrl;
                             }}
@@ -68,7 +68,7 @@ const Login: React.FC = () => {
                             provider="google"
                             onClick={() => {
                                 const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-                                const redirectUri = `${import.meta.env.VITE_REDIRECT_URI}/google`;
+                                const redirectUri = import.meta.env.VITE_GOOGLE_REDIRECT_URI;
                                 const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=email profile`;
                                 window.location.href = authUrl;
                             }}

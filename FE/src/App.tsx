@@ -145,7 +145,7 @@ function AppContent() {
 
                 <Routes>
                     <Route path="/" element={<Navigate to="/login" replace />} />
-                    <Route path="/login/oauth/callback/:provider" element={<OAuthCallback />} />
+                    <Route path="/auth/:provider/callback" element={<OAuthCallback />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/home" element={<Home />} />
                     <Route path="/note" element={<Note />} />

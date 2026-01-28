@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { X, User as UserIcon, Edit2, Check, UserX } from 'lucide-react';
+import { X, User as UserIcon, Edit2, Check, UserX, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { WithdrawalModal } from './WithdrawalModal';
 import { ModalHeader } from './ModalHeader'; // 추가
 import './UserProfileModal.css';
@@ -59,10 +60,24 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
         setIsWithdrawalOpen(true);
     };
 
+    const navigate = useNavigate();
+
+    const handleLogout = () => {
+        // 토큰 삭제
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('refreshToken');
+
+        // 로그인 페이지로 이동
+        navigate('/login');
+        onClose();
+    };
+
     const handleConfirmWithdraw = () => {
         console.log('Withdraw account confirmed');
         setIsWithdrawalOpen(false);
         onClose();
+        // 탈퇴 후에도 로그아웃 처리 필요하면 추가
+        handleLogout();
     };
 
     if (!isOpen) return null;
@@ -119,6 +134,12 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
                         </div>
                     </div>
                 </div>
+
+                {/* 로그아웃 버튼 */}
+                <button className="btn-logout" onClick={handleLogout}>
+                    <LogOut size={18} style={{ marginRight: 8 }} />
+                    로그아웃
+                </button>
 
                 {/* 회원탈퇴 버튼 (우하단) */}
                 <button className="btn-withdraw" onClick={handleWithdrawClick} title="회원 탈퇴">
