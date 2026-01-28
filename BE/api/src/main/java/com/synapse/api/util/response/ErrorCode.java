@@ -76,8 +76,17 @@ public enum ErrorCode {
     INVALID_BLOCK_CONTENTS(HttpStatus.BAD_REQUEST, "BLOCK_002", "블록 content 형식이 올바르지 않습니다."),
     INVALID_BLOCK_TYPE(HttpStatus.BAD_REQUEST, "BLOCK_003", "블록 타입이 올바르지 않습니다."),
     UNSUPPORTED_LANGUAGE(HttpStatus.BAD_REQUEST, "BLOCK_004", "지원하지 않는 언어 타입입니다."),
-    UNSUPPORTED_BLOCK_TYPE(HttpStatus.BAD_REQUEST, "BLOCK_005", "지원하지 않는 블록 타입입니다.");
+    UNSUPPORTED_BLOCK_TYPE(HttpStatus.BAD_REQUEST, "BLOCK_005", "지원하지 않는 블록 타입입니다."),
 
+    // AI Service
+    AI_SERVICE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "AI_001", "AI 서비스를 사용할 수 없습니다"),
+    AI_QUOTA_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "AI_002", "AI 사용량 한도를 초과했습니다"),
+    AI_INVALID_REQUEST(HttpStatus.BAD_REQUEST, "AI_003", "잘못된 AI 요청입니다"),
+    AI_TIMEOUT(HttpStatus.REQUEST_TIMEOUT, "AI_004", "AI 응답 시간이 초과되었습니다"),
+    AI_INVALID_RESPONSE(HttpStatus.INTERNAL_SERVER_ERROR, "AI_005", "AI 응답을 처리할 수 없습니다"),
+    AI_SERVICE_ERROR(HttpStatus.BAD_GATEWAY, "AI_006", "AI 서비스 오류가 발생했습니다"),
+    AI_PROVIDER_NOT_SUPPORTED(HttpStatus.BAD_REQUEST, "AI_007", "지원하지 않는 AI 제공자입니다"),
+    NOTE_SUMMARY_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTE_008", "노트 요약이 없습니다");
 
     private final HttpStatus httpStatus;
     private final String code;
