@@ -27,15 +27,8 @@ export const SideMenuBar: React.FC = () => {
                     <SideMenuButton
                         icon={<User size={22} />}
                         label="내 정보"
-                        onClick={() => {
-                            if (userInfo && !isLoading) {
-                                setIsProfileOpen(true);
-                            }
-                        }}
-                        style={{
-                            opacity: (!userInfo || isLoading) ? 0.5 : 1,
-                            cursor: (!userInfo || isLoading) ? 'not-allowed' : 'pointer'
-                        }}
+                        onClick={() => setIsProfileOpen(true)}
+                        disabled={!userInfo || isLoading}
                     />
                 </div>
             </nav>
