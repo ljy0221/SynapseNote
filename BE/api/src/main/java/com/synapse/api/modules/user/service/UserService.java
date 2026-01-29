@@ -155,31 +155,28 @@ public class UserService {
 
     @Transactional
     public ProfileResponse updateNickname(UUID userId, String newName) {
-        // 1. 입력 검증
-        if (newName == null || newName.trim().isEmpty()) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
-        }
-
         String trimmedName = newName.trim();
 
-        if (trimmedName.length() > 100) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
-        }
-
-        // 2. 사용자 조회
+        // 1. 사용자 조회
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        // 3. 동일 닉네임 체크 (불필요한 쿼리 방지)
-        if (user.getName().equals(trimmedName)) {
-            return getProfile(userId);
+        // 2. 동일 닉네임 체크 (불필요한 업데이트 방지)
+        if (!user.getName().equals(trimmedName)) {
+            user.updateName(trimmedName);
         }
 
-        // 4. 업데이트 (Dirty Checking으로 자동 DB 반영)
-        user.updateName(trimmedName);
+        // 3. OAuth 정보 조회 (ProfileResponse 생성용)
+        OAuthAccount oauth = oAuthRepository.findByUserId(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        // 5. 업데이트된 프로필 반환
-        return getProfile(userId);
+        // 4. 업데이트된 프로필 반환 (기존 user 객체 재사용)
+        return ProfileResponse.builder()
+                .email(user.getEmail())
+                .name(user.getName())
+                .provider(oauth.getProvider())
+                .createdAt(user.getCreatedAt())
+                .build();
     }
 
 }
