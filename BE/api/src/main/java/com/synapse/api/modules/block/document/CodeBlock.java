@@ -1,43 +1,53 @@
-package com.synapse.api.modules.note.document;
+package com.synapse.api.modules.block.document;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
+import org.springframework.data.mongodb.core.mapping.Field;
+import org.springframework.data.annotation.TypeAlias;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class CodeBlock {
+@SuperBuilder
+@TypeAlias("code") // MongoDB에서 _class 필드에 "code"로 저장됨
+public class CodeBlock extends BaseBlock {
 
-    private String id;
+    /**
+     * @Field("properties.xxx") 어노테이션의 역할:
+     * Express(Yjs) 브릿지가 데이터를 { properties: { code: "...", language: "..." } } 형태로 저장해도,
+     * Java에서는 this.code로 바로 접근할 수 있게 해줍니다.
+     */
+
+    @Field("properties.language")
     private String language;
-    private String version;
+
+    @Field("properties.code")
     private String code;
+
+    @Field("properties.version")
+    private String version;
+
+    @Field("properties.executionMode")
     private String executionMode;
 
+    // --- 아래 필드들은 Yjs 동기화 대상이 아니라 서버 실행 결과이므로 Root 레벨에 저장 ---
+
     @Builder.Default
+    @Field("outputHistory")
     private List<ExecutionHistory> outputHistory = new ArrayList<>();
 
+    @Field("lastOutput")
     private String lastOutput;
+
+    @Field("lastExecutedAt")
     private LocalDateTime lastExecutedAt;
 
-    public static CodeBlock create(String language, String version, String code, String executionMode) {
-        return CodeBlock.builder()
-                .id(UUID.randomUUID().toString())
-                .language(language)
-                .version(version)
-                .code(code)
-                .executionMode(executionMode)
-                .outputHistory(new ArrayList<>())
-                .build();
-    }
+
+    // --- 비즈니스 로직 (기존 유지) ---
 
     public void execute(String output, int executionTimeMs, String status) {
         ExecutionHistory history = ExecutionHistory.builder()
@@ -55,6 +65,8 @@ public class CodeBlock {
     public void updateCode(String code) {
         this.code = code;
     }
+
+    // --- Inner Class ---
 
     @Getter
     @NoArgsConstructor
