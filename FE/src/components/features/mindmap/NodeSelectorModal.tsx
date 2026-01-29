@@ -1,9 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { X, Search, FileText, ChevronRight } from 'lucide-react';
 import './NodeSelectorModal.css';
 
-import { useEffect } from 'react';
-import { getNotes } from '../../../api/notes/getNotes';
+import { getNotesApi } from '../../../api/notes/notes.api';
+import { adaptNotesForSidebar } from '../../../api/notes/notes.adapter';
 import type { NoteListItem } from '../../../types/note/getNotes';
 
 
@@ -31,9 +31,14 @@ export const NodeSelectorModal: React.FC<NodeSelectorModalProps> = ({
     useEffect(() => {
       const fetchNotes = async () => {
         try {
-          const res = await getNotes();
+          const res = await getNotesApi();
 
-          const mapped: NoteItem[] = res.map((note: NoteListItem) => ({
+          // ✅ api → adapter
+          const noteList: NoteListItem[] =
+            adaptNotesForSidebar(res);
+
+          // ✅ 화면 전용 가공은 여기서
+          const mapped: NoteItem[] = noteList.map(note => ({
             id: note.noteId,
             title: note.title,
             path: note.directoryPath,
