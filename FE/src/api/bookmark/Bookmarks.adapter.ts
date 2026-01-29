@@ -1,11 +1,11 @@
-// src/api/notes/Bookmarks.adapter.ts
+// src/api/bookmark/Bookmarks.adapter.ts
 import type { ApiResponse } from '../../types/common/apiResponse';
-import type { BookmarkedNote } from '../../types/bookmark/Bookmark';
+import { GetBookmarksResponse } from '../../types/bookmark/BookmarkResponse';
 
 export const adaptBookmarkIds = (
-  res: ApiResponse<BookmarkedNote[]>
+  res: ApiResponse<GetBookmarksResponse>
 ): Set<string> => {
   return new Set(
-    res.data.map(note => note.id)
+    res.data.content.map(note => note.id)
   );
 };
