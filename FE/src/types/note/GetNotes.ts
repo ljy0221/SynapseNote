@@ -1,5 +1,4 @@
-import { Pagination } from '../common/pagination';
-
+// src/types/note/GetNotes.ts
 export type NoteRole = 'OWNER' | 'EDITOR' | 'VIEWER';
 
 export interface NoteListItem {
@@ -13,7 +12,11 @@ export interface NoteListItem {
   updatedAt: string;
 }
 
+
 export interface GetNotesResponse {
-  notes: NoteListItem[];
-  pagination: Pagination;
+  content: NoteListItem[];
+  currentPage: number;
+  totalPages: number;
+  totalElements: number;
+  size: number;
 }

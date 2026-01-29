@@ -5,5 +5,5 @@ import type { GetNotesResponse, NoteListItem } from '../../types/note/GetNotes';
 export const adaptNotesForSidebar = (
   res: ApiResponse<GetNotesResponse>
 ): NoteListItem[] => {
-  return res.data.notes;
+  return res.data.content;
 };
