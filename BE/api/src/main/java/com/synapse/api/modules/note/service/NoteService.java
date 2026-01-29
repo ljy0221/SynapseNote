@@ -1,8 +1,16 @@
 package com.synapse.api.modules.note.service;
 
 import com.synapse.api.modules.block.document.BaseBlock;
+import com.synapse.api.modules.block.document.CodeBlock;
 import com.synapse.api.modules.block.service.BlockService;
-import com.synapse.api.modules.note.dto.*;
+import com.synapse.api.modules.note.dto.request.ExecutionHistoryRequest;
+import com.synapse.api.modules.note.dto.request.NoteCreateRequest;
+import com.synapse.api.modules.note.dto.request.NotePositionUpdateRequest;
+import com.synapse.api.modules.note.dto.request.NoteUpdateRequest;
+import com.synapse.api.modules.note.dto.response.ExecutionHistoryResponse;
+import com.synapse.api.modules.note.dto.response.NoteDetailResponse;
+import com.synapse.api.modules.note.dto.response.NotePageResponse;
+import com.synapse.api.modules.note.dto.response.NoteResponse;
 import com.synapse.api.modules.note.entity.Note;
 import com.synapse.api.modules.note.entity.NoteMember;
 import com.synapse.api.modules.note.entity.NoteMemberId;
@@ -15,14 +23,13 @@ import com.synapse.api.util.exception.BusinessException;
 import com.synapse.api.util.response.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -91,38 +98,14 @@ public class NoteService {
         return NoteDetailResponse.from(note, blocks);
     }
 
-    /**
-     * [요청하신 메소드] 전체 노트 목록 조회 (내가 만든 것 + 공유받은 것)
-     */
-    public List<NoteResponse> getAllNotes(UUID userId) {
-        // 1. 내가 만든 노트 (Soft Delete 제외)
-        // Repository에 @Where가 적용되어 있거나 findBy...AndDeletedAtIsNull 사용 가정
-        List<Note> myNotes = noteRepository.findByCreatedByIdAndDeletedAtIsNull(userId);
+    public NotePageResponse getAllNotes(UUID userId, int page, int size) {
+        PageRequest pageRequest = PageRequest.of(page, size);
+        Page<Note> pageResult = noteRepository.findAllNotesByUserId(userId, pageRequest);
 
-        // 2. 공유받은 노트
-        List<NoteMember> memberNotes = noteMemberRepository.findByUserId(userId);
-        List<Note> sharedNotes = memberNotes.stream()
-                .map(NoteMember::getNote)
-                .filter(n -> n.getDeletedAt() == null) // 삭제된 공유 노트 제외
-                .toList();
-
-        // 3. 합치기 및 중복 제거
-        return Stream.concat(myNotes.stream(), sharedNotes.stream())
-                .distinct()
-                .map(NoteResponse::from)
-                .collect(Collectors.toList());
+        Page<NoteResponse> responsePage = pageResult.map(NoteResponse::from);
+        return NotePageResponse.from(responsePage);
     }
 
-    /**
-     * [요청하신 메소드] 노트 검색 (제목 기준)
-     */
-    public List<NoteResponse> searchNotes(UUID userId, String query) {
-        // RDB에서 검색 수행
-        List<Note> results = noteRepository.searchByUserAndQuery(userId, query);
-        return results.stream()
-                .map(NoteResponse::from)
-                .toList();
-    }
 
     // =========================================================================
     // 3. 노트 수정 (Update)
@@ -195,19 +178,51 @@ public class NoteService {
     /**
      * [요청하신 메소드] 실행 히스토리 조회
      */
-    public List<ExecutionHistoryResponse> getExecutionHistory(UUID noteId, String blockId, UUID userId, int page, int size) {
+    public List<ExecutionHistoryResponse> getExecutionHistory(UUID noteId, String blockId, UUID userId) {
         // 1. 노트 접근 권한 확인
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
         validateAccess(note, userId);
 
         // 2. 히스토리 조회 위임
-        return blockService.getExecutionHistory(noteId.toString(), blockId, page, size);
+        return blockService.getExecutionHistory(noteId.toString(), blockId);
     }
 
-    // =========================================================================
-    // Validation Helpers
-    // =========================================================================
+    @Transactional
+    public void bookmarkNote(UUID userId, UUID noteId) {
+        Note note = noteRepository.findById(noteId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
+
+        validateOwnership(note, userId);
+
+        note.setBookmark();
+    }
+
+    @Transactional
+    public void unbookmarkNote(UUID userId, UUID noteId) {
+        Note note = noteRepository.findById(noteId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
+
+        validateOwnership(note, userId);
+
+        note.unBookmark();
+    }
+
+    public NotePageResponse getNoteBookmarks(UUID userId, int page, int size) {
+        PageRequest pageRequest = PageRequest.of(page, size);
+        Page<Note> pageResult = noteRepository.findBookmarkedNotesByUserId(userId, pageRequest);
+
+        Page<NoteResponse> responsePage = pageResult.map(NoteResponse::from);
+        return NotePageResponse.from(responsePage);
+    }
+
+    public List<NoteResponse> searchNotes(UUID userId, String query) {
+        // RDB에서 검색 수행
+        List<Note> results = noteRepository.searchByUserAndQuery(userId, query);
+        return results.stream()
+                .map(NoteResponse::from)
+                .toList();
+    }
 
     private void validateAccess(Note note, UUID userId) {
         if (note.getCreatedBy().getId().equals(userId)) return;

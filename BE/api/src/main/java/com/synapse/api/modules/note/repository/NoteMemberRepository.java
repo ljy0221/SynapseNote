@@ -1,8 +1,11 @@
 package com.synapse.api.modules.note.repository;
 
+import com.synapse.api.modules.note.entity.Note;
 import com.synapse.api.modules.note.entity.NoteMember;
 import com.synapse.api.modules.note.entity.NoteMemberId;
 import com.synapse.api.modules.note.entity.NoteRole;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
