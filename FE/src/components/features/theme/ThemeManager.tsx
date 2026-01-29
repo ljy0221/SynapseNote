@@ -1,6 +1,5 @@
 import React from 'react';
-import { useTheme } from './UseTheme.ts';
-// @ alias 대신 상대 경로 사용 (설정 미비)
+import { useTheme } from './UseTheme'; // 상대 경로 .ts 파일이지만 확장자 생략 가능
 import ThemeToggle from '../../common/themeToggle/ThemeToggle';
 
 /**
@@ -9,12 +8,12 @@ import ThemeToggle from '../../common/themeToggle/ThemeToggle';
  */
 export const ThemeManager: React.FC = () => {
     // 1. 순수 로직(Hook)에서 데이터와 함수를 가져옵니다.
-    const { isDark, toggleTheme } = useTheme();
+    const { themeMode, toggleTheme } = useTheme();
 
     // 2. 디자인 조각(Common)에 로직을 연결하여 반환합니다.
     return (
         <ThemeToggle
-            isDark={isDark}
+            themeMode={themeMode}
             onToggle={toggleTheme}
         />
     );
