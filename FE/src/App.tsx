@@ -83,9 +83,12 @@ function AppContent() {
             setDockerErrorType(null);
             setIsDockerErrorOpen(false);
         } catch (error) {
-            console.error('Docker 상태 확인 실패:', error);
+            // API 호출 실패 또는 기타 에러
+            console.error('[App] Docker health check failed:', error);
+
+            // 상세 에러 내용을 로깅하되, 사용자에게는 우선 '실행 중이지 않음'으로 안내하여 재시도를 유도
+            // 추후 에러 타입 세분화 검토 가능 (예: error instanceof DockerNotFoundError 등)
             setDockerStatus('error');
-            // 에러 발생 시 기본적으로 running 에러로 처리하거나 별도 처리
             setDockerErrorType('running');
             setIsDockerErrorOpen(true);
         }

@@ -16,7 +16,7 @@ export const DockerErrorModal: React.FC<DockerErrorModalProps> = ({ isOpen, type
 
     return (
         <div className="docker-error-modal-overlay">
-            <div className="docker-error-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="docker-error-modal-content">
                 {/* 
                   필수적인 경고이므로 닫기 버튼은 선택적으로 제공하거나 제거할 수 있음.
                   여기서는 사용자가 인지하고 닫을 수 있도록 우측 상단 닫기 버튼 제공
