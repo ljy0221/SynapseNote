@@ -1,7 +1,6 @@
 package com.synapse.api.modules.note.repository;
 
 import com.synapse.api.modules.note.entity.Note;
-import com.synapse.api.modules.note.entity.NoteMember;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -31,9 +30,6 @@ public interface NoteRepository extends JpaRepository<Note, UUID> {
 
     // 3. 디렉토리별 조회 (탐색기 기능용)
     List<Note> findByCreatedByIdAndDirectoryPathAndDeletedAtIsNull(UUID userId, String directoryPath);
-
-    // 4. 즐겨찾기 목록 조회
-    List<Note> findByCreatedByIdAndFavoriteTrueAndDeletedAtIsNull(UUID userId);
 
     // 5. 검색 기능 (제목 기준)
     @Query("SELECT n FROM Note n " +
