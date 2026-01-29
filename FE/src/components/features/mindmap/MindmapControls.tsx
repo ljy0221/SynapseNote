@@ -4,8 +4,6 @@ import { Plus, Minus, Maximize, BoxSelect } from 'lucide-react';
 import '../../../pages/mindmap/MindMap.css'; // 버튼 스타일 재사용
 import { Tooltip } from '../../common/tooltip/Tooltip';
 
-// MindmapControls.tsx
-
 interface MindmapControlsProps {
     minZoom: number;
     maxZoom: number;

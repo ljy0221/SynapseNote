@@ -65,7 +65,7 @@ const DynamicBackground: React.FC = () => {
 /**
  * 마인드맵 캔버스 컴포넌트 (Feature)
  */
-// MindmapCanvas.tsx
+import { MAP_WIDTH, MAP_HEIGHT } from '../../../constants/mindmapConstants';
 
 const MindmapCanvas: React.FC<MindmapCanvasProps> = ({
     nodes,
@@ -80,10 +80,6 @@ const MindmapCanvas: React.FC<MindmapCanvasProps> = ({
     onNodeDragStop,
     isEditMode,
 }) => {
-    // 맵 전체 크기 정의
-    const MAP_WIDTH = 8000;
-    const MAP_HEIGHT = 6000;
-
     const wrapperRef = React.useRef<HTMLDivElement>(null);
     const [minZoom, setMinZoom] = React.useState(0.1);
     const MAX_ZOOM = 2.0;
