@@ -8,17 +8,17 @@ import { NoteDirectory } from './NoteDirectory';
 import ContextMenu from '../../common/contextMenu/ContextMenu';
 import { ContextMenuState } from '../../../types/sidebar/ContextMenu';
 
-import { getNotesApi } from '../../../api/notes/Notes.api';
-import { adaptNotesForSidebar } from '../../../api/notes/Notes.adapter';
+import { getNotesApi } from '../../../api/notes/notes.api';
+import { adaptNotesForSidebar } from '../../../api/notes/notes.adapter';
 
-import { getBookmarksApi } from '../../../api/notes/Bookmarks.api';
-import { adaptBookmarkIds } from '../../../api/notes/Bookmarks.adapter';
+import { getBookmarksApi } from '../../../api/notes/bookmarks.api';
+import { adaptBookmarkIds } from '../../../api/notes/bookmarks.adapter';
 
-import { createNoteApi } from '../../../api/notes/CreateNote.api';
-import { deleteNoteApi } from '../../../api/notes/DeleteNote.api';
+import { createNoteApi } from '../../../api/notes/createNote.api';
+import { deleteNoteApi } from '../../../api/notes/deleteNote.api';
 
-import { adaptCreatedNoteForSidebar } from '../../../api/notes/CreateNote.adapter';
-import { adaptDeletedNoteId } from '../../../api/notes/DeleteNote.adapter';
+import { adaptCreatedNoteForSidebar } from '../../../api/notes/createNote.adapter';
+import { adaptDeletedNoteId } from '../../../api/notes/deleteNote.adapter';
 
 interface SidebarProps {
   isOpen: boolean;
