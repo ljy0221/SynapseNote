@@ -22,7 +22,7 @@ import java.util.UUID;
 public class MindmapController {
     private final MindmapService mindmapService;
 
-    @PutMapping("/v1/mindmaps/nodes")
+    @PostMapping("/v1/mindmaps/nodes")
     public StatusResponse addMindmapNode(@AuthenticationPrincipal CustomUserDetails userDetails,
                                              @RequestBody AddMindmapNodeRequest request) {
         mindmapService.addMindMapNode(userDetails.id(), request);
