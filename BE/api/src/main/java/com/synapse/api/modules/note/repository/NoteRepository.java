@@ -1,6 +1,8 @@
 package com.synapse.api.modules.note.repository;
 
 import com.synapse.api.modules.note.entity.Note;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -35,4 +37,20 @@ public interface NoteRepository extends JpaRepository<Note, UUID> {
     @Query("UPDATE Note n SET n.pointX = NULL, n.pointY = NULL " +
             "WHERE n.createdBy.id = :userId AND n.pointX IS NOT NULL")
     int resetMindmapNodePositions(@Param("userId") UUID userId);
+
+    @Query(value = "SELECT n.* FROM notes n " +
+            "LEFT JOIN note_members nm ON n.id = nm.note_id AND nm.user_id = :userId AND nm.deleted_at IS NULL " +
+            "WHERE n.deleted_at IS NULL " +
+            "AND (n.created_by = :userId OR nm.id IS NOT NULL) " +
+            "ORDER BY n.updated_at DESC",
+            countQuery = "SELECT COUNT(n.id) FROM notes n " +
+                    "LEFT JOIN note_members nm ON n.id = nm.note_id AND nm.user_id = :userId AND nm.deleted_at IS NULL " +
+                    "WHERE n.deleted_at IS NULL " +
+                    "AND (n.created_by = :userId OR nm.id IS NOT NULL)", nativeQuery = true)
+    Page<Note> findAllNotesByUserId(@Param("userId") UUID userId, Pageable pageable);
+
+    @Query("SELECT n FROM Note n WHERE n.createdBy.id = :userId " +
+            "AND n.bookmark = true AND n.deletedAt IS NULL " +
+            "ORDER BY n.updatedAt DESC")
+    Page<Note> findBookmarkedNotesByUserId(@Param("userId") UUID userId, Pageable pageable);
 }
