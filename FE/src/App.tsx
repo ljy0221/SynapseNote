@@ -13,7 +13,7 @@ import { UserProvider } from './context/UserContext';
 import { Header } from './components/layout/header/Header';
 import { Sidebar } from './components/layout/sidebar/Sidebar';
 import { SideMenuBar } from './components/layout/sideMenuBar/SideMenuBar';
-import { SideMenuBar } from './components/layout/sideMenuBar/SideMenuBar';
+
 
 // 공통 컴포넌트
 import ThemeToggle from './components/common/themeToggle/ThemeToggle';
@@ -35,7 +35,6 @@ const SIDEBAR_ROUTES = ['/mindmap', '/note'];
 const TOOLBAR_ROUTES = ['/note'];
 
 function AppContent() {
-    const [isSidebarActive, setIsSidebarActive] = useState(false); // 가변 사이드바 상태
     const [isSidebarActive, setIsSidebarActive] = useState(false); // 가변 사이드바 상태
     const [isToolbarActive] = useState(true);
     const [theme, setTheme] = useState<'light' | 'dark'>('dark');
@@ -180,11 +179,7 @@ function AppContent() {
     );
 }
 
-// Context 임포트
-import { ToastProvider } from './context/ToastContext';
-import { UserProvider } from './context/UserContext';
 
-// ... (기존 코드)
 
 export default function App() {
     return (
