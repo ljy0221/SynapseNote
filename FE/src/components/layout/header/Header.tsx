@@ -3,7 +3,7 @@ import './Header.css';
 import { ThemeManager } from '../../features/theme/ThemeManager';
 import SearchBar from '../../common/searchBar/searchBar.tsx';
 import SearchResultDropdown from '../../common/searchResultModal/SearchResultDropdown.tsx';
-import type { SearchedNote } from '../../../types/note/searchNotes';
+import type { SearchedNote } from '../../../types/note/SearchNotes.ts';
 import WindowControlButton from '../../common/WindowControlButton/WindowControlButton.tsx';
 import { searchNotes } from '../../../utils/noteAPI';
 

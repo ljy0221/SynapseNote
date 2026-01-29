@@ -4,8 +4,8 @@ import React from 'react';
 import RecentNotes from "../../components/layout/recentNotes/RecentNotes";
 import NoteStreak from "../../components/layout/noteStreak/NoteStreak";
 import './Home.css';
-import type { GetStreakResponse } from '../../types/note/getStreak';
-import type { GetNotesResponse } from '../../types/note/getNotes';
+import type { GetStreakResponse } from '../../types/note/GetStreak';
+import type { GetNotesResponse } from '../../types/note/GetNotes';
 
 // 임시 더미 데이터
 const mockNotesResponse: GetNotesResponse = {

@@ -1,3 +1,10 @@
+좋아, 지금 README 구조가 이미 잘 잡혀 있어서
+**“파일명 첫 글자 대문자 컨벤션 + axios/request 예외”**만 명확히 반영해서 정리해줄게.
+
+아래는 **그대로 덮어써도 되는 수정 반영본 README**야 👇
+(의미 바뀐 부분은 🔸 주석으로 강조했어 — 실제 문서엔 주석 제거해도 됨)
+
+---
 
 # 📘 src/api 설계 규약 & 사용 가이드
 
@@ -23,16 +30,39 @@
 
 ```txt
 src/api/
- ├─ axios.ts           # axios 인스턴스 + 인증 interceptor
- ├─ request.ts         # 공통 API 요청 래퍼
+ ├─ axios.ts              # 🔸 예외: 소문자 유지 (axios 인스턴스)
+ ├─ request.ts            # 🔸 예외: 소문자 유지 (공통 요청 래퍼)
  ├─ notes/
- │   ├─ notes.api.ts
- │   ├─ notes.adapter.ts
- │   ├─ bookmarks.api.ts
- │   ├─ bookmarks.adapter.ts
- │   ├─ createNote.api.ts
- │   └─ deleteNote.api.ts
+ │   ├─ Notes.api.ts
+ │   ├─ Notes.adapter.ts
+ │   ├─ Bookmarks.api.ts
+ │   ├─ Bookmarks.adapter.ts
+ │   ├─ CreateNote.api.ts
+ │   └─ DeleteNote.api.ts
 ```
+
+---
+
+## 📁 파일명 네이밍 규칙 (중요)
+
+### 기본 규칙
+
+* **도메인 API / Adapter 파일은 PascalCase 사용**
+
+  * `Notes.api.ts`
+  * `Bookmarks.adapter.ts`
+  * `UpdateNote.api.ts` 등
+
+### 🔸 예외 규칙 (반드시 지킬 것)
+
+다음 파일들은 **인프라 레벨 공통 모듈**이므로
+**소문자 파일명을 유지한다.**
+
+* `axios.ts`
+* `request.ts`
+
+> ⚠️ 대소문자가 다른 파일은 **완전히 다른 모듈**로 취급되므로
+> `Axios.ts`, `Request.ts` 같은 파일이 생기지 않도록 주의한다.
 
 ---
 
@@ -46,6 +76,7 @@ src/api/
 ### 규칙
 
 * ❌ `axios` 직접 import 금지
+* ❌ `Axios.ts` 같은 대문자 파일 생성 금지
 * ✅ 모든 API 요청은 반드시 이 인스턴스 사용
 
 ```ts
@@ -113,11 +144,12 @@ export const request = async <T>(
 * ❌ UI 로직 포함 금지
 * ❌ `map / filter / reduce` 사용 금지
 * ✅ 백엔드 명세와 1:1 매칭 유지
+* ✅ 파일명은 **PascalCase.api.ts**
 
 ### 예시
 
 ```ts
-// src/api/notes/notes.api.ts
+// src/api/notes/Notes.api.ts
 import { request } from '../request';
 import type { GetNotesResponse } from '../../types/note/getNotes';
 
@@ -145,11 +177,12 @@ export const getNotesApi = (params?: {
 * ❌ axios / request 의존 금지
 * ❌ 비즈니스 로직 포함 금지
 * ✅ 화면 단위로 adapter 분리 가능
+* ✅ 파일명은 **PascalCase.adapter.ts**
 
 ### 예시
 
 ```ts
-// src/api/notes/notes.adapter.ts
+// src/api/notes/Notes.adapter.ts
 import type { GetNotesResponse, NoteListItem } from '../../types/note/getNotes';
 
 export const adaptNotesForSidebar = (
@@ -198,12 +231,12 @@ export interface GetNotesResponse {
 
 ## 📌 설계 원칙 요약
 
-| 구분        | 허용         | 금지        |
-| --------- | ---------- | --------- |
-| api       | 명세 그대로 반환  | 데이터 가공    |
-| adapter   | 데이터 가공     | API 호출    |
-| component | adapter 사용 | API 구조 의존 |
-| axios     | 단일 인스턴스    | 직접 호출     |
+| 구분        | 허용               | 금지              |
+| --------- | ---------------- | --------------- |
+| api       | 명세 그대로 반환        | 데이터 가공          |
+| adapter   | 데이터 가공           | API 호출          |
+| component | adapter 사용       | API 구조 의존       |
+| axios     | 단일 인스턴스 (소문자 파일) | 직접 호출 / 중복 인스턴스 |
 
 ---
 
@@ -212,6 +245,7 @@ export interface GetNotesResponse {
 * 과도한 추상화 금지
 * 범용 adapter 남발 금지
 * `api.call({ ... })` 같은 메타 API 구조 지양
+* **axios.ts / request.ts는 예외 파일임을 항상 인지할 것**
 
 ---
 

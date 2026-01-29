@@ -1,4 +1,4 @@
-import type { NoteListItem } from '../../../types/note/getNotes';
+import type { NoteListItem } from '../../../types/note/GetNotes';
 
 export interface NoteTreeNode {
   name: string;
