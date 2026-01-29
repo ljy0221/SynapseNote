@@ -38,7 +38,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [contextMenu, setContextMenu] =
     useState<ContextMenuState>({ visible: false });
 
-  const noteTree = buildNoteTree(notes);
+  const noteTree = buildNoteTree(notes ?? []);
 
   useEffect(() => {
     const fetchSidebarData = async () => {
