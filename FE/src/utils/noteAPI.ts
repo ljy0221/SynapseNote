@@ -41,4 +41,3 @@ export async function searchNotes(query: string): Promise<SearchedNote[]> {
     const data = await response.json();
     return data.data; // DataResponse<List<NoteResponse>> 구조
 }
-}
