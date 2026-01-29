@@ -10,3 +10,4 @@ export const getNotesApi = (params?: {
     params,
   });
 };
+
