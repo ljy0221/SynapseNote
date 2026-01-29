@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { LayoutDashboard, FileText, Network, Sparkles, User } from 'lucide-react';
 import { SideMenuButton } from '../../common/sideMenuButton/SideMenuButton';
 import { UserProfileModal } from '../../common/modal/UserProfileModal';
+import { useUser } from '../../../context/UserContext'; // 변경
 import './SideMenuBar.css';
 
 import { useUser } from '../../../context/UserContext';

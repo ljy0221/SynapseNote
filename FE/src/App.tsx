@@ -5,6 +5,10 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavig
 import './components/common/styles/Theme.css';
 import './App.css';
 
+// Context 임포트
+import { ToastProvider } from './context/ToastContext';
+import { UserProvider } from './context/UserContext';
+
 // 레이아웃 컴포넌트 (폴더: camelCase, 파일: PascalCase)
 import { Header } from './components/layout/header/Header';
 import { Sidebar } from './components/layout/sidebar/Sidebar';
@@ -189,12 +193,12 @@ import { UserProvider } from './context/UserContext';
 
 export default function App() {
     return (
-        <ToastProvider>
-            <UserProvider>
-                <Router>
+        <Router>
+            <ToastProvider>
+                <UserProvider>
                     <AppContent />
-                </Router>
-            </UserProvider>
-        </ToastProvider>
+                </UserProvider>
+            </ToastProvider>
+        </Router>
     );
 }
