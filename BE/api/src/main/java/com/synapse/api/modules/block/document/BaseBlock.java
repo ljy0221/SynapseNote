@@ -20,35 +20,42 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Document(collection = "blocks")
 // API 응답 시 JSON 타입 추론을 위한 설정 (프론트엔드용)
-@JsonTypeInfo(
-        use = JsonTypeInfo.Id.NAME,
-        include = JsonTypeInfo.As.EXISTING_PROPERTY,
-        property = "type",
-        visible = true
-)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = CodeBlock.class, name = "code"),
-        @JsonSubTypes.Type(value = TextBlock.class, name = "text"),
+                @JsonSubTypes.Type(value = CodeBlock.class, name = "code"),
+                @JsonSubTypes.Type(value = TextBlock.class, name = "text"),
 })
 public abstract class BaseBlock {
 
-    @Id
-    private String id; // MongoDB ObjectId
+        @Id
+        private String id; // MongoDB ObjectId
 
-    @Indexed
-    private String docId; // PostgreSQL Note ID (UUID.toString())
+        @Indexed
+        private String noteId; // PostgreSQL Note ID (UUID.toString())
 
-    @Indexed(unique = true)
-    private String blockId; // Yjs/Frontend UUID
+        @Indexed(unique = true)
+        private String blockId; // Yjs/Frontend UUID
 
-    private Double order; // 정렬 순서
+        private boolean bookmark;
 
-    @CreatedDate
-    private LocalDateTime createdAt;
+        private Double order; // 정렬 순서
 
-    @LastModifiedDate
-    private LocalDateTime updatedAt;
+        @CreatedDate
+        private LocalDateTime createdAt;
 
-    // DB에는 저장하지 않고, JSON 응답에만 포함 (하위 클래스에서 구현)
-    public abstract String getType();
+        @LastModifiedDate
+        private LocalDateTime updatedAt;
+
+        // DB에는 저장하지 않고, JSON 응답에만 포함 (하위 클래스에서 구현)
+        public abstract String getType();
+
+        // 북마크 설정
+        public void setBookmark() {
+                this.bookmark = true;
+        }
+
+        // 북마크 해제
+        public void unBookmark() {
+                this.bookmark = false;
+        }
 }
