@@ -1,5 +1,6 @@
 // src/types/bookmark/Bookmark.ts
 
+/** 즐겨찾기된 노트 (목록용) */
 export interface BookmarkedNote {
   id: string;
   title: string;
@@ -11,14 +12,4 @@ export interface BookmarkedNote {
   bookmark: boolean;
   createdAt: string;
   updatedAt: string;
-}
-
-export interface GetBookmarksResponse {
-  content: BookmarkedNote[];
-  currentPage: number;
-  totalPages: number;
-  totalElements: number;
-  size: number;
-  hasNext: boolean;
-  hasPrevious: boolean;
 }

@@ -1,5 +1,5 @@
 // src/types/common/apiResponse.ts
-export interface ApiResponse<T> {
+export interface ApiResponse<T=void> {
   success: boolean;
   code: string;
   message: string;
