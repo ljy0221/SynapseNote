@@ -3,6 +3,10 @@ package com.synapse.api.modules.image.service;
 import com.synapse.api.modules.image.dto.request.UploadUrlRequest;
 import com.synapse.api.modules.image.dto.response.ReadUrlResponse;
 import com.synapse.api.modules.image.dto.response.UploadUrlResponse;
+import com.synapse.api.modules.note.entity.NoteMember;
+import com.synapse.api.modules.note.entity.NoteRole;
+import com.synapse.api.modules.note.repository.NoteMemberRepository;
+import com.synapse.api.modules.note.repository.NoteRepository;
 import com.synapse.api.util.exception.BusinessException;
 import com.synapse.api.util.response.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +31,9 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class ImageService {
+
+    private final NoteRepository noteRepository;
+    private final NoteMemberRepository noteMemberRepository;
 
     private static final Set<String> ALLOWED_IMAGE_CONTENT_TYPES = Set.of(
             "image/jpeg", "image/png"
@@ -95,7 +102,19 @@ public class ImageService {
                 .build();
     }
 
-    public void deleteImage(String key) {
+    public void deleteImageAtNote(UUID userId, UUID noteId, String key) {
+
+        noteRepository.findById(noteId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
+
+        NoteMember noteMember = noteMemberRepository
+                .findByNoteIdAndUserId(noteId, userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_ACCESS_DENIED));
+
+        if (!canDeleteImage(noteMember.getRole())) {
+            throw new BusinessException(ErrorCode.IMAGE_DELETE_FAIL);
+        }
+
         try {
             s3Client.deleteObject(DeleteObjectRequest.builder()
                     .bucket(bucket)
@@ -104,6 +123,10 @@ public class ImageService {
         } catch (Exception e) {
             throw new BusinessException(ErrorCode.IMAGE_DELETE_FAIL);
         }
+    }
+
+    private boolean canDeleteImage(NoteRole role) {
+        return role == NoteRole.OWNER || role == NoteRole.EDITOR;
     }
 
     private void validateContentType(String contentType) {
