@@ -1,5 +1,6 @@
 package com.synapse.api.modules.note.controller;
 
+import com.synapse.api.modules.block.dto.response.BlockPageResponse;
 import com.synapse.api.modules.note.dto.request.ExecutionHistoryRequest;
 import com.synapse.api.modules.note.dto.request.NoteCreateRequest;
 import com.synapse.api.modules.note.dto.request.NoteUpdateRequest;
@@ -140,9 +141,44 @@ public class NoteController {
     public DataResponse<NotePageResponse> getNoteBookmarks(
             @AuthenticationPrincipal CustomUserDetails details,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(defaultValue = "10") int size) {
         UUID userId = details.id();
         NotePageResponse response = noteService.getNoteBookmarks(userId, page - 1, size);
+        return DataResponse.of(response);
+    }
+
+    /**
+     * 블록 즐겨찾기
+     */
+
+    @PostMapping("/v1/notes/{noteId}/blocks/{blockId}/bookmarks")
+    public StatusResponse bookmarkBlock(
+            @AuthenticationPrincipal CustomUserDetails details,
+            @PathVariable UUID noteId,
+            @PathVariable String blockId) {
+        UUID userId = details.id();
+        noteService.bookmarkBlock(userId, noteId, blockId);
+        return StatusResponse.of();
+    }
+
+    @DeleteMapping("/v1/notes/{noteId}/blocks/{blockId}/bookmarks")
+    public StatusResponse unbookmarkBlock(
+            @AuthenticationPrincipal CustomUserDetails details,
+            @PathVariable UUID noteId,
+            @PathVariable String blockId) {
+        UUID userId = details.id();
+        noteService.unbookmarkBlock(userId, noteId, blockId);
+        return StatusResponse.of();
+    }
+
+    @GetMapping("/v1/notes/{noteId}/blocks/bookmarks")
+    public DataResponse<BlockPageResponse> getBlockBookmarks(
+            @AuthenticationPrincipal CustomUserDetails details,
+            @PathVariable UUID noteId,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        UUID userId = details.id();
+        BlockPageResponse response = noteService.getBlockBookmarks(userId, noteId, page - 1, size);
         return DataResponse.of(response);
     }
 }

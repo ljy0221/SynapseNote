@@ -12,8 +12,6 @@ import com.synapse.api.modules.mindmap.repository.MindmapEdgeRepository;
 import com.synapse.api.modules.note.entity.Note;
 import com.synapse.api.modules.note.repository.NoteRepository;
 import com.synapse.api.modules.user.entity.User;
-import com.synapse.api.util.exception.BusinessException;
-import com.synapse.api.util.response.ErrorCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -28,11 +26,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("MindmapService 단위 테스트")
@@ -144,7 +140,7 @@ class MindmapServiceTest {
         @DisplayName("노드 삭제 시 연결된 엣지도 삭제되고 좌표가 null로 변경됨")
         void deleteNode() {
             // given
-            note.setMindMapNode(100.0, 200.0);
+            note.updatePosition(100.0, 200.0);
             given(noteRepository.findById(noteId)).willReturn(Optional.of(note));
 
             // when
@@ -215,14 +211,14 @@ class MindmapServiceTest {
                     .title("Note 1")
                     .createdBy(user)
                     .build();
-            note1.setMindMapNode(100.0, 200.0);
+            note1.updatePosition(100.0, 200.0);
 
             Note note2 = Note.builder()
                     .id(note2Id)
                     .title("Note 2")
                     .createdBy(user)
                     .build();
-            note2.setMindMapNode(300.0, 400.0);
+            note2.updatePosition(300.0, 400.0);
 
             List<Note> notes = List.of(note1, note2);
 
@@ -260,7 +256,7 @@ class MindmapServiceTest {
         @DisplayName("노드 위치 업데이트")
         void updateNodePositions() {
             // given
-            note.setMindMapNode(100.0, 200.0);
+            note.updatePosition(100.0, 200.0);
             NodePositionDto positionDto = new NodePositionDto(noteId, 150.0, 250.0);
             UpdateMindmapPositionsRequest request = new UpdateMindmapPositionsRequest(List.of(positionDto));
 
