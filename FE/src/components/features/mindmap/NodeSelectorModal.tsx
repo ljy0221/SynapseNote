@@ -2,9 +2,9 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { X, Search, FileText, ChevronRight } from 'lucide-react';
 import './NodeSelectorModal.css';
 
-import { getNotesApi } from '../../../api/notes/notes.api';
-import { adaptNotesForSidebar } from '../../../api/notes/notes.adapter';
-import type { NoteListItem } from '../../../types/note/getNotes';
+import { getNotesApi } from '../../../api/notes/Notes.api';
+import { adaptNotesForSidebar } from '../../../api/notes/Notes.adapter';
+import type { NoteListItem } from '../../../types/note/GetNotes';
 
 
 interface NoteItem {

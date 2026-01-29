@@ -1,5 +1,5 @@
-// src/api/notes/notes.adapter.ts
-import type { GetNotesResponse, NoteListItem } from '../../types/note/getNotes';
+// src/api/notes/Notes.adapter.ts
+import type { GetNotesResponse, NoteListItem } from '../../types/note/GetNotes';
 
 export const adaptNotesForSidebar = (
   res: GetNotesResponse
