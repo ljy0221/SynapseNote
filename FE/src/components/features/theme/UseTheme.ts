@@ -1,28 +1,34 @@
 // src/features/theme/UseTheme.ts
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
+
+export type ThemeMode = 'light' | 'cookie' | 'dark' | 'deepblue';
 
 export const useTheme = () => {
-    const [isDark, setIsDark] = useState<boolean>(false);
-
-    // 테마를 실제 시스템(DOM)에 적용하는 함수
-    const applyTheme = useCallback((dark: boolean) => {
-        setIsDark(dark);
-        const mode = dark ? 'dark' : 'light';
-        document.documentElement.setAttribute('data-theme', mode);
-        localStorage.setItem('app-theme', mode);
-    }, []);
-
-    // 초기 로드 시 저장된 설정 불러오기
-    useEffect(() => {
-        const savedTheme = localStorage.getItem('app-theme');
-        if (savedTheme === 'dark') {
-            applyTheme(true);
-        } else {
-            applyTheme(false); // 기본값 light
+    // 초기값을 localStorage에서 읽어오거나 'light'로 설정
+    const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
+        const saved = localStorage.getItem('app-theme');
+        if (saved === 'dark' || saved === 'deepblue' || saved === 'light' || saved === 'cookie') {
+            return saved as ThemeMode;
         }
-    }, [applyTheme]);
+        return 'light'; // 기본값
+    });
 
-    const toggleTheme = () => applyTheme(!isDark);
+    // 테마 변경 함수
+    const toggleTheme = () => {
+        setThemeMode((prev) => {
+            if (prev === 'light') return 'cookie';
+            if (prev === 'cookie') return 'dark';
+            if (prev === 'dark') return 'deepblue';
+            return 'light'; // deepblue -> light
+        });
+    };
 
-    return { isDark, toggleTheme };
+    // toggleTheme 내부에서 setState를 사용하더라도, side effect로 DOM 업데이트가 필요함.
+    // useEffect로 themeMode 변경 시 DOM 업데이트를 보장하는 것이 더 깔끔함.
+    useEffect(() => {
+        document.documentElement.setAttribute('data-theme', themeMode);
+        localStorage.setItem('app-theme', themeMode);
+    }, [themeMode]);
+
+    return { themeMode, toggleTheme };
 };
