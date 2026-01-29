@@ -7,9 +7,10 @@ interface SideMenuButtonProps {
     icon: React.ReactNode;
     label: string; // 툴팁용
     onClick?: () => void;
+    style?: React.CSSProperties;
 }
 
-export const SideMenuButton: React.FC<SideMenuButtonProps> = ({ to, icon, label, onClick }) => {
+export const SideMenuButton: React.FC<SideMenuButtonProps> = ({ to, icon, label, onClick, style }) => {
     if (!to) {
         return (
             <button
@@ -17,6 +18,7 @@ export const SideMenuButton: React.FC<SideMenuButtonProps> = ({ to, icon, label,
                 onClick={onClick}
                 title={label}
                 type="button"
+                style={style}
             >
                 <div className="icon-container">
                     {icon}
@@ -31,6 +33,7 @@ export const SideMenuButton: React.FC<SideMenuButtonProps> = ({ to, icon, label,
             className={({ isActive }) => `side-menu-button ${isActive ? 'active' : ''}`}
             title={label}
             onClick={onClick}
+            style={style}
         >
             <div className="icon-container">
                 {icon}

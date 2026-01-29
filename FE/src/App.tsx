@@ -181,10 +181,20 @@ function AppContent() {
     );
 }
 
+// Context 임포트
+import { ToastProvider } from './context/ToastContext';
+import { UserProvider } from './context/UserContext';
+
+// ... (기존 코드)
+
 export default function App() {
     return (
-        <Router>
-            <AppContent />
-        </Router>
+        <ToastProvider>
+            <UserProvider>
+                <Router>
+                    <AppContent />
+                </Router>
+            </UserProvider>
+        </ToastProvider>
     );
 }
