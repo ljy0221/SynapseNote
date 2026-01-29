@@ -2,7 +2,6 @@ import axios from 'axios';
 
 export const api = axios.create({
   baseURL: '/api',
-  withCredentials: true, // 🔥 쿠키 기반이면 필요
 });
 
 api.interceptors.request.use(
