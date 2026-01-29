@@ -1,6 +1,7 @@
 package com.synapse.api.modules.note.repository;
 
 import com.synapse.api.modules.note.entity.Note;
+import com.synapse.api.modules.note.entity.NoteMember;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -38,18 +39,21 @@ public interface NoteRepository extends JpaRepository<Note, UUID> {
             "WHERE n.createdBy.id = :userId AND n.pointX IS NOT NULL")
     int resetMindmapNodePositions(@Param("userId") UUID userId);
 
-    @Query(value = "SELECT n.* FROM notes n " +
-            "LEFT JOIN note_members nm ON n.id = nm.note_id AND nm.user_id = :userId AND nm.deleted_at IS NULL " +
-            "WHERE n.deleted_at IS NULL " +
-            "AND (n.created_by = :userId OR nm.id IS NOT NULL) " +
-            "ORDER BY n.updated_at DESC",
-            countQuery = "SELECT COUNT(n.id) FROM notes n " +
-                    "LEFT JOIN note_members nm ON n.id = nm.note_id AND nm.user_id = :userId AND nm.deleted_at IS NULL " +
-                    "WHERE n.deleted_at IS NULL " +
-                    "AND (n.created_by = :userId OR nm.id IS NOT NULL)", nativeQuery = true)
+    @Query(value = "SELECT n FROM Note n " +
+            "LEFT JOIN NoteMember nm ON n.id = nm.note.id AND nm.user.id = :userId AND nm.deletedAt IS NULL "
+            +
+            "JOIN FETCH n.createdBy " +
+            "WHERE n.deletedAt IS NULL " +
+            "AND (n.createdBy.id = :userId OR nm.id IS NOT NULL) " +
+            "ORDER BY n.updatedAt DESC",
+            countQuery = "SELECT COUNT(n) FROM Note n " +
+                    "LEFT JOIN NoteMember nm ON n.id = nm.note.id AND nm.user.id = :userId AND nm.deletedAt IS NULL "
+                    +
+                    "WHERE n.deletedAt IS NULL " +
+                    "AND (n.createdBy.id = :userId OR nm.id IS NOT NULL)")
     Page<Note> findAllNotesByUserId(@Param("userId") UUID userId, Pageable pageable);
 
-    @Query("SELECT n FROM Note n WHERE n.createdBy.id = :userId " +
+    @Query("SELECT n FROM Note n JOIN FETCH n.createdBy WHERE n.createdBy.id = :userId " +
             "AND n.bookmark = true AND n.deletedAt IS NULL " +
             "ORDER BY n.updatedAt DESC")
     Page<Note> findBookmarkedNotesByUserId(@Param("userId") UUID userId, Pageable pageable);
