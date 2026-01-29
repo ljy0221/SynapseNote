@@ -153,4 +153,33 @@ public class UserService {
         tokenRedisService.addBlacklist(accessToken);
     }
 
+    @Transactional
+    public ProfileResponse updateNickname(UUID userId, String newName) {
+        // 1. 입력 검증
+        if (newName == null || newName.trim().isEmpty()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        String trimmedName = newName.trim();
+
+        if (trimmedName.length() > 100) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        // 2. 사용자 조회
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        // 3. 동일 닉네임 체크 (불필요한 쿼리 방지)
+        if (user.getName().equals(trimmedName)) {
+            return getProfile(userId);
+        }
+
+        // 4. 업데이트 (Dirty Checking으로 자동 DB 반영)
+        user.updateName(trimmedName);
+
+        // 5. 업데이트된 프로필 반환
+        return getProfile(userId);
+    }
+
 }

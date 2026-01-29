@@ -1,6 +1,7 @@
 package com.synapse.api.modules.user.controller;
 
 import com.synapse.api.modules.user.dto.request.LoginRequest;
+import com.synapse.api.modules.user.dto.request.UpdateNicknameRequest;
 import com.synapse.api.modules.user.dto.response.LoginResponse;
 import com.synapse.api.modules.user.dto.response.LoginResult;
 import com.synapse.api.modules.user.dto.response.ProfileResponse;
@@ -13,6 +14,7 @@ import com.synapse.api.util.response.SuccessCode;
 import com.synapse.api.util.security.CustomUserDetails;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -67,6 +69,14 @@ public class UserController {
                                      @AuthenticationPrincipal CustomUserDetails details) {
         userService.withdraw(details.id(), extractAccessToken(request));
         return StatusResponse.of(SuccessCode.NO_CONTENT);
+    }
+
+    @PatchMapping("/v1/members/me")
+    public DataResponse<ProfileResponse> updateNickname(
+            @RequestBody @Valid UpdateNicknameRequest request,
+            @AuthenticationPrincipal CustomUserDetails details) {
+        ProfileResponse updatedProfile = userService.updateNickname(details.id(), request.name());
+        return DataResponse.of(updatedProfile);
     }
 
     private String extractAccessToken(HttpServletRequest request) {
