@@ -49,8 +49,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           getBookmarksApi(),
         ]);
 
-        setNotes(adaptNotesForSidebar(notesRes ?? []));
-        setFavoriteNoteIds(adaptBookmarkIds(bookmarksRes ?? []));
+        setNotes(adaptNotesForSidebar(notesRes));
+        setFavoriteNoteIds(adaptBookmarkIds(bookmarksRes));
       } catch (e) {
         console.error('Sidebar 데이터 로딩 실패', e);
       } finally {
