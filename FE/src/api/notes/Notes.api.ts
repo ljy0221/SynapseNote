@@ -1,6 +1,6 @@
-// src/api/notes/notes.api.ts
+// src/api/notes/Notes.api.ts
 import { request } from '../request';
-import type { GetNotesResponse } from '../../types/note/getNotes';
+import type { GetNotesResponse } from '../../types/note/GetNotes';
 
 export const getNotesApi = (params?: {
   page?: number;
@@ -10,3 +10,5 @@ export const getNotesApi = (params?: {
     params,
   });
 };
+
+ 

@@ -1,4 +1,4 @@
-package com.synapse.api.modules.note.dto;
+package com.synapse.api.modules.note.dto.request;
 
 import jakarta.validation.constraints.Size;
 import lombok.Builder;

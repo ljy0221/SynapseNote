@@ -6,6 +6,7 @@ import com.synapse.api.modules.mindmap.dto.request.UpdateMindmapPositionsRequest
 import com.synapse.api.modules.mindmap.dto.response.MindmapResponse;
 import com.synapse.api.modules.mindmap.service.MindmapService;
 import com.synapse.api.util.response.DataResponse;
+import com.synapse.api.util.response.StatusResponse;
 import com.synapse.api.util.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,27 +22,27 @@ import java.util.UUID;
 public class MindmapController {
     private final MindmapService mindmapService;
 
-    @PutMapping("/v1/mindmaps/nodes")
-    public DataResponse<Void> addMindmapNode(@AuthenticationPrincipal CustomUserDetails userDetails,
+    @PostMapping("/v1/mindmaps/nodes")
+    public StatusResponse addMindmapNode(@AuthenticationPrincipal CustomUserDetails userDetails,
                                              @RequestBody AddMindmapNodeRequest request) {
         mindmapService.addMindMapNode(userDetails.id(), request);
-        return DataResponse.of(null);
+        return StatusResponse.of();
     }
 
     @PostMapping("/v1/mindmaps/edges")
-    public DataResponse<Void> addMindmapEdge(@AuthenticationPrincipal CustomUserDetails userDetails,
+    public StatusResponse addMindmapEdge(@AuthenticationPrincipal CustomUserDetails userDetails,
                                              @RequestBody MindmapEdgeRequest request) {
         mindmapService.addMindMapEdge(userDetails.id(), request);
-        return DataResponse.of(null);
+        return StatusResponse.of();
     }
 
     @PutMapping("/v1/mindmaps/nodes/positions")
-    public DataResponse<Void> updateNodePositions(
+    public StatusResponse updateNodePositions(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestBody UpdateMindmapPositionsRequest request
     ) {
         mindmapService.updateNodePositions(userDetails.id(), request);
-        return DataResponse.of(null);
+        return StatusResponse.of();
     }
 
 
@@ -53,22 +54,22 @@ public class MindmapController {
     }
 
     @DeleteMapping("/v1/mindmaps/nodes/{nodeId}")
-    public DataResponse<Void> deleteNode(@AuthenticationPrincipal CustomUserDetails userDetails,
+    public StatusResponse deleteNode(@AuthenticationPrincipal CustomUserDetails userDetails,
                                            @PathVariable UUID nodeId) {
         mindmapService.deleteNode(userDetails.id(), nodeId);
-        return DataResponse.of(null);
+        return StatusResponse.of();
     }
 
     @DeleteMapping("/v1/mindmaps")
-    public DataResponse<Void> deleteMindmap(@AuthenticationPrincipal CustomUserDetails userDetails) {
+    public StatusResponse deleteMindmap(@AuthenticationPrincipal CustomUserDetails userDetails) {
         mindmapService.deleteMindmap(userDetails.id());
-        return DataResponse.of(null);
+        return StatusResponse.of();
     }
 
     @DeleteMapping("/v1/mindmaps/connection")
-    public DataResponse<Void> deleteConnection(@AuthenticationPrincipal CustomUserDetails userDetails,
+    public StatusResponse deleteConnection(@AuthenticationPrincipal CustomUserDetails userDetails,
                                                  @RequestBody MindmapEdgeRequest request) {
         mindmapService.deleteConnection(userDetails.id(), request);
-        return DataResponse.of(null);
+        return StatusResponse.of();
     }
 }

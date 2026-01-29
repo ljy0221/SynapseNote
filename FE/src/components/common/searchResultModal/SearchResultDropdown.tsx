@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import './SearchResultDropdown.css';
-import type { SearchedNote } from '../../../types/note/searchNotes';
+import type { SearchedNote } from '../../../types/note/SearchNotes';
 
 interface SearchResultDropdownProps {
   query: string;

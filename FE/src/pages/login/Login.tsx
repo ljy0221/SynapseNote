@@ -2,7 +2,9 @@
 import React from 'react';
 // 1. SocialLoginButton 임포트 추가
 import { SocialLoginButton } from "../../components/common/socialLoginButton/SocialLoginButton";
+import { SynapseLogo } from "../../components/common/logo/SynapseLogo";
 import HomeButton from "../../components/common/homeButton/HomeButton.tsx";
+
 const Login: React.FC = () => {
     return (
         <div style={{ display: 'flex', width: '100vw', height: '100vh', position: 'relative' }}>
@@ -18,7 +20,9 @@ const Login: React.FC = () => {
                 position: 'relative'
             }}>
                 <div>
-                    <div style={{ width: '80px', height: '80px', backgroundColor: 'var(--color-point)', borderRadius: '20px' }} />
+                    <div style={{ color: 'var(--color-point)', marginBottom: '24px' }}>
+                        <SynapseLogo width={80} height={80} />
+                    </div>
                     <h1 style={{ fontSize: '3.5rem', margin: '24px 0', fontWeight: '800' }}>Synapse</h1>
                     <p style={{ fontSize: '1.2rem', opacity: 0.7, lineHeight: '1.6' }}>
                         Connect your thoughts,<br />

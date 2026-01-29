@@ -1,6 +1,6 @@
-// src/api/notes/deleteNote.api.ts
+// src/api/notes/DeleteNote.api.ts
 import { request } from '../request';
-import type { DeleteNoteResponse } from '../../types/note/deleteNote';
+import type { DeleteNoteResponse } from '../../types/note/DeleteNote';
 
 export const deleteNoteApi = (
   noteId: string
@@ -10,3 +10,4 @@ export const deleteNoteApi = (
     `/v1/notes/${noteId}`
   );
 };
+ 
