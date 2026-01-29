@@ -1,4 +1,4 @@
-package com.synapse.api.modules.note.dto;
+package com.synapse.api.modules.note.dto.response;
 
 import com.synapse.api.modules.block.document.BaseBlock;
 import com.synapse.api.modules.note.entity.Note;
@@ -15,7 +15,7 @@ public record NoteDetailResponse(
         String directoryPath,
         Double pointX,
         Double pointY,
-        Boolean favorite,
+        boolean bookmark,
         Long version, // 메타데이터 버전
 
         UUID createdBy,
@@ -32,7 +32,7 @@ public record NoteDetailResponse(
                 .directoryPath(note.getDirectoryPath())
                 .pointX(note.getPointX())
                 .pointY(note.getPointY())
-                .favorite(note.getFavorite())
+                .bookmark(note.isBookmark())
                 .version(note.getVersion())
                 .createdBy(note.getCreatedBy().getId())
                 .createdAt(note.getCreatedAt())

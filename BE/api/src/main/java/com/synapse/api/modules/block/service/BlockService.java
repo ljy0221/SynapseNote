@@ -3,8 +3,8 @@ package com.synapse.api.modules.block.service;
 import com.synapse.api.modules.block.document.BaseBlock;
 import com.synapse.api.modules.block.document.CodeBlock;
 import com.synapse.api.modules.block.repository.BlockRepository;
-import com.synapse.api.modules.note.dto.ExecutionHistoryRequest;
-import com.synapse.api.modules.note.dto.ExecutionHistoryResponse;
+import com.synapse.api.modules.note.dto.request.ExecutionHistoryRequest;
+import com.synapse.api.modules.note.dto.response.ExecutionHistoryResponse;
 import com.synapse.api.util.exception.BusinessException;
 import com.synapse.api.util.response.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -57,7 +57,7 @@ public class BlockService {
     /**
      * [요청하신 메소드] 실행 히스토리 조회
      */
-    public List<ExecutionHistoryResponse> getExecutionHistory(String noteId, String blockId, int page, int size) {
+    public List<ExecutionHistoryResponse> getExecutionHistory(String noteId, String blockId) {
         // 1. 블록 조회
         BaseBlock baseBlock = blockRepository.findByBlockId(blockId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CODE_BLOCK_NOT_FOUND));
@@ -76,13 +76,7 @@ public class BlockService {
             List<CodeBlock.ExecutionHistory> reversed = new ArrayList<>(history);
             Collections.reverse(reversed);
 
-            // 메모리 페이징
-            int start = page * size;
-            int end = Math.min(start + size, reversed.size());
-
-            if (start >= reversed.size()) return List.of();
-
-            return reversed.subList(start, end).stream()
+            return reversed.stream()
                     .map(ExecutionHistoryResponse::from)
                     .toList();
         }

@@ -1,5 +1,6 @@
 package com.synapse.api.modules.note.entity;
 
+import com.synapse.api.modules.mindmap.entity.MindmapEdge;
 import com.synapse.api.modules.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -9,6 +10,8 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -39,9 +42,8 @@ public class Note {
     @Column(name = "point_y")
     private Double pointY;
 
-    @Builder.Default
-    @Column(nullable = false)
-    private Boolean favorite = false;
+    @Column
+    private boolean bookmark;
 
     // [핵심] 낙관적 락 (Optimistic Locking)
     // 메타데이터(제목, 위치 등)가 동시에 수정될 때 충돌 방지
@@ -64,7 +66,11 @@ public class Note {
     @JoinColumn(name = "created_by_id", nullable = false)
     private User createdBy;
 
-    // --- 비즈니스 로직 메서드 ---
+    @OneToMany(mappedBy = "from", cascade = CascadeType.REMOVE)
+    private List<MindmapEdge> fanoutEdges = new ArrayList<>();
+
+    @OneToMany(mappedBy = "to", cascade = CascadeType.REMOVE)
+    private List<MindmapEdge> faninEdges = new ArrayList<>();
 
     public void updateTitle(String title) {
         this.title = title;
@@ -79,10 +85,6 @@ public class Note {
         this.pointY = y;
     }
 
-    public void toggleFavorite() {
-        this.favorite = !this.favorite;
-    }
-
     public void delete() {
         this.deletedAt = LocalDateTime.now();
     }
@@ -90,5 +92,18 @@ public class Note {
     // 복구 기능이 있다면
     public void restore() {
         this.deletedAt = null;
+    }
+
+    public void deleteNode() {
+        this.pointX = null;
+        this.pointY = null;
+    }
+
+    public void setBookmark() {
+        bookmark = true;
+    }
+
+    public void unBookmark() {
+        bookmark = false;
     }
 }
