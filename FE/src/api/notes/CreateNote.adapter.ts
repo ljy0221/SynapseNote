@@ -9,3 +9,4 @@ export const adaptCreatedNoteForSidebar = (
 ): NoteListItem => {
   return res.data;
 };
+ 

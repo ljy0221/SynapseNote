@@ -10,3 +10,4 @@ export const deleteNoteApi = (
     `/v1/notes/${noteId}`
   );
 };
+ 
