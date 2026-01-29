@@ -1,6 +1,6 @@
-// src/api/notes/Bookmarks.adapter.ts
+// src/api/bookmark/Bookmarks.adapter.ts
 import type { ApiResponse } from '../../types/common/apiResponse';
-import type { GetBookmarksResponse } from '../../types/bookmark/Bookmark';
+import { GetBookmarksResponse } from '../../types/bookmark/BookmarkResponse';
 
 export const adaptBookmarkIds = (
   res: ApiResponse<GetBookmarksResponse>

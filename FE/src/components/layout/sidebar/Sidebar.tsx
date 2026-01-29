@@ -11,8 +11,8 @@ import { ContextMenuState } from '../../../types/sidebar/ContextMenu';
 import { getNotesApi } from '../../../api/notes/Notes.api';
 import { adaptNotesForSidebar } from '../../../api/notes/Notes.adapter';
 
-import { getBookmarksApi } from '../../../api/notes/Bookmarks.api';
-import { adaptBookmarkIds } from '../../../api/notes/Bookmarks.adapter';
+import { getBookmarksApi } from '../../../api/bookmark/Bookmarks.api';
+import { adaptBookmarkIds } from '../../../api/bookmark/Bookmarks.adapter';
 
 import { createNoteApi } from '../../../api/notes/CreateNote.api';
 import { deleteNoteApi } from '../../../api/notes/DeleteNote.api';
