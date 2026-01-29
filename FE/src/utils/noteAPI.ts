@@ -1,6 +1,6 @@
 // FE/src/utils/noteAPI.ts
-import type { CreateNoteRequest, CreateNoteResponse } from '../types/note/createNote';
-import type { SearchedNote } from '../types/note/searchNotes';
+import type { CreateNoteRequest, CreateNoteResponse } from '../types/note/CreateNote';
+import type { SearchedNote } from '../types/note/SearchNotes';
 export async function createNote(req: CreateNoteRequest): Promise<CreateNoteResponse> {
     const authToken = localStorage.getItem('authToken');
     // 토큰이 절대적으로 필요하다면 에러 처리, 선택적이라면 로직 조정

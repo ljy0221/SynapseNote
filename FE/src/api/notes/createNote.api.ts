@@ -1,9 +1,9 @@
-// src/api/notes/createNote.api.ts
+// src/api/notes/CreateNote.api.ts
 import { request } from '../request';
 import type {
   CreateNoteRequest,
   CreateNoteResponse,
-} from '../../types/note/createNote';
+} from '../../types/note/CreateNote';
 
 export const createNoteApi = (
   body: CreateNoteRequest
