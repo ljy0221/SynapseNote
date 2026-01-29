@@ -38,7 +38,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [contextMenu, setContextMenu] =
     useState<ContextMenuState>({ visible: false });
 
-  const noteTree = buildNoteTree(notes);
+  const noteTree = buildNoteTree(notes ?? []);
 
   useEffect(() => {
     const fetchSidebarData = async () => {
@@ -49,8 +49,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           getBookmarksApi(),
         ]);
 
-        setNotes(adaptNotesForSidebar(notesRes));
-        setFavoriteNoteIds(adaptBookmarkIds(bookmarksRes));
+        setNotes(adaptNotesForSidebar(notesRes ?? []));
+        setFavoriteNoteIds(adaptBookmarkIds(bookmarksRes ?? []));
       } catch (e) {
         console.error('Sidebar 데이터 로딩 실패', e);
       } finally {
