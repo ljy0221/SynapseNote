@@ -2,6 +2,7 @@
 import React from 'react';
 import CodeBlock from '../codeBlock/CodeBlock';
 import TextBlock from '../textBlock/TextBlock';
+import { NoteToolBar } from '../noteToolbar/NoteToolbar';
 import { BlockData, BlockType } from '../../../pages/note/Note';
 import './NoteMain.css';
 interface NoteMainProps {
@@ -10,6 +11,7 @@ interface NoteMainProps {
     blocks: BlockData[];
     onUpdateBlock: (id: number, content: string) => void;
     onAddBlockAfter: (afterId: number, type: BlockType) => void;
+    onAddBlockAtEnd: (type: BlockType) => void;  // 새로 추가
     onDeleteBlock: (id: number) => void;
     onFocusBlock: (id: number) => void;
     onMoveBlock: (dragIndex: number, hoverIndex: number) => void;
@@ -21,6 +23,7 @@ const NoteMain: React.FC<NoteMainProps> = ({
     blocks,
     onUpdateBlock,
     onAddBlockAfter,
+    onAddBlockAtEnd,  // 새로 추가
     onDeleteBlock,
     onFocusBlock,
     onMoveBlock,
@@ -57,7 +60,6 @@ const NoteMain: React.FC<NoteMainProps> = ({
                         id={block.id}
                         content={block.content}
                         onUpdate={onUpdateBlock}
-                        onAddBlockBelow={onAddBlockAfter}
                         onDelete={onDeleteBlock}
                         onFocus={() => onFocusBlock(block.id)}
                     />
@@ -73,7 +75,6 @@ const NoteMain: React.FC<NoteMainProps> = ({
                         onDelete={onDeleteBlock}
                         onChange={onUpdateBlock}
                         onFocus={() => onFocusBlock(block.id)}
-                        onAddBlockBelow={onAddBlockAfter}
                     />
                 );
             default:
@@ -93,6 +94,8 @@ const NoteMain: React.FC<NoteMainProps> = ({
             </header>
             <div className="note-content-area">
                 {blocks.map((block, index) => renderBlock(block, index))}
+                {/* 마지막 블록 아래에 가로 툴바 */}
+                <NoteToolBar onAddBlock={onAddBlockAtEnd} />
             </div>
         </div>
     );
