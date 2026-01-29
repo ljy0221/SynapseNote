@@ -1,4 +1,4 @@
-package com.synapse.api.modules.note.dto;
+package com.synapse.api.modules.note.dto.response;
 
 import com.synapse.api.modules.note.entity.Note;
 import lombok.Builder;
@@ -15,6 +15,7 @@ public record NoteResponse(
         Double pointY,
         UUID createdBy,
         String createdByName,
+        boolean bookmark,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
@@ -27,6 +28,7 @@ public record NoteResponse(
                 .pointY(note.getPointY())
                 .createdBy(note.getCreatedBy().getId())
                 .createdByName(note.getCreatedBy().getName())
+                .bookmark(note.isBookmark())
                 .createdAt(note.getCreatedAt())
                 .updatedAt(note.getUpdatedAt())
                 .build();

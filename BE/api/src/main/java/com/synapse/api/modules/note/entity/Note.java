@@ -48,6 +48,9 @@ public class Note extends BaseEntity {
     @Column(name = "invitation_url", length = 1000)
     private String invitationUrl;
 
+    @Column
+    private boolean bookmark;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false)
     private User createdBy;
@@ -83,5 +86,13 @@ public class Note extends BaseEntity {
     public void deleteNode() {
         this.pointX = null;
         this.pointY = null;
+    }
+
+    public void setBookmark() {
+        bookmark = true;
+    }
+
+    public void unBookmark() {
+        bookmark = false;
     }
 }
