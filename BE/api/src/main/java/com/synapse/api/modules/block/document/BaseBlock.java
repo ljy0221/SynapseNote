@@ -1,5 +1,7 @@
 package com.synapse.api.modules.block.document;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -9,37 +11,44 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.time.LocalDateTime;
 
 @Getter
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
-@Document(collection = "blocks") // MongoDB 컬렉션 이름 'blocks'
+@Document(collection = "blocks")
+// API 응답 시 JSON 타입 추론을 위한 설정 (프론트엔드용)
+@JsonTypeInfo(
+        use = JsonTypeInfo.Id.NAME,
+        include = JsonTypeInfo.As.EXISTING_PROPERTY,
+        property = "type",
+        visible = true
+)
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = CodeBlock.class, name = "code"),
+        @JsonSubTypes.Type(value = TextBlock.class, name = "text"),
+})
 public abstract class BaseBlock {
 
     @Id
-    private String id; // MongoDB 내부 ObjectID
+    private String id; // MongoDB ObjectId
 
     @Indexed
-    @Field("docId")
-    private String docId; // 문서 ID (필수: 이 필드로 문서를 조회함)
+    private String docId; // PostgreSQL Note ID (UUID.toString())
 
     @Indexed(unique = true)
-    @Field("blockId")
-    private String blockId; // Yjs 및 프론트엔드에서 생성한 UUID
+    private String blockId; // Yjs/Frontend UUID
 
-    @Field("type")
-    private String type; // "code", "text", "image" 등 Discriminator 역할
-
-    @Field("order")
-    private Double order; // 블록 순서 (double 권장: 중간 삽입 용이)
+    private Double order; // 정렬 순서
 
     @CreatedDate
     private LocalDateTime createdAt;
 
     @LastModifiedDate
     private LocalDateTime updatedAt;
+
+    // DB에는 저장하지 않고, JSON 응답에만 포함 (하위 클래스에서 구현)
+    public abstract String getType();
 }
