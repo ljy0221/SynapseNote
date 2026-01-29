@@ -1,0 +1,146 @@
+/* src/components/common/modal/DockerErrorModal.css */
+
+.docker-error-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2200;
+    /* WithdrawalModal(2100)보다 높게 설정하여 최상위 유지 */
+    animation: fadeIn 0.2s ease-out;
+}
+
+.docker-error-modal-content {
+    background-color: var(--color-main);
+    padding: 30px;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    width: 420px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    border: 1px solid var(--color-border);
+    animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.docker-error-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+    color: #ff9f43;
+    /* 경고를 나타내는 주황색 계열, 테마에 따라 조정 가능 */
+}
+
+/* 실행되지 않음/설치되지 않음 등 에러 타입별 색상 조정 가능 */
+.docker-error-header.error-running {
+    color: #ff9f43;
+}
+
+.docker-error-header.error-installed {
+    color: #ff4d4d;
+    /* 설치 안됨은 더 심각한 빨간색 */
+}
+
+.docker-error-icon {
+    margin-bottom: 12px;
+}
+
+.docker-error-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin: 0;
+    text-align: center;
+    color: var(--font-color);
+}
+
+.docker-error-description {
+    text-align: center;
+    color: var(--font-color-sub);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: 24px;
+    word-break: keep-all;
+    /* 한글 줄바꿈 최적화 */
+}
+
+.docker-error-description a {
+    color: var(--color-point);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.docker-error-actions {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+}
+
+.docker-error-actions button {
+    flex: 1;
+    padding: 12px;
+    border-radius: 8px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-close-docker {
+    background-color: var(--color-sub);
+    color: var(--font-color);
+}
+
+.btn-close-docker:hover {
+    background-color: var(--color-hover);
+}
+
+.btn-retry-docker {
+    background-color: var(--color-point);
+
+    background-color: var(--font-color);
+    color: var(--color-main);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn-retry-docker:hover {
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+}
+
+.btn-retry-docker:active {
+    transform: translateY(0);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes popIn {
+    from {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
