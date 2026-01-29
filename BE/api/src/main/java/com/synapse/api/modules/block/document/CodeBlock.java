@@ -1,44 +1,36 @@
-package com.synapse.api.modules.note.document;
+package com.synapse.api.modules.block.document;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
+import org.springframework.data.annotation.TypeAlias;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 @Getter
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class CodeBlock {
+@TypeAlias("code") // MongoDB _class: "code"
+public class CodeBlock extends BaseBlock {
 
-    private String id;
-    private String language;
-    private String version;
-    private String code;
-    private String executionMode;
+    // [핵심] DB의 Nested Document 구조와 1:1 매핑
+    private CodeProperties properties;
 
+    // 실행 히스토리는 Yjs 동기화 대상 아님 -> Root 레벨 유지
     @Builder.Default
     private List<ExecutionHistory> outputHistory = new ArrayList<>();
 
     private String lastOutput;
     private LocalDateTime lastExecutedAt;
 
-    public static CodeBlock create(String language, String version, String code, String executionMode) {
-        return CodeBlock.builder()
-                .id(UUID.randomUUID().toString())
-                .language(language)
-                .version(version)
-                .code(code)
-                .executionMode(executionMode)
-                .outputHistory(new ArrayList<>())
-                .build();
+    @Override
+    public String getType() {
+        return "code";
     }
 
+    // --- 비즈니스 로직 ---
     public void execute(String output, int executionTimeMs, String status) {
         ExecutionHistory history = ExecutionHistory.builder()
                 .output(output)
@@ -52,14 +44,23 @@ public class CodeBlock {
         this.lastExecutedAt = LocalDateTime.now();
     }
 
-    public void updateCode(String code) {
-        this.code = code;
+    // --- Inner Classes ---
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class CodeProperties {
+        private String language;
+        private String code;
+        private String version;
+        private String executionMode;
     }
 
     @Getter
+    @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    @Builder
     public static class ExecutionHistory {
         private String output;
         private LocalDateTime executedAt;

@@ -2,7 +2,6 @@ package com.synapse.api.modules.note.controller;
 
 import com.synapse.api.modules.note.dto.request.ExecutionHistoryRequest;
 import com.synapse.api.modules.note.dto.request.NoteCreateRequest;
-import com.synapse.api.modules.note.dto.request.NotePositionUpdateRequest;
 import com.synapse.api.modules.note.dto.request.NoteUpdateRequest;
 import com.synapse.api.modules.note.dto.response.ExecutionHistoryResponse;
 import com.synapse.api.modules.note.dto.response.NoteDetailResponse;
@@ -70,18 +69,6 @@ public class NoteController {
         log.info("Updating note: {} by user: {}", noteId, userId);
         NoteResponse response = noteService.updateNote(noteId, userId, request);
         return DataResponse.of(response);
-    }
-
-    @PatchMapping("/v1/notes/{noteId}/position")
-    public DataResponse<Void> updatePosition(
-            @AuthenticationPrincipal CustomUserDetails details,
-            @PathVariable UUID noteId,
-            @Valid @RequestBody NotePositionUpdateRequest request) {
-        UUID userId = details.id();
-        // [수정됨] Record 접근자 사용: getPointX() -> pointX(), getPointY() -> pointY()
-        log.info("Updating note position: {} to ({}, {})", noteId, request.pointX(), request.pointY());
-        noteService.updatePosition(noteId, userId, request);
-        return DataResponse.of(SuccessCode.NO_CONTENT, null);
     }
 
     @DeleteMapping("/v1/notes/{noteId}")
