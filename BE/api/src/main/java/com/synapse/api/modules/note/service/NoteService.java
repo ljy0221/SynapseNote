@@ -2,6 +2,7 @@ package com.synapse.api.modules.note.service;
 
 import com.synapse.api.modules.block.document.BaseBlock;
 import com.synapse.api.modules.block.document.CodeBlock;
+import com.synapse.api.modules.block.dto.response.BlockPageResponse;
 import com.synapse.api.modules.block.service.BlockService;
 import com.synapse.api.modules.note.dto.request.ExecutionHistoryRequest;
 import com.synapse.api.modules.note.dto.request.NoteCreateRequest;
@@ -105,7 +106,6 @@ public class NoteService {
         Page<NoteResponse> responsePage = pageResult.map(NoteResponse::from);
         return NotePageResponse.from(responsePage);
     }
-
 
     // =========================================================================
     // 3. 노트 수정 (Update)
@@ -224,8 +224,43 @@ public class NoteService {
                 .toList();
     }
 
+    @Transactional
+    public void bookmarkBlock(UUID userId, UUID noteId, String blockId) {
+        // 노트 조회 및 접근 권한 검증
+        Note note = noteRepository.findById(noteId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
+        validateAccess(note, userId);
+
+        // BlockService에 위임
+        blockService.bookmarkBlock(blockId, noteId.toString());
+    }
+
+    @Transactional
+    public void unbookmarkBlock(UUID userId, UUID noteId, String blockId) {
+        // 노트 조회 및 접근 권한 검증
+        Note note = noteRepository.findById(noteId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
+        validateAccess(note, userId);
+
+        // BlockService에 위임
+        blockService.unbookmarkBlock(blockId, noteId.toString());
+    }
+
+    public BlockPageResponse getBlockBookmarks(UUID userId, UUID noteId, int page, int size) {
+        // 노트 조회 및 접근 권한 검증
+        Note note = noteRepository.findById(noteId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
+        validateAccess(note, userId);
+
+        // BlockService에서 블록 목록 조회
+        Page<BaseBlock> blockPage = blockService.getBookmarkedBlocks(noteId.toString(), page, size);
+
+        return BlockPageResponse.from(blockPage, note.getDirectoryPath());
+    }
+
     private void validateAccess(Note note, UUID userId) {
-        if (note.getCreatedBy().getId().equals(userId)) return;
+        if (note.getCreatedBy().getId().equals(userId))
+            return;
 
         boolean isMember = noteMemberRepository.existsByNoteIdAndUserId(note.getId(), userId);
         if (!isMember) {
@@ -237,7 +272,8 @@ public class NoteService {
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
 
-        if (note.getCreatedBy().getId().equals(userId)) return;
+        if (note.getCreatedBy().getId().equals(userId))
+            return;
 
         NoteRole role = noteMemberRepository.findRoleByNoteIdAndUserId(noteId, userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_ACCESS_DENIED));
