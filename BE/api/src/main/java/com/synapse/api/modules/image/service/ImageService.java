@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
@@ -30,6 +31,8 @@ public class ImageService {
     private static final Set<String> ALLOWED_IMAGE_CONTENT_TYPES = Set.of(
             "image/jpeg", "image/png"
     );
+
+    private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png");
 
     private final S3Client s3Client;
     private final S3Presigner s3Presigner;
@@ -47,7 +50,10 @@ public class ImageService {
     private long getExpMin;
 
     public UploadUrlResponse createPresignedUploadUrl(UploadUrlRequest request) {
-        String key = buildKey(request.originalFileName(), request.contentType());
+        validateContentType(request.contentType());
+        validateFileNameExtensionMatchesContentType(request.originalFileName(), request.contentType());
+
+        String key = buildKey(request.contentType());
 
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                 .bucket(bucket)
@@ -61,11 +67,10 @@ public class ImageService {
         );
 
         long expiresInSec = calculateRemainingSeconds(presigned.expiration());
-        String putUrl = presigned.url().toString();
 
         return UploadUrlResponse.builder()
                 .key(key)
-                .putUrl(putUrl)
+                .putUrl(presigned.url().toString())
                 .expiresInSec(expiresInSec)
                 .build();
     }
@@ -82,11 +87,10 @@ public class ImageService {
         );
 
         long expiresInSec = calculateRemainingSeconds(presigned.expiration());
-        String getUrl = presigned.url().toString();
 
         return ReadUrlResponse.builder()
                 .key(key)
-                .getUrl(getUrl)
+                .getUrl(presigned.url().toString())
                 .expiresInSec(expiresInSec)
                 .build();
     }
@@ -102,14 +106,52 @@ public class ImageService {
         }
     }
 
+    private void validateContentType(String contentType) {
+        if (contentType == null || !ALLOWED_IMAGE_CONTENT_TYPES.contains(contentType)) {
+            throw new BusinessException(ErrorCode.IMAGE_INVALID_EXTENSION); // 혹은 IMAGE_INVALID_CONTENT_TYPE 같은 코드가 더 명확
+        }
+    }
+
+    private void validateFileNameExtensionMatchesContentType(String originalFileName, String contentType) {
+        String ext = extractExtension(originalFileName);
+
+        if (!ALLOWED_EXTENSIONS.contains(ext)) {
+            throw new BusinessException(ErrorCode.IMAGE_INVALID_EXTENSION);
+        }
+
+        // contentType ↔ extension 매칭 검증
+        boolean matches = switch (contentType) {
+            case "image/jpeg" -> ext.equals("jpg") || ext.equals("jpeg");
+            case "image/png" -> ext.equals("png");
+            default -> false;
+        };
+
+        if (!matches) {
+            throw new BusinessException(ErrorCode.IMAGE_INVALID_EXTENSION);
+        }
+    }
+
+    private String extractExtension(String originalFileName) {
+        if (originalFileName == null) {
+            throw new BusinessException(ErrorCode.IMAGE_INVALID_EXTENSION);
+        }
+
+        int lastDot = originalFileName.lastIndexOf('.');
+        if (lastDot < 0 || lastDot == originalFileName.length() - 1) {
+            throw new BusinessException(ErrorCode.IMAGE_INVALID_EXTENSION);
+        }
+
+        return originalFileName.substring(lastDot + 1).toLowerCase(Locale.ROOT);
+    }
+
     private long calculateRemainingSeconds(Instant expiration) {
         long nowEpochSec = Instant.now().getEpochSecond();
         return expiration.getEpochSecond() - nowEpochSec;
     }
 
-    private String buildKey(String originalFileName, String contentType) {
+    private String buildKey(String contentType) {
         String extension = switch (contentType) {
-            case "image/jpg", "image/jpeg" -> "jpg";
+            case "image/jpeg" -> "jpg";
             case "image/png" -> "png";
             default -> throw new BusinessException(ErrorCode.IMAGE_INVALID_EXTENSION);
         };
@@ -119,6 +161,4 @@ public class ImageService {
 
         return imagePrefix + "/" + filename;
     }
-
 }
-
