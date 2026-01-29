@@ -4,7 +4,12 @@ import { Plus, Minus, Maximize, BoxSelect } from 'lucide-react';
 import '../../../pages/mindmap/MindMap.css'; // 버튼 스타일 재사용
 import { Tooltip } from '../../common/tooltip/Tooltip';
 
-const MindmapControls: React.FC = () => {
+interface MindmapControlsProps {
+    minZoom: number;
+    maxZoom: number;
+}
+
+const MindmapControls: React.FC<MindmapControlsProps> = ({ minZoom, maxZoom }) => {
     const { fitView, setCenter, getNodes, setNodes, getViewport, setViewport } = useReactFlow();
     const [isAllSelected, setIsAllSelected] = useState(false);
 
@@ -16,12 +21,12 @@ const MindmapControls: React.FC = () => {
      */
     const handleFastZoomIn = () => {
         const { x, y, zoom } = getViewport();
-        const newZoom = zoom * ZOOM_FACTOR;
+        // maxZoom을 넘지 않도록 제한
+        const newZoom = Math.min(zoom * ZOOM_FACTOR, maxZoom);
+
+        if (newZoom === zoom) return; // 이미 최대치면 무시
 
         // 화상 중앙 좌표 유지 계산
-        // CenterX_in_World = (CanvasWidth/2 - x) / zoom
-        // NewX = CanvasWidth/2 - CenterX_in_World * newZoom
-        // 식 정리: NewX = CanvasWidth/2 - ((CanvasWidth/2 - x) / zoom) * newZoom
         const centerX = window.innerWidth / 2;
         const centerY = window.innerHeight / 2;
 
@@ -36,7 +41,10 @@ const MindmapControls: React.FC = () => {
      */
     const handleFastZoomOut = () => {
         const { x, y, zoom } = getViewport();
-        const newZoom = zoom / ZOOM_FACTOR;
+        // minZoom보다 작아지지 않도록 제한
+        const newZoom = Math.max(zoom / ZOOM_FACTOR, minZoom);
+
+        if (newZoom === zoom) return; // 이미 최소치면 무시
 
         const centerX = window.innerWidth / 2;
         const centerY = window.innerHeight / 2;
@@ -63,7 +71,7 @@ const MindmapControls: React.FC = () => {
             setCenter(targetX, targetY, { zoom: 1.2, duration: 800 });
         } else {
             // 없으면 전체 화면 맞춤
-            fitView({ duration: 800 });
+            fitView({ duration: 800, minZoom: minZoom, maxZoom: maxZoom });
         }
     };
 
