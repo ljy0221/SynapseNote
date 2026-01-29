@@ -10,8 +10,8 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    /* TODO: 전역 z-index 관리 전략 수립 필요 (현재는 최상위 유지를 위해 2200 사용) */
     z-index: 2200;
-    /* WithdrawalModal(2100)보다 높게 설정하여 최상위 유지 */
     animation: fadeIn 0.2s ease-out;
 }
 
