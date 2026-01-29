@@ -44,8 +44,16 @@
 
 .drag-handle-icon {
     color: var(--font-color-sub, #78716c);
-    font-size: 12px;
+    font-size: 18px;
+    /* 12px → 18px 또는 20px */
     cursor: grab;
+    width: 40px;
+    /* 추가: 클릭 영역 확보 */
+    height: 40px;
+    /* 추가: 클릭 영역 확보 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* 에디터 컨테이너 - 비활성 상태 (배경과 조화) */
@@ -318,4 +326,108 @@
 
 [data-theme='dark'] .editor-content .ProseMirror p.is-editor-empty:first-child::before {
     color: var(--font-color-sub, #78716c);
+}
+
+/* Italic 스타일 (Pretendard는 italic이 없으므로 transform으로 처리) */
+.editor-content .ProseMirror em {
+    font-style: normal;
+    /* italic 대신 */
+    transform: skewX(-8deg);
+    display: inline-block;
+}
+
+.editor-content .ProseMirror mark em,
+.editor-content .ProseMirror em mark {
+    font-style: normal;
+    transform: skewX(-8deg);
+    display: inline-block;
+}
+
+/* TextBlock.css */
+.color-palette {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+    padding: 8px;
+    background: var(--color-main);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+}
+
+.color-swatch {
+    width: 24px;
+    height: 24px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+
+.color-swatch:hover {
+    transform: scale(1.2);
+    border-color: var(--color-point);
+}
+
+/* 링크 모달 */
+.link-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.link-modal {
+    background: var(--color-main);
+    padding: 20px;
+    border-radius: 12px;
+    min-width: 300px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.link-modal h4 {
+    margin: 0 0 12px 0;
+    color: var(--font-color);
+}
+
+.link-modal input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--color-sub);
+    border-radius: 8px;
+    font-size: 14px;
+    margin-bottom: 16px;
+    box-sizing: border-box;
+}
+
+.link-modal-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.link-modal-buttons button {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+}
+
+.link-modal-buttons button:first-child {
+    background: var(--color-point);
+    color: white;
+}
+
+.link-modal-buttons button:last-child {
+    background: var(--color-sub);
+    color: var(--font-color);
 }

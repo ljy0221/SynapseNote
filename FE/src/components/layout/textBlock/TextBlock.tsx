@@ -5,6 +5,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
+import { Extension } from '@tiptap/core';
 import Placeholder from '@tiptap/extension-placeholder';
 import Underline from '@tiptap/extension-underline';
 import Highlight from '@tiptap/extension-highlight';
@@ -31,14 +32,12 @@ import {
     Image as ImageIcon,
     Palette,
 } from 'lucide-react';
-import { BlockType } from '../../../pages/note/Note';
-import BlockTypeMenu from '../blockTypeMenu/BlockTypeMenu';
+import BlockDeleteButton from '../../common/blockDeleteButton/BlockDeleteButton';
 import './TextBlock.css';
 interface TextBlockProps {
     id: number;
     content: string;
     onUpdate: (id: number, content: string) => void;
-    onAddBlockBelow: (afterId: number, type: BlockType) => void;
     onFocus: () => void;
     onDelete: (id: number) => void;
     draggable?: boolean;
@@ -46,11 +45,33 @@ interface TextBlockProps {
     onDragOver?: (e: React.DragEvent) => void;
     onDrop?: (e: React.DragEvent) => void;
 }
+
+// 색상 팔레트
+const TEXT_COLORS = [
+    '#000000', '#434343', '#666666', '#999999', '#cccccc',
+    '#ff0000', '#ff9900', '#ffff00', '#00ff00', '#00ffff',
+    '#0000ff', '#9900ff', '#ff00ff', '#ff6666', '#ffcc66',
+];
+
+// Tab 키 확장
+const TabHandler = Extension.create({
+    name: 'tabHandler',
+    addKeyboardShortcuts() {
+        return {
+            Tab: () => {
+                this.editor.commands.insertContent('\t');
+                return true;
+            },
+            'Shift-Tab': () => {
+                return true;
+            },
+        };
+    },
+});
 const TextBlock: React.FC<TextBlockProps> = ({
     id,
     content,
     onUpdate,
-    onAddBlockBelow,
     onFocus,
     onDelete,
     draggable,
@@ -58,8 +79,15 @@ const TextBlock: React.FC<TextBlockProps> = ({
     onDragOver,
     onDrop
 }) => {
-    const [showMenu, setShowMenu] = React.useState(false);
     const [isFocused, setIsFocused] = React.useState(false);
+    const [showColorPicker, setShowColorPicker] = React.useState(false);
+
+    // 링크 모달 상태
+    const [showLinkModal, setShowLinkModal] = React.useState(false);
+    const [linkUrl, setLinkUrl] = React.useState('');
+
+    // 이미지 업로드 상태
+    const [isUploading, setIsUploading] = React.useState(false);
     const editor = useEditor({
         extensions: [
             StarterKit.configure({
@@ -71,7 +99,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
             TextStyle,
             Color,
             Placeholder.configure({
-                placeholder: '텍스트를 입력하세요...',
+                placeholder: '빈 블록',
             }),
             Underline,
             Highlight.configure({
@@ -81,8 +109,13 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 types: ['heading', 'paragraph'],
             }),
             Link.configure({
-                openOnClick: false,
+                openOnClick: true,
+                HTMLAttributes: {
+                    target: '_blank',
+                    rel: 'noopener noreferrer',
+                },
             }),
+            TabHandler,
         ],
         content: content,
         onUpdate: ({ editor }) => {
@@ -101,37 +134,91 @@ const TextBlock: React.FC<TextBlockProps> = ({
             editor.commands.setContent(content);
         }
     }, [content, editor]);
-    useEffect(() => {
-        if (!editor) return;
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key === 'Backspace' && editor.isEmpty) {
-                event.preventDefault();
-                onDelete(id);
-            }
-        };
-        editor.view.dom.addEventListener('keydown', handleKeyDown);
-        return () => {
-            editor.view.dom.removeEventListener('keydown', handleKeyDown);
-        };
-    }, [editor, id, onDelete]);
     if (!editor) {
         return null;
     }
-    const addImage = () => {
-        const url = window.prompt('이미지 URL을 입력하세요:');
-        if (url) {
-            editor.chain().focus().setImage({ src: url }).run();
-        }
+    // ========================================
+    // 이미지 업로드 (백엔드 업로드 방식)
+    // ========================================
+    const addImage = async () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+
+        input.onchange = async (e) => {
+            const file = (e.target as HTMLInputElement).files?.[0];
+            if (!file) return;
+
+            setIsUploading(true);
+
+            try {
+                // 1. 백엔드에서 업로드 URL 요청
+                const uploadUrlResponse = await fetch('/api/images/upload-url', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        fileName: file.name,
+                        fileType: file.type,
+                    }),
+                });
+
+                if (!uploadUrlResponse.ok) {
+                    throw new Error('업로드 URL을 받지 못했습니다.');
+                }
+
+                const { uploadUrl, imageUrl } = await uploadUrlResponse.json();
+
+                // 2. 해당 URL로 파일 업로드
+                const uploadResponse = await fetch(uploadUrl, {
+                    method: 'PUT',
+                    body: file,
+                    headers: { 'Content-Type': file.type },
+                });
+
+                if (!uploadResponse.ok) {
+                    throw new Error('이미지 업로드에 실패했습니다.');
+                }
+
+                // 3. 에디터에 이미지 삽입
+                editor.chain().focus().setImage({ src: imageUrl }).run();
+
+            } catch (error) {
+                console.error('이미지 업로드 실패:', error);
+                // alert('이미지 업로드에 실패했습니다.');
+            } finally {
+                setIsUploading(false);
+                setTimeout(() => {
+                    editor.commands.focus();
+                    setIsFocused(true);
+                }, 100);
+            }
+        };
+
+        input.click();
     };
+    // ========================================
+    // 링크 모달 열기
+    // ========================================
     const setLink = () => {
-        const previousUrl = editor.getAttributes('link').href;
-        const url = window.prompt('링크 URL을 입력하세요:', previousUrl);
-        if (url === null) return;
-        if (url === '') {
+        const previousUrl = editor.getAttributes('link').href || '';
+        setLinkUrl(previousUrl);
+        setShowLinkModal(true);
+    };
+    // 링크 적용
+    const applyLink = () => {
+        if (linkUrl.trim() === '') {
             editor.chain().focus().extendMarkRange('link').unsetLink().run();
-            return;
+        } else {
+            editor.chain().focus().extendMarkRange('link').setLink({ href: linkUrl }).run();
         }
-        editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+        setShowLinkModal(false);
+        setLinkUrl('');
+    };
+    // 링크 모달 닫기
+    const closeLinkModal = () => {
+        setShowLinkModal(false);
+        setLinkUrl('');
+        editor.commands.focus();
     };
     return (
         <div
@@ -139,29 +226,16 @@ const TextBlock: React.FC<TextBlockProps> = ({
             onDragOver={onDragOver}
             onDrop={onDrop}
         >
-            <div
-                className="block-controls"
-                draggable={draggable}
-                onDragStart={onDragStart}
-                title="드래그하여 이동"
-            >
-                <button
-                    className="add-block-btn"
-                    onClick={() => setShowMenu(!showMenu)}
-                    title="블록 추가"
+            <div className="block-controls">
+                <BlockDeleteButton onDelete={() => onDelete(id)} />
+                <div
+                    className="drag-handle-icon"
+                    draggable={draggable}
+                    onDragStart={onDragStart}
+                    title="드래그하여 이동"
                 >
-                    +
-                </button>
-                <div className="drag-handle-icon">⋮⋮</div>
-                {showMenu && (
-                    <BlockTypeMenu
-                        onSelect={(type) => {
-                            onAddBlockBelow(id, type);
-                            setShowMenu(false);
-                        }}
-                        onClose={() => setShowMenu(false)}
-                    />
-                )}
+                    ⋮⋮
+                </div>
             </div>
             <div className="text-block-editor-container">
                 {/* 포커스 시에만 툴바 표시 */}
@@ -238,15 +312,32 @@ const TextBlock: React.FC<TextBlockProps> = ({
                             >
                                 <Highlighter size={18} />
                             </button>
-                            <div className="color-picker-wrapper">
-                                <Palette size={18} />
-                                <input
-                                    type="color"
-                                    onMouseDown={(e) => e.stopPropagation()}
-                                    onChange={(e) => editor.chain().focus().setColor(e.target.value).run()}
+                            <div
+                                className="color-picker-wrapper"
+                                onMouseDown={(e) => e.preventDefault()}
+                            >
+                                <button
+                                    className="toolbar-btn"
+                                    onClick={() => setShowColorPicker(!showColorPicker)}
                                     title="텍스트 색상"
-                                    className="color-picker-input"
-                                />
+                                >
+                                    <Palette size={18} />
+                                </button>
+                                {showColorPicker && (
+                                    <div className="color-palette">
+                                        {TEXT_COLORS.map((color) => (
+                                            <button
+                                                key={color}
+                                                className="color-swatch"
+                                                style={{ backgroundColor: color }}
+                                                onClick={() => {
+                                                    editor.chain().focus().setColor(color).run();
+                                                    setShowColorPicker(false);
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
                         <div className="toolbar-divider" />
@@ -341,6 +432,39 @@ const TextBlock: React.FC<TextBlockProps> = ({
                     </div>
                 )}
                 <EditorContent editor={editor} className="editor-content" />
+                {/* 링크 입력 모달 */}
+                {showLinkModal && (
+                    <div className="link-modal-overlay" onClick={closeLinkModal}>
+                        <div className="link-modal" onClick={(e) => e.stopPropagation()}>
+                            <h4>🔗 링크 URL 입력</h4>
+                            <input
+                                type="text"
+                                value={linkUrl}
+                                onChange={(e) => setLinkUrl(e.target.value)}
+                                placeholder="https://example.com"
+                                autoFocus
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') applyLink();
+                                    if (e.key === 'Escape') closeLinkModal();
+                                }}
+                            />
+                            <div className="link-modal-buttons">
+                                <button className="link-modal-apply" onClick={applyLink}>
+                                    적용
+                                </button>
+                                <button className="link-modal-cancel" onClick={closeLinkModal}>
+                                    취소
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {/* 업로드 중 표시 */}
+                {isUploading && (
+                    <div className="upload-overlay">
+                        <div className="upload-spinner">이미지 업로드 중...</div>
+                    </div>
+                )}
             </div>
         </div>
     );
