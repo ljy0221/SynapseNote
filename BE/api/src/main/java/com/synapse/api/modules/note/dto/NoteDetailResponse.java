@@ -1,7 +1,7 @@
 package com.synapse.api.modules.note.dto;
 
-import com.synapse.api.modules.note.document.CodeBlock;
-import com.synapse.api.modules.note.document.NoteContent;
+import com.synapse.api.modules.block.document.BaseBlock; // [New] 모든 블록의 부모
+import com.synapse.api.modules.note.document.NoteMetadata;
 import com.synapse.api.modules.note.entity.Note;
 import lombok.Builder;
 
@@ -20,14 +20,19 @@ public record NoteDetailResponse(
         String createdByName,
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
-        String content,
-        String type,
+
+        // 메타데이터 영역
+        String type,      // page, canvas
         Boolean favorite,
-        List<CodeBlock> codeBlocks,
-        int version
+        int version,
+
+        // [핵심 변경] CodeBlock -> BaseBlock (텍스트, 이미지 포함)
+        // 필드명도 codeBlocks -> blocks로 변경하는 것이 프론트엔드 입장에서 자연스럽습니다.
+        List<BaseBlock> blocks
 ) {
-    public static NoteDetailResponse from(Note note, NoteContent noteContent) {
-        boolean hasContent = noteContent != null;
+    // [변경] blocks 리스트를 별도 파라미터로 받아야 합니다.
+    public static NoteDetailResponse from(Note note, NoteMetadata noteMetadata, List<BaseBlock> blocks) {
+        boolean hasContent = noteMetadata != null;
 
         return NoteDetailResponse.builder()
                 .id(note.getId())
@@ -39,11 +44,15 @@ public record NoteDetailResponse(
                 .createdByName(note.getCreatedBy().getName())
                 .createdAt(note.getCreatedAt())
                 .updatedAt(note.getUpdatedAt())
-                .content(hasContent ? noteContent.getContent() : "")
-                .type(hasContent ? noteContent.getType() : "text")
-                .favorite(hasContent ? noteContent.getFavorite() : false)
-                .codeBlocks(hasContent ? noteContent.getCodeBlocks() : List.of())
-                .version(hasContent ? noteContent.getVersion() : 0)
+
+                // NoteMetadata 필드 매핑
+                .type(hasContent ? noteMetadata.getType() : "page")
+                .favorite(hasContent ? noteMetadata.getFavorite() : false)
+                .version(hasContent ? noteMetadata.getVersion() : 1)
+
+                // [핵심] 전달받은 블록 리스트 매핑
+                // blocks가 null이면 빈 리스트 반환
+                .blocks(blocks != null ? blocks : List.of())
                 .build();
     }
 }
