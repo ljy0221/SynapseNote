@@ -1,8 +1,16 @@
 package com.synapse.api.modules.note.controller;
 
-import com.synapse.api.modules.note.dto.*;
+import com.synapse.api.modules.note.dto.request.ExecutionHistoryRequest;
+import com.synapse.api.modules.note.dto.request.NoteCreateRequest;
+import com.synapse.api.modules.note.dto.request.NotePositionUpdateRequest;
+import com.synapse.api.modules.note.dto.request.NoteUpdateRequest;
+import com.synapse.api.modules.note.dto.response.ExecutionHistoryResponse;
+import com.synapse.api.modules.note.dto.response.NoteDetailResponse;
+import com.synapse.api.modules.note.dto.response.NotePageResponse;
+import com.synapse.api.modules.note.dto.response.NoteResponse;
 import com.synapse.api.modules.note.service.NoteService;
 import com.synapse.api.util.response.DataResponse;
+import com.synapse.api.util.response.StatusResponse;
 import com.synapse.api.util.response.SuccessCode;
 import com.synapse.api.util.security.CustomUserDetails;
 import jakarta.validation.Valid;
@@ -116,6 +124,38 @@ public class NoteController {
         UUID userId = details.id();
         log.info("Getting execution history for block: {} in note: {}", blockId, noteId);
         List<ExecutionHistoryResponse> response = noteService.getExecutionHistory(noteId, blockId, userId, page, size);
+        return DataResponse.of(response);
+    }
+
+    /**
+     * 노트 즐겨찾기
+     */
+
+    @PostMapping("/v1/notes/{noteId}/bookmarks")
+    public StatusResponse bookmarkNote(
+            @AuthenticationPrincipal CustomUserDetails details,
+            @PathVariable UUID noteId) {
+        UUID userId = details.id();
+        noteService.bookmarkNote(userId, noteId);
+        return StatusResponse.of();
+    }
+
+    @DeleteMapping("/v1/notes/{noteId}/bookmarks")
+    public StatusResponse unbookmarkNote(
+            @AuthenticationPrincipal CustomUserDetails details,
+            @PathVariable UUID noteId) {
+        UUID userId = details.id();
+        noteService.unbookmarkNote(userId, noteId);
+        return StatusResponse.of();
+    }
+
+    @GetMapping("/v1/notes/bookmarks")
+    public DataResponse<NotePageResponse> getNoteBookmarks(
+            @AuthenticationPrincipal CustomUserDetails details,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        UUID userId = details.id();
+        NotePageResponse response = noteService.getNoteBookmarks(userId, page, size);
         return DataResponse.of(response);
     }
 }
