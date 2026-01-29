@@ -29,7 +29,7 @@ const OAuthCallback: React.FC = () => {
             // 브라우저 닫기 시도 (일부 브라우저는 차단할 수 있음)
             setTimeout(() => {
                 window.close();
-            }, 500);
+            }, 3000);
             return;
         }
 
@@ -70,8 +70,10 @@ const OAuthCallback: React.FC = () => {
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', textAlign: 'center'
             }}>
                 <h2>로그인 완료</h2>
-                <p>앱으로 돌아가려면 'Synapse 열기'를 클릭하세요.</p>
-                <p>이 창을 닫아도 됩니다.</p>
+                <p>브라우저 팝업이 뜨면 <b>'Synapse 열기'</b>를 클릭해주세요.</p>
+                <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '10px' }}>
+                    * '항상 허용'을 체크하시면 다음부터는 자동으로 로그인됩니다.
+                </p>
             </div>
         );
     }

@@ -25,7 +25,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 setUserInfo(null);
                 return;
             }
-            const info = await getUserInfo();
+            const info = await getUserInfo(token);
             setUserInfo(info);
         } catch (error) {
             console.error('Failed to fetch user info:', error);
@@ -33,8 +33,8 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             // 여기서는 단순히 에러 토스트만 띄우지 않고, 조용히 실패 처리하거나 
             // 필요시 토큰 삭제 로직을 추가할 수 있음.
             // 보안상 토큰이 유효하지 않으면 삭제하는 것이 좋음.
-            // localStorage.removeItem('authToken');
-            // setUserInfo(null);
+            localStorage.removeItem('authToken');
+            setUserInfo(null);
         } finally {
             setIsLoading(false);
         }
