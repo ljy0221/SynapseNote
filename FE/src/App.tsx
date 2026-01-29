@@ -20,6 +20,7 @@ import { SideMenuBar } from './components/layout/sideMenuBar/SideMenuBar';
 import ThemeToggle from './components/common/themeToggle/ThemeToggle';
 import WindowControlButton from './components/common/WindowControlButton/WindowControlButton';
 import { useTheme } from './components/features/theme/UseTheme'; // Hook 추가
+import { DockerErrorModal } from './components/common/modal/DockerErrorModal'; // Docker 에러 모달 추가
 
 // Electron 전용 컴포넌트 (웹 빌드에서는 사용 안 함)
 const isElectron = typeof window !== 'undefined' && (window as any).electronAPI !== undefined;
@@ -41,6 +42,8 @@ function AppContent() {
     const [isToolbarActive] = useState(true);
     // const [theme, setTheme] = useState<'light' | 'dark'>('dark'); // 기존 로컬 state 삭제
     const [dockerStatus, setDockerStatus] = useState<'checking' | 'ok' | 'error'>('checking');
+    const [dockerErrorType, setDockerErrorType] = useState<'installed' | 'running' | null>(null);
+    const [isDockerErrorOpen, setIsDockerErrorOpen] = useState(false);
 
     // 전역 테마 훅 사용
     const { themeMode, toggleTheme } = useTheme();
@@ -52,38 +55,59 @@ function AppContent() {
     //     document.documentElement.setAttribute('data-theme', theme);
     // }, [theme]); // useTheme 내부에서 처리하므로 삭제
 
-    // Docker 헬스 체크 (Electron 환경에서만)
-    useEffect(() => {
+    // Docker 헬스 체크 함수
+    async function checkDocker() {
         if (!isElectron) {
-            setDockerStatus('ok'); // 웹 환경에서는 Docker 체크 건너뛰기
+            setDockerStatus('ok');
             return;
         }
 
-        async function checkDocker() {
-            try {
-                const installed = await (window as any).dockerAPI.checkInstalled();
-                if (!installed) {
-                    setDockerStatus('error');
-                    alert('Docker가 설치되지 않았습니다.\n\nDocker Desktop을 설치해주세요.\nhttps://www.docker.com/products/docker-desktop/');
-                    return;
-                }
-
-                const running = await (window as any).dockerAPI.checkRunning();
-                if (!running) {
-                    setDockerStatus('error');
-                    alert('Docker가 실행되지 않았습니다.\n\nDocker Desktop을 실행해주세요.');
-                    return;
-                }
-
-                setDockerStatus('ok');
-            } catch (error) {
-                console.error('Docker 상태 확인 실패:', error);
+        try {
+            const installed = await (window as any).dockerAPI.checkInstalled();
+            if (!installed) {
                 setDockerStatus('error');
+                setDockerErrorType('installed');
+                setIsDockerErrorOpen(true);
+                return;
             }
-        }
 
+            const running = await (window as any).dockerAPI.checkRunning();
+            if (!running) {
+                setDockerStatus('error');
+                setDockerErrorType('running');
+                setIsDockerErrorOpen(true);
+                return;
+            }
+
+            setDockerStatus('ok');
+            setDockerErrorType(null);
+            setIsDockerErrorOpen(false);
+        } catch (error) {
+            console.error('Docker 상태 확인 실패:', error);
+            setDockerStatus('error');
+            // 에러 발생 시 기본적으로 running 에러로 처리하거나 별도 처리
+            setDockerErrorType('running');
+            setIsDockerErrorOpen(true);
+        }
+    }
+
+    // 초기 실행
+    useEffect(() => {
         checkDocker();
     }, []);
+
+    const handleRetryDocker = () => {
+        setIsDockerErrorOpen(false); // 일단 닫고
+        setDockerStatus('checking');
+        // 잠시 후 재시도 (UX상 깜빡임 방지 및 실제 실행 시간 고려)
+        setTimeout(() => {
+            checkDocker();
+        }, 1000);
+    };
+
+    const handleCloseDockerError = () => {
+        setIsDockerErrorOpen(false);
+    };
 
     // Deep Link 리스너
     const navigate = useNavigate(); // AppContent는 Router 내부이므로 사용 가능
@@ -144,6 +168,12 @@ function AppContent() {
             )}
 
             {/* 2. 네비게이션 및 사이드바 영역 (로그인 아닐 때만) */}
+            <DockerErrorModal
+                isOpen={isDockerErrorOpen}
+                type={dockerErrorType}
+                onRetry={handleRetryDocker}
+                onClose={handleCloseDockerError}
+            />
             {!isLoginPage && (
                 <>
                     {/* 최좌측 고정 네비게이션 바 */}
