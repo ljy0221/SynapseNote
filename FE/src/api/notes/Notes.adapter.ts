@@ -6,3 +6,4 @@ export const adaptNotesForSidebar = (
 ): NoteListItem[] => {
   return res.notes;
 };
+ 
