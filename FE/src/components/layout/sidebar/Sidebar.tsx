@@ -8,10 +8,17 @@ import { NoteDirectory } from './NoteDirectory';
 import ContextMenu from '../../common/contextMenu/ContextMenu';
 import { ContextMenuState } from '../../../types/sidebar/contextMenu';
 
-import { getNotes } from '../../../api/notes/getNotes';
-import { getBookmarkedNotes } from '../../../api/notes/getBookmarks';
-import { createNote } from '../../../api/notes/createNote';
-import { deleteNote } from '../../../api/notes/deleteNote';
+import { getNotesApi } from '../../../api/notes/notes.api';
+import { adaptNotesForSidebar } from '../../../api/notes/notes.adapter';
+
+import { getBookmarksApi } from '../../../api/notes/bookmarks.api';
+import { adaptBookmarkIds } from '../../../api/notes/bookmarks.adapter';
+
+import { createNoteApi } from '../../../api/notes/createNote.api';
+import { deleteNoteApi } from '../../../api/notes/deleteNote.api';
+
+import { adaptCreatedNoteForSidebar } from '../../../api/notes/createNote.adapter';
+import { adaptDeletedNoteId } from '../../../api/notes/deleteNote.adapter';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -37,21 +44,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const fetchSidebarData = async () => {
       setIsLoading(true);
       try {
-        const [notesRes, bookmarkedIds] = await Promise.all([
-          getNotes(),
-          getBookmarkedNotes(),
+        const [notesRes, bookmarksRes] = await Promise.all([
+          getNotesApi(),
+          getBookmarksApi(),
         ]);
-        setNotes(notesRes);
-        setFavoriteNoteIds(new Set(bookmarkedIds));
+
+        setNotes(adaptNotesForSidebar(notesRes));
+        setFavoriteNoteIds(adaptBookmarkIds(bookmarksRes));
       } catch (e) {
         console.error('Sidebar 데이터 로딩 실패', e);
       } finally {
         setIsLoading(false);
       }
     };
+
     fetchSidebarData();
   }, []);
 
+  /** 즐겨찾기 (UI 전용, API는 아직 X) */
   const handleToggleFavorite = (noteId: string) => {
     setFavoriteNoteIds(prev => {
       const next = new Set(prev);
@@ -60,23 +70,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
     });
   };
 
+  /** 노트 생성 */
   const handleCreateNote = async (directoryPath: string) => {
     try {
-      const newNote = await createNote({
+      const res = await createNoteApi({
         title: '새 노트',
+        invitationUrl: '',
         directoryPath,
       });
+
+      const newNote = adaptCreatedNoteForSidebar(res);
       setNotes(prev => [...prev, newNote]);
     } catch (e) {
       console.error('노트 생성 실패', e);
     }
   };
 
+  /** 노트 삭제 */
   const handleDeleteNote = async (noteId: string) => {
     try {
-      await deleteNote(noteId);
-      setNotes(prev => prev.filter(n => n.noteId !== noteId));
-      setActiveNoteId(prev => (prev === noteId ? null : prev));
+      const res = await deleteNoteApi(noteId);
+      const deletedNoteId = adaptDeletedNoteId(res);
+
+      setNotes(prev =>
+        prev.filter(n => n.noteId !== deletedNoteId)
+      );
+      setActiveNoteId(prev =>
+        prev === deletedNoteId ? null : prev
+      );
     } catch (e) {
       console.error('노트 삭제 실패', e);
     }
