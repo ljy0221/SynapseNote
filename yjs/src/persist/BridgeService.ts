@@ -1,7 +1,7 @@
 import * as Y from 'yjs';
 import { Block, BlockHistory, BlockProperties } from '../models/Block';
-import { convertToMarkdown } from '../utils/JsonMarkdownConverter';
 import { loadEnv } from '../config/env';
+import _ from 'lodash';
 
 // Yjs에서 넘어오는 블록 데이터 구조 인터페이스
 interface YjsBlockData {
@@ -53,6 +53,7 @@ class BridgeService {
       const dbBlocksMap = new Map(dbBlocks.map(b => [b.blockId, b]));
 
       const bulkOps: any[] = [];
+      const historyOps: any[] = []; // History 벌크 저장을 위한 배열
       const currentBlockIds = new Set<string>();
 
       // 3. 루프 돌며 비교 (Diff Logic)
@@ -63,21 +64,11 @@ class BridgeService {
         if (!yBlock.id) continue;
         currentBlockIds.add(yBlock.id);
 
-        // 데이터 정제
         let cleanProps = { ...yBlock.properties };
 
-        // 텍스트 계열의 attributes 등 세부 필드 처리
-        // 'text' 타입이 메인이지만, 혹시 모를 호환성을 위해 유지하거나 'text'만 남김
-        // 사용자가 매핑 필요없다고 했으므로 'text'로 통일된 것으로 가정
-        if (yBlock.type === 'text') {
-          // content 처리 (Markdown 변환 등)
-          if (cleanProps.content) {
-            cleanProps.content = convertToMarkdown(yBlock.type, cleanProps.content);
-          }
-          // attributes는 그대로 cleanProps에 포함됨
-        }
+        // [최적화] JsonMarkdownConverter 제거 - YJS가 주는 string 그대로 저장.
 
-        // Spring용 _class 결정 (매핑 없이 그대로 사용)
+        // Spring용 _class 결정
         const springClass = yBlock.type;
 
         const existingBlock = dbBlocksMap.get(yBlock.id);
@@ -91,24 +82,28 @@ class BridgeService {
         }
 
         if (existingBlock) {
-          // --- 수정 (Update) ---
-          // 비교 로직 보강: Properties + Root Fields 변화 감지
-          const isPropsChanged = JSON.stringify(existingBlock.properties) !== JSON.stringify(cleanProps);
-          const isTypeChanged = existingBlock.type !== yBlock.type;
-          const isClassChanged = existingBlock._class !== springClass; // _class 변경 확인 (비록 type과 같아도 명시적 확인)
 
-          // Root Field 변경 감지 (CodeBlock의 경우)
+          // 1. Properties 비교
+          const isPropsChanged = !_.isEqual(existingBlock.properties, cleanProps);
+
+          // 2. Type 비교
+          const isTypeChanged = existingBlock.type !== yBlock.type;
+
+          // 3. Class 비교
+          const isClassChanged = existingBlock._class !== springClass;
+
+          // 4. Root Field 비교 (CodeBlock의 경우)
           let isRootChanged = false;
           if (springClass === 'code') {
-            const dbHistoryStr = JSON.stringify(existingBlock.toObject().outputHistory || []);
-            const yHistoryStr = JSON.stringify(rootFields.outputHistory || []);
-            if (dbHistoryStr !== yHistoryStr) isRootChanged = true;
-            if (existingBlock.toObject().lastOutput !== rootFields.lastOutput) isRootChanged = true;
+            const dbHistory = existingBlock.toObject ? existingBlock.toObject().outputHistory || [] : (existingBlock as any).outputHistory || [];
+            const yHistory = rootFields.outputHistory || [];
+            if (!_.isEqual(dbHistory, yHistory)) isRootChanged = true;
+            if ((existingBlock as any).lastOutput !== rootFields.lastOutput) isRootChanged = true;
           }
 
           if (isPropsChanged || isTypeChanged || isRootChanged || isClassChanged) {
-            // A. 히스토리 저장
-            await BlockHistory.create({
+            // A. 히스토리 저장 (벌크용 배열에 추가)
+            historyOps.push({
               blockId: yBlock.id,
               noteId: noteId,
               previousProperties: existingBlock.properties,
@@ -126,7 +121,7 @@ class BridgeService {
                     type: yBlock.type,
                     properties: cleanProps,
                     order: i,
-                    ...rootFields // CodeBlock Root Fields 업데이트
+                    ...rootFields
                   }
                 }
               }
@@ -152,7 +147,7 @@ class BridgeService {
                 type: yBlock.type,
                 properties: cleanProps,
                 order: i,
-                ...rootFields // CodeBlock Root Fields 저장
+                ...rootFields
               }
             }
           });
@@ -173,9 +168,20 @@ class BridgeService {
       }
 
       // 5. 실행
+      const promises = [];
+
       if (bulkOps.length > 0) {
-        await Block.bulkWrite(bulkOps);
-        console.log(`[Bridge] Sync Success: ${bulkOps.length} ops`);
+        promises.push(Block.bulkWrite(bulkOps));
+      }
+
+      // [최적화] History 벌크 저장
+      if (historyOps.length > 0) {
+        promises.push(BlockHistory.insertMany(historyOps));
+      }
+
+      if (promises.length > 0) {
+        await Promise.all(promises);
+        console.log(`[Bridge] Sync Success. Updates: ${bulkOps.length}, History: ${historyOps.length}`);
       }
 
     } catch (error) {
