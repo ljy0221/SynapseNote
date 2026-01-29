@@ -191,8 +191,7 @@ public class NoteService {
                 log.info("Saved execution history for block: {} in note: {}", blockId, noteId);
         }
 
-        public List<ExecutionHistoryResponse> getExecutionHistory(UUID noteId, String blockId, UUID userId, int page,
-                        int size) {
+        public List<ExecutionHistoryResponse> getExecutionHistory(UUID noteId, String blockId, UUID userId) {
                 // 1. 조회 권한 검증
                 validateAccess(noteId, userId);
 
@@ -206,22 +205,14 @@ public class NoteService {
                                 .findFirst()
                                 .orElseThrow(() -> new BusinessException(ErrorCode.CODE_BLOCK_NOT_FOUND));
 
-                // 4. 실행 이력 조회 (최신순, 페이징)
+                // 4. 실행 이력 조회 (최신순)
                 List<CodeBlock.ExecutionHistory> history = targetBlock.getOutputHistory();
 
                 // 최신순 정렬
                 List<CodeBlock.ExecutionHistory> reversedHistory = new java.util.ArrayList<>(history);
                 java.util.Collections.reverse(reversedHistory);
 
-                // 페이징 적용
-                int start = page * size;
-                int end = Math.min(start + size, reversedHistory.size());
-
-                if (start >= reversedHistory.size()) {
-                        return List.of();
-                }
-
-                return reversedHistory.subList(start, end).stream()
+                return reversedHistory.stream()
                                 .map(ExecutionHistoryResponse::from)
                                 .toList();
         }
