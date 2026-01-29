@@ -31,15 +31,12 @@ export interface UserInfo {
     email: string;
     name: string;
     provider: string;
-    createdAt: string;
+    createdAt: string; // LocalDateTime
 }
 
-export const getUserInfo = async (): Promise<UserInfo> => {
-    const token = localStorage.getItem('authToken');
-
-    // 토큰이 없으면 에러 혹은 null 처리 (여기서는 에러 처리)
+export const getUserInfo = async (token: string): Promise<UserInfo> => {
     if (!token) {
-        throw new Error('No access token found');
+        throw new Error('No access token provided');
     }
 
     const response = await fetch('/api/v1/members/me', {
