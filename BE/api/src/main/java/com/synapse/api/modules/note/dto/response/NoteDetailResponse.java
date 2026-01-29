@@ -1,4 +1,4 @@
-package com.synapse.api.modules.note.dto;
+package com.synapse.api.modules.note.dto.response;
 
 import com.synapse.api.modules.block.document.BaseBlock;
 import com.synapse.api.modules.note.entity.Note;
