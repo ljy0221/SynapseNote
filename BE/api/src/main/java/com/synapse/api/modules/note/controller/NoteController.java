@@ -41,11 +41,13 @@ public class NoteController {
     }
 
     @GetMapping("/v1/notes")
-    public DataResponse<List<NoteResponse>> getAllNotes(
-            @AuthenticationPrincipal CustomUserDetails details) {
+    public DataResponse<NotePageResponse> getAllNotes(
+            @AuthenticationPrincipal CustomUserDetails details,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
         UUID userId = details.id();
-        log.info("Getting all notes for user: {}", userId);
-        List<NoteResponse> response = noteService.getAllNotes(userId);
+        log.info("Getting all notes for user: {} (page: {}, size: {})", userId, page, size);
+        NotePageResponse response = noteService.getAllNotes(userId, page, size);
         return DataResponse.of(response);
     }
 

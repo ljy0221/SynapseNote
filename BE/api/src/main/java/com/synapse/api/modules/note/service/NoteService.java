@@ -30,7 +30,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -94,19 +93,12 @@ public class NoteService {
                 return NoteDetailResponse.from(note, noteContent);
         }
 
-        public List<NoteResponse> getAllNotes(UUID userId) {
-                List<Note> createdNotes = noteRepository.findByCreatedById(userId);
+        public NotePageResponse getAllNotes(UUID userId, int page, int size) {
+                PageRequest pageRequest = PageRequest.of(page, size);
+                Page<Note> pageResult = noteRepository.findAllNotesByUserId(userId, pageRequest);
 
-                List<NoteMember> memberNotes = noteMemberRepository.findByUserId(userId);
-                List<Note> sharedNotes = memberNotes.stream()
-                                .map(NoteMember::getNote)
-                                .filter(note -> !note.getCreatedBy().getId().equals(userId))
-                                .toList();
-
-                return Stream.concat(createdNotes.stream(), sharedNotes.stream())
-                                .distinct()
-                                .map(NoteResponse::from)
-                                .toList();
+                Page<NoteResponse> responsePage = pageResult.map(NoteResponse::from);
+                return NotePageResponse.from(responsePage);
         }
 
         @Transactional
@@ -200,7 +192,7 @@ public class NoteService {
         }
 
         public List<ExecutionHistoryResponse> getExecutionHistory(UUID noteId, String blockId, UUID userId, int page,
-                                                                  int size) {
+                        int size) {
                 // 1. 조회 권한 검증
                 validateAccess(noteId, userId);
 
@@ -256,7 +248,7 @@ public class NoteService {
 
         public NotePageResponse getNoteBookmarks(UUID userId, int page, int size) {
                 PageRequest pageRequest = PageRequest.of(page, size);
-                Page<Note> pageResult = noteMemberRepository.findBookmarkedNotesByUserId(userId, pageRequest);
+                Page<Note> pageResult = noteRepository.findBookmarkedNotesByUserId(userId, pageRequest);
 
                 Page<NoteResponse> responsePage = pageResult.map(NoteResponse::from);
                 return NotePageResponse.from(responsePage);

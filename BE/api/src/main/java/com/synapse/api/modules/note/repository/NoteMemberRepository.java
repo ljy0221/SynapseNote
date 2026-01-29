@@ -32,9 +32,4 @@ public interface NoteMemberRepository extends JpaRepository<NoteMember, NoteMemb
 
     @Query("SELECT COUNT(nm) > 0 FROM NoteMember nm WHERE nm.id.noteId = :noteId AND nm.id.userId = :userId AND nm.deletedAt IS NULL")
     boolean existsByNoteIdAndUserId(@Param("noteId") UUID noteId, @Param("userId") UUID userId);
-
-    @Query("SELECT n FROM Note n WHERE n.createdBy.id = :userId " +
-            "AND n.bookmark = true AND n.deletedAt IS NULL " +
-            "ORDER BY n.updatedAt DESC")
-    Page<Note> findBookmarkedNotesByUserId(@Param("userId") UUID userId, Pageable pageable);
 }
