@@ -8,7 +8,6 @@ import { BlockData, BlockType } from '../../../pages/note/Note';
 import './NoteMain.css';
 
 interface NoteMainProps {
-
     title: string;
     onUpdateTitle: (newTitle: string) => void;
     blocks: BlockData[];
@@ -17,6 +16,7 @@ interface NoteMainProps {
     onDeleteBlock: (id: number) => void;
     onFocusBlock: (id: number) => void;
     onMoveBlock: (dragIndex: number, hoverIndex: number) => void;
+    titleInputRef?: React.RefObject<HTMLInputElement>;  // [추가] 외부에서 제목 input 접근용
 }
 
 const NoteMain: React.FC<NoteMainProps> = ({
@@ -27,7 +27,8 @@ const NoteMain: React.FC<NoteMainProps> = ({
     onAddBlockAfter,
     onDeleteBlock,
     onFocusBlock,
-    onMoveBlock // [수정] Props에서 구조 분해 할당
+    onMoveBlock,
+    titleInputRef  // [추가] ref 받기
 }) => {
 
     // [추가] DnD 상태 관리
@@ -114,11 +115,11 @@ const NoteMain: React.FC<NoteMainProps> = ({
         <div className="note-main-layout">
             <header className="note-main-header">
                 <input
+                    ref={titleInputRef}
                     className="note-main-title-input"
                     value={title}
                     onChange={(e) => onUpdateTitle(e.target.value)}
                     placeholder="제목 없음"
-                    autoFocus
                 />
             </header>
 
