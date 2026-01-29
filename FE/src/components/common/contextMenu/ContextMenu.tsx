@@ -1,7 +1,7 @@
 // src/components/common/contextMenu/ContextMenu.tsx
 import { useEffect, useRef } from 'react';
 import './ContextMenu.css';
-import { ContextMenuState } from '../../../types/sidebar/contextMenu';
+import { ContextMenuState } from '../../../types/sidebar/ContextMenu';
 
 interface Props {
   state: ContextMenuState;

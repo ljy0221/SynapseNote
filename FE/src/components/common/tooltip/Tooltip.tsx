@@ -5,7 +5,7 @@ interface TooltipProps {
     title?: string; // 툴팁 제목 (강조)
     content?: string; // 툴팁 내용 (설명)
     children: React.ReactNode;
-    placement?: 'top' | 'right' | 'bottom' | 'left';
+    placement?: 'top' | 'right' | 'bottom' | 'left' | 'bottom-end';
 }
 
 /**

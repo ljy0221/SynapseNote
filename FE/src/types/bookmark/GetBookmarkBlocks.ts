@@ -1,4 +1,4 @@
-// types/bookmark/getBookmarkBlocks.ts 
+// types/bookmark/GetBookmarkBlocks.ts 
 // 예시 타입 정의
 export type BookmarkBlockType = 'TEXT' | 'CODE';
 

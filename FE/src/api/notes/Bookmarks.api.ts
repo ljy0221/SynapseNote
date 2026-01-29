@@ -1,6 +1,6 @@
-// src/api/notes/bookmarks.api.ts
+// src/api/notes/Bookmarks.api.ts
 import { api } from '../axios';
-import type { GetBookmarksResponse } from '../../types/bookmark/getBookmarks';
+import type { GetBookmarksResponse } from '../../types/bookmark/GetBookmarks';
 
 export const getBookmarksApi =
   async (): Promise<GetBookmarksResponse> => {
@@ -9,3 +9,4 @@ export const getBookmarksApi =
     );
     return res.data;
   };
+ 

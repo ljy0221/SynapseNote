@@ -4,7 +4,7 @@ import NoteButton from "../../components/common/noteButton/NoteButton";
 import NoteMain from "../../components/layout/noteMain/NoteMain";
 import { NoteToolBar } from "../../components/layout/noteToolbar/NoteToolbar";
 import { createNote } from '../../utils/noteAPI';
-import type { CreateNoteRequest } from '../../types/note/createNote';
+import type { CreateNoteRequest } from '../../types/note/CreateNote';
 import './Note.css';
 // 블록 타입 정의 (이원화: text / code)
 export type BlockType = 'text' | 'code';
