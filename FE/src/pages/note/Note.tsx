@@ -1,6 +1,6 @@
 // FE/src/pages/note/Note.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import NoteButton from "../../components/common/noteButton/NoteButton";
 import NoteMain from "../../components/layout/noteMain/NoteMain";
 import { NoteToolBar } from "../../components/layout/noteToolbar/NoteToolbar";
@@ -25,6 +25,9 @@ const Note: React.FC = () => {
     const [title, setTitle] = useState("제목 없는 노트");
 
     const [focusedBlockId, setFocusedBlockId] = useState<number | null>(null);
+
+    // [추가] 제목 input ref - 노트 생성 후 자동 포커스용
+    const titleInputRef = useRef<HTMLInputElement>(null);
 
     // 블록 배열 상태 관리 (초기에는 빈 텍스트 블록 하나)
     const [blocks, setBlocks] = useState<BlockData[]>([
@@ -129,6 +132,14 @@ const Note: React.FC = () => {
 
             setIsEditing(true); // 편집 모드 전환
 
+            // [추가] 노트 생성 후 제목 입력 필드에 자동 포커스 + 전체 선택
+            setTimeout(() => {
+                if (titleInputRef.current) {
+                    titleInputRef.current.focus();
+                    titleInputRef.current.select();
+                }
+            }, 100);
+
         } catch (error) {
             console.error("노트 생성 중 에러 발생:", error);
             alert("노트를 생성하지 못했습니다.");
@@ -158,6 +169,7 @@ const Note: React.FC = () => {
                         onDeleteBlock={deleteBlock}
                         onFocusBlock={setFocusedBlockId}
                         onMoveBlock={handleMoveBlock}
+                        titleInputRef={titleInputRef}  // [추가] 제목 input ref 전달
                     />
                     <NoteToolBar
                         isOpen={isToolbarOpen}
