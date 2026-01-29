@@ -2,7 +2,7 @@
 import React,{ useMemo } from 'react';
 import './NoteStreak.css';
 import { calculateStreakCount } from '../../features/streakCount/streakcount';
-import type { GetStreakResponse } from '../../../types/note/getStreak';
+import type { GetStreakResponse } from '../../../types/note/GetStreak';
 
 interface NoteStreakProps {
   streak: GetStreakResponse;

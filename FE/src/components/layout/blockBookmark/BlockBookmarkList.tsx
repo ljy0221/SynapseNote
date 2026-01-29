@@ -1,7 +1,7 @@
 // BlockBookmarkList.tsx
 import { useState } from 'react';
 import BlockBookmarkItem from './BlockBookmarkItem';
-import type { BookmarkBlockItem } from '../../../types/bookmark/getBookmarkBlocks';
+import type { BookmarkBlockItem } from '../../../types/bookmark/GetBookmarkBlocks';
 
 const mockBlocks: BookmarkBlockItem[] = [
   {
