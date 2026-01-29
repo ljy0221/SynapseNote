@@ -1,18 +1,14 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, FileText, Network, Sparkles, Settings, User } from 'lucide-react';
+import { LayoutDashboard, FileText, Network, Sparkles, User } from 'lucide-react';
 import { SideMenuButton } from '../../common/sideMenuButton/SideMenuButton';
 import { UserProfileModal } from '../../common/modal/UserProfileModal';
 import './SideMenuBar.css';
 
+import { useUser } from '../../../context/UserContext';
+
 export const SideMenuBar: React.FC = () => {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
-
-    // TODO: 실제 유저 정보는 전역 상태(Context/Redux/Zustand)에서 가져와야 함
-    const mockUser = {
-        name: '사용자',
-        email: 'user@example.com',
-        // imageUrl: 'https://via.placeholder.com/150'
-    };
+    const { userInfo, isLoading } = useUser();
 
     return (
         <>
@@ -31,18 +27,27 @@ export const SideMenuBar: React.FC = () => {
                     <SideMenuButton
                         icon={<User size={22} />}
                         label="내 정보"
-                        onClick={() => setIsProfileOpen(true)}
+                        onClick={() => {
+                            if (userInfo && !isLoading) {
+                                setIsProfileOpen(true);
+                            }
+                        }}
+                        style={{
+                            opacity: (!userInfo || isLoading) ? 0.5 : 1,
+                            cursor: (!userInfo || isLoading) ? 'not-allowed' : 'pointer'
+                        }}
                     />
-                    <SideMenuButton to="/settings" icon={<Settings size={22} />} label="설정" />
                 </div>
             </nav>
 
             {/* 유저 프로필 모달 */}
-            <UserProfileModal
-                isOpen={isProfileOpen}
-                onClose={() => setIsProfileOpen(false)}
-                user={mockUser}
-            />
+            {userInfo && (
+                <UserProfileModal
+                    isOpen={isProfileOpen}
+                    onClose={() => setIsProfileOpen(false)}
+                    user={userInfo}
+                />
+            )}
         </>
     );
 };
