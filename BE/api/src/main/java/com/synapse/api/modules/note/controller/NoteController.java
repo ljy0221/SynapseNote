@@ -105,7 +105,7 @@ public class NoteController {
     }
 
     @PostMapping("/v1/notes/{noteId}/blocks/{blockId}/executions")
-    public DataResponse<Void> saveExecutionHistory(
+    public StatusResponse saveExecutionHistory(
             @AuthenticationPrincipal CustomUserDetails details,
             @PathVariable UUID noteId,
             @PathVariable String blockId,
@@ -113,7 +113,7 @@ public class NoteController {
         UUID userId = details.id();
         log.info("Saving execution history for block: {} in note: {}", blockId, noteId);
         noteService.saveExecutionHistory(noteId, blockId, userId, request);
-        return DataResponse.of(null);
+        return StatusResponse.of();
     }
 
     @GetMapping("/v1/notes/{noteId}/blocks/{blockId}/executions")
