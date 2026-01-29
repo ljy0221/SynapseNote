@@ -43,11 +43,11 @@ public class NoteController {
     @GetMapping("/v1/notes")
     public DataResponse<NotePageResponse> getAllNotes(
             @AuthenticationPrincipal CustomUserDetails details,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
         UUID userId = details.id();
         log.info("Getting all notes for user: {} (page: {}, size: {})", userId, page, size);
-        NotePageResponse response = noteService.getAllNotes(userId, page, size);
+        NotePageResponse response = noteService.getAllNotes(userId, page - 1, size);
         return DataResponse.of(response);
     }
 
@@ -120,12 +120,10 @@ public class NoteController {
     public DataResponse<List<ExecutionHistoryResponse>> getExecutionHistory(
             @AuthenticationPrincipal CustomUserDetails details,
             @PathVariable UUID noteId,
-            @PathVariable String blockId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @PathVariable String blockId) {
         UUID userId = details.id();
         log.info("Getting execution history for block: {} in note: {}", blockId, noteId);
-        List<ExecutionHistoryResponse> response = noteService.getExecutionHistory(noteId, blockId, userId, page, size);
+        List<ExecutionHistoryResponse> response = noteService.getExecutionHistory(noteId, blockId, userId);
         return DataResponse.of(response);
     }
 
@@ -154,10 +152,10 @@ public class NoteController {
     @GetMapping("/v1/notes/bookmarks")
     public DataResponse<NotePageResponse> getNoteBookmarks(
             @AuthenticationPrincipal CustomUserDetails details,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
         UUID userId = details.id();
-        NotePageResponse response = noteService.getNoteBookmarks(userId, page, size);
+        NotePageResponse response = noteService.getNoteBookmarks(userId, page - 1, size);
         return DataResponse.of(response);
     }
 }

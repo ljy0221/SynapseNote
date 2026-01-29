@@ -17,7 +17,7 @@ public record NotePageResponse(
     public static NotePageResponse from(Page<NoteResponse> page) {
         return NotePageResponse.builder()
                 .content(page.getContent())
-                .currentPage(page.getNumber())
+                .currentPage(page.getNumber() + 1)
                 .totalPages(page.getTotalPages())
                 .totalElements(page.getTotalElements())
                 .size(page.getSize())
