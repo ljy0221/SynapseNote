@@ -29,12 +29,10 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setUserInfo(info);
         } catch (error) {
             console.error('Failed to fetch user info:', error);
-            // 토큰이 만료되었거나 유효하지 않은 경우 로그아웃 처리 등을 고려할 수 있음
-            // 여기서는 단순히 에러 토스트만 띄우지 않고, 조용히 실패 처리하거나 
-            // 필요시 토큰 삭제 로직을 추가할 수 있음.
-            // 보안상 토큰이 유효하지 않으면 삭제하는 것이 좋음.
+            // 토큰이 만료되었거나 유효하지 않은 경우 로그아웃 처리
             localStorage.removeItem('authToken');
             setUserInfo(null);
+            showToast('세션이 만료되었습니다. 다시 로그인해주세요.');
         } finally {
             setIsLoading(false);
         }
@@ -52,7 +50,6 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const logout = () => {
         localStorage.removeItem('authToken');
         setUserInfo(null);
-        // 필요시 백엔드 로그아웃 API 호출 추가
         showToast('로그아웃 되었습니다.');
     };
 
