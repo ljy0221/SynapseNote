@@ -1,0 +1,24 @@
+{
+  "name": "yjs-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "build": "tsc",
+    "start:prod": "node dist/index.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "mongoose": "^9.1.5",
+    "ws": "^8.19.0",
+    "y-websocket": "1.5.3",
+    "yjs": "^13.6.29"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}
