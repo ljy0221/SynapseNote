@@ -1,5 +1,5 @@
 // src/features/theme/UseTheme.ts
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 
 export type ThemeMode = 'light' | 'cookie' | 'dark' | 'deepblue';
 
@@ -13,23 +13,7 @@ export const useTheme = () => {
         return 'light'; // 기본값
     });
 
-    // 테마를 실제 시스템(DOM)에 적용하는 함수
-    const applyTheme = useCallback((mode: ThemeMode) => {
-        setThemeMode(mode);
-        document.documentElement.setAttribute('data-theme', mode);
-        localStorage.setItem('app-theme', mode);
-    }, []);
-
-    // 초기 로드 시 저장된 설정 불러오기 (이미 useState 초기값에서 처리했지만, 안전장치로 effect 유지)
-    useEffect(() => {
-        const savedTheme = localStorage.getItem('app-theme') as ThemeMode;
-        if (savedTheme) {
-            applyTheme(savedTheme);
-        } else {
-            applyTheme('light');
-        }
-    }, [applyTheme]);
-
+    // 테마 변경 함수
     const toggleTheme = () => {
         setThemeMode((prev) => {
             if (prev === 'light') return 'cookie';

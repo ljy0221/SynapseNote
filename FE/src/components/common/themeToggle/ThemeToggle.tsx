@@ -45,6 +45,7 @@ const ThemeToggle: React.FC<ThemeToggleProps> = ({
       onClick={onToggle}
       className={`theme-toggle-btn ${className}`}
       title={getTitle()}
+      aria-label={getTitle()}
     >
       {getIcon()}
     </button>
