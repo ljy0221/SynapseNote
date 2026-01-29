@@ -7,7 +7,9 @@ export interface NoteTreeNode {
   notes: NoteListItem[];
 }
 
-export function buildNoteTree(notes: NoteListItem[]): NoteTreeNode {
+export function buildNoteTree(
+  notes: NoteListItem[] = []
+): NoteTreeNode {
   const root: NoteTreeNode = {
     name: 'root',
     path: '/',
