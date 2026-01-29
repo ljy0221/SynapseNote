@@ -9,7 +9,7 @@ import './App.css';
 import { Header } from './components/layout/header/Header';
 import { Sidebar } from './components/layout/sidebar/Sidebar';
 import { SideMenuBar } from './components/layout/sideMenuBar/SideMenuBar';
-import { NoteToolBar } from './components/layout/noteToolbar/NoteToolbar';
+import { SideMenuBar } from './components/layout/sideMenuBar/SideMenuBar';
 
 // 공통 컴포넌트
 import ThemeToggle from './components/common/themeToggle/ThemeToggle';
@@ -32,7 +32,8 @@ const TOOLBAR_ROUTES = ['/note'];
 
 function AppContent() {
     const [isSidebarActive, setIsSidebarActive] = useState(false); // 가변 사이드바 상태
-    const [isToolbarActive, setIsToolbarActive] = useState(true);
+    const [isSidebarActive, setIsSidebarActive] = useState(false); // 가변 사이드바 상태
+    const [isToolbarActive] = useState(true);
     const [theme, setTheme] = useState<'light' | 'dark'>('dark');
     const [dockerStatus, setDockerStatus] = useState<'checking' | 'ok' | 'error'>('checking');
 
@@ -129,8 +130,7 @@ function AppContent() {
                 </div>
             ) : (
                 <Header
-                    theme={theme}
-                    onToggleTheme={handleThemeToggle}
+                    isSidebarActive={isSidebarActive}
                     onToggleSidebar={toggleSidebar}
                 />
             )}
@@ -146,12 +146,7 @@ function AppContent() {
                         <Sidebar
                             isOpen={isSidebarActive}
                             onToggle={toggleSidebar}
-                        >
-                            <div className="sidebar-content">
-                                {/* 추후 이곳에 디렉토리 구조 등이 들어감 */}
-                                <p>Directory Structure</p>
-                            </div>
-                        </Sidebar>
+                        />
                     )}
                 </>
             )}
@@ -189,12 +184,12 @@ import { UserProvider } from './context/UserContext';
 
 export default function App() {
     return (
-        <ToastProvider>
-            <UserProvider>
-                <Router>
+        <Router>
+            <ToastProvider>
+                <UserProvider>
                     <AppContent />
-                </Router>
-            </UserProvider>
-        </ToastProvider>
+                </UserProvider>
+            </ToastProvider>
+        </Router>
     );
 }

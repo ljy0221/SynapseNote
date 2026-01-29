@@ -32,6 +32,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             // 토큰이 만료되었거나 유효하지 않은 경우 로그아웃 처리
             localStorage.removeItem('authToken');
             setUserInfo(null);
+            showToast('세션이 만료되었습니다. 다시 로그인해주세요.');
         } finally {
             setIsLoading(false);
         }
