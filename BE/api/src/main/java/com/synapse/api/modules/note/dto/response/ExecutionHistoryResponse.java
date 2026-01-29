@@ -1,6 +1,6 @@
 package com.synapse.api.modules.note.dto.response;
 
-import com.synapse.api.modules.note.document.CodeBlock;
+import com.synapse.api.modules.block.document.CodeBlock;
 import lombok.Builder;
 
 import java.time.LocalDateTime;

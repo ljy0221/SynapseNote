@@ -2,7 +2,7 @@
 import React from 'react';
 import './RecentNotes.css';
 
-import type { NoteListItem } from '../../../types/note/getNotes';
+import type { NoteListItem } from '../../../types/note/GetNotes';
 
 interface RecentNotesProps {
   notes: NoteListItem[];

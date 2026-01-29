@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import NoteBookmarkItem from './NoteBookmarkItem';
-import type { BookmarkNoteItem } from '../../../types/bookmark/getBookmarks';
+import type { BookmarkNoteItem } from '../../../types/bookmark/GetBookmarks';
 
 const initialMock: BookmarkNoteItem[] = [
   {

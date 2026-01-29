@@ -1,7 +1,6 @@
 package com.synapse.api.modules.note.dto.response;
 
-import com.synapse.api.modules.note.document.CodeBlock;
-import com.synapse.api.modules.note.document.NoteContent;
+import com.synapse.api.modules.block.document.BaseBlock;
 import com.synapse.api.modules.note.entity.Note;
 import lombok.Builder;
 
@@ -16,34 +15,29 @@ public record NoteDetailResponse(
         String directoryPath,
         Double pointX,
         Double pointY,
+        Boolean favorite,
+        Long version, // 메타데이터 버전
+
         UUID createdBy,
-        String createdByName,
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
-        String content,
-        String type,
-        Boolean favorite,
-        List<CodeBlock> codeBlocks,
-        int version
-) {
-    public static NoteDetailResponse from(Note note, NoteContent noteContent) {
-        boolean hasContent = noteContent != null;
 
+        // [변경] 블록 리스트 (Code, Text, Image 섞여있음)
+        List<BaseBlock> blocks
+) {
+    public static NoteDetailResponse from(Note note, List<BaseBlock> blocks) {
         return NoteDetailResponse.builder()
                 .id(note.getId())
                 .title(note.getTitle())
                 .directoryPath(note.getDirectoryPath())
                 .pointX(note.getPointX())
                 .pointY(note.getPointY())
+                .favorite(note.getFavorite())
+                .version(note.getVersion())
                 .createdBy(note.getCreatedBy().getId())
-                .createdByName(note.getCreatedBy().getName())
                 .createdAt(note.getCreatedAt())
                 .updatedAt(note.getUpdatedAt())
-                .content(hasContent ? noteContent.getContent() : "")
-                .type(hasContent ? noteContent.getType() : "text")
-                .favorite(hasContent ? noteContent.getFavorite() : false)
-                .codeBlocks(hasContent ? noteContent.getCodeBlocks() : List.of())
-                .version(hasContent ? noteContent.getVersion() : 0)
+                .blocks(blocks != null ? blocks : List.of())
                 .build();
     }
 }
