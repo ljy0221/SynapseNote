@@ -17,7 +17,7 @@ import java.util.UUID;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/api")
 @RequiredArgsConstructor
 public class InvitationController {
 
@@ -27,7 +27,7 @@ public class InvitationController {
      * 초대 생성
      * POST /api/v1/notes/{noteId}/invitations
      */
-    @PostMapping("/notes/{noteId}/invitations")
+    @PostMapping("/v1/notes/{noteId}/invitations")
     public DataResponse<InvitationResponse> createInvitation(
             @AuthenticationPrincipal CustomUserDetails details,
             @PathVariable UUID noteId,
@@ -42,7 +42,7 @@ public class InvitationController {
      * 초대 수락
      * POST /api/v1/notes/invitations/{token}/accept
      */
-    @PostMapping("/notes/invitations/{token}/accept")
+    @PostMapping("/v1/notes/invitations/{token}/accept")
     public DataResponse<InvitationAcceptResponse> acceptInvitation(
             @AuthenticationPrincipal CustomUserDetails details,
             @PathVariable UUID token) {
