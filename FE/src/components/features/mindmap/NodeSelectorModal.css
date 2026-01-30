@@ -19,7 +19,7 @@
 
 .node-selector-container {
     background-color: var(--color-main);
-    width: 500px;
+    width: 600px;
     max-width: 90%;
     max-height: 70vh;
     border-radius: 16px;
@@ -30,6 +30,7 @@
     overflow: hidden;
     transform: scale(0.95);
     animation: popIn 0.2s 0.1s forwards;
+    box-sizing: border-box;
 }
 
 .selector-header {
@@ -85,6 +86,8 @@
     font-size: 0.95rem;
     outline: none;
     transition: all 0.2s;
+    box-sizing: border-box;
+    /* Added to prevent overflow */
 }
 
 .selector-search-input:focus {
