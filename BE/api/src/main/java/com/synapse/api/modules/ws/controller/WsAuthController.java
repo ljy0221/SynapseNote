@@ -4,7 +4,7 @@ import com.synapse.api.modules.ws.dto.request.WsAuthRequest;
 import com.synapse.api.modules.ws.dto.response.WsAuthResponse;
 import com.synapse.api.modules.ws.service.WsAuthService;
 import com.synapse.api.util.response.DataResponse;
-import com.synapse.api.util.security.CustomUserDetails;
+import com.synapse.api.util.security.CustomMemberDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -21,7 +21,7 @@ public class WsAuthController {
 
     @PostMapping("/v1/ws/auth")
     public DataResponse<WsAuthResponse> issueWsTicket(
-            @AuthenticationPrincipal CustomUserDetails details,
+            @AuthenticationPrincipal CustomMemberDetails details,
             @RequestBody WsAuthRequest request
     ) {
         System.out.println("티켓 발행");
