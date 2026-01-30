@@ -1,23 +1,22 @@
 // src/api/bookmarks/Bookmarks.api.ts
 import { request } from '../request';
-import type { ApiResponse } from '../../types/common/apiResponse';
 import type {
   AddBookmarkResponse,
   RemoveBookmarkResponse,
   GetBookmarksResponse,
 } from '../../types/bookmark/BookmarkResponse';
 
-/** 즐겨찾기 추가 (body 없음) */
+/** 즐겨찾기 추가 */
 export const addBookmarkApi = (noteId: string) => {
-  return request<ApiResponse<AddBookmarkResponse>>(
+  return request<AddBookmarkResponse>(
     'post',
     `/v1/notes/${noteId}/bookmarks`
   );
 };
 
-/** 즐겨찾기 제거 (body 없음) */
+/** 즐겨찾기 제거 */
 export const removeBookmarkApi = (noteId: string) => {
-  return request<ApiResponse<RemoveBookmarkResponse>>(
+  return request<RemoveBookmarkResponse>(
     'delete',
     `/v1/notes/${noteId}/bookmarks`
   );
@@ -25,7 +24,7 @@ export const removeBookmarkApi = (noteId: string) => {
 
 /** 즐겨찾기 목록 조회 */
 export const getBookmarksApi = () => {
-  return request<ApiResponse<GetBookmarksResponse>>(
+  return request<GetBookmarksResponse>(
     'get',
     '/v1/notes/bookmarks'
   );
