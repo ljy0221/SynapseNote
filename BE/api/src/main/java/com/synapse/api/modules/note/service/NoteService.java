@@ -101,7 +101,7 @@ public class NoteService {
 
     public NotePageResponse getAllNotes(UUID userId, int page, int size) {
         PageRequest pageRequest = PageRequest.of(page, size);
-        Page<Note> pageResult = noteRepository.findAllNotesByUserId(userId, pageRequest);
+        Page<Note> pageResult = noteRepository.findAllNotesByUserIdOrderByUpdatedAt(userId, pageRequest);
 
         Page<NoteResponse> responsePage = pageResult.map(NoteResponse::from);
         return NotePageResponse.from(responsePage);
