@@ -55,7 +55,7 @@
 ========================= */
 .sidebar-inner {
   height: 100%;
-  padding: 16px;
+  padding: 12px 8px; /* develop: 좀 더 타이트한 여백 적용 */
   box-sizing: border-box;
 
   overflow-y: auto;

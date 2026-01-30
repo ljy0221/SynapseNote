@@ -1,0 +1,22 @@
+/* AddRecommendButton.css */
+.add-recommend-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: 0.7;
+  margin-top:2px;
+}
+
+.add-recommend-btn:hover {
+  opacity: 1;
+}
+
+.add-recommend-btn svg {
+  stroke: var(--font-color);
+  fill: none;
+}
+
+.add-recommend-btn.active svg {
+  fill: var(--color-point);
+  stroke: var(--color-point);
+}

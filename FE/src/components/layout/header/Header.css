@@ -69,3 +69,23 @@
     /* 버튼들이 너무 끝에 붙지 않도록 미세한 여백 */
     padding-left: 10px;
 }
+
+/* 폼 요소들은 드래그 영역에서 제외 */
+input,
+textarea {
+    -webkit-app-region: no-drag !important;
+}
+
+/* 검색바 레이아웃 (develop 반영) */
+.search-bar-wrapper {
+    position: relative; /* 드롭다운의 기준점 */
+    width: 100%;
+}
+
+.search-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    width: 100%; /* SearchBar 너비에 맞춤 */
+    z-index: 2000;
+}

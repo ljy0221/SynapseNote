@@ -1,77 +1,141 @@
-/* src/components/common/codeBlock/CodeBlock.css */
+/* src/components/layout/codeBlock/CodeBlock.css */
 
 .code-block-wrapper {
-    /* 기존 100%에서 줄여서 오른쪽 여백 확보 */
-    width: 70%; 
-    /* 중앙 정렬 및 하단 간격 */
-    margin: 0 auto 24px 40px; 
-    
-    background-color: var(--bg-secondary, rgba(255, 255, 255, 0.03));
+    width: 90%;
+    max-width: 800px;
+    margin: 20px auto;
+    background-color: var(--color-sub);
     border-radius: 12px;
-    border: 1px solid rgba(128, 128, 128, 0.1);
-    overflow: hidden;
-    box-sizing: border-box;
-    /* 그림자를 살짝 추가하면 툴바와 분리된 느낌이 더 명확해집니다 */
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(128, 128, 128, 0.2);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* 내부 요소가 radius 밖으로 나가지 않게 설정 */
 }
 
 .code-block-header {
     display: flex;
     justify-content: space-between;
-    padding: 10px 16px;
-    background-color: rgba(0, 0, 0, 0.05);
-}
-/* ✅ 뱃지 사이즈 축소 및 디자인 개선 */
-.code-lang-badge {
-    background-color: var(--color-point);
-    color: #fff;
-    padding: 2px 8px; /* 상하를 줄여서 정사각형 현상 해결 */
-    border-radius: 4px;
-    font-size: 11px; /* 글자 크기도 조금 더 작게 */
-    font-weight: 700;
-    line-height: 1; /* 글자 높이만큼만 차지하도록 강제 */
-    display: inline-block;
+    align-items: center;
+    padding: 8px 16px;
+    background-color: var(--color-sub);
+    border-bottom: 1px solid rgba(128, 128, 128, 0.1);
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
 }
 
-.code-content-view {
+/* [좌측 컨트롤] 삭제버튼 + 드래그핸들 - 호버 시에만 보임 */
+.code-left-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.code-block-wrapper:hover .code-left-controls {
+    opacity: 1;
+}
+
+.code-drag-handle {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    color: var(--font-color);
+    opacity: 0.6;
+    transition: all 0.2s;
+    font-size: 24px;
+    user-select: none;
+    border-radius: 4px;
+}
+
+.code-drag-handle:hover {
+    opacity: 1;
+    background-color: rgba(0, 0, 0, 0.08);
+    transform: scale(1.1);
+}
+
+.code-drag-handle:active {
+    cursor: grabbing;
+}
+
+/* [중앙] 언어 뱃지 */
+.code-lang-badge {
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'Fira Code', monospace;
+    color: var(--color-point);
+    background-color: rgba(245, 158, 11, 0.1);
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-right: auto;
+}
+
+/* [우측] 액션 버튼들 */
+.code-actions {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.code-actions > * {
+    display: inline-flex;
+    white-space: nowrap;
+}
+
+/* [중앙] 코드 에디터 컨테이너 */
+.code-content-container {
+    background-color: transparent;
+    min-height: 120px;
+    display: flex;
+}
+
+.code-editor-input {
+    width: 100%;
     padding: 20px;
-    margin: 0;
+    border: none;
+    outline: none;
+    background: none;
+    resize: none;
+    font-family: 'Fira Code', 'Courier New', monospace;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--font-color);
+}
+
+/* [하단] 실행 결과 출력 영역 */
+.code-output-zone {
+    background-color: rgba(128, 128, 128, 0.05);
+    padding: 16px 24px 24px 24px;
+    position: relative;
+    border-top: 1px solid rgba(128, 128, 128, 0.1);
+}
+
+.output-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--font-color);
+    opacity: 0.6;
+    margin: 0 0 10px 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.output-content {
     font-family: 'Fira Code', monospace;
     font-size: 14px;
     color: var(--font-color);
-    line-height: 1.6;
-    overflow-x: auto; /* 내부 코드 길이에 따른 스크롤 유지 */
+    white-space: pre-wrap; /* 줄바꿈 유지 */
+    word-break: break-all;
 }
 
-/* 스크롤바가 너무 두꺼우면 답답하므로 얇게 커스텀 */
-.code-content-view::-webkit-scrollbar {
-    height: 4px;
-}
-
-.code-content-view::-webkit-scrollbar-thumb {
-    background: rgba(128, 128, 128, 0.2);
-    border-radius: 10px;
-}
-
-.code-actions {
-    display: flex;
-    gap: 12px; /* 버튼 사이 간격 좁힘 */
-    align-items: center;
-    flex-wrap: nowrap; /* 절대 줄바꿈 되지 않도록 설정 */
-}
-
-.code-action-btn {
-    background: none;
-    border: none;
-    color: var(--font-color);
-    cursor: pointer;
-    margin-left: 10px;
-    font-size: 12px;
-    opacity: 0.6;
-    transition: opacity 0.2s ease;
-}
-
-.code-action-btn:hover {
-    opacity: 1;
-    color: var(--color-point);
+.code-block-wrapper > :last-child {
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
 }

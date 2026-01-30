@@ -1,8 +1,9 @@
 // src/pages/Login.tsx
 import React from 'react';
-// 1. SocialLoginButton 임포트 추가
 import { SocialLoginButton } from "../../components/common/socialLoginButton/SocialLoginButton";
+import { SynapseLogo } from "../../components/common/logo/SynapseLogo";
 import HomeButton from "../../components/common/homeButton/HomeButton.tsx";
+
 const Login: React.FC = () => {
     return (
         <div style={{ display: 'flex', width: '100vw', height: '100vh', position: 'relative' }}>
@@ -18,7 +19,10 @@ const Login: React.FC = () => {
                 position: 'relative'
             }}>
                 <div>
-                    <div style={{ width: '80px', height: '80px', backgroundColor: 'var(--color-point)', borderRadius: '20px' }} />
+                    {/* 단순 사각형 대신 실제 프로젝트 로고 컴포넌트 적용 */}
+                    <div style={{ color: 'var(--color-point)', marginBottom: '24px' }}>
+                        <SynapseLogo width={80} height={80} />
+                    </div>
                     <h1 style={{ fontSize: '3.5rem', margin: '24px 0', fontWeight: '800' }}>Synapse</h1>
                     <p style={{ fontSize: '1.2rem', opacity: 0.7, lineHeight: '1.6' }}>
                         Connect your thoughts,<br />
@@ -55,16 +59,24 @@ const Login: React.FC = () => {
                     <p style={{ marginBottom: '48px', opacity: 0.5 }}>소셜 계정으로 간편하게 시작하세요.</p>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        {/* GitHub 로그인: 환경 변수를 통한 실제 인증 URL 생성 및 외부 브라우저 호출 */}
                         <SocialLoginButton
                             provider="github"
                             onClick={() => {
-                                console.log("GitHub OAuth 시작");
+                                const clientId = import.meta.env.VITE_GITHUB_CLIENT_ID;
+                                const redirectUri = import.meta.env.VITE_GITHUB_REDIRECT_URI;
+                                const authUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email`;
+                                (window as any).electronAPI.openExternal(authUrl);
                             }}
                         />
+                        {/* Google 로그인: 환경 변수를 통한 실제 인증 URL 생성 및 외부 브라우저 호출 */}
                         <SocialLoginButton
                             provider="google"
                             onClick={() => {
-                                console.log("Google OAuth 시작");
+                                const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+                                const redirectUri = import.meta.env.VITE_GOOGLE_REDIRECT_URI;
+                                const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=email profile`;
+                                (window as any).electronAPI.openExternal(authUrl);
                             }}
                         />
                     </div>

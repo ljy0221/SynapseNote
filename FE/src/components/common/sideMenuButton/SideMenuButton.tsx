@@ -3,17 +3,62 @@ import { NavLink } from 'react-router-dom';
 import './SideMenuButton.css';
 
 interface SideMenuButtonProps {
-    to: string;
+    to?: string;
     icon: React.ReactNode;
-    label: string; // 툴팁용으로만 유지
+    label: string; // 툴팁용
+    onClick?: () => void;
+    style?: React.CSSProperties;
+    disabled?: boolean;
 }
 
-export const SideMenuButton: React.FC<SideMenuButtonProps> = ({ to, icon, label }) => {
+export const SideMenuButton: React.FC<SideMenuButtonProps> = ({
+                                                                  to,
+                                                                  icon,
+                                                                  label,
+                                                                  onClick,
+                                                                  style,
+                                                                  disabled
+                                                              }) => {
+    const handleClick = (e: React.MouseEvent) => {
+        if (disabled) {
+            e.preventDefault();
+            return;
+        }
+        onClick?.();
+    };
+
+    const combinedStyle = {
+        ...style,
+        opacity: disabled ? 0.5 : 1,
+        cursor: disabled ? 'not-allowed' : 'pointer',
+    };
+
+    // 경로(to)가 없는 경우 버튼(button)으로 렌더링
+    if (!to) {
+        return (
+            <button
+                className="side-menu-button"
+                onClick={handleClick}
+                title={label}
+                type="button"
+                style={combinedStyle}
+                disabled={disabled}
+            >
+                <div className="icon-container">
+                    {icon}
+                </div>
+            </button>
+        );
+    }
+
+    // 경로(to)가 있는 경우 NavLink로 렌더링
     return (
         <NavLink
             to={to}
             className={({ isActive }) => `side-menu-button ${isActive ? 'active' : ''}`}
             title={label}
+            onClick={handleClick}
+            style={combinedStyle}
         >
             <div className="icon-container">
                 {icon}

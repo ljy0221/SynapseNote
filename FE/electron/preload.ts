@@ -25,4 +25,25 @@ contextBridge.exposeInMainWorld('electronAPI', {
   minimize: () => ipcRenderer.send('window-minimize'),
   maximize: () => ipcRenderer.send('window-maximize'),
   close: () => ipcRenderer.send('window-close'),
+
+  openExternal: (url: string) => ipcRenderer.send('open-external', url),
+})
+
+// Docker API 노출
+contextBridge.exposeInMainWorld('dockerAPI', {
+  checkInstalled: () => ipcRenderer.invoke('docker:check-installed'),
+  checkRunning: () => ipcRenderer.invoke('docker:check-running'),
+
+  // NEW: 통합 실행
+  execute: (request: any) => ipcRenderer.invoke('docker:execute', request),
+
+  // NEW: 세션 관리
+  getSessionStatus: (noteId: string, language: string) =>
+    ipcRenderer.invoke('docker:get-session-status', noteId, language),
+  destroySession: (noteId: string, language: string) =>
+    ipcRenderer.invoke('docker:destroy-session', noteId, language),
+
+  // 기존 호환성 유지
+  executeSingle: (request: any) => ipcRenderer.invoke('docker:execute-single', request),
+
 })

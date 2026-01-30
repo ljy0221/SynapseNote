@@ -1,33 +1,37 @@
-// src/components/layout/noteToolbar/NoteToolbar.tsx
+/* src/components/layout/noteToolbar/NoteToolbar.tsx */
 import React from 'react';
-import BlockAddButton from '../../common/blockAddButton/BlockAddButton';
+import { FileText, Code } from 'lucide-react';
 import './NoteToolbar.css';
 
 interface NoteToolBarProps {
-    isOpen: boolean;
+    // 블록 타입을 인자로 받아 부모 컴포넌트(NoteMain)에 전달
+    onAddBlock: (type: 'text' | 'code') => void;
 }
 
-export const NoteToolBar: React.FC<NoteToolBarProps> = ({ isOpen }) => {
-    const handleAddBlock = () => {
-        // 실제 블록 추가 로직이 들어갈 자리입니다.
-        console.log("새 블록이 추가되었습니다.");
-    };
-
+export const NoteToolBar: React.FC<NoteToolBarProps> = ({ onAddBlock }) => {
     return (
-        <aside className={`note-toolbar ${isOpen ? 'open' : ''}`}>
-            <div className="toolbar-content">
-                <p className="toolbar-section-title">COMPONENTS</p>
-                
-                {/* 기존 리스트 영역 (h1, h2, h3 등) */}
-                <ul className="component-list">
-                    <li>H1 Heading</li>
-                    <li>H2 Subheading</li>
-                    <li>Code Block</li>
-                </ul>
+        <div className="note-toolbar-horizontal">
+            {/* 텍스트 블록 추가 버튼 */}
+            <button
+                className="toolbar-add-btn"
+                onMouseDown={(e) => e.preventDefault()} // 포커스 뺏김 방지
+                onClick={() => onAddBlock('text')}
+                title="텍스트 블록 추가"
+            >
+                <FileText size={20} />
+                <span>Text</span>
+            </button>
 
-                {/* 새로 만든 공통 버튼 배치 */}
-                <BlockAddButton onClick={handleAddBlock} />
-            </div>
-        </aside>
+            {/* 코드 블록 추가 버튼 */}
+            <button
+                className="toolbar-add-btn"
+                onMouseDown={(e) => e.preventDefault()} // 포커스 뺏김 방지
+                onClick={() => onAddBlock('code')}
+                title="코드 블록 추가"
+            >
+                <Code size={20} />
+                <span>Code</span>
+            </button>
+        </div>
     );
 };
