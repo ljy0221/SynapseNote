@@ -3,6 +3,9 @@ package com.synapse.api.modules.note.service;
 import com.synapse.api.modules.block.document.BaseBlock;
 import com.synapse.api.modules.block.dto.response.BlockPageResponse;
 import com.synapse.api.modules.block.service.BlockService;
+import com.synapse.api.modules.member.entity.Streak;
+import com.synapse.api.modules.member.entity.StreakId;
+import com.synapse.api.modules.member.repository.StreakRepository;
 import com.synapse.api.modules.note.dto.request.ExecutionHistoryRequest;
 import com.synapse.api.modules.note.dto.request.NoteCreateRequest;
 import com.synapse.api.modules.note.dto.request.NotePositionUpdateRequest;
@@ -40,6 +43,7 @@ public class NoteService {
     private final NoteRepository noteRepository;
     private final NoteMemberRepository noteMemberRepository;
     private final MemberRepository memberRepository;
+    private final StreakRepository streakRepository;
 
     // [위임] 블록 데이터 및 실행 로직 담당
     private final BlockService blockService;
@@ -71,6 +75,15 @@ public class NoteService {
                 .role(NoteRole.OWNER)
                 .build();
         noteMemberRepository.save(noteMember);
+
+        // 스트릭 (일일 1회 제한)
+        java.time.LocalDate today = java.time.LocalDate.now();
+        StreakId streakId = new StreakId(memberId, today);
+
+        if (!streakRepository.existsById(streakId)) {
+            Streak streak = Streak.of(member,today);
+            streakRepository.save(streak);
+        }
 
         log.info("Created note: {} by member: {}", savedNote.getId(), noteMemberId);
         return NoteResponse.from(savedNote);

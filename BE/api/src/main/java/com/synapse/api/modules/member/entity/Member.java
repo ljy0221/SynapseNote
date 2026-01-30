@@ -37,9 +37,6 @@ public class Member extends BaseEntity {
     @Column(nullable = false, length = 100)
     private String name;
 
-    @OneToOne(mappedBy = "member")
-    private Streak streak;
-
     public void updateName(String name) {
         this.name = name;
     }
