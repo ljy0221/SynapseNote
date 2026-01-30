@@ -47,18 +47,17 @@ public interface NoteRepository extends JpaRepository<Note, UUID> {
     int resetMindmapNodePositions(@Param("userId") UUID userId);
 
     @Query(value = "SELECT n FROM Note n " +
-            "LEFT JOIN NoteMember nm ON n.id = nm.note.id AND nm.user.id = :userId AND nm.deletedAt IS NULL "
-            +
+            "LEFT JOIN NoteMember nm ON n.id = nm.note.id AND nm.user.id = :userId AND nm.deletedAt IS NULL " +
             "JOIN FETCH n.createdBy " +
             "WHERE n.deletedAt IS NULL " +
             "AND (n.createdBy.id = :userId OR nm.id IS NOT NULL) " +
-            "ORDER BY n.updatedAt DESC",
+            "ORDER BY n.updatedAt DESC", // 여기에 추가되었습니다.
+
             countQuery = "SELECT COUNT(n) FROM Note n " +
-                    "LEFT JOIN NoteMember nm ON n.id = nm.note.id AND nm.user.id = :userId AND nm.deletedAt IS NULL "
-                    +
+                    "LEFT JOIN NoteMember nm ON n.id = nm.note.id AND nm.user.id = :userId AND nm.deletedAt IS NULL " +
                     "WHERE n.deletedAt IS NULL " +
                     "AND (n.createdBy.id = :userId OR nm.id IS NOT NULL)")
-    Page<Note> findAllNotesByUserId(@Param("userId") UUID userId, Pageable pageable);
+    Page<Note> findAllNotesByUserIdOrderByUpdatedAt(@Param("userId") UUID userId, Pageable pageable);
 
     @Query("SELECT n FROM Note n JOIN FETCH n.createdBy WHERE n.createdBy.id = :userId " +
             "AND n.bookmark = true AND n.deletedAt IS NULL " +
