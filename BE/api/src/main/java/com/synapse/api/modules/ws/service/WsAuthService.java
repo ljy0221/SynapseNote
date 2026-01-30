@@ -23,18 +23,18 @@ public class WsAuthService {
     private final NoteMemberRepository noteMemberRepository;
     private final JwtUtil jwtUtil;
 
-    public WsAuthResponse issueTicket(UUID userId, WsAuthRequest request) {
+    public WsAuthResponse issueTicket(UUID memberId, WsAuthRequest request) {
         UUID noteId = request.noteId();
 
         noteRepository.findById(noteId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
 
-        noteMemberRepository.findByNoteIdAndUserId(noteId, userId)
+        noteMemberRepository.findByNoteIdAndMemberId(noteId, memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_ACCESS_DENIED));
 
         Instant expiresAt = Instant.now().plus(TICKET_TTL);
 
-        String ticket = jwtUtil.generateTicket(userId, noteId, expiresAt);
+        String ticket = jwtUtil.generateTicket(memberId, noteId, expiresAt);
 
         return WsAuthResponse.builder()
                 .ticket(ticket)

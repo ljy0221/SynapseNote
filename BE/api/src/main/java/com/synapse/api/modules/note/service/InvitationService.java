@@ -1,6 +1,8 @@
 package com.synapse.api.modules.note.service;
 
 import com.github.f4b6a3.uuid.UuidCreator;
+import com.synapse.api.modules.member.entity.Member;
+import com.synapse.api.modules.member.repository.MemberRepository;
 import com.synapse.api.modules.note.dto.request.InvitationCreateRequest;
 import com.synapse.api.modules.note.dto.response.InvitationAcceptResponse;
 import com.synapse.api.modules.note.dto.response.InvitationResponse;
@@ -8,8 +10,8 @@ import com.synapse.api.modules.note.entity.*;
 import com.synapse.api.modules.note.repository.InvitationRepository;
 import com.synapse.api.modules.note.repository.NoteMemberRepository;
 import com.synapse.api.modules.note.repository.NoteRepository;
-import com.synapse.api.modules.user.entity.User;
-import com.synapse.api.modules.user.repository.UserRepository;
+import com.synapse.api.modules.member.entity.Member;
+import com.synapse.api.modules.member.repository.MemberRepository;
 import com.synapse.api.util.exception.BusinessException;
 import com.synapse.api.util.response.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +32,7 @@ public class InvitationService {
     private final InvitationRepository invitationRepository;
     private final NoteRepository noteRepository;
     private final NoteMemberRepository noteMemberRepository;
-    private final UserRepository userRepository;
+    private final MemberRepository memberRepository;
 
     @Value("${app.invitation.expiration-days:7}")
     private int expirationDays;
@@ -44,13 +46,13 @@ public class InvitationService {
      * - OWNER 역할로는 초대 불가
      */
     @Transactional
-    public InvitationResponse createInvitation(UUID noteId, UUID userId, InvitationCreateRequest request) {
+    public InvitationResponse createInvitation(UUID noteId, UUID memberId, InvitationCreateRequest request) {
         // 1. 노트 존재 확인
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
 
         // 2. OWNER 권한 확인
-        validateOwnership(note, userId);
+        validateOwnership(note, memberId);
 
         // 3. OWNER 역할 초대 불가
         if (request.role() == NoteRole.OWNER) {
@@ -58,9 +60,9 @@ public class InvitationService {
         }
 
         // 4. 이미 멤버인지 확인 (이메일로 조회)
-        User existingUser = userRepository.findByEmail(request.invitedEmail()).orElse(null);
-        if (existingUser != null) {
-            boolean isMember = noteMemberRepository.existsByNoteIdAndUserId(noteId, existingUser.getId());
+        Member existingMember = memberRepository.findByEmail(request.invitedEmail()).orElse(null);
+        if (existingMember != null) {
+            boolean isMember = noteMemberRepository.existsByNoteIdAndMemberId(noteId, existingMember.getId());
             if (isMember) {
                 throw new BusinessException(ErrorCode.ALREADY_NOTE_MEMBER);
             }
@@ -74,8 +76,8 @@ public class InvitationService {
         }
 
         // 6. 초대 생성
-        User inviter = userRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        Member inviter = memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         UUID invitationToken = UuidCreator.getTimeOrderedEpoch();
         LocalDateTime expiresAt = LocalDateTime.now().plusDays(expirationDays);
@@ -92,8 +94,8 @@ public class InvitationService {
 
         Invitation savedInvitation = invitationRepository.save(invitation);
 
-        log.info("Created invitation: {} for email: {} to note: {} by user: {}",
-                savedInvitation.getId(), request.invitedEmail(), noteId, userId);
+        log.info("Created invitation: {} for email: {} to note: {} by member: {}",
+                savedInvitation.getId(), request.invitedEmail(), noteId, memberId);
 
         return InvitationResponse.from(savedInvitation, frontendBaseUrl);
     }
@@ -104,7 +106,7 @@ public class InvitationService {
      * - 만료 확인
      */
     @Transactional
-    public InvitationAcceptResponse acceptInvitation(UUID token, UUID userId) {
+    public InvitationAcceptResponse acceptInvitation(UUID token, UUID memberId) {
         // 1. 초대 조회
         Invitation invitation = invitationRepository.findByInvitationToken(token)
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVITATION_NOT_FOUND));
@@ -121,36 +123,36 @@ public class InvitationService {
         }
 
         // 4. 사용자 조회
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         // 5. 이메일 일치 확인 (대소문자 무시)
-        if (!user.getEmail().equalsIgnoreCase(invitation.getInvitedEmail())) {
+        if (!member.getEmail().equalsIgnoreCase(invitation.getInvitedEmail())) {
             throw new BusinessException(ErrorCode.INVITATION_EMAIL_MISMATCH);
         }
 
         // 6. 이미 멤버인지 확인
-        boolean isMember = noteMemberRepository.existsByNoteIdAndUserId(
-                invitation.getNote().getId(), userId);
+        boolean isMember = noteMemberRepository.existsByNoteIdAndMemberId(
+                invitation.getNote().getId(), memberId);
         if (isMember) {
             throw new BusinessException(ErrorCode.ALREADY_NOTE_MEMBER);
         }
 
         // 7. NoteMember 생성
-        NoteMemberId memberId = new NoteMemberId(invitation.getNote().getId(), userId);
+        NoteMemberId noteMemberId = new NoteMemberId(invitation.getNote().getId(), memberId);
         NoteMember noteMember = NoteMember.builder()
-                .id(memberId)
+                .id(noteMemberId)
                 .note(invitation.getNote())
-                .user(user)
+                .member(member)
                 .role(invitation.getRole())
                 .build();
         noteMemberRepository.save(noteMember);
 
         // 8. 초대 수락 처리
-        invitation.accept(user);
+        invitation.accept(member);
 
-        log.info("User: {} accepted invitation: {} for note: {}",
-                userId, invitation.getId(), invitation.getNote().getId());
+        log.info("Member: {} accepted invitation: {} for note: {}",
+                memberId, invitation.getId(), invitation.getNote().getId());
 
         return InvitationAcceptResponse.from(invitation);
     }
@@ -158,8 +160,8 @@ public class InvitationService {
     /**
      * OWNER 권한 검증
      */
-    private void validateOwnership(Note note, UUID userId) {
-        if (!note.getCreatedBy().getId().equals(userId)) {
+    private void validateOwnership(Note note, UUID memberId) {
+        if (!note.getCreatedBy().getId().equals(memberId)) {
             throw new BusinessException(ErrorCode.INVITATION_ONLY_OWNER);
         }
     }
