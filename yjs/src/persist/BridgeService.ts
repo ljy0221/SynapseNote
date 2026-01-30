@@ -8,10 +8,9 @@ interface YjsBlockData {
   id: string;
   type: string;
   properties: BlockProperties;
-  // CodeBlock specific (Root Level in YJS -> Root Level in MongoDB)
   outputHistory?: Array<any>;
   lastOutput?: string;
-  lastExecutedAt?: string; // YJS sends as string/ISO8601
+  lastExecutedAt?: string;
 }
 
 class BridgeService {
@@ -25,6 +24,7 @@ class BridgeService {
   }
 
   public handleUpdate(noteId: string, yDoc: Y.Doc): void {
+    console.log(`[Bridge] handleUpdate called for ${noteId}`);
     if (this.debounceTimers.has(noteId)) {
       clearTimeout(this.debounceTimers.get(noteId)!);
     }
@@ -40,15 +40,19 @@ class BridgeService {
 
   private async syncToDB(noteId: string, yDoc: Y.Doc): Promise<void> {
     try {
+      console.log(`[Bridge] syncToDB started for ${noteId}`);
       // 1. Yjs 데이터 추출
-      const yArray = yDoc.getArray<YjsBlockData>('blocks'); // 프론트와 합의된 이름
+      const yArray = yDoc.getArray<YjsBlockData>('blocks');
       const currentBlocks: YjsBlockData[] = yArray.toJSON();
 
-      if (!currentBlocks || currentBlocks.length === 0) return;
+      if (!currentBlocks || currentBlocks.length === 0) {
+        console.log(`[Bridge] No blocks found for ${noteId}, skipping sync`);
+        return;
+      }
 
       console.log(`[Bridge] Syncing Doc ${noteId}, Count: ${currentBlocks.length}`);
 
-      // 2. DB 데이터 조회 (성능 최적화를 위해 map핑)
+      // 2. DB 데이터 조회 (성능 최적화를 위해 매핑)
       const dbBlocks = await Block.find({ noteId }).lean();
       const dbBlocksMap = new Map(dbBlocks.map(b => [b.blockId, b]));
 
@@ -65,8 +69,6 @@ class BridgeService {
         currentBlockIds.add(yBlock.id);
 
         let cleanProps = { ...yBlock.properties };
-
-        // [최적화] JsonMarkdownConverter 제거 - YJS가 주는 string 그대로 저장.
 
         // Spring용 _class 결정
         const springClass = yBlock.type;
@@ -174,14 +176,17 @@ class BridgeService {
         promises.push(Block.bulkWrite(bulkOps));
       }
 
-      // [최적화] History 벌크 저장
+      // History 벌크 저장
       if (historyOps.length > 0) {
         promises.push(BlockHistory.insertMany(historyOps));
       }
 
       if (promises.length > 0) {
         await Promise.all(promises);
-        console.log(`[Bridge] Sync Success. Updates: ${bulkOps.length}, History: ${historyOps.length}`);
+        console.log(`[Bridge] Sync Success for ${noteId}. Updates: ${bulkOps.length}, History: ${historyOps.length}`);
+        if (bulkOps.length > 0) {
+          console.log(`[Bridge] Sample of synced block IDs: ${currentBlocks.slice(0, 3).map(b => b.id).join(", ")}`);
+        }
       }
 
     } catch (error) {
