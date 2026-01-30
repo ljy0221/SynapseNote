@@ -8,7 +8,7 @@ import java.util.UUID;
 
 @Builder
 public record NoteResponse(
-        UUID id,
+        UUID noteId,
         String title,
         String directoryPath,
         Double pointX,
@@ -21,7 +21,7 @@ public record NoteResponse(
 ) {
     public static NoteResponse from(Note note) {
         return NoteResponse.builder()
-                .id(note.getId())
+                .noteId(note.getId())
                 .title(note.getTitle())
                 .directoryPath(note.getDirectoryPath())
                 .pointX(note.getPointX())
