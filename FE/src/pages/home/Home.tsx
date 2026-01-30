@@ -18,21 +18,34 @@ const Home: React.FC = () => {
 
   useEffect(() => {
     const fetchDashboardData = async () => {
-      try {
-        const [notesRes, streakRes] = await Promise.all([
-          getNotesApi(),
-          getStreakApi(),
-        ]);
-
-        setRecentNotes(adaptRecentNotes(notesRes));
-        setStreakDates(adaptStreakDates(streakRes));
-      } finally {
-        setLoading(false);
+      setLoading(true);
+  
+      const results = await Promise.allSettled([
+        getNotesApi(),
+        getStreakApi(),
+      ]);
+  
+      const [notesResult, streakResult] = results;
+  
+      if (notesResult.status === 'fulfilled') {
+        setRecentNotes(adaptRecentNotes(notesResult.value));
+      } else {
+        console.error('[Home] Notes 로딩 실패', notesResult.reason);
       }
+  
+      if (streakResult.status === 'fulfilled') {
+        setStreakDates(adaptStreakDates(streakResult.value));
+      } else {
+        console.error('[Home] Streak 로딩 실패', streakResult.reason);
+        setStreakDates([]); // fallback
+      }
+  
+      setLoading(false);
     };
-
+  
     fetchDashboardData();
   }, []);
+
 
   if (loading) {
     return <div className="home-container">Loading...</div>;
