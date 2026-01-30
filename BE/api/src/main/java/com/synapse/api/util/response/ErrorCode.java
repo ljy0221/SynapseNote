@@ -35,8 +35,6 @@ public enum ErrorCode {
     NOTE_CONTENT_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTE_005", "노트 콘텐츠를 찾을 수 없습니다"),
     NOTE_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTE_006", "노트 멤버를 찾을 수 없습니다"),
     CODE_BLOCK_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTE_007", "코드 블록을 찾을 수 없습니다"),
-    INVALID_BLOCK_TYPE(HttpStatus.BAD_REQUEST, "NOTE_008", "블록 타입이 잘못됫습니다."),
-    INVALID_BLOCK_ACCESS(HttpStatus.FORBIDDEN, "NOTE_009", "블록 접근 방식이 잘못되었습니다."),
 
     // Invitation (NOTE_010 ~ NOTE_019)
     INVITATION_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTE_010", "초대를 찾을 수 없습니다"),
