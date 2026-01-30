@@ -1,33 +1,22 @@
-.favorite-btn {
-  all: unset;
+/* AddRecommendButton.css */
+.add-recommend-btn {
+  background: none;
+  border: none;
   cursor: pointer;
-
-  width: 18px;
-  height: 18px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  font-size: 14px;
-  line-height: 1;
-
-  opacity: 0.3;
-  transition: opacity 0.15s ease, color 0.15s ease;
+  opacity: 0.7;
+  margin-top:2px;
 }
 
-/* 즐겨찾기된 상태 */
-.favorite-btn.active {
-  color: #f5c542;
+.add-recommend-btn:hover {
   opacity: 1;
 }
 
-/* hover 시에만 노출 */
-.note-row:hover .favorite-btn {
-  opacity: 0.9;
+.add-recommend-btn svg {
+  stroke: var(--font-color);
+  fill: none;
 }
 
-/* hover + inactive */
-.note-row:hover .favorite-btn:not(.active) {
-  color: #aaa;
+.add-recommend-btn.active svg {
+  fill: var(--color-point);
+  stroke: var(--color-point);
 }

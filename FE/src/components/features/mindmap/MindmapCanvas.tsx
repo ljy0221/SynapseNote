@@ -65,6 +65,8 @@ const DynamicBackground: React.FC = () => {
 /**
  * 마인드맵 캔버스 컴포넌트 (Feature)
  */
+import { MAP_WIDTH, MAP_HEIGHT } from '../../../constants/mindmapConstants';
+
 const MindmapCanvas: React.FC<MindmapCanvasProps> = ({
     nodes,
     edges,
@@ -78,6 +80,33 @@ const MindmapCanvas: React.FC<MindmapCanvasProps> = ({
     onNodeDragStop,
     isEditMode,
 }) => {
+    const wrapperRef = React.useRef<HTMLDivElement>(null);
+    const [minZoom, setMinZoom] = React.useState(0.1);
+    const MAX_ZOOM = 2.0;
+
+    // 화면 크기에 따른 minZoom 동적 계산
+    React.useEffect(() => {
+        const updateMinZoom = () => {
+            if (wrapperRef.current) {
+                const { clientWidth, clientHeight } = wrapperRef.current;
+                // 가로/세로 비율 중 더 많이 축소해야 하는 쪽을 기준으로 설정
+                const widthRatio = clientWidth / MAP_WIDTH;
+                const heightRatio = clientHeight / MAP_HEIGHT;
+                const newMinZoom = Math.min(widthRatio, heightRatio); // 더 작은 비율 선택 (전체가 보이도록)
+
+                // 너무 작아지는 것 방지 (선택사항, 필요 없다면 0에 가깝게 둬도 됨)
+                // 여기서는 계산된 값을 그대로 사용
+                setMinZoom(newMinZoom);
+            }
+        };
+
+        // 초기 실행
+        updateMinZoom();
+
+        // 리사이즈 이벤트 등록
+        window.addEventListener('resize', updateMinZoom);
+        return () => window.removeEventListener('resize', updateMinZoom);
+    }, []);
 
     /**
      * 커스텀 노드 타입 등록
@@ -88,7 +117,7 @@ const MindmapCanvas: React.FC<MindmapCanvasProps> = ({
     }), []);
 
     return (
-        <div style={{ width: '100%', height: '100%' }}>
+        <div ref={wrapperRef} style={{ width: '100%', height: '100%' }}>
             <ReactFlow
                 nodes={nodes}
                 edges={edges}
@@ -114,14 +143,14 @@ const MindmapCanvas: React.FC<MindmapCanvasProps> = ({
 
                 // 이동 및 줌 제한 설정 (Boundary Node 크기와 일치)
                 translateExtent={[[-4000, -3000], [4000, 3000]]}
-                minZoom={0.1}
-                maxZoom={4}
+                minZoom={minZoom}
+                maxZoom={MAX_ZOOM}
             >
                 {/* 배경 격자 설정: 줌에 따라 간격이 변하는 동적 배경 */}
                 <DynamicBackground />
 
                 {/* 캔버스 제어 도구 (줌, 핏뷰 등) - 커스텀 컴포넌트 사용 */}
-                <MindmapControls />
+                <MindmapControls minZoom={minZoom} maxZoom={MAX_ZOOM} />
             </ReactFlow>
         </div>
     );

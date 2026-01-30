@@ -1,7 +1,7 @@
 // BlockBookmarkList.tsx
 import { useState } from 'react';
 import BlockBookmarkItem from './BlockBookmarkItem';
-import type { BookmarkBlockItem } from '../../../types/bookmark/getBookmarkBlocks';
+import type { BookmarkBlockItem } from '../../../types/bookmark/GetBookmarkBlocks';
 
 const mockBlocks: BookmarkBlockItem[] = [
   {
@@ -19,6 +19,30 @@ const mockBlocks: BookmarkBlockItem[] = [
     noteId: 'n1',
     noteTitle: '이진 탐색',
     favoritedAt: '2026-01-26T10:10:00Z',
+  },
+  {
+    blockId: 'b3',
+    blockType: 'CODE',
+    preview: 'function binarySearch(arr, target) { ... }',
+    noteId: 'n1',
+    noteTitle: '이진 탐색',
+    favoritedAt: '2026-01-26T10:10:00Z',
+  },
+  {
+    blockId: 'b4',
+    blockType: 'CODE',
+    preview: 'function binarySearch(arr, target) { ... }',
+    noteId: 'n1',
+    noteTitle: '이진 탐색',
+    favoritedAt: '2026-01-26T10:10:00Z',
+  },
+  {
+    blockId: 'b5',
+    blockType: 'TEXT',
+    preview: '이진 탐색은 정렬된 배열에서...',
+    noteId: 'n1',
+    noteTitle: '이진 탐색',
+    favoritedAt: '2026-01-26T10:00:00Z',
   },
 ];
 
