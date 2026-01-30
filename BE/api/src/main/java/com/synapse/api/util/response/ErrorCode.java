@@ -21,11 +21,11 @@ public enum ErrorCode {
     HEADER_INVALID(HttpStatus.FORBIDDEN, "AUTH_005", "인증 헤더가 잘못되었습니다"),
     INVALID_REFRESH_TOKEN(HttpStatus.FORBIDDEN, "AUTH_006", "리프레시 토큰이 유효하지 않습니다"),
 
-    // User
-    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_001", "사용자를 찾을 수 없습니다"),
-    USER_ALREADY_EXISTS(HttpStatus.CONFLICT, "USER_002", "이미 존재하는 사용자입니다"),
-    VALIDATION_INVALID_PARAMETER(HttpStatus.BAD_REQUEST, "USER_003", "잘못된 요청 파라미터입니다"),
-    USER_ALREADY_EXISTS_ANOTHER_PROVIDER(HttpStatus.CONFLICT, "USER_004", "이 이메일은 다른 소셜 로그인으로 이미 가입되어 있습니다"),
+    // Member
+    MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "MEMBER_001", "사용자를 찾을 수 없습니다"),
+    MEMBER_ALREADY_EXISTS(HttpStatus.CONFLICT, "MEMBER_002", "이미 존재하는 사용자입니다"),
+    VALIDATION_INVALID_PARAMETER(HttpStatus.BAD_REQUEST, "MEMBER_003", "잘못된 요청 파라미터입니다"),
+    MEMBER_ALREADY_EXISTS_ANOTHER_PROVIDER(HttpStatus.CONFLICT, "MEMBER_004", "이 이메일은 다른 소셜 로그인으로 이미 가입되어 있습니다"),
 
     // Note
     NOTE_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTE_001", "노트를 찾을 수 없습니다"),
