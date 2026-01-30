@@ -41,7 +41,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const navigate = useNavigate();
   const { noteId: routeNoteId } = useParams<{ noteId: string }>();
 
-  /** ✅ active 상태의 단일 기준 = URL */
+  /**  active 상태의 단일 기준 = URL */
   const activeNoteId = routeNoteId ?? null;
 
   const [notes, setNotes] = useState<NoteListItem[]>([]);
@@ -95,7 +95,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }, []);
 
   /**
-   * ✅ 노트 선택 → URL 변경
+   *  노트 선택 → URL 변경
    */
   const handleSelectNote = (noteId: string) => {
     if (!noteId || noteId.startsWith('temp-')) return;
@@ -103,7 +103,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   /**
-   * ✅ 즐겨찾기 토글
+   *  즐겨찾기 토글
    */
   const handleToggleFavorite = async (noteId: string) => {
     if (!noteId || noteId.startsWith('temp-')) return;
@@ -189,7 +189,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <div className="sidebar-wrapper">
       <aside className={`sidebar-panel ${isOpen ? 'open' : ''}`}>
         <div className="sidebar-inner">
-           {/* 🔝 사이드바 상단 액션 영역 */}
+           {/*  사이드바 상단 액션 영역 */}
           <div className="sidebar-top-actions">
             <button
               className="sidebar-add-note-btn"
@@ -199,7 +199,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <span className="label">새 노트</span>
             </button>
           </div>
-          
+
           {isLoading ? (
             <div className="sidebar-loading">Loading...</div>
           ) : (
