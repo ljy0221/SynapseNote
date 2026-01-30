@@ -21,6 +21,8 @@ import { adaptBookmarkIds } from '../../../api/bookmark/Bookmarks.adapter';
 
 import { createNoteApi } from '../../../api/notes/CreateNote.api';
 import { deleteNoteApi } from '../../../api/notes/DeleteNote.api';
+import { updateNoteApi } from '../../../api/notes/UpdateNote.api';
+
 
 import {
   NOTES_CHANGED_EVENT,
@@ -137,6 +139,60 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
+  // 노트 제목 수정
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+
+  const handleRenameNote = (noteId: string) => {
+    console.log('[Sidebar] rename start', noteId);
+    setEditingNoteId(noteId);
+  };
+  // 제목 수정 확정
+  const handleConfirmRename = async (
+    noteId: string,
+    newTitle: string
+  ) => {
+    if (!newTitle.trim()) {
+      setEditingNoteId(null);
+      return;
+    }
+
+    const target = notes.find(n => n.noteId === noteId);
+    if (!target) {
+      setEditingNoteId(null);
+      return;
+    }
+
+    // optimistic update
+    setNotes(prev =>
+      prev.map(note =>
+        note.noteId === noteId
+          ? { ...note, title: newTitle }
+          : note
+      )
+    );
+
+    setEditingNoteId(null);
+
+    try {
+      await updateNoteApi(noteId, {
+        title: newTitle,
+        directoryPath: target.directoryPath,
+      });
+
+      emitNotesChanged();
+      console.log('[Sidebar] rename success', noteId);
+    } catch (e) {
+      console.error('[Sidebar] rename failed', e);
+      emitNotesChanged(); // 서버 기준으로 복구
+    }
+  };
+
+  // 제목 수정 취소
+  const handleCancelRename = () => {
+    setEditingNoteId(null);
+  };
+
+
   /**
    * 노트 생성 (optimistic)
    */
@@ -207,9 +263,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
               node={noteTree}
               activeNoteId={activeNoteId}
               favoriteNoteIds={favoriteNoteIds}
+              editingNoteId={editingNoteId}
               onSelectNote={handleSelectNote}
               onToggleFavorite={handleToggleFavorite}
               onContextMenu={setContextMenu}
+              onConfirmRename={handleConfirmRename}
+              onCancelRename={handleCancelRename}
             />
           )}
         </div>
@@ -227,6 +286,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         onClose={() => setContextMenu({ visible: false })}
         onDeleteNote={handleDeleteNote}
         onCreateNote={handleCreateNote}
+        onRenameNote={handleRenameNote}
       />
     </div>
   );
