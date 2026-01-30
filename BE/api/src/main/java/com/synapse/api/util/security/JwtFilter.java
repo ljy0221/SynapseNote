@@ -82,7 +82,7 @@ public class JwtFilter extends OncePerRequestFilter {
         UUID id = jwtUtil.getId(token);
 
         // 매 요청마다 ContextHolder에 Authentication 추가
-        CustomUserDetails session = new CustomUserDetails(id);
+        CustomMemberDetails session = new CustomMemberDetails(id);
         Authentication authToken = new UsernamePasswordAuthenticationToken(session, null, session.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authToken);
 

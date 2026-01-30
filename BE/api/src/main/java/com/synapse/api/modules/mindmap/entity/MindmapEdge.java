@@ -34,11 +34,4 @@ public class MindmapEdge {
     public static MindmapEdge of(Note from, Note to) {
         return new MindmapEdge(from, to);
     }
-
-    public static MindmapEdge createMindMapEdge(Note child, Note parent) {
-        return MindmapEdge.builder()
-                .from(child)
-                .to(parent)
-                .build();
-    }
 }

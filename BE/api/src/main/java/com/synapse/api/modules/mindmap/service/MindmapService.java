@@ -33,53 +33,53 @@ public class MindmapService {
     private final NoteRepository noteRepository;
 
     @Transactional
-    public void addMindMapNode(UUID userId, @Valid AddMindmapNodeRequest request) {
+    public void addMindMapNode(UUID memberId, @Valid AddMindmapNodeRequest request) {
         Note note = noteRepository.findById(request.noteId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
 
-        validNoteOwner(userId, note);
+        validNoteOwner(memberId, note);
 
         note.updatePosition(request.pointX(), request.pointY());
     }
 
     @Transactional
-    public void addMindMapEdge(UUID userId, @Valid MindmapEdgeRequest request) {
+    public void addMindMapEdge(UUID memberId, @Valid MindmapEdgeRequest request) {
         Note child = noteRepository.findById(request.child())
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
         Note parent = noteRepository.findById(request.parent())
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
 
-        validNoteOwner(userId, child);
-        validNoteOwner(userId, parent);
+        validNoteOwner(memberId, child);
+        validNoteOwner(memberId, parent);
 
-        MindmapEdge mindMapEdge = MindmapEdge.createMindMapEdge(child, parent);
+        MindmapEdge mindMapEdge = MindmapEdge.of(child, parent);
 
         mindmapEdgeRepository.save(mindMapEdge);
     }
 
     @Transactional
-    public void deleteNode(UUID userId, UUID nodeId) {
+    public void deleteNode(UUID memberId, UUID nodeId) {
         mindmapEdgeRepository.deleteByTo_Id(nodeId);
         mindmapEdgeRepository.deleteByFrom_Id(nodeId);
 
         Note note = noteRepository.findById(nodeId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
 
-        validNoteOwner(userId, note);
+        validNoteOwner(memberId, note);
 
         note.deleteNode();
     }
 
     @Transactional
-    public void deleteMindmap(UUID userId) {
-        mindmapEdgeRepository.deleteAllByUserId(userId);
-        noteRepository.resetMindmapNodePositions(userId);
+    public void deleteMindmap(UUID memberId) {
+        mindmapEdgeRepository.deleteAllByMemberId(memberId);
+        noteRepository.resetMindmapNodePositions(memberId);
     }
 
     @Transactional
-    public void deleteConnection(UUID userId, MindmapEdgeRequest request) {
-        int deleted = mindmapEdgeRepository.deleteByUserAndEdge(
-                userId,
+    public void deleteConnection(UUID memberId, MindmapEdgeRequest request) {
+        int deleted = mindmapEdgeRepository.deleteByMemberAndEdge(
+                memberId,
                 request.parent(),
                 request.child());
 
@@ -88,9 +88,9 @@ public class MindmapService {
         }
     }
 
-    public MindmapResponse getMindmap(UUID userId) {
-        List<Note> notes = noteRepository.findMindMapNodesByUser(userId);
-        List<MindmapEdge> edges = mindmapEdgeRepository.findAllByUser(userId);
+    public MindmapResponse getMindmap(UUID memberId) {
+        List<Note> notes = noteRepository.findMindMapNodesByMember(memberId);
+        List<MindmapEdge> edges = mindmapEdgeRepository.findAllByMember(memberId);
 
         Map<UUID, Long> fanoutMap = edges.stream()
                 .collect(Collectors.groupingBy(
@@ -116,14 +116,14 @@ public class MindmapService {
         return new MindmapResponse(nodeDtos, edgeDtos);
     }
 
-    private static void validNoteOwner(UUID userId, Note note) {
-        if (!note.getCreatedBy().getId().equals(userId)) {
+    private static void validNoteOwner(UUID memberId, Note note) {
+        if (!note.getCreatedBy().getId().equals(memberId)) {
             throw new BusinessException(ErrorCode.NOTE_ACCESS_DENIED);
         }
     }
 
     @Transactional
-    public void updateNodePositions(UUID userId, UpdateMindmapPositionsRequest request) {
+    public void updateNodePositions(UUID memberId, UpdateMindmapPositionsRequest request) {
         if (request.nodes() == null || request.nodes().isEmpty()) {
             return;
         }
@@ -139,7 +139,7 @@ public class MindmapService {
         }
 
         for (Note note : notes) {
-            validNoteOwner(userId, note);
+            validNoteOwner(memberId, note);
 
             if (note.getPointX() == null || note.getPointY() == null) {
                 throw new BusinessException(ErrorCode.NOTE_NOT_IN_MINDMAP);

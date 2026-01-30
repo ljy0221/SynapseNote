@@ -9,8 +9,8 @@ import java.util.List;
 import java.util.UUID;
 
 public interface NoteMetadataRepository extends JpaRepository<Note, UUID> {
-    List<Note> findByCreatedById(UUID userId);
+    List<Note> findByCreatedById(UUID memberId);
 
-    @Query("SELECT n FROM Note n WHERE n.createdBy.id = :userId AND n.title LIKE %:query%")
-    List<Note> searchByUserAndQuery(@Param("userId") UUID userId, @Param("query") String query);
+    @Query("SELECT n FROM Note n WHERE n.createdBy.id = :memberId AND n.title LIKE %:query%")
+    List<Note> searchByMemberAndQuery(@Param("memberId") UUID memberId, @Param("query") String query);
 }
