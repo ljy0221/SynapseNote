@@ -1,7 +1,7 @@
 package com.synapse.api.modules.note.entity;
 
 import com.synapse.api.modules.mindmap.entity.MindmapEdge;
-import com.synapse.api.modules.user.entity.User;
+import com.synapse.api.modules.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Where; // (선택) Soft Delete 자동 처리용
@@ -64,12 +64,14 @@ public class Note {
     // 생성자 (User와 연관관계)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id", nullable = false)
-    private User createdBy;
+    private Member createdBy;
 
     @OneToMany(mappedBy = "from", cascade = CascadeType.REMOVE)
+    @Builder.Default
     private List<MindmapEdge> fanoutEdges = new ArrayList<>();
 
     @OneToMany(mappedBy = "to", cascade = CascadeType.REMOVE)
+    @Builder.Default
     private List<MindmapEdge> faninEdges = new ArrayList<>();
 
     public void updateTitle(String title) {
