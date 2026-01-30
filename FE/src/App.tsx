@@ -33,7 +33,7 @@ import Note from './pages/note/Note';
 import MindMap from './pages/mindmap/MindMap';
 import Bookmark from './pages/bookmark/Bookmark';
 // 사이드바가 허용되는 경로
-const SIDEBAR_ROUTES = ['/mindmap', '/note'];
+const SIDEBAR_ROUTES = ['/note'];
 // 툴바가 허용되는 경로 (우측 여백)
 const TOOLBAR_ROUTES = ['/note'];
 
