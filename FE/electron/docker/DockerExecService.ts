@@ -16,7 +16,7 @@ export class DockerExecService {
   /**
    * 통합 실행 메서드 (모드 감지 후 라우팅)
    */
-  async execute(request: ExecutionRequest): Promise<ExecutionResult | SessionExecutionResult> {
+  async execute(request: ExecutionRequest): Promise<SessionExecutionResult> {
     if (request.mode === 'session') {
       return this.executeSession(request);
     }
@@ -99,7 +99,7 @@ export class DockerExecService {
   async cleanup(): Promise<void> {
     return this.sessionManager.cleanupAll();
   }
-  async executeSingle(request: ExecutionRequest): Promise<ExecutionResult> {
+  async executeSingle(request: ExecutionRequest): Promise<SessionExecutionResult> {
     const startTime = Date.now();
     let tempFilePath: string | null = null;
     let tempDir: string | null = null;
@@ -143,6 +143,8 @@ export class DockerExecService {
         executionTime: Date.now() - startTime,
         exitCode: result.exitCode,
         status: isSuccess ? 'success' : 'error',
+        sessionId: null,
+        isSessionActive: false,
       };
     } catch (error: any) {
       console.error(`[Docker] Error executing ${request.language} code:`, error.message);
@@ -153,6 +155,8 @@ export class DockerExecService {
         executionTime: Date.now() - startTime,
         exitCode: -1,
         status: error.message.includes('timeout') ? 'timeout' : 'error',
+        sessionId: null,
+        isSessionActive: false,
       };
     } finally {
       // 5. 임시 파일/디렉토리 삭제

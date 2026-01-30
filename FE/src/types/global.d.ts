@@ -7,7 +7,7 @@ declare global {
       checkRunning: () => Promise<boolean>;
 
       // NEW: 통합 실행
-      execute: (request: ExecutionRequest) => Promise<ExecutionResult | SessionExecutionResult>;
+      execute: (request: ExecutionRequest) => Promise<SessionExecutionResult>;
 
       // NEW: 세션 관리
       getSessionStatus: (noteId: string, language: Language) => Promise<SessionInfo | null>;

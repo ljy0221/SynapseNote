@@ -30,7 +30,7 @@ function getDefaultVersion(language: Language): string {
 
 const CodeBlock: React.FC<CodeBlockProps> = ({ id, language: initialLanguage, code, noteId, onDelete, onChange }) => {
     // 1. 상태 관리
-    const [result, setResult] = useState<ExecutionResult | null>(null);
+    const [result, setResult] = useState<SessionExecutionResult | null>(null);
     const [loading, setLoading] = useState(false);
     const [editedCode, setEditedCode] = useState(code);
     const [language, setLanguage] = useState<Language>(initialLanguage);
@@ -73,6 +73,13 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, language: initialLanguage, co
 
     // 3. 코드 실행 (API 연동) - 세션 모드 지원
     const handleRun = async () => {
+        // Session 모드에서 noteId 필수 검증
+        if (executionMode === 'session' && !noteId) {
+            alert('세션 모드는 노트를 저장한 후에만 사용할 수 있습니다.');
+            setExecutionMode('single');
+            return;
+        }
+
         setLoading(true);
         try {
             const executionResult = await window.dockerAPI.execute({
@@ -96,13 +103,15 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, language: initialLanguage, co
                 saveExecutionToBackend(noteId, id.toString(), executionResult).catch(console.error);
             }
         } catch (error: any) {
-            const errorResult: ExecutionResult = {
+            const errorResult: SessionExecutionResult = {
                 blockId: id.toString(),
                 output: '',
                 error: error.message || '알 수 없는 오류가 발생했습니다.',
                 executionTime: 0,
                 exitCode: -1,
                 status: 'error',
+                sessionId: null,
+                isSessionActive: false,
             };
             setResult(errorResult);
 
@@ -160,24 +169,23 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, language: initialLanguage, co
                         <button
                             className={`mode-button ${executionMode === 'session' ? 'active' : ''}`}
                             onClick={() => {
-                                if (!noteId) {
-                                    alert('세션 모드를 사용하려면 노트를 먼저 저장해야 합니다.');
-                                    return;
+                                // noteId 있을 때만 모드 변경
+                                if (noteId) {
+                                    setExecutionMode('session');
                                 }
-                                setExecutionMode('session');
                             }}
-                            disabled={loading}
+                            disabled={loading || !noteId}
                             style={{
                                 padding: '4px 10px',
                                 fontSize: '12px',
-                                cursor: loading ? 'not-allowed' : 'pointer',
+                                cursor: (loading || !noteId) ? 'not-allowed' : 'pointer',
                                 backgroundColor: executionMode === 'session' ? '#4A90E2' : '#555',
                                 color: 'white',
                                 border: 'none',
                                 borderRadius: '4px',
                                 opacity: !noteId ? 0.5 : 1,
                             }}
-                            title={!noteId ? '노트를 저장해야 세션 모드를 사용할 수 있습니다' : ''}
+                            title={!noteId ? '노트를 저장해야 세션 모드를 사용할 수 있습니다' : '세션 모드 활성화'}
                         >
                             Session
                         </button>

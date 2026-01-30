@@ -33,6 +33,6 @@ export interface SessionInfo {
 }
 
 export interface SessionExecutionResult extends ExecutionResult {
-  sessionId?: string;
+  sessionId: string | null;
   isSessionActive: boolean;
 }

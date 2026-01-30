@@ -319,22 +319,38 @@ export class SessionManager {
       session.currentResolve = resolve;
       session.currentReject = reject;
 
-      // 타임아웃 설정
-      const timeoutId = setTimeout(() => {
+      let timeoutId: NodeJS.Timeout | null = null;
+      let checkInterval: NodeJS.Timeout | null = null;
+
+      // 타이머 정리 헬퍼 함수
+      const cleanup = () => {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
+        if (checkInterval) {
+          clearInterval(checkInterval);
+          checkInterval = null;
+        }
         session.isWaitingForOutput = false;
+      };
+
+      // 타임아웃 설정
+      timeoutId = setTimeout(() => {
+        cleanup();  // 모든 타이머 정리
         reject(new Error('Execution timeout (5s)'));
       }, timeout);
 
       // 출력 모니터링
-      const checkInterval = setInterval(() => {
+      checkInterval = setInterval(() => {
         if (session.outputBuffer.includes(endMarker)) {
-          clearTimeout(timeoutId);
-          clearInterval(checkInterval);
-          session.isWaitingForOutput = false;
+          cleanup();  // 모든 타이머 정리
 
-          const cleanOutput = this.cleanOutput(session.outputBuffer, endMarker, session.info.language);
-
-          // 에러 감지
+          const cleanOutput = this.cleanOutput(
+            session.outputBuffer,
+            endMarker,
+            session.info.language
+          );
           const hasError = this.detectError(cleanOutput, session.info.language);
 
           resolve({
@@ -348,8 +364,7 @@ export class SessionManager {
       if (session.process.stdin) {
         session.process.stdin.write(wrappedCode + '\n');
       } else {
-        clearTimeout(timeoutId);
-        clearInterval(checkInterval);
+        cleanup();  // 모든 타이머 정리
         reject(new Error('stdin not available'));
       }
     });
@@ -392,9 +407,14 @@ export class SessionManager {
    */
   private detectError(output: string, language: Language): boolean {
     if (language === 'python') {
-      return output.includes('Error') || output.includes('Traceback');
+      // Python 에러 패턴: Traceback, XXXError:, 스택 트레이스
+      return /Traceback \(most recent call last\):/i.test(output) ||
+             /^[A-Z]\w*Error:/m.test(output) ||
+             /^\s+File ".*", line \d+/m.test(output);
     } else if (language === 'javascript') {
-      return output.includes('Error') || output.includes('Exception');
+      // JavaScript 에러 패턴: XXXError:, at 함수명 (파일:줄:열)
+      return /^[A-Z]\w*Error:/m.test(output) ||
+             /^\s+at .+ \(.+:\d+:\d+\)/m.test(output);
     }
     return false;
   }
