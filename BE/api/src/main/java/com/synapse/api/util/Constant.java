@@ -1,5 +1,7 @@
 package com.synapse.api.util;
 
+import java.time.Duration;
+
 public class Constant {
 
     private Constant() {}
@@ -11,6 +13,6 @@ public class Constant {
     public static final long REFRESH_EXPIRED = 14 * 24 * 60 * 60L; // (초 단위) 14일
 
     // Refresh Header
-    public static final String REFRESH_HEADER = "X-Refresh-Token";
+    public static final Duration TICKET_TTL = Duration.ofSeconds(60);
 
 }
