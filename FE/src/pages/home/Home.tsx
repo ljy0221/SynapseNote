@@ -4,7 +4,7 @@ import NoteStreak from '../../components/layout/noteStreak/NoteStreak';
 import './Home.css';
 
 import { getNotesApi } from '../../api/notes/Notes.api';
-import { adaptRecentNotes } from '../../api/notes/Notes.adapter';
+import { adaptNotesForSidebar } from '../../api/notes/Notes.adapter';
 
 import { getStreakApi } from '../../api/streak/Streak.api';
 import { adaptStreakDates } from '../../api/streak/Streak.adapter';
@@ -28,7 +28,7 @@ const Home: React.FC = () => {
       const [notesResult, streakResult] = results;
   
       if (notesResult.status === 'fulfilled') {
-        setRecentNotes(adaptRecentNotes(notesResult.value));
+        setRecentNotes(adaptNotesForSidebar(notesResult.value));
       } else {
         console.error('[Home] Notes 로딩 실패', notesResult.reason);
       }

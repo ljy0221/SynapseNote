@@ -27,12 +27,12 @@ export const NoteDirectory: React.FC<NoteDirectoryProps> = ({
   onSelectNote,
   onContextMenu,
 }) => {
-
   const [isOpen, setIsOpen] = useState(true);
   const isRoot = node.name === 'root';
 
   return (
     <div className="note-directory">
+      {/* 디렉토리 */}
       {!isRoot && (
         <div
           className="tree-row directory"
@@ -58,6 +58,7 @@ export const NoteDirectory: React.FC<NoteDirectoryProps> = ({
 
       {isOpen && (
         <>
+          {/* 하위 디렉토리 */}
           {node.children.map(child => (
             <NoteDirectory
               key={child.path}
@@ -71,8 +72,11 @@ export const NoteDirectory: React.FC<NoteDirectoryProps> = ({
             />
           ))}
 
+          {/* 노트 */}
           {node.notes.map(note => {
             const isFavorite = favoriteNoteIds.has(note.noteId);
+            const isTempNote =
+              !note.noteId || note.noteId.startsWith('temp-');
 
             return (
               <div
@@ -81,7 +85,10 @@ export const NoteDirectory: React.FC<NoteDirectoryProps> = ({
                   activeNoteId === note.noteId ? 'active' : ''
                 }`}
                 style={{ paddingLeft: (depth + 1) * 14 }}
-                onClick={() => onSelectNote(note.noteId)}
+                onClick={() => {
+                  console.log('[NoteDirectory] note clicked', note.noteId);
+                  onSelectNote(note.noteId);
+                }}
                 onContextMenu={(e) => {
                   e.preventDefault();
                   onContextMenu({
@@ -97,12 +104,24 @@ export const NoteDirectory: React.FC<NoteDirectoryProps> = ({
                   <FileText size={13} />
                 </span>
 
-                <span className="side-note-title">{note.title}</span>
+                <span className="side-note-title">
+                  {note.title}
+                  {isTempNote && (
+                    <span className="temp-note-label"></span>
+                  )}
+                </span>
 
                 <AddRecommendButton
                   active={isFavorite}
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (isTempNote) {
+                      console.warn(
+                        '[NoteDirectory] temp note bookmark blocked',
+                        note.noteId
+                      );
+                      return;
+                    }
                     onToggleFavorite(note.noteId);
                   }}
                 />
