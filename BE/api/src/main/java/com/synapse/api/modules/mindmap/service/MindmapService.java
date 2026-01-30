@@ -52,7 +52,7 @@ public class MindmapService {
         validNoteOwner(memberId, child);
         validNoteOwner(memberId, parent);
 
-        MindmapEdge mindMapEdge = MindmapEdge.createMindMapEdge(child, parent);
+        MindmapEdge mindMapEdge = MindmapEdge.of(child, parent);
 
         mindmapEdgeRepository.save(mindMapEdge);
     }

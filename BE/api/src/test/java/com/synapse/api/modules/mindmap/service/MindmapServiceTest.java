@@ -222,7 +222,7 @@ class MindmapServiceTest {
 
             List<Note> notes = List.of(note1, note2);
 
-            MindmapEdge edge = MindmapEdge.createMindMapEdge(note1, note2);
+            MindmapEdge edge = MindmapEdge.of(note1, note2);
             List<MindmapEdge> edges = List.of(edge);
 
             given(noteRepository.findMindMapNodesByMember(memberId)).willReturn(notes);

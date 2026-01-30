@@ -67,9 +67,11 @@ public class Note {
     private Member createdBy;
 
     @OneToMany(mappedBy = "from", cascade = CascadeType.REMOVE)
+    @Builder.Default
     private List<MindmapEdge> fanoutEdges = new ArrayList<>();
 
     @OneToMany(mappedBy = "to", cascade = CascadeType.REMOVE)
+    @Builder.Default
     private List<MindmapEdge> faninEdges = new ArrayList<>();
 
     public void updateTitle(String title) {
