@@ -11,8 +11,8 @@ export interface EnvConfig {
 
 export function loadEnv(): EnvConfig {
   return {
-    HOST: process.env.HOST ?? "0.0.0.0",
-    PORT: Number(process.env.PORT ?? 1234),
+    HOST: process.env.WS_HOST ?? "0.0.0.0",
+    PORT: Number(process.env.WS_PORT ?? 1234),
 
     SPRING_BASE_URL: process.env.SPRING_BASE_URL ?? "http://localhost:8080",
     MONGO_URI: process.env.MONGO_URI ?? "",
