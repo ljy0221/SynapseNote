@@ -1,46 +1,24 @@
 // src/components/layout/sidebar/Sidebar.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Sidebar.css';
 
-import type { NoteListItem } from '../../../types/note/getNotes';
+import type { NoteListItem } from '../../../types/note/GetNotes';
 import { buildNoteTree } from '../../features/noteDirectory/buildNoteTree';
 import { NoteDirectory } from './NoteDirectory';
 import ContextMenu from '../../common/contextMenu/ContextMenu';
-import { ContextMenuState } from '../../../types/sidebar/contextMenu';
+import { ContextMenuState } from '../../../types/sidebar/ContextMenu';
 
-/** 🔥 테스트용 mock 데이터 (나중에 제거) */
-export const mockNotes: NoteListItem[] = [
-  {
-    noteId: 'n1',
-    title: '이진 탐색',
-    directoryPath: '/알고리즘/탐색',
-    pointX: 0,
-    pointY: 0,
-    role: 'OWNER',
-    createdAt: '2026-01-20T10:00:00Z',
-    updatedAt: '2026-01-22T15:30:00Z',
-  },
-  {
-    noteId: 'n2',
-    title: '퀵 정렬',
-    directoryPath: '/알고리즘/정렬',
-    pointX: 0,
-    pointY: 0,
-    role: 'EDITOR',
-    createdAt: '2026-01-21T09:00:00Z',
-    updatedAt: '2026-01-21T14:00:00Z',
-  },
-  {
-    noteId: 'n3',
-    title: 'REST API 설계',
-    directoryPath: '/백엔드/아키텍처',
-    pointX: 0,
-    pointY: 0,
-    role: 'OWNER',
-    createdAt: '2026-01-22T08:30:00Z',
-    updatedAt: '2026-01-22T09:10:00Z',
-  },
-];
+import { getNotesApi } from '../../../api/notes/Notes.api';
+import { adaptNotesForSidebar } from '../../../api/notes/Notes.adapter';
+
+import { getBookmarksApi } from '../../../api/bookmark/Bookmarks.api';
+import { adaptBookmarkIds } from '../../../api/bookmark/Bookmarks.adapter';
+
+import { createNoteApi } from '../../../api/notes/CreateNote.api';
+import { deleteNoteApi } from '../../../api/notes/DeleteNote.api';
+
+import { adaptCreatedNoteForSidebar } from '../../../api/notes/CreateNote.adapter';
+import { adaptDeletedNoteId } from '../../../api/notes/DeleteNote.adapter';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -51,18 +29,39 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isOpen,
   onToggle,
 }) => {
-  /** 🔥 mock 기반 디렉토리 트리 */
-  const noteTree = buildNoteTree(mockNotes);
-  const [activeNoteId, setActiveNoteId] = React.useState<string | null>(null);
-  /** ⭐ 즐겨찾기 상태 */
-  const [favoriteNoteIds, setFavoriteNoteIds] = useState<Set<string>>(
-    new Set()
-  );
-
-  /** 🖱 우클릭 메뉴 상태 */
+  const [notes, setNotes] = useState<NoteListItem[]>([]);
+  const [favoriteNoteIds, setFavoriteNoteIds] =
+    useState<Set<string>>(new Set());
+  const [isLoading, setIsLoading] = useState(false);
+  const [activeNoteId, setActiveNoteId] =
+    useState<string | null>(null);
   const [contextMenu, setContextMenu] =
     useState<ContextMenuState>({ visible: false });
 
+  const noteTree = buildNoteTree(notes ?? []);
+
+  useEffect(() => {
+    const fetchSidebarData = async () => {
+      setIsLoading(true);
+      try {
+        const [notesRes, bookmarksRes] = await Promise.all([
+          getNotesApi(),
+          getBookmarksApi(),
+        ]);
+
+        setNotes(adaptNotesForSidebar(notesRes));
+        setFavoriteNoteIds(adaptBookmarkIds(bookmarksRes));
+      } catch (e) {
+        console.error('Sidebar 데이터 로딩 실패', e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSidebarData();
+  }, []);
+
+  /** 즐겨찾기 (UI 전용, API는 아직 X) */
   const handleToggleFavorite = (noteId: string) => {
     setFavoriteNoteIds(prev => {
       const next = new Set(prev);
@@ -71,27 +70,58 @@ export const Sidebar: React.FC<SidebarProps> = ({
     });
   };
 
+  /** 노트 생성 */
+  const handleCreateNote = async (directoryPath: string) => {
+    try {
+      const res = await createNoteApi({
+        title: '새 노트',
+        invitationUrl: '',
+        directoryPath,
+      });
+
+      const newNote = adaptCreatedNoteForSidebar(res);
+      setNotes(prev => [...prev, newNote]);
+    } catch (e) {
+      console.error('노트 생성 실패', e);
+    }
+  };
+
+  /** 노트 삭제 */
+  const handleDeleteNote = async (noteId: string) => {
+    try {
+      const res = await deleteNoteApi(noteId);
+      const deletedNoteId = adaptDeletedNoteId(res);
+
+      setNotes(prev =>
+        prev.filter(n => n.noteId !== deletedNoteId)
+      );
+      setActiveNoteId(prev =>
+        prev === deletedNoteId ? null : prev
+      );
+    } catch (e) {
+      console.error('노트 삭제 실패', e);
+    }
+  };
 
   return (
     <div className="sidebar-wrapper">
       <aside className={`sidebar-panel ${isOpen ? 'open' : ''}`}>
         <div className="sidebar-inner">
-          <NoteDirectory
-            node={noteTree}
-            activeNoteId={activeNoteId}
-            favoriteNoteIds={favoriteNoteIds}
-            onSelectNote={(noteId) => {
-              setActiveNoteId(noteId);
-              console.log('선택한 노트:', noteId);
-            }}
-            onToggleFavorite={handleToggleFavorite}
-            onContextMenu={setContextMenu}
-          />
+          {isLoading ? (
+            <div className="sidebar-loading">Loading...</div>
+          ) : (
+            <NoteDirectory
+              node={noteTree}
+              activeNoteId={activeNoteId}
+              favoriteNoteIds={favoriteNoteIds}
+              onSelectNote={setActiveNoteId}
+              onToggleFavorite={handleToggleFavorite}
+              onContextMenu={setContextMenu}
+            />
+          )}
         </div>
       </aside>
 
-
-      {/* 사이드바 토글 버튼 */}
       <button
         className={`sidebar-toggle-btn ${isOpen ? 'open' : ''}`}
         onClick={onToggle}
@@ -99,16 +129,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {isOpen ? '⟨' : '⟩'}
       </button>
 
-      {/* 우클릭 컨텍스트 메뉴 */}
       <ContextMenu
         state={contextMenu}
         onClose={() => setContextMenu({ visible: false })}
-        onDeleteNote={(noteId) => {
-          // noteId: string 보장
-        }}
-        onCreateNote={(directoryPath) => {
-          // directoryPath: string 보장
-        }}
+        onDeleteNote={handleDeleteNote}
+        onCreateNote={handleCreateNote}
       />
     </div>
   );

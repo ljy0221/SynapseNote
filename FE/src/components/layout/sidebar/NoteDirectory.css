@@ -51,23 +51,6 @@
 }
 
 /* =========================
-   즐겨찾기 버튼
-========================= */
-.tree-row .add-recommend-button {
-  position: absolute;
-  right: 6px;
-  top: 50%;
-  transform: translateY(-50%);
-
-  opacity: 0;
-  transition: opacity 0.15s ease;
-}
-
-.tree-row:hover .add-recommend-button {
-  opacity: 1;
-}
-
-/* =========================
    Active 노트
 ========================= */
 .tree-row.note.active {

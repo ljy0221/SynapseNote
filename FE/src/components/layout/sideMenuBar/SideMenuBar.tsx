@@ -1,18 +1,13 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, FileText, Network, Sparkles, Settings, User } from 'lucide-react';
+import { LayoutDashboard, FileText, Network, Sparkles, User } from 'lucide-react';
 import { SideMenuButton } from '../../common/sideMenuButton/SideMenuButton';
 import { UserProfileModal } from '../../common/modal/UserProfileModal';
+import { useUser } from '../../../context/UserContext';
 import './SideMenuBar.css';
 
 export const SideMenuBar: React.FC = () => {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
-
-    // TODO: 실제 유저 정보는 전역 상태(Context/Redux/Zustand)에서 가져와야 함
-    const mockUser = {
-        name: '사용자',
-        email: 'user@example.com',
-        // imageUrl: 'https://via.placeholder.com/150'
-    };
+    const { userInfo, isLoading } = useUser();
 
     return (
         <>
@@ -32,17 +27,19 @@ export const SideMenuBar: React.FC = () => {
                         icon={<User size={22} />}
                         label="내 정보"
                         onClick={() => setIsProfileOpen(true)}
+                        disabled={!userInfo || isLoading}
                     />
-                    <SideMenuButton to="/settings" icon={<Settings size={22} />} label="설정" />
                 </div>
             </nav>
 
             {/* 유저 프로필 모달 */}
-            <UserProfileModal
-                isOpen={isProfileOpen}
-                onClose={() => setIsProfileOpen(false)}
-                user={mockUser}
-            />
+            {userInfo && (
+                <UserProfileModal
+                    isOpen={isProfileOpen}
+                    onClose={() => setIsProfileOpen(false)}
+                    user={userInfo}
+                />
+            )}
         </>
     );
 };

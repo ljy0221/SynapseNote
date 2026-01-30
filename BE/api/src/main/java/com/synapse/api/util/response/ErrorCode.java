@@ -35,6 +35,20 @@ public enum ErrorCode {
     NOTE_CONTENT_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTE_005", "노트 콘텐츠를 찾을 수 없습니다"),
     NOTE_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTE_006", "노트 멤버를 찾을 수 없습니다"),
     CODE_BLOCK_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTE_007", "코드 블록을 찾을 수 없습니다"),
+    INVALID_BLOCK_TYPE(HttpStatus.BAD_REQUEST, "NOTE_008", "블록 타입이 잘못됫습니다."),
+    INVALID_BLOCK_ACCESS(HttpStatus.FORBIDDEN, "NOTE_009", "블록 접근 방식이 잘못되었습니다."),
+
+    // Invitation (NOTE_010 ~ NOTE_019)
+    INVITATION_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTE_010", "초대를 찾을 수 없습니다"),
+    INVITATION_EXPIRED(HttpStatus.GONE, "NOTE_011", "초대가 만료되었습니다"),
+    INVITATION_ALREADY_EXISTS(HttpStatus.CONFLICT, "NOTE_012", "이미 초대가 존재합니다"),
+    INVITATION_EMAIL_MISMATCH(HttpStatus.FORBIDDEN, "NOTE_013", "초대 이메일과 사용자 이메일이 일치하지 않습니다"),
+    INVITATION_NOT_ACCEPTABLE(HttpStatus.BAD_REQUEST, "NOTE_014", "수락할 수 없는 초대입니다"),
+    INVITATION_OWNER_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "NOTE_015", "OWNER 권한으로는 초대할 수 없습니다"),
+    ALREADY_NOTE_MEMBER(HttpStatus.CONFLICT, "NOTE_016", "이미 노트 멤버입니다"),
+    CANNOT_CHANGE_OWN_ROLE(HttpStatus.BAD_REQUEST, "NOTE_017", "자신의 권한은 변경할 수 없습니다"),
+    CANNOT_REMOVE_SELF(HttpStatus.BAD_REQUEST, "NOTE_018", "자기 자신은 삭제할 수 없습니다"),
+    INVITATION_ONLY_OWNER(HttpStatus.FORBIDDEN, "NOTE_019", "초대는 OWNER만 가능합니다"),
 
     // Mindmap
     NOTE_NOT_IN_MINDMAP(HttpStatus.NOT_FOUND, "MINDMAP_001", "노트가 마인드맵에 존재하지않습니다."),

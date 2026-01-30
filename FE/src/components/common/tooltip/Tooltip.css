@@ -5,6 +5,7 @@
     display: inline-flex;
 }
 
+
 .tooltip-container {
     position: absolute;
     z-index: 1000;
@@ -13,16 +14,19 @@
     /* 테마 적용 */
     background-color: var(--color-sub);
     color: var(--font-color);
-    border: 1px solid var(--color-point);
+    border: 2px solid var(--color-point);
+    /* 외곽선 두껍게 (1px -> 2px) */
 
-    /* 너비 제한 및 줄바꿈 허용 (설명이 길어질 수 있음) */
+    /* 너비 제한 및 줄바꿈 */
     width: max-content;
-    min-width: 300px;
-    max-width: 400px;
+    min-width: auto;
+    /* 불필요하게 넓은 최소 너비 제거 */
+    max-width: 300px;
     white-space: normal;
-    text-align: left;
+    text-align: center;
+    /* 텍스트 중앙 정렬 */
 
-    padding: 10px 12px;
+    padding: 8px 12px;
     border-radius: 8px;
 
     /* 그림자 효과 */
@@ -44,31 +48,29 @@
 .tooltip-title {
     display: block;
     font-size: 0.95rem;
-    /* 기존보다 약간 크게 */
     font-weight: 700;
-    /* 볼드체 */
     margin-bottom: 4px;
     color: var(--color-point);
-    /* 포인트 컬러 강조 */
 }
 
 .tooltip-desc {
     display: block;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
+    /* 폰트 사이즈 살짝 조정 */
+    font-weight: 700;
+    /* 볼드체 적용 */
     line-height: 1.4;
-    opacity: 0.9;
     word-break: keep-all;
-    /* 한글 단어 단위 줄바꿈 */
 }
 
 /* 위치별 스타일링 */
 
-/* 오른쪽 (기본) */
+/* 오른쪽 */
 .tooltip-container.right {
     left: 100%;
     top: 50%;
-    transform: translateY(-50%) translateX(20px) scale(0.95);
-    margin-left: 20px;
+    transform: translateY(-50%) translateX(10px) scale(0.95);
+    margin-left: 10px;
 }
 
 .tooltip-container.visible.right {
@@ -79,8 +81,8 @@
 .tooltip-container.left {
     right: 100%;
     top: 50%;
-    transform: translateY(-50%) translateX(-20px) scale(0.95);
-    margin-right: 20px;
+    transform: translateY(-50%) translateX(-10px) scale(0.95);
+    margin-right: 10px;
 }
 
 .tooltip-container.visible.left {
@@ -91,22 +93,36 @@
 .tooltip-container.top {
     bottom: 100%;
     left: 50%;
-    transform: translateX(-50%) translateY(-15px) scale(0.95);
-    margin-bottom: 20px;
+    transform: translateX(-50%) translateY(-10px) scale(0.95);
+    margin-bottom: 10px;
 }
 
 .tooltip-container.visible.top {
     transform: translateX(-50%) translateY(0) scale(1);
 }
 
-/* 아래쪽 */
+/* 아래쪽 (기본 중앙 정렬) */
 .tooltip-container.bottom {
     top: 100%;
     left: 50%;
-    transform: translateX(-50%) translateY(15px) scale(0.95);
-    margin-top: 20px;
+    transform: translateX(-50%) translateY(10px) scale(0.95);
+    margin-top: 10px;
 }
 
 .tooltip-container.visible.bottom {
     transform: translateX(-50%) translateY(0) scale(1);
+}
+
+/* 아래쪽 - 우측 정렬 (버튼의 오른쪽 끝에 맞춤) */
+.tooltip-container.bottom-end {
+    top: 100%;
+    right: 0;
+    /* 부모(버튼)의 오른쪽 끝 기준 */
+    transform: translateY(10px) scale(0.95);
+    margin-top: 10px;
+    text-align: right;
+}
+
+.tooltip-container.visible.bottom-end {
+    transform: translateY(0) scale(1);
 }

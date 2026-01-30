@@ -1,0 +1,98 @@
+import React, { useEffect, useRef } from 'react';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { socialLogin } from '../../api/authApi';
+import { useUser } from '../../context/UserContext';
+
+const OAuthCallback: React.FC = () => {
+    const { provider } = useParams<{ provider: string }>();
+    const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
+    const processedRef = useRef(false);
+    const { login } = useUser();
+
+    useEffect(() => {
+        const code = searchParams.get('code');
+
+        if (!provider || !code) {
+            alert('잘못된 접근입니다.');
+            navigate('/login');
+            return;
+        }
+
+        // 1. 브라우저 환경인지 확인 (electronAPI가 없으면 브라우저로 간주)
+        if (!window.electronAPI) {
+            console.log('[OAuthCallback] Running in Browser -> Redirecting to Deep Link');
+
+            const deepLink = `synapse://auth/${provider}/callback?code=${code}`;
+            window.location.href = deepLink;
+
+            // 브라우저 닫기 시도 (일부 브라우저는 차단할 수 있음)
+            setTimeout(() => {
+                window.close();
+            }, 3000);
+            return;
+        }
+
+        // 2. Electron 환경이면 기존 로그인 로직 수행
+        if (processedRef.current) return;
+        processedRef.current = true;
+
+        const handleLogin = async () => {
+            try {
+                console.log(`[OAuth] Processing login for ${provider} with code...`);
+                const result = await socialLogin(provider, code);
+
+                // Context를 통해 로그인 처리 (토큰 저장 및 유저 정보 갱신)
+                await login(result.accessToken);
+
+                console.log('[OAuth] Login success');
+                navigate('/home', { replace: true });
+            } catch (error: any) {
+                console.error('[OAuth] Login failed:', error);
+
+                // 에러 발생 시 토스트는 UserContext나 App 차원에서 처리될 수도 있지만
+                // 여기서는 흐름상 alert 혹은 토스트가 필요함. 
+                // Context의 toast 기능을 쓰고 싶다면 useToast를 가져와야 함.
+                // 하지만 UserProvider 내부에서 에러 토스트를 띄우는 로직은 fetchUserInfo에 있음.
+                // socialLogin 실패는 여기서 처리해야 함.
+                alert(`로그인 실패: ${error.message}`);
+                navigate('/login', { replace: true });
+            }
+        };
+
+        handleLogin();
+    }, [provider, searchParams, navigate, login]);
+
+    // 브라우저용 안내 화면
+    if (!window.electronAPI) {
+        return (
+            <div style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', textAlign: 'center'
+            }}>
+                <h2>로그인 완료</h2>
+                <p>브라우저 팝업이 뜨면 <b>'Synapse 열기'</b>를 클릭해주세요.</p>
+                <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '10px' }}>
+                    * '항상 허용'을 체크하시면 다음부터는 자동으로 로그인됩니다.
+                </p>
+            </div>
+        );
+    }
+
+    // Electron용 로딩 화면
+    return (
+        <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100vh',
+            backgroundColor: 'var(--color-bg)',
+            color: 'var(--font-color)'
+        }}>
+            <h2>로그인 처리 중...</h2>
+            <p>잠시만 기다려주세요.</p>
+        </div>
+    );
+};
+
+export default OAuthCallback;

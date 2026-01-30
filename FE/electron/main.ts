@@ -65,6 +65,12 @@ ipcMain.on('window-maximize', () => {
 ipcMain.on('window-close', () => {
   win?.close();
 });
+
+// 외부 브라우저 열기
+import { shell } from 'electron';
+ipcMain.on('open-external', (_, url: string) => {
+  shell.openExternal(url);
+});
 // ==========================================
 
 app.on('window-all-closed', () => {
@@ -97,4 +103,42 @@ ipcMain.handle('docker:execute-single', async (event, request) => {
   return await execService.executeSingle(request);
 });
 
-app.whenReady().then(createWindow)
+
+// Deep Link 설정
+if (process.defaultApp) {
+  if (process.argv.length >= 2) {
+    app.setAsDefaultProtocolClient('synapse', process.execPath, [path.resolve(process.argv[1])])
+  }
+} else {
+  app.setAsDefaultProtocolClient('synapse')
+}
+
+const gotTheLock = app.requestSingleInstanceLock()
+
+if (!gotTheLock) {
+  app.quit()
+} else {
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
+    // 누군가 두 번째 인스턴스를 실행하려고 하면 메인 윈도우를 포커스
+    if (win) {
+      if (win.isMinimized()) win.restore()
+      win.focus()
+
+      // Deep Link URL 찾기 (Windows/Linux)
+      const url = commandLine.find((arg) => arg.startsWith('synapse://'));
+      if (url) {
+        win.webContents.send('deep-link-url', url);
+      }
+    }
+  })
+
+  // macOS용 open-url 이벤트
+  app.on('open-url', (event, url) => {
+    event.preventDefault();
+    if (win) {
+      win.webContents.send('deep-link-url', url);
+    }
+  });
+
+  app.whenReady().then(createWindow)
+}
