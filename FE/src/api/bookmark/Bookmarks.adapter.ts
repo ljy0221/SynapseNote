@@ -1,11 +1,22 @@
-// src/api/bookmark/Bookmarks.adapter.ts
-import type { ApiResponse } from '../../types/common/apiResponse';
-import { GetBookmarksResponse } from '../../types/bookmark/BookmarkResponse';
+import type {
+  GetBookmarksResponse,
+} from '../../types/bookmark/BookmarkResponse';
+import type { BookmarkedNote } from '../../types/bookmark/Bookmark';
 
+/**
+ * ✔ 북마크 목록 렌더링용
+ */
+export const adaptBookmarkedNotes = (
+  res: GetBookmarksResponse
+): BookmarkedNote[] => {
+  return res.content;
+};
+
+/**
+ * ✔ 즐겨찾기 여부 판단용 (기존 유지)
+ */
 export const adaptBookmarkIds = (
-  res: ApiResponse<GetBookmarksResponse>
+  res: GetBookmarksResponse
 ): Set<string> => {
-  return new Set(
-    res.data.content.map(note => note.id)
-  );
+  return new Set(res.content.map(note => note.id));
 };
