@@ -17,9 +17,9 @@ public record NoteMemberResponse(
 ) {
     public static NoteMemberResponse from(NoteMember noteMember) {
         return NoteMemberResponse.builder()
-                .userId(noteMember.getUser().getId())
-                .userName(noteMember.getUser().getName())
-                .email(noteMember.getUser().getEmail())
+                .userId(noteMember.getMember().getId())
+                .userName(noteMember.getMember().getName())
+                .email(noteMember.getMember().getEmail())
                 .role(noteMember.getRole())
                 .joinedAt(noteMember.getCreatedAt())
                 .build();

@@ -1,6 +1,6 @@
 package com.synapse.api.modules.note.entity;
 
-import com.synapse.api.modules.user.entity.User;
+import com.synapse.api.modules.member.entity.Member;
 import com.synapse.api.util.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -41,14 +41,14 @@ public class Invitation extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "invited_by_id", nullable = false)
-    private User invitedBy;
+    private Member invitedBy;
 
     @Column(name = "invited_email", nullable = false, length = 255)
     private String invitedEmail;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "invited_user_id")
-    private User invitedUser;
+    @JoinColumn(name = "invited_member_id")
+    private Member invitedMember;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -64,8 +64,8 @@ public class Invitation extends BaseEntity {
     @Column(name = "accepted_at")
     private LocalDateTime acceptedAt;
 
-    public void accept(User user) {
-        this.invitedUser = user;
+    public void accept(Member member) {
+        this.invitedMember = member;
         this.status = InvitationStatus.ACCEPTED;
         this.acceptedAt = LocalDateTime.now();
     }
