@@ -1,5 +1,5 @@
 // src/components/layout/sidebar/NoteDirectory.tsx
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import './NoteDirectory.css';
 import type { NoteTreeNode } from '../../features/noteDirectory/buildNoteTree';
 import AddRecommendButton from '../../common/addRecommendButton/AddRecommendButton';
@@ -10,29 +10,35 @@ interface NoteDirectoryProps {
   node: NoteTreeNode;
   depth?: number;
   activeNoteId?: string | null;
+  editingNoteId?: string | null;
 
   favoriteNoteIds: Set<string>;
   onToggleFavorite: (noteId: string) => void;
 
   onSelectNote: (noteId: string) => void;
   onContextMenu: (state: ContextMenuState) => void;
+
+  onConfirmRename: (noteId: string, newTitle: string) => void;
+  onCancelRename: () => void;
 }
 
 export const NoteDirectory: React.FC<NoteDirectoryProps> = ({
   node,
   depth = 0,
   activeNoteId,
+  editingNoteId,
   favoriteNoteIds,
   onToggleFavorite,
   onSelectNote,
   onContextMenu,
+  onConfirmRename,
+  onCancelRename,
 }) => {
   const [isOpen, setIsOpen] = useState(true);
   const isRoot = node.name === 'root';
 
   return (
     <div className="note-directory">
-      {/* 디렉토리 */}
       {!isRoot && (
         <div
           className="tree-row directory"
@@ -58,23 +64,25 @@ export const NoteDirectory: React.FC<NoteDirectoryProps> = ({
 
       {isOpen && (
         <>
-          {/* 하위 디렉토리 */}
           {node.children.map(child => (
             <NoteDirectory
               key={child.path}
               node={child}
               depth={depth + 1}
               activeNoteId={activeNoteId}
+              editingNoteId={editingNoteId}
               favoriteNoteIds={favoriteNoteIds}
               onToggleFavorite={onToggleFavorite}
               onSelectNote={onSelectNote}
               onContextMenu={onContextMenu}
+              onConfirmRename={onConfirmRename}
+              onCancelRename={onCancelRename}
             />
           ))}
 
-          {/* 노트 */}
           {node.notes.map(note => {
             const isFavorite = favoriteNoteIds.has(note.noteId);
+            const isEditing = editingNoteId === note.noteId;
             const isTempNote =
               !note.noteId || note.noteId.startsWith('temp-');
 
@@ -86,8 +94,9 @@ export const NoteDirectory: React.FC<NoteDirectoryProps> = ({
                 }`}
                 style={{ paddingLeft: (depth + 1) * 14 }}
                 onClick={() => {
-                  console.log('[NoteDirectory] note clicked', note.noteId);
-                  onSelectNote(note.noteId);
+                  if (!isEditing) {
+                    onSelectNote(note.noteId);
+                  }
                 }}
                 onContextMenu={(e) => {
                   e.preventDefault();
@@ -104,24 +113,25 @@ export const NoteDirectory: React.FC<NoteDirectoryProps> = ({
                   <FileText size={13} />
                 </span>
 
-                <span className="side-note-title">
-                  {note.title}
-                  {isTempNote && (
-                    <span className="temp-note-label"></span>
-                  )}
-                </span>
+                {isEditing && !isTempNote ? (
+                  <InlineTitleEditor
+                    initialValue={note.title}
+                    onConfirm={(value) =>
+                      onConfirmRename(note.noteId, value)
+                    }
+                    onCancel={onCancelRename}
+                  />
+                ) : (
+                  <span className="side-note-title">
+                    {note.title}
+                  </span>
+                )}
 
                 <AddRecommendButton
                   active={isFavorite}
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (isTempNote) {
-                      console.warn(
-                        '[NoteDirectory] temp note bookmark blocked',
-                        note.noteId
-                      );
-                      return;
-                    }
+                    if (isTempNote) return;
                     onToggleFavorite(note.noteId);
                   }}
                 />
@@ -133,3 +143,44 @@ export const NoteDirectory: React.FC<NoteDirectoryProps> = ({
     </div>
   );
 };
+
+function InlineTitleEditor({
+  initialValue,
+  onConfirm,
+  onCancel,
+}: {
+  initialValue: string;
+  onConfirm: (value: string) => void;
+  onCancel: () => void;
+}) {
+  const [value, setValue] = useState(initialValue);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+    inputRef.current?.select();
+  }, []);
+
+  return (
+    <input
+      ref={inputRef}
+      className="inline-title-input"
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      onBlur={() => {
+        // 외부 클릭 시 무조건 취소
+        onCancel();
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          onConfirm(value.trim());
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          onCancel();
+        }
+      }}
+    />
+  );
+}
