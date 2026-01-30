@@ -27,5 +27,11 @@ electron.contextBridge.exposeInMainWorld("electronAPI", {
 electron.contextBridge.exposeInMainWorld("dockerAPI", {
   checkInstalled: () => electron.ipcRenderer.invoke("docker:check-installed"),
   checkRunning: () => electron.ipcRenderer.invoke("docker:check-running"),
+  // NEW: 통합 실행
+  execute: (request) => electron.ipcRenderer.invoke("docker:execute", request),
+  // NEW: 세션 관리
+  getSessionStatus: (noteId, language) => electron.ipcRenderer.invoke("docker:get-session-status", noteId, language),
+  destroySession: (noteId, language) => electron.ipcRenderer.invoke("docker:destroy-session", noteId, language),
+  // 기존 호환성 유지
   executeSingle: (request) => electron.ipcRenderer.invoke("docker:execute-single", request)
 });

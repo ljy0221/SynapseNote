@@ -4,7 +4,9 @@ import NoteBookmarkItem from './NoteBookmarkItem';
 import type { BookmarkedNote } from '../../../types/bookmark/Bookmark';
 
 import { getBookmarksApi } from '../../../api/bookmark/Bookmarks.api';
-import { adaptBookmarkIds } from '../../../api/bookmark/Bookmarks.adapter';
+import {
+  adaptBookmarkedNotes,
+} from '../../../api/bookmark/Bookmarks.adapter';
 
 const NoteBookmarkList = () => {
   const [notes, setNotes] = useState<BookmarkedNote[]>([]);
@@ -15,10 +17,20 @@ const NoteBookmarkList = () => {
       setIsLoading(true);
       try {
         const res = await getBookmarksApi();
-        const adapted = adaptBookmarkIds(res);
-        setNotes(prev => prev.filter(n => adapted.has(n.id)));
+        const bookmarkedNotes = adaptBookmarkedNotes(res);
+
+        setNotes(bookmarkedNotes);
+
+        // ✅ 성공 로그 (개발용)
+        console.log(
+          '[NoteBookmarkList] 즐겨찾기 로딩 성공',
+          {
+            count: bookmarkedNotes.length,
+            notes: bookmarkedNotes,
+          }
+        );
       } catch (e) {
-        console.error('즐겨찾기 로딩 실패', e);
+        console.error('[NoteBookmarkList] 즐겨찾기 로딩 실패', e);
       } finally {
         setIsLoading(false);
       }
@@ -31,8 +43,12 @@ const NoteBookmarkList = () => {
     // optimistic UI
     setNotes(prev => prev.filter(n => n.id !== noteId));
 
+    console.log(
+      '[NoteBookmarkList] 즐겨찾기 제거 (optimistic)',
+      { noteId }
+    );
+
     // TODO: removeBookmarkApi(noteId)
-    // .catch(() => rollback)
   };
 
   if (isLoading) {
