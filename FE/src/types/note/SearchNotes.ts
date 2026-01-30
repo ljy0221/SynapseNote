@@ -1,6 +1,6 @@
 // 검색 결과 단일 노트
 export interface SearchedNote {
-  id: string;
+  noteId: string;
   title: string;
   directoryPath: string;
   pointX: number | null;

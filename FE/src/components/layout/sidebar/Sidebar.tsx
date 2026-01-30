@@ -12,7 +12,11 @@ import type { ContextMenuState } from '../../../types/sidebar/ContextMenu';
 import { getNotesApi } from '../../../api/notes/Notes.api';
 import { adaptNotesForSidebar } from '../../../api/notes/Notes.adapter';
 
-import { getBookmarksApi } from '../../../api/bookmark/Bookmarks.api';
+import {
+  getBookmarksApi,
+  addBookmarkApi,
+  removeBookmarkApi,
+} from '../../../api/bookmark/Bookmarks.api';
 import { adaptBookmarkIds } from '../../../api/bookmark/Bookmarks.adapter';
 
 import { createNoteApi } from '../../../api/notes/CreateNote.api';
@@ -23,6 +27,8 @@ import {
   emitNotesChanged,
 } from '../../../events/NotesEvents';
 
+import { useNavigate, useParams } from 'react-router-dom';
+
 interface SidebarProps {
   isOpen: boolean;
   onToggle: () => void;
@@ -32,21 +38,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isOpen,
   onToggle,
 }) => {
+  const navigate = useNavigate();
+  const { noteId: routeNoteId } = useParams<{ noteId: string }>();
+
+  /** ✅ active 상태의 단일 기준 = URL */
+  const activeNoteId = routeNoteId ?? null;
+
   const [notes, setNotes] = useState<NoteListItem[]>([]);
   const [favoriteNoteIds, setFavoriteNoteIds] =
     useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
-  const [activeNoteId, setActiveNoteId] =
-    useState<string | null>(null);
   const [contextMenu, setContextMenu] =
     useState<ContextMenuState>({ visible: false });
 
-  const noteTree = buildNoteTree(notes ?? []);
+  const noteTree = buildNoteTree(notes);
 
   /**
    * Sidebar 단일 진실 소스
-   * - 최초 로딩
-   * - notes:changed 이벤트 수신 시
    */
   const fetchSidebarData = async () => {
     setIsLoading(true);
@@ -56,10 +64,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
         getBookmarksApi(),
       ]);
 
+      console.log('[Sidebar][RAW] bookmarksRes', bookmarksRes);
+
+      const adaptedBookmarkIds = adaptBookmarkIds(bookmarksRes);
+      console.log(
+        '[Sidebar] adaptedBookmarkIds',
+        Array.from(adaptedBookmarkIds)
+      );
+
       setNotes(adaptNotesForSidebar(notesRes));
-      setFavoriteNoteIds(adaptBookmarkIds(bookmarksRes));
-    } catch (e) {
-      console.error('Sidebar 데이터 로딩 실패', e);
+      setFavoriteNoteIds(adaptedBookmarkIds);
     } finally {
       setIsLoading(false);
     }
@@ -81,23 +95,54 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }, []);
 
   /**
-   * 즐겨찾기 토글 (UI 전용)
+   * ✅ 노트 선택 → URL 변경
    */
-  const handleToggleFavorite = (noteId: string) => {
-    setFavoriteNoteIds(prev => {
-      const next = new Set(prev);
-      next.has(noteId) ? next.delete(noteId) : next.add(noteId);
-      return next;
-    });
+  const handleSelectNote = (noteId: string) => {
+    if (!noteId || noteId.startsWith('temp-')) return;
+    navigate(`/notes/${noteId}`);
   };
 
   /**
-   * 노트 생성
-   * - Optimistic Update
-   * - 서버 성공 후 전체 재동기화
+   * ✅ 즐겨찾기 토글
+   */
+  const handleToggleFavorite = async (noteId: string) => {
+    if (!noteId || noteId.startsWith('temp-')) return;
+
+    const isFavorite = favoriteNoteIds.has(noteId);
+
+    // optimistic UI
+    setFavoriteNoteIds(prev => {
+      const next = new Set(prev);
+      isFavorite ? next.delete(noteId) : next.add(noteId);
+      return next;
+    });
+
+    try {
+      if (isFavorite) {
+        await removeBookmarkApi(noteId);
+        console.log('[Sidebar] 즐겨찾기 제거 성공', noteId);
+      } else {
+        await addBookmarkApi(noteId);
+        console.log('[Sidebar] 즐겨찾기 추가 성공', noteId);
+      }
+    } catch (e) {
+      console.error('[Sidebar] 즐겨찾기 토글 실패', e);
+
+      // rollback
+      setFavoriteNoteIds(prev => {
+        const next = new Set(prev);
+        isFavorite ? next.add(noteId) : next.delete(noteId);
+        return next;
+      });
+    }
+  };
+
+  /**
+   * 노트 생성 (optimistic)
    */
   const handleCreateNote = async (directoryPath: string) => {
     const tempNote: NoteListItem = {
+      userId: 'temp-user',
       noteId: `temp-${Date.now()}`,
       title: '새 노트',
       directoryPath,
@@ -108,7 +153,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       updatedAt: new Date().toISOString(),
     };
 
-    // 🔹 즉시 UI 반영
     setNotes(prev => [...prev, tempNote]);
 
     try {
@@ -117,36 +161,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
         invitationUrl: '',
         directoryPath,
       });
-
-      // 🔹 서버 기준으로 재동기화
       emitNotesChanged();
     } catch (e) {
-      // ❌ 실패 시 롤백
       setNotes(prev =>
         prev.filter(n => n.noteId !== tempNote.noteId)
       );
-      console.error('노트 생성 실패', e);
+      console.error('[Sidebar] 노트 생성 실패', e);
     }
   };
 
   /**
    * 노트 삭제
-   * - Optimistic Update
-   * - 실패 시 서버 기준으로 복구
    */
   const handleDeleteNote = async (noteId: string) => {
-    // 🔹 즉시 UI 반영
     setNotes(prev => prev.filter(n => n.noteId !== noteId));
-    setActiveNoteId(prev =>
-      prev === noteId ? null : prev
-    );
 
     try {
       await deleteNoteApi(noteId);
       emitNotesChanged();
     } catch (e) {
-      console.error('노트 삭제 실패', e);
-      // ❌ 실패 시 서버 기준 복구
+      console.error('[Sidebar] 노트 삭제 실패', e);
       emitNotesChanged();
     }
   };
@@ -162,7 +196,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               node={noteTree}
               activeNoteId={activeNoteId}
               favoriteNoteIds={favoriteNoteIds}
-              onSelectNote={setActiveNoteId}
+              onSelectNote={handleSelectNote}
               onToggleFavorite={handleToggleFavorite}
               onContextMenu={setContextMenu}
             />

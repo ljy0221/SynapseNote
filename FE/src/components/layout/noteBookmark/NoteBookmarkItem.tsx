@@ -12,7 +12,7 @@ const NoteBookmarkItem = ({ note, onRemove }: Props) => {
   const navigate = useNavigate();
 
   const handleClick = () => {
-    navigate(`/note/${note.id}`);
+    navigate(`/note/${note.noteId}`);
   };
 
   return (
@@ -33,7 +33,7 @@ const NoteBookmarkItem = ({ note, onRemove }: Props) => {
         className="note-bookmark-remove"
         onClick={(e) => {
           e.stopPropagation();
-          onRemove?.(note.id);
+          onRemove?.(note.noteId);
         }}
         aria-label="즐겨찾기 제거"
       >
