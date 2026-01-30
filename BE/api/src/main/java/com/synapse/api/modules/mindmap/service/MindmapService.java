@@ -39,7 +39,7 @@ public class MindmapService {
 
         validNoteOwner(userId, note);
 
-        note.setMindMapNode(request.pointX(), request.pointY());
+        note.updatePosition(request.pointX(), request.pointY());
     }
 
     @Transactional

@@ -1,4 +1,4 @@
-import type { NoteListItem } from '../../../types/note/getNotes';
+import type { NoteListItem } from '../../../types/note/GetNotes';
 
 export interface NoteTreeNode {
   name: string;
@@ -7,7 +7,9 @@ export interface NoteTreeNode {
   notes: NoteListItem[];
 }
 
-export function buildNoteTree(notes: NoteListItem[]): NoteTreeNode {
+export function buildNoteTree(
+  notes: NoteListItem[] = []
+): NoteTreeNode {
   const root: NoteTreeNode = {
     name: 'root',
     path: '/',

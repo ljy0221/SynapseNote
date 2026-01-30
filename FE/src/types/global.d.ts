@@ -11,8 +11,9 @@ declare global {
       minimize: () => void;
       maximize: () => void;
       close: () => void;
+      openExternal: (url: string) => void;
     };
   }
 }
 
-export {};
+export { };

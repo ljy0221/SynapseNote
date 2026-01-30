@@ -198,6 +198,29 @@
     background-color: rgba(255, 77, 77, 0.05);
 }
 
+/* 로그아웃 버튼 */
+.btn-logout {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    background-color: var(--color-sub);
+    color: var(--font-color);
+    border: none;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    margin-bottom: 20px;
+}
+
+.btn-logout:hover {
+    background-color: var(--color-hover);
+    transform: translateY(-1px);
+}
+
 @keyframes fadeIn {
     from {
         opacity: 0;

@@ -4,7 +4,7 @@ import './NoteDirectory.css';
 import type { NoteTreeNode } from '../../features/noteDirectory/buildNoteTree';
 import AddRecommendButton from '../../common/addRecommendButton/AddRecommendButton';
 import { Folder, FolderOpen, FileText } from 'lucide-react';
-import { ContextMenuState } from '../../../types/sidebar/contextMenu';
+import { ContextMenuState } from '../../../types/sidebar/ContextMenu';
 
 interface NoteDirectoryProps {
   node: NoteTreeNode;

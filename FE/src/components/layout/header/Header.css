@@ -74,3 +74,14 @@ input,
 textarea {
     -webkit-app-region: no-drag !important;
 }
+
+.search-bar-wrapper {
+  position: relative; /* 🔥 기준점 */
+  width: 100%;
+}
+.search-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 100%; /* 이제 SearchBar 기준 */
+}

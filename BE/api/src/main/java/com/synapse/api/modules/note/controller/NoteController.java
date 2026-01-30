@@ -1,8 +1,16 @@
 package com.synapse.api.modules.note.controller;
 
-import com.synapse.api.modules.note.dto.*;
+import com.synapse.api.modules.block.dto.response.BlockPageResponse;
+import com.synapse.api.modules.note.dto.request.ExecutionHistoryRequest;
+import com.synapse.api.modules.note.dto.request.NoteCreateRequest;
+import com.synapse.api.modules.note.dto.request.NoteUpdateRequest;
+import com.synapse.api.modules.note.dto.response.ExecutionHistoryResponse;
+import com.synapse.api.modules.note.dto.response.NoteDetailResponse;
+import com.synapse.api.modules.note.dto.response.NotePageResponse;
+import com.synapse.api.modules.note.dto.response.NoteResponse;
 import com.synapse.api.modules.note.service.NoteService;
 import com.synapse.api.util.response.DataResponse;
+import com.synapse.api.util.response.StatusResponse;
 import com.synapse.api.util.response.SuccessCode;
 import com.synapse.api.util.security.CustomUserDetails;
 import jakarta.validation.Valid;
@@ -33,11 +41,13 @@ public class NoteController {
     }
 
     @GetMapping("/v1/notes")
-    public DataResponse<List<NoteResponse>> getAllNotes(
-            @AuthenticationPrincipal CustomUserDetails details) {
+    public DataResponse<NotePageResponse> getAllNotes(
+            @AuthenticationPrincipal CustomUserDetails details,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
         UUID userId = details.id();
-        log.info("Getting all notes for user: {}", userId);
-        List<NoteResponse> response = noteService.getAllNotes(userId);
+        log.info("Getting all notes for user: {} (page: {}, size: {})", userId, page, size);
+        NotePageResponse response = noteService.getAllNotes(userId, page - 1, size);
         return DataResponse.of(response);
     }
 
@@ -62,18 +72,6 @@ public class NoteController {
         return DataResponse.of(response);
     }
 
-    @PatchMapping("/v1/notes/{noteId}/position")
-    public DataResponse<Void> updatePosition(
-            @AuthenticationPrincipal CustomUserDetails details,
-            @PathVariable UUID noteId,
-            @Valid @RequestBody NotePositionUpdateRequest request) {
-        UUID userId = details.id();
-        // [수정됨] Record 접근자 사용: getPointX() -> pointX(), getPointY() -> pointY()
-        log.info("Updating note position: {} to ({}, {})", noteId, request.pointX(), request.pointY());
-        noteService.updatePosition(noteId, userId, request);
-        return DataResponse.of(SuccessCode.NO_CONTENT, null);
-    }
-
     @DeleteMapping("/v1/notes/{noteId}")
     public DataResponse<Void> deleteNote(
             @AuthenticationPrincipal CustomUserDetails details,
@@ -95,7 +93,7 @@ public class NoteController {
     }
 
     @PostMapping("/v1/notes/{noteId}/blocks/{blockId}/executions")
-    public DataResponse<Void> saveExecutionHistory(
+    public StatusResponse saveExecutionHistory(
             @AuthenticationPrincipal CustomUserDetails details,
             @PathVariable UUID noteId,
             @PathVariable String blockId,
@@ -103,19 +101,84 @@ public class NoteController {
         UUID userId = details.id();
         log.info("Saving execution history for block: {} in note: {}", blockId, noteId);
         noteService.saveExecutionHistory(noteId, blockId, userId, request);
-        return DataResponse.of(null);
+        return StatusResponse.of();
     }
 
     @GetMapping("/v1/notes/{noteId}/blocks/{blockId}/executions")
     public DataResponse<List<ExecutionHistoryResponse>> getExecutionHistory(
             @AuthenticationPrincipal CustomUserDetails details,
             @PathVariable UUID noteId,
-            @PathVariable String blockId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @PathVariable String blockId) {
         UUID userId = details.id();
         log.info("Getting execution history for block: {} in note: {}", blockId, noteId);
-        List<ExecutionHistoryResponse> response = noteService.getExecutionHistory(noteId, blockId, userId, page, size);
+        List<ExecutionHistoryResponse> response = noteService.getExecutionHistory(noteId, blockId, userId);
+        return DataResponse.of(response);
+    }
+
+    /**
+     * 노트 즐겨찾기
+     */
+
+    @PostMapping("/v1/notes/{noteId}/bookmarks")
+    public StatusResponse bookmarkNote(
+            @AuthenticationPrincipal CustomUserDetails details,
+            @PathVariable UUID noteId) {
+        UUID userId = details.id();
+        noteService.bookmarkNote(userId, noteId);
+        return StatusResponse.of();
+    }
+
+    @DeleteMapping("/v1/notes/{noteId}/bookmarks")
+    public StatusResponse unbookmarkNote(
+            @AuthenticationPrincipal CustomUserDetails details,
+            @PathVariable UUID noteId) {
+        UUID userId = details.id();
+        noteService.unbookmarkNote(userId, noteId);
+        return StatusResponse.of();
+    }
+
+    @GetMapping("/v1/notes/bookmarks")
+    public DataResponse<NotePageResponse> getNoteBookmarks(
+            @AuthenticationPrincipal CustomUserDetails details,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        UUID userId = details.id();
+        NotePageResponse response = noteService.getNoteBookmarks(userId, page - 1, size);
+        return DataResponse.of(response);
+    }
+
+    /**
+     * 블록 즐겨찾기
+     */
+
+    @PostMapping("/v1/notes/{noteId}/blocks/{blockId}/bookmarks")
+    public StatusResponse bookmarkBlock(
+            @AuthenticationPrincipal CustomUserDetails details,
+            @PathVariable UUID noteId,
+            @PathVariable String blockId) {
+        UUID userId = details.id();
+        noteService.bookmarkBlock(userId, noteId, blockId);
+        return StatusResponse.of();
+    }
+
+    @DeleteMapping("/v1/notes/{noteId}/blocks/{blockId}/bookmarks")
+    public StatusResponse unbookmarkBlock(
+            @AuthenticationPrincipal CustomUserDetails details,
+            @PathVariable UUID noteId,
+            @PathVariable String blockId) {
+        UUID userId = details.id();
+        noteService.unbookmarkBlock(userId, noteId, blockId);
+        return StatusResponse.of();
+    }
+
+    @GetMapping("/v1/notes/{noteId}/blocks/bookmarks")
+    public DataResponse<BlockPageResponse> getBlockBookmarks(
+            @AuthenticationPrincipal CustomUserDetails details,
+            @PathVariable UUID noteId,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        UUID userId = details.id();
+        BlockPageResponse response = noteService.getBlockBookmarks(userId, noteId, page - 1, size);
         return DataResponse.of(response);
     }
 }
