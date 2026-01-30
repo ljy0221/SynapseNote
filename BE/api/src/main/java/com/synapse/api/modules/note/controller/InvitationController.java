@@ -6,7 +6,7 @@ import com.synapse.api.modules.note.dto.response.InvitationResponse;
 import com.synapse.api.modules.note.service.InvitationService;
 import com.synapse.api.util.response.DataResponse;
 import com.synapse.api.util.response.SuccessCode;
-import com.synapse.api.util.security.CustomUserDetails;
+import com.synapse.api.util.security.CustomMemberDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +29,7 @@ public class InvitationController {
      */
     @PostMapping("/v1/notes/{noteId}/invitations")
     public DataResponse<InvitationResponse> createInvitation(
-            @AuthenticationPrincipal CustomUserDetails details,
+            @AuthenticationPrincipal CustomMemberDetails details,
             @PathVariable UUID noteId,
             @Valid @RequestBody InvitationCreateRequest request) {
         UUID userId = details.id();
@@ -44,7 +44,7 @@ public class InvitationController {
      */
     @PostMapping("/v1/notes/invitations/{token}/accept")
     public DataResponse<InvitationAcceptResponse> acceptInvitation(
-            @AuthenticationPrincipal CustomUserDetails details,
+            @AuthenticationPrincipal CustomMemberDetails details,
             @PathVariable UUID token) {
         UUID userId = details.id();
         log.info("User: {} accepting invitation with token: {}", userId, token);
