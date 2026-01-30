@@ -90,6 +90,12 @@ app.on('activate', () => {
 const healthService = new DockerHealthService();
 const execService = new DockerExecService();
 
+// 앱 종료 시 정리
+app.on('will-quit', async () => {
+  console.log('[Main] Cleaning up sessions before quit');
+  await execService.cleanup();
+});
+
 // Docker IPC 핸들러
 ipcMain.handle('docker:check-installed', async () => {
   return await healthService.checkInstalled();
@@ -99,6 +105,22 @@ ipcMain.handle('docker:check-running', async () => {
   return await healthService.checkRunning();
 });
 
+// NEW: 통합 실행 핸들러
+ipcMain.handle('docker:execute', async (event, request) => {
+  return await execService.execute(request);
+});
+
+// NEW: 세션 상태 조회
+ipcMain.handle('docker:get-session-status', async (event, noteId, language) => {
+  return execService.getSessionStatus(noteId, language);
+});
+
+// NEW: 세션 종료
+ipcMain.handle('docker:destroy-session', async (event, noteId, language) => {
+  return await execService.destroySession(noteId, language);
+});
+
+// 기존 호환성 유지
 ipcMain.handle('docker:execute-single', async (event, request) => {
   return await execService.executeSingle(request);
 });

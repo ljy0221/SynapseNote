@@ -1,10 +1,10 @@
-import type { BookmarkNoteItem } from '../../../types/bookmark/GetBookmarks';
+import type { BookmarkedNote } from '../../../types/bookmark/Bookmark';
 import { Trash2, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import './NoteBookmark.css';
 
 interface Props {
-  note: BookmarkNoteItem;
+  note: BookmarkedNote;
   onRemove?: (noteId: string) => void;
 }
 
