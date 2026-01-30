@@ -8,6 +8,7 @@ interface Props {
   onClose: () => void;
   onDeleteNote: (noteId: string) => void;
   onCreateNote: (directoryPath: string) => void;
+  onRenameNote: (noteId: string) => void;
 }
 
 export default function ContextMenu({
@@ -15,6 +16,7 @@ export default function ContextMenu({
   onClose,
   onDeleteNote,
   onCreateNote,
+  onRenameNote,
 }: Props) {
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -58,10 +60,6 @@ export default function ContextMenu({
           className="context-menu-item"
           onClick={(e) => {
             e.stopPropagation();
-            console.log(
-              '[ContextMenu] create note at',
-              state.directoryPath
-            );
             onCreateNote(state.directoryPath);
             onClose();
           }}
@@ -71,9 +69,34 @@ export default function ContextMenu({
       )}
 
       {/*  노트 메뉴 */}
-      {state.type === 'NOTE' && (
+      {state.type === 'NOTE' && state.targetId && (
+        // 노트 제목 수정
         <div
-          className="context-menu-item danger"
+            className="context-menu-item"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+
+              if (state.targetId.startsWith('temp-')) return;
+
+              console.log(
+                '[ContextMenu] rename note',
+                state.targetId
+              );
+              onRenameNote(state.targetId);
+              onClose();
+            }}
+          >
+            ✏️ 노트 제목 수정
+          </div>
+      )}
+      {state.type === 'NOTE' && state.targetId && (
+        <div
+          className="context-menu-item"
           //  핵심: mousedown 단계에서 기본 동작 차단
           onMouseDown={(e) => {
             e.preventDefault();
@@ -106,7 +129,7 @@ export default function ContextMenu({
             onClose();
           }}
         >
-          🗑 노트 삭제
+          ❌ 노트 삭제
         </div>
       )}
     </div>
