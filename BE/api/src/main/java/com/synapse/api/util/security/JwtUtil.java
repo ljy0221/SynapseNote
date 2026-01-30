@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Date;
 import java.util.UUID;
 
@@ -30,6 +31,17 @@ public class JwtUtil {
                 .claim("id", id.toString())
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + expiredMs))
+                .signWith(secretKey)
+                .compact();
+    }
+
+    public String generateTicket(UUID userId, UUID noteId, Instant expiresAt) {
+        return Jwts.builder()
+                .issuer("synapse")
+                .subject(userId.toString())
+                .claim("noteId", noteId.toString())
+                .claim("type", "WS_TICKET")
+                .expiration(Date.from(expiresAt))
                 .signWith(secretKey)
                 .compact();
     }
