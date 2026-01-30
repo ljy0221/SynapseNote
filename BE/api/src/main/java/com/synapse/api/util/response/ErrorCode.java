@@ -67,7 +67,19 @@ public enum ErrorCode {
     // OAuthAccount
     PARSING_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "OAUTH_001", "응답 파싱 중 오류가 발생했습니다"),
     OAUTH_PROVIDER_ERROR(HttpStatus.BAD_GATEWAY, "OAUTH_002", "OAuth2 제공자로부터 오류 응답을 받았습니다"),
-    OAUTH_TOKEN_ISSUE(HttpStatus.BAD_GATEWAY, "OAUTH_003", "OAuth2 제공자로부터 Access Token을 받지 못했습니다");
+    OAUTH_TOKEN_ISSUE(HttpStatus.BAD_GATEWAY, "OAUTH_003", "OAuth2 제공자로부터 Access Token을 받지 못했습니다"),
+
+    // AWS S3
+    IMAGE_DELETE_FAIL(HttpStatus.BAD_GATEWAY, "IMAGE_001", "이미지 삭제 중 스토리지 서버(S3)와의 통신에 실패했습니다."),
+    IMAGE_INVALID_EXTENSION(HttpStatus.BAD_REQUEST, "IMAGE_002", "허용되지 않는 이미지 확장자입니다."),
+
+    // BlockDocument
+    REQUIRED_BLOCK_CONTENTS(HttpStatus.BAD_REQUEST, "BLOCK_001", "블록 content의 필수 값이 누락되었습니다."),
+    INVALID_BLOCK_CONTENTS(HttpStatus.BAD_REQUEST, "BLOCK_002", "블록 content 형식이 올바르지 않습니다."),
+    INVALID_BLOCK_TYPE(HttpStatus.BAD_REQUEST, "BLOCK_003", "블록 타입이 올바르지 않습니다."),
+    UNSUPPORTED_LANGUAGE(HttpStatus.BAD_REQUEST, "BLOCK_004", "지원하지 않는 언어 타입입니다."),
+    UNSUPPORTED_BLOCK_TYPE(HttpStatus.BAD_REQUEST, "BLOCK_005", "지원하지 않는 블록 타입입니다.");
+
 
     private final HttpStatus httpStatus;
     private final String code;
