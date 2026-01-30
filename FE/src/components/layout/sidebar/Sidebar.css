@@ -101,3 +101,61 @@
   background-color: var(--color-point);
   color: #fff;
 }
+
+/* 새 노트 버튼 */
+.sidebar-top-actions {
+  padding: 8px;
+  margin-bottom: 4px;
+
+  border-bottom: 1px solid var(--color-sub);
+}
+
+/* =========================
+   Add Note Button
+========================= */
+
+.sidebar-add-note-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 8px 10px;
+  border-radius: 8px;
+
+  background-color: var(--color-sub);
+  border: 1px solid var(--color-sub);
+
+  color: var(--font-color);
+  cursor: pointer;
+
+  font-size: 13px;
+  font-weight: 500;
+
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.sidebar-add-note-btn:hover {
+  background-color: var(--color-point);
+  border-color: var(--color-point);
+  color: #fff;
+}
+
+/* + 아이콘 */
+.sidebar-add-note-btn .plus {
+  font-size: 16px;
+  line-height: 1;
+  font-weight: bold;
+}
+
+/* 텍스트 */
+.sidebar-add-note-btn .label {
+  white-space: nowrap;
+}
+
+.sidebar-add-note-btn:active {
+  transform: translateY(1px);
+}
