@@ -18,7 +18,11 @@ export default function ContextMenu({
 }: Props) {
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // ✅ 메뉴 밖 클릭 감지
+  /**
+   *  메뉴 밖 클릭 시 닫기
+   * - click 단계에서 처리 (mousedown )
+   * - 내부 클릭은 stopPropagation으로 차단
+   */
   useEffect(() => {
     if (!state.visible) return;
 
@@ -31,9 +35,9 @@ export default function ContextMenu({
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('click', handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('click', handleClickOutside);
     };
   }, [state.visible, onClose]);
 
@@ -44,12 +48,20 @@ export default function ContextMenu({
       ref={menuRef}
       className="context-menu"
       style={{ top: state.y, left: state.x }}
-      onClick={(e) => e.stopPropagation()} // 내부 클릭 차단
+      //  루트에서는 propagation만 차단 (preventDefault )
+      onMouseDown={(e) => e.stopPropagation()}
+      onClick={(e) => e.stopPropagation()}
     >
-      {state.type === 'DIRECTORY' && (
+      {/*  디렉토리 메뉴 */}
+      {state.type === 'DIRECTORY' && state.directoryPath && (
         <div
           className="context-menu-item"
-          onClick={() => {
+          onClick={(e) => {
+            e.stopPropagation();
+            console.log(
+              '[ContextMenu] create note at',
+              state.directoryPath
+            );
             onCreateNote(state.directoryPath);
             onClose();
           }}
@@ -58,10 +70,38 @@ export default function ContextMenu({
         </div>
       )}
 
+      {/*  노트 메뉴 */}
       {state.type === 'NOTE' && (
         <div
           className="context-menu-item danger"
-          onClick={() => {
+          //  핵심: mousedown 단계에서 기본 동작 차단
+          onMouseDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (!state.targetId) {
+              console.warn(
+                '[ContextMenu] delete blocked: targetId missing'
+              );
+              return;
+            }
+
+            if (state.targetId.startsWith('temp-')) {
+              console.warn(
+                '[ContextMenu] delete blocked: temp note',
+                state.targetId
+              );
+              return;
+            }
+
+            console.log(
+              '[ContextMenu] delete note',
+              state.targetId
+            );
             onDeleteNote(state.targetId);
             onClose();
           }}
