@@ -18,5 +18,5 @@ export const adaptBookmarkedNotes = (
 export const adaptBookmarkIds = (
   res: GetBookmarksResponse
 ): Set<string> => {
-  return new Set(res.content.map(note => note.id));
+  return new Set(res.content.map(note => note.noteId));
 };

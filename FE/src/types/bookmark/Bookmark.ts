@@ -2,7 +2,7 @@
 
 /** 즐겨찾기된 노트 (목록용) */
 export interface BookmarkedNote {
-  id: string;
+  noteId: string;
   title: string;
   directoryPath: string;
   pointX: number | null;
