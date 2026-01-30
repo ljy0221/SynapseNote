@@ -67,9 +67,9 @@ const SearchResultDropdown: React.FC<SearchResultDropdownProps> = ({
         {!isLoading &&
           results.map(note => (
             <div
-              key={note.id}
+              key={note.noteId}
               className="search-dropdown-item"
-              onClick={() => onSelectNote(note.id)}
+              onClick={() => onSelectNote(note.noteId)}
             >
               <div className="search-dropdown-title">
                 {note.title}
