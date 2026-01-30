@@ -1,15 +1,19 @@
 package com.synapse.api.modules.user.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.synapse.api.modules.user.dto.oauth.GoogleTokenResponse;
 import com.synapse.api.modules.user.dto.oauth.GoogleUserInfo;
 import com.synapse.api.modules.user.dto.oauth.OAuthUserInfo;
 import com.synapse.api.util.exception.BusinessException;
 import com.synapse.api.util.response.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 
 import java.util.Map;
@@ -20,44 +24,81 @@ import java.util.Map;
 public class GoogleOAuthService implements OAuthService {
 
     private final RestClient restClient;
-    private final ObjectMapper objectMapper;
 
-    private final String USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo";
+    @Value("${google.client.id}")
+    private String clientId;
 
+    @Value("${google.client.secret}")
+    private String clientSecret;
+
+    @Value("${google.redirect.uri}")
+    private String redirectUri;
+
+    private static final String TOKEN_URL = "https://oauth2.googleapis.com/token";
+    private static final String USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo";
 
     @Override
-    public OAuthUserInfo getUserInfo(String accessToken) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(accessToken);
+    public OAuthUserInfo getUserInfo(String authorizationCode) {
+        String accessToken = exchangeAccessToken(authorizationCode);
 
-        ResponseEntity<String> response;
         try {
-            response = restClient.get()
+            GoogleUserInfo userInfo = restClient.get()
                     .uri(USERINFO_URL)
-                    .headers(h -> h.addAll(headers))
+                    .headers(h -> h.setBearerAuth(accessToken))
                     .retrieve()
-                    .toEntity(String.class);
+                    .body(GoogleUserInfo.class);
 
-        } catch (Exception e) {
-            log.error("UserInfo 요청 중 예외 발생", e);
-            throw new BusinessException(ErrorCode.OAUTH_PROVIDER_ERROR,
-                    Map.of("message", e));
+            if (userInfo == null) {
+                throw new BusinessException(ErrorCode.OAUTH_PROVIDER_ERROR);
+            }
+
+            log.info("Google UserInfo OK: providerId={}, email={}", userInfo.getProviderId(), userInfo.getEmail());
+            return userInfo;
+
+        } catch (HttpStatusCodeException e) {
+            log.error("Google UserInfo 요청 실패: status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString(), e);
+            throw new BusinessException(ErrorCode.OAUTH_PROVIDER_ERROR, Map.of(
+                    "status", e.getStatusCode().value(),
+                    "body", e.getResponseBodyAsString()
+            ));
+        } catch (ResourceAccessException e) {
+            log.error("Google UserInfo 네트워크 오류", e);
+            throw new BusinessException(ErrorCode.OAUTH_PROVIDER_ERROR, Map.of("message", e.getMessage()));
         }
+    }
 
-        log.debug("UserInfo 응답 Body: {}", response.getBody());
-
-        if (!response.getStatusCode().is2xxSuccessful()) {
-            throw new BusinessException(ErrorCode.OAUTH_PROVIDER_ERROR);
-        }
+    private String exchangeAccessToken(String authorizationCode) {
+        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+        form.add("code", authorizationCode);
+        form.add("client_id", clientId);
+        form.add("client_secret", clientSecret);
+        form.add("redirect_uri", redirectUri);
+        form.add("grant_type", "authorization_code");
 
         try {
-            GoogleUserInfo userInfo =
-                    objectMapper.readValue(response.getBody(), GoogleUserInfo.class);
-            log.info("UserInfo 파싱 성공: providerId={}, email={}",
-                    userInfo.getProviderId(), userInfo.getEmail());
-            return userInfo;
-        } catch (Exception e) {
-            throw new BusinessException(ErrorCode.PARSING_ERROR);
+            GoogleTokenResponse tokenResponse = restClient.post()
+                    .uri(TOKEN_URL)
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .body(form)
+                    .retrieve()
+                    .body(GoogleTokenResponse.class);
+
+            if (tokenResponse == null || tokenResponse.accessToken() == null || tokenResponse.accessToken().isBlank()) {
+                log.warn("Google token 응답이 비정상: tokenResponse={}", tokenResponse);
+                throw new BusinessException(ErrorCode.OAUTH_TOKEN_ISSUE);
+            }
+
+            return tokenResponse.accessToken();
+
+        } catch (HttpStatusCodeException e) {
+            log.error("Google Token 요청 실패: status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString(), e);
+            throw new BusinessException(ErrorCode.OAUTH_TOKEN_ISSUE, Map.of(
+                    "status", e.getStatusCode().value(),
+                    "body", e.getResponseBodyAsString()
+            ));
+        } catch (ResourceAccessException e) {
+            log.error("Google Token 네트워크 오류", e);
+            throw new BusinessException(ErrorCode.OAUTH_TOKEN_ISSUE, Map.of("message", e.getMessage()));
         }
     }
 }

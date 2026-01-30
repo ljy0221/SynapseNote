@@ -1,13 +1,13 @@
 // FE/src/pages/note/Note.tsx
-
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import NoteButton from "../../components/common/noteButton/NoteButton";
 import NoteMain from "../../components/layout/noteMain/NoteMain";
-import { NoteToolBar } from "../../components/layout/noteToolbar/NoteToolbar";
+import { createNote } from '../../utils/noteAPI';
+import type { CreateNoteRequest } from '../../types/note/CreateNote';
 import './Note.css';
 
-// 블록 타입 정의
-export type BlockType = 'h1' | 'h2' | 'h3' | 'text' | 'code';
+// 블록 타입 정의 (이원화: text / code)
+export type BlockType = 'text' | 'code';
 
 // 블록 데이터 타입 정의
 export interface BlockData {
@@ -19,40 +19,46 @@ export interface BlockData {
 
 const Note: React.FC = () => {
     const [isEditing, setIsEditing] = useState(false);
-
     const [title, setTitle] = useState("제목 없는 노트");
+    const [focusedBlockId, setFocusedBlockId] = useState<number | null>(null);
+
+    // 제목 input ref
+    const titleInputRef = useRef<HTMLInputElement>(null);
 
     // 블록 배열 상태 관리 (초기에는 빈 텍스트 블록 하나)
     const [blocks, setBlocks] = useState<BlockData[]>([
         { id: Date.now(), type: 'text', content: '' }
     ]);
 
-    // 코드블록 추가 (Add Block 버튼용 - 맨 끝에 추가)
-    const addCodeBlock = () => {
-        const newBlock: BlockData = {
-            id: Date.now(),
-            type: 'code',
-            content: '// 새로운 코드를 작성하세요.',
-            language: 'javascript'
-        };
-        setBlocks([...blocks, newBlock]);
-    };
-
     // 특정 블록 뒤에 새 블록 추가 (+ 버튼용)
     const addBlockAfter = (afterId: number, type: BlockType) => {
         const defaultContent = type === 'code' ? '// 코드를 작성하세요.' : '';
-
         const newBlock: BlockData = {
             id: Date.now(),
             type: type,
             content: defaultContent,
             language: type === 'code' ? 'javascript' : undefined,
         };
-
         const index = blocks.findIndex(b => b.id === afterId);
         const newBlocks = [...blocks];
         newBlocks.splice(index + 1, 0, newBlock);
         setBlocks(newBlocks);
+    };
+
+    // 마지막에 블록 추가하는 함수 (하단 툴바용)
+    const handleAddBlockAtEnd = (type: BlockType) => {
+        const lastBlock = blocks[blocks.length - 1];
+        if (lastBlock) {
+            addBlockAfter(lastBlock.id, type);
+        } else {
+            const newBlock: BlockData = {
+                id: Date.now(),
+                type: type,
+                content: type === 'code' ? '// 코드를 작성하세요.' : '',
+                language: type === 'code' ? 'javascript' : undefined,
+            };
+            setBlocks([newBlock]);
+        }
     };
 
     // 블록 내용 업데이트
@@ -69,6 +75,39 @@ const Note: React.FC = () => {
         }
     };
 
+    // 블록 순서 변경 (DnD)
+    const handleMoveBlock = (dragIndex: number, hoverIndex: number) => {
+        const dragBlock = blocks[dragIndex];
+        const newBlocks = [...blocks];
+        newBlocks.splice(dragIndex, 1);
+        newBlocks.splice(hoverIndex, 0, dragBlock);
+        setBlocks(newBlocks);
+    };
+
+    const handleCreateNote = async () => {
+        try {
+            const newNoteReq: CreateNoteRequest = {
+                title: "제목 없는 노트",
+                directoryPath: "/",
+                pointX: null,
+                pointY: null,
+                content: "",
+            };
+            const result = await createNote(newNoteReq);
+            console.log("노트 생성 성공:", result);
+            setIsEditing(true);
+            setTimeout(() => {
+                if (titleInputRef.current) {
+                    titleInputRef.current.focus();
+                    titleInputRef.current.select();
+                }
+            }, 100);
+        } catch (error) {
+            console.error("노트 생성 중 에러 발생:", error);
+            alert("노트를 생성하지 못했습니다.");
+        }
+    };
+
     return (
         <div className="page-content-container">
             {!isEditing ? (
@@ -76,11 +115,10 @@ const Note: React.FC = () => {
                     <div className="note-intro-wrapper">
                         <h2>노트 편집 페이지</h2>
                         <div className="create-note-section">
-                            <NoteButton onClick={() => setIsEditing(true)} />
+                            <NoteButton onClick={handleCreateNote} />
                             <span className="create-note-label">새 노트 작성하기</span>
                         </div>
                     </div>
-
                 </>
             ) : (
                 <div className="editing-layout-wrapper">
@@ -90,11 +128,11 @@ const Note: React.FC = () => {
                         blocks={blocks}
                         onUpdateBlock={updateBlock}
                         onAddBlockAfter={addBlockAfter}
+                        onAddBlockAtEnd={handleAddBlockAtEnd}
                         onDeleteBlock={deleteBlock}
-                    />
-                    <NoteToolBar
-                        isOpen={true}
-                        onAddBlock={addCodeBlock}
+                        onFocusBlock={setFocusedBlockId}
+                        onMoveBlock={handleMoveBlock}
+                        titleInputRef={titleInputRef}
                     />
                 </div>
             )}

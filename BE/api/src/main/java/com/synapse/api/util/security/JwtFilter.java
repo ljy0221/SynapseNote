@@ -51,33 +51,30 @@ public class JwtFilter extends OncePerRequestFilter {
         // Authorization 헤더 검증 (Bearer로 시작하는지 검증)
         if (authorization == null || !authorization.startsWith(Constant.BEARER_PREFIX)) {
             log.info("Missing or invalid Authorization header");
-            setErrorResponse(request, response, ErrorCode.AUTH_UNAUTHORIZED);
+            setErrorResponse(request, response, ErrorCode.HEADER_INVALID);
             return;
         }
 
         // Bearer 접두사 제거 후 순수 토큰 획득
-        String token = authorization.split(" ")[1];
+        String token = authorization.substring(Constant.BEARER_PREFIX.length()).trim();
 
-        // 토큰 소멸 시간 검증
+        // 토큰 유효성 검증
         try {
             if (jwtUtil.isExpired(token)) {
                 log.info("Token is expired");
-                setErrorResponse(request, response, ErrorCode.AUTH_UNAUTHORIZED);
-                // setBody(response, 401, "Access token expired. Please reissue it.");
+                setErrorResponse(request, response, ErrorCode.TOKEN_EXPIRED);
                 return;
             }
+
+            if (tokenRedisService.isBlacklisted(token)) {
+                log.info("Token is blacklisted");
+                setErrorResponse(request, response, ErrorCode.TOKEN_EXPIRED);
+                return;
+            }
+
         } catch (MalformedJwtException | SignatureException | UnsupportedJwtException | IllegalArgumentException e) {
             log.info("Invalid token");
-            setErrorResponse(request, response, ErrorCode.AUTH_UNAUTHORIZED);
-            // setBody(response, 400,"Token form is incorrect");
-            return;
-        }
-
-        // 파기된 토큰인지 확인
-        if (tokenRedisService.isExpired(token)) {
-            log.info("Token has been invalidated");
-            setErrorResponse(request, response, ErrorCode.AUTH_UNAUTHORIZED);
-            // setBody(response, 401, "Access token has been invalidated. Please reissue");
+            setErrorResponse(request, response, ErrorCode.TOKEN_INVALID);
             return;
         }
 
@@ -114,7 +111,8 @@ public class JwtFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
         return (path.startsWith("/api/") && (
                 path.matches("^/api/v\\d+/login")
-        )) || path.matches(".*\\.(js|css|png|jpg|ico)$");
+        )) || path.matches(".*\\.(js|css|png|jpg|ico)$")
+            || path.matches("^/test/.*");
     }
 
 }

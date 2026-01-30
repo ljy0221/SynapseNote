@@ -1,38 +1,57 @@
-.note-toolbar {
-  position: fixed;
-  top: 60px; /* 헤더 높이 */
-  right: -240px; /* 닫혔을 때 */
-  width: 240px;
-  height: calc(100vh - 64px);
-  background-color: var(--color-sub);
-  border-left: 1px solid var(--border-color);
-  transition: right 0.3s ease;
-  padding: 20px;
-  z-index: 10;
-}
-
-.note-toolbar.open {
-  right: 0; /* 열렸을 때 */
-}
-
-.toolbar-items {
+/* src/components/layout/noteToolbar/NoteToolbar.css */
+.note-toolbar-horizontal {
   display: flex;
-  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 32px;
+  padding: 20px;
+}
+
+.toolbar-add-btn {
+  display: flex;
+  align-items: center;
   gap: 10px;
-  margin-top: 20px;
-}
-
-.item {
-  background: transparent;
-  border: none;
-  color: var(--font-color);
-  text-align: left;
-  padding: 10px;
+  padding: 14px 24px;
+  background: var(--color-main, #fffcf5);
+  border: 1px solid var(--color-border, #e7e5e4);
+  border-radius: 12px;
+  color: var(--font-color, #45372e);
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
-  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
 }
 
-.item:hover {
-  background-color: var(--color-main);
-  color: var(--color-point);
+.toolbar-add-btn:hover {
+  background: var(--color-hover, #fae8d0);
+  border-color: var(--color-point, #f59e0b);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.toolbar-add-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.toolbar-add-btn svg {
+  color: var(--color-point, #f59e0b);
+}
+
+/* ===== 다크모드 ===== */
+[data-theme='dark'] .toolbar-add-btn {
+  background: var(--color-main, #1c1917);
+  border-color: var(--color-border, #44403c);
+  color: var(--font-color, #e7e5e4);
+}
+
+[data-theme='dark'] .toolbar-add-btn:hover {
+  background: var(--color-hover, #44403c);
+  border-color: var(--color-point, #fbbf24);
+}
+
+[data-theme='dark'] .toolbar-add-btn svg {
+  color: var(--color-point, #fbbf24);
 }

@@ -1,7 +1,7 @@
 // BlockBookmarkItem.tsx
 import { Trash2, FileText, Code } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import type { BookmarkBlockItem } from '../../../types/bookmark/getBookmarkBlocks';
+import type { BookmarkBlockItem } from '../../../types/bookmark/GetBookmarkBlocks';
 
 interface Props {
   block: BookmarkBlockItem;

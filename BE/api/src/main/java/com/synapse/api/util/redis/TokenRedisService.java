@@ -19,38 +19,30 @@ public class TokenRedisService {
 
     public String generateRefreshToken(UUID id) {
         String token = makeRandomToken();
-        String key = RedisConstant.REDIS_REFRESH_TOKEN + token;
-        redisUtil.setData(key, id, Constant.REFRESH_EXPIRED);
+        String key = RedisConstant.REDIS_REFRESH_TOKEN + id.toString();
+        redisUtil.setData(key, token, Constant.REFRESH_EXPIRED);
 
         return token;
     }
 
-    public String getRefreshToken(String token) {
-        String key = RedisConstant.REDIS_REFRESH_TOKEN + token;
-        return redisUtil.getData(key).orElse("none");
+    public String getRefreshToken(UUID id) {
+        String key = RedisConstant.REDIS_REFRESH_TOKEN + id.toString();
+        return redisUtil.getData(key).orElse(null);
     }
 
-    public void deleteToken(String token) {
-        String key = RedisConstant.REDIS_REFRESH_TOKEN + token;
+    public void deleteRefreshToken(UUID id) {
+        String key = RedisConstant.REDIS_REFRESH_TOKEN + id.toString();
         redisUtil.deleteData(key);
     }
 
-    public boolean isExpired(String token) {
-        return redisUtil
-                .getData(RedisConstant.REDIS_TOKEN_EXPIRED + token, Boolean.class)
-                .orElse(false);
+    public void addBlacklist(String token) {
+        String key = RedisConstant.REDIS_TOKEN_EXPIRED + token;
+        redisUtil.setData(key, token, Constant.ACCESS_EXPIRED);
     }
 
-    public void expireToken(String token, long duration) {
-        redisUtil.setData(RedisConstant.REDIS_TOKEN_EXPIRED + token, true, duration);
-    }
-
-    public Long getRemainingTime(String token) {
-        return redisUtil.getTTL(RedisConstant.REDIS_REFRESH_TOKEN + token);
-    }
-
-    public boolean isUsed(String refreshToken) {
-        return redisUtil.exists(RedisConstant.REDIS_TOKEN_USED + refreshToken);
+    public boolean isBlacklisted(String token) {
+        String key = RedisConstant.REDIS_TOKEN_EXPIRED + token;
+        return redisUtil.exists(key);
     }
 
     private String makeRandomToken() {

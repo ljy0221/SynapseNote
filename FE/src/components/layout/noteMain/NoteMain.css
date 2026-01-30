@@ -1,20 +1,35 @@
 /* src/components/layout/noteMain/NoteMain.css */
 
+.note-main-layout {
+    flex: 1;
+    /* 남은 공간 차지 */
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+
+    background-color: var(--color-sub);
+    /* 노션/Jupyter 느낌의 연한 회색 */
+    overflow-y: scroll;
+    /* 스크롤바 강제 */
+    overflow-x: hidden;
+
+    box-sizing: border-box;
+    position: relative;
+}
+
+/* 내부 스타일 */
 .note-main-header {
     width: 100%;
-    max-width: 900px;
-    /* 컨텐츠의 최대 너비 제한 */
+    max-width: 1400px;
+    /* 900px -> 1400px으로 넓힘 */
     margin: 0 auto;
-    /* 중앙 정렬 */
     padding-left: 40px;
     padding-right: 40px;
     box-sizing: border-box;
     margin-top: 80px;
-    /* 상단 여백 이동 */
     margin-bottom: 40px;
     flex-shrink: 0;
 }
-
 
 .note-main-title-input {
     width: 100%;
@@ -25,36 +40,13 @@
     font-weight: 800;
     color: var(--font-color, #2c2c2c);
     font-family: var(--font-family, 'Pretendard', sans-serif);
-    transition: color 0.3s ease;
 }
-
-.note-main-title-input::placeholder {
-    color: var(--font-color, #d1d1d1);
-    opacity: 0.3;
-}
-
-.note-main-layout {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-
-    /* [핵심 변경] max-width와 margin: 0 auto를 제거하여 전체 너비를 쓰게 함 */
-    width: 100%;
-    height: 100%;
-
-    background-color: var(--color-main);
-    overflow-y: auto;
-    /* 여기가 스크롤바 위치가 됨 (우측 끝) */
-    box-sizing: border-box;
-}
-
 
 .note-content-area {
     width: 100%;
-    max-width: 900px;
-    /* 컨텐츠의 최대 너비 제한 */
+    max-width: 1400px;
+    /* 900px -> 1400px으로 넓힘 */
     margin: 0 auto;
-    /* 중앙 정렬 */
     padding-left: 40px;
     padding-right: 40px;
     box-sizing: border-box;
@@ -62,70 +54,49 @@
     padding-bottom: 70vh;
 }
 
-
-/* 텍스트 블록용 스타일 */
-.text-block-wrapper {
+.text-block-wrapper,
+.heading-block-wrapper {
     width: 100%;
-    display: flex;
-    /* justify-content: center; 불필요: width 100%이므로 의미 없음 */
     position: relative;
-    /* 후행 메뉴 위치 잡기 용이 */
+    display: flex;
 }
 
 .editable-text-area {
     width: 100%;
-    max-width: 100%;
-    min-height: 24px;
     border: none;
     outline: none;
     background: transparent;
-
     font-size: 18px;
     line-height: 1.6;
     color: var(--font-color, #333);
     font-family: var(--font-family, 'Pretendard', sans-serif);
-
-    white-space: pre-wrap;
-    word-break: break-word;
-    overflow: hidden;
     resize: none;
     padding: 6px 0;
-    /* 상하 패딩 조금 줄임 */
+    overflow: hidden;
 }
 
-/* 
-  [Clean Up] 
-  .text-delete-btn 및 관련 hover 스타일은 
-  TextBlock.tsx에서 사용되지 않으므로 삭제 처리함. 
-*/
-
-/* 스크롤바 커스텀: 테마 색상과 조화 */
+/* 스크롤바 디자인 */
 .note-main-layout::-webkit-scrollbar {
-    display: block;
-    width: 8px;
-    /* 조금 더 얇게 */
-}
-
-.note-main-layout::-webkit-scrollbar-track {
+    display: block !important;
+    width: 14px;
+    /* 너비를 좀 더 키워서 잘 보이게 함 */
     background-color: transparent;
 }
 
 .note-main-layout::-webkit-scrollbar-thumb {
-    /* 
-      [핵심 원리] 
-      color-mix를 사용하여 현재 테마의 글자색(var(--font-color))을 가져와서
-      투명도 80%(transparent 80%)를 섞어, '은은한 20% 농도의 글자색'을 만듭니다.
-      
-      - 라이트 모드: 옅은 갈색 (배경과 어우러짐)
-      - 다크 모드: 옅은 회색 (검은 배경 위에서 잘 보임)
-    */
-    background-color: color-mix(in srgb, var(--font-color), transparent 80%);
-
-    border-radius: 6px;
-    border: 3px solid var(--color-main);
+    background-color: var(--font-color-sub);
+    /* 테마에 맞는 색상 사용 */
+    border: 4px solid transparent;
+    /* 투명 테두리로 여백 효과 */
+    border-radius: 10px;
+    background-clip: content-box;
+    opacity: 0.5;
 }
 
 .note-main-layout::-webkit-scrollbar-thumb:hover {
-    /* 마우스 올리면 조금 더 진하게 (농도 40%) */
-    background-color: color-mix(in srgb, var(--font-color), transparent 60%);
+    background-color: var(--font-color);
+    /* 호버 시 조금 더 진하게 */
 }
+
+/* 다크모드 대응 */
+/* 다크모드 대응은 위 변수로 자동 해결됨 */

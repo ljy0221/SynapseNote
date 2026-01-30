@@ -1,24 +1,28 @@
+/* src/components/layout/codeBlock/CodeBlock.tsx */
 import React, { useState, useEffect, useRef } from 'react';
 import VersionButton from '../../common/versionButton/VersionButton';
 import BlockRunButton from '../../common/blockRunButton/BlockRunButton';
 import BlockCopyButton from '../../common/blockCopyButton/BlockCopyButton';
 import BlockDeleteButton from '../../common/blockDeleteButton/BlockDeleteButton';
 import type { Language, ExecutionResult, ExecutionMode, SessionInfo, SessionExecutionResult } from '../../../types/execution/ExecutionTypes';
-// import { saveExecutionToBackend } from '../../../utils/executionAPI';
 import './CodeBlock.css';
-import {saveExecutionToBackend} from "../../../utils/executionAPI.ts";
-import {LanguageSelector} from "./LanguageSelector.tsx";
+import { saveExecutionToBackend } from "../../../utils/executionAPI.ts";
+import { LanguageSelector } from "./LanguageSelector.tsx";
 
 interface CodeBlockProps {
     id: number;
     language: Language;
     code: string;
-    noteId?: string; // 백엔드 히스토리 저장용
+    noteId?: string;
     onDelete: (id: number) => void;
     onChange: (id: number, newCode: string) => void;
+    onFocus: () => void;
+    draggable?: boolean;
+    onDragStart?: (e: React.DragEvent) => void;
+    onDragOver?: (e: React.DragEvent) => void;
+    onDrop?: (e: React.DragEvent) => void;
 }
 
-// 헬퍼 함수: 언어별 기본 버전 설정
 function getDefaultVersion(language: Language): string {
     switch (language) {
         case 'python': return '3.11';
@@ -28,21 +32,30 @@ function getDefaultVersion(language: Language): string {
     }
 }
 
-const CodeBlock: React.FC<CodeBlockProps> = ({ id, language: initialLanguage, code, noteId, onDelete, onChange }) => {
-    // 1. 상태 관리
-    const [result, setResult] = useState<SessionExecutionResult | null>(null);
+const CodeBlock: React.FC<CodeBlockProps> = ({
+    id,
+    language: initialLanguage,
+    code,
+    noteId,
+    onDelete,
+    onChange,
+    onFocus,
+    draggable,
+    onDragStart,
+    onDragOver,
+    onDrop
+}) => {
+    const [result, setResult] = useState<ExecutionResult | null>(null);
     const [loading, setLoading] = useState(false);
     const [editedCode, setEditedCode] = useState(code);
     const [language, setLanguage] = useState<Language>(initialLanguage);
 
-    // NEW: 세션 모드 상태
+    // 세션 모드 상태 (feat/#63 추가)
     const [executionMode, setExecutionMode] = useState<ExecutionMode>('single');
     const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
 
-    // textarea 높이 조절용 Ref
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-    // 2. 코드가 변경될 때마다 높이 자동 조절
     useEffect(() => {
         if (textareaRef.current) {
             textareaRef.current.style.height = 'auto';
@@ -50,7 +63,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, language: initialLanguage, co
         }
     }, [editedCode]);
 
-    // NEW: 컴포넌트 마운트 시 세션 상태 로드
+    // 세션 상태 로드 (feat/#63 추가)
     useEffect(() => {
         if (noteId && language !== 'java') {
             window.dockerAPI.getSessionStatus(noteId, language)
@@ -71,9 +84,8 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, language: initialLanguage, co
         alert('코드가 클립보드에 복사되었습니다.');
     };
 
-    // 3. 코드 실행 (API 연동) - 세션 모드 지원
     const handleRun = async () => {
-        // Session 모드에서 noteId 필수 검증
+        // 세션 모드 검증 (feat/#63 추가)
         if (executionMode === 'session' && !noteId) {
             alert('세션 모드는 노트를 저장한 후에만 사용할 수 있습니다.');
             setExecutionMode('single');
@@ -82,39 +94,44 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, language: initialLanguage, co
 
         setLoading(true);
         try {
-            const executionResult = await window.dockerAPI.execute({
-                blockId: id.toString(),
-                language,
-                version: getDefaultVersion(language),
-                code: editedCode,
-                mode: executionMode, // NEW: 모드 전달
-                noteId: noteId, // NEW: noteId 전달
-            });
+            // 세션 모드 지원으로 변경 (feat/#63 수정)
+            const executionResult = executionMode === 'single'
+                ? await window.dockerAPI.executeSingle({
+                    blockId: id.toString(),
+                    language,
+                    version: getDefaultVersion(language),
+                    code: editedCode,
+                })
+                : await window.dockerAPI.execute({
+                    blockId: id.toString(),
+                    language,
+                    version: getDefaultVersion(language),
+                    code: editedCode,
+                    mode: executionMode,
+                    noteId: noteId,
+                });
+
             setResult(executionResult);
 
-            // NEW: 세션 정보 업데이트
+            // 세션 정보 업데이트 (feat/#63 추가)
             if (executionMode === 'session' && noteId) {
                 const info = await window.dockerAPI.getSessionStatus(noteId, language);
                 setSessionInfo(info);
             }
 
-            // 백엔드에 히스토리 저장
             if (noteId) {
                 saveExecutionToBackend(noteId, id.toString(), executionResult).catch(console.error);
             }
         } catch (error: any) {
-            const errorResult: SessionExecutionResult = {
+            const errorResult: ExecutionResult = {
                 blockId: id.toString(),
                 output: '',
                 error: error.message || '알 수 없는 오류가 발생했습니다.',
                 executionTime: 0,
                 exitCode: -1,
                 status: 'error',
-                sessionId: null,
-                isSessionActive: false,
             };
             setResult(errorResult);
-
             if (noteId) {
                 saveExecutionToBackend(noteId, id.toString(), errorResult).catch(console.error);
             }
@@ -123,7 +140,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, language: initialLanguage, co
         }
     };
 
-    // NEW: 세션 종료
+    // 세션 종료 (feat/#63 추가)
     const handleTerminateSession = async () => {
         if (!noteId) return;
 
@@ -138,16 +155,49 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, language: initialLanguage, co
         }
     };
 
+    // Tab 키 핸들러
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === 'Tab') {
+            e.preventDefault();
+            const textarea = e.target as HTMLTextAreaElement;
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const newValue = editedCode.substring(0, start) + '\t' + editedCode.substring(end);
+            setEditedCode(newValue);
+            onChange(id, newValue);
+            setTimeout(() => {
+                textarea.selectionStart = textarea.selectionEnd = start + 1;
+            }, 0);
+        }
+    };
+
     return (
-        <div className="code-block-wrapper">
+        <div
+            className="code-block-wrapper"
+            onDragOver={onDragOver}
+            onDrop={onDrop}
+        >
             <div className="code-block-header">
+                {/* [좌측] 삭제 버튼 + 드래그 핸들 (호버 시 보임) */}
+                <div className="code-left-controls">
+                    <BlockDeleteButton onDelete={() => onDelete(id)} />
+                    <div
+                        className="code-drag-handle"
+                        draggable={draggable}
+                        onDragStart={onDragStart}
+                        title="드래그하여 이동"
+                    >
+                        ⋮⋮
+                    </div>
+                </div>
+                {/* [중앙] 언어 선택기 */}
                 <LanguageSelector
                     value={language}
                     onChange={setLanguage}
                     disabled={loading}
                 />
 
-                {/* NEW: 모드 선택 (Java 제외) */}
+                {/* 모드 선택 버튼 (feat/#63 추가 - Java 제외) */}
                 {language !== 'java' && (
                     <div className="mode-selector" style={{ marginLeft: '10px', display: 'flex', gap: '5px' }}>
                         <button
@@ -169,7 +219,6 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, language: initialLanguage, co
                         <button
                             className={`mode-button ${executionMode === 'session' ? 'active' : ''}`}
                             onClick={() => {
-                                // noteId 있을 때만 모드 변경
                                 if (noteId) {
                                     setExecutionMode('session');
                                 }
@@ -192,10 +241,9 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, language: initialLanguage, co
                     </div>
                 )}
 
+                {/* [우측] 액션 버튼들 (삭제 버튼 제거됨) */}
                 <div className="code-actions">
-                    <BlockRunButton onClick={handleRun} disabled={loading} />
-
-                    {/* NEW: 세션 인디케이터 */}
+                    {/* 세션 인디케이터 (feat/#63 추가) */}
                     {sessionInfo && executionMode === 'session' && (
                         <button
                             className="session-indicator"
@@ -216,12 +264,11 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, language: initialLanguage, co
                         </button>
                     )}
 
+                    <BlockRunButton onClick={handleRun} disabled={loading} />
                     <BlockCopyButton onCopy={handleCopy} />
                     <VersionButton onClick={() => console.log("버전 관리 실행")} />
-                    <BlockDeleteButton onDelete={() => onDelete(id)} />
                 </div>
             </div>
-
             {/* 메인 코드 영역 */}
             <div className="code-content-container">
                 <textarea
@@ -230,16 +277,17 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, language: initialLanguage, co
                     value={editedCode}
                     onChange={(e) => {
                         setEditedCode(e.target.value);
-                        onChange(id, e.target.value); // 부모 컴포넌트에도 변경 알림
+                        onChange(id, e.target.value);
                     }}
+                    onFocus={onFocus}
+                    onKeyDown={handleKeyDown}
                     placeholder="// 새로운 코드를 작성하세요."
                     spellCheck="false"
                     disabled={loading}
                     style={{ overflow: 'hidden' }}
                 />
             </div>
-
-            {/* 결과 출력 영역 (result가 있을 때만 표시) */}
+            {/* 결과 출력 영역 */}
             {result && (
                 <div className="code-output-zone">
                     <div className="output-divider"></div>
@@ -252,7 +300,6 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, language: initialLanguage, co
                     </pre>
                 </div>
             )}
-
             {/* 로딩 표시 */}
             {loading && (
                 <div className="code-output-zone">

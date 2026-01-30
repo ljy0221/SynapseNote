@@ -6,16 +6,81 @@
 /* [라이트 모드] 기본 상태 (데이터 속성이 없거나 light일 때) - 웜톤 베이스 */
 :root,
 [data-theme='light'] {
-    --color-main: #fffcf5;   /* 따뜻한 미색 베이스 */
-    --color-sub: #f7f2e8;    /* 부드러운 베이지 톤 */
-    --color-point: #f59e0b;  /* 선명한 앰버(호박) 색상 */
-    --font-color: #45372e;   /* 짙은 브라운 계열의 폰트 */
+    --color-main: #fffcf5;
+    /* 따뜻한 미색 베이스 */
+    --color-bg: #fffcf5;
+    /* 메인 배경 (Alias) */
+    --color-sub: #f7f2e8;
+    /* 부드러운 베이지 톤 */
+    --color-point: #f59e0b;
+    /* 선명한 앰버(호박) 색상 */
+    --font-color: #45372e;
+    /* 짙은 브라운 계열의 폰트 */
+    --font-color-sub: #78716c;
+    /* 서브 폰트 (그레이 브라운) */
+    --color-border: #e7e5e4;
+    /* 연한 경계선 */
+    --color-hover: #fae8d0;
+    /* 호버 시 살짝 진한 베이지 */
 }
 
-/* [다크 모드] 데이터 속성이 dark일 때 - 웜 그레이 베이스 */
+/* [쿠키 모드] 데이터 속성이 cookie일 때 (구 다크 모드) - 웜 그레이 베이스 */
+[data-theme='cookie'] {
+    --color-main: #1c1917;
+    /* 매우 어두운 웜 그레이 */
+    --color-bg: #1c1917;
+    /* 메인 배경 (Alias) */
+    --color-sub: #292524;
+    /* 짙은 돌색 느낌의 서브 배경 */
+    --color-point: #fbbf24;
+    /* 다크 모드용 밝은 앰버 */
+    --font-color: #e7e5e4;
+    /* 부드러운 연회색 */
+    --font-color-sub: #a8a29e;
+    /* 서브 폰트 */
+    --color-border: #44403c;
+    /* 어두운 경계선 */
+    --color-hover: #44403c;
+    /* 호버 시 */
+}
+
+/* [리얼 다크 모드] 데이터 속성이 dark일 때 - 정통 블랙/그레이 */
 [data-theme='dark'] {
-    --color-main: #1c1917;   /* 매우 어두운 웜 그레이 */
-    --color-sub: #292524;    /* 짙은 돌색 느낌의 서브 배경 */
-    --color-point: #fbbf24;  /* 다크 모드용 밝은 앰버 */
-    --font-color: #e7e5e4;   /* 부드러운 연회색 */
+    --color-main: #000000;
+    /* 완전한 블랙 */
+    --color-bg: #000000;
+    /* 메인 배경 (Alias) */
+    --color-sub: #121212;
+    /* 아주 깊은 회색 (Material Dark) */
+    --color-point: #ffffff;
+    /* 화이트 포인트 (Black & White) */
+    --font-color: #ffffff;
+    /* 순백색 폰트 */
+    --font-color-sub: #a3a3a3;
+    /* Neutral 400 서브 폰트 */
+    --color-border: #262626;
+    /* Neutral 800 경계선 */
+    --color-hover: #262626;
+    /* 호버 시 */
+}
+
+/* [딥블루 모드] 데이터 속성이 deepblue일 때 - 안티그래비티 스타일 */
+/* [딥블루 모드] 데이터 속성이 deepblue일 때 - 안티그래비티 스타일 (Darker) */
+[data-theme='deepblue'] {
+    --color-main: #020617;
+    /* Slate 950 - 더 깊은 검푸른색 */
+    --color-bg: #020617;
+    /* 메인 배경 (Alias) */
+    --color-sub: #0f172a;
+    /* Slate 900 - 서브 배경 */
+    --color-point: #0ea5e9;
+    /* Sky 500 - 약간 더 차분한 네온 블루 */
+    --font-color: #f8fafc;
+    /* Slate 50 - 아주 밝은 회색 */
+    --font-color-sub: #64748b;
+    /* Slate 500 - 차분한 서브 폰트 */
+    --color-border: #1e293b;
+    /* Slate 800 - 어두운 경계선 */
+    --color-hover: #1e293b;
+    /* 호버 시 (Slate 800) */
 }
