@@ -189,6 +189,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <div className="sidebar-wrapper">
       <aside className={`sidebar-panel ${isOpen ? 'open' : ''}`}>
         <div className="sidebar-inner">
+           {/* 🔝 사이드바 상단 액션 영역 */}
+          <div className="sidebar-top-actions">
+            <button
+              className="sidebar-add-note-btn"
+              onClick={() => handleCreateNote('/')}
+            >
+              <span className="plus">＋</span>
+              <span className="label">새 노트</span>
+            </button>
+          </div>
+          
           {isLoading ? (
             <div className="sidebar-loading">Loading...</div>
           ) : (
