@@ -102,13 +102,13 @@ public class ImageService {
                 .build();
     }
 
-    public void deleteImageAtNote(UUID userId, UUID noteId, String key) {
+    public void deleteImageAtNote(UUID memberId, UUID noteId, String key) {
 
         noteRepository.findById(noteId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
 
         NoteMember noteMember = noteMemberRepository
-                .findByNoteIdAndUserId(noteId, userId)
+                .findByNoteIdAndMemberId(noteId, memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_ACCESS_DENIED));
 
         if (!canDeleteImage(noteMember.getRole())) {
