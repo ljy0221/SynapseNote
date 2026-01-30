@@ -59,6 +59,13 @@ body {
 
 /* 4. 메인 서비스 레이아웃 구조 */
 
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
 /* [최좌측] SideMenuBar: 상시 고정 (너비 64px 기준) */
 .side-menu-bar {
   position: fixed;
@@ -97,16 +104,22 @@ body {
 
 /* 기본 메인 영역 */
 .main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   margin-left: var(--side-menu-width);
-  padding: 24px;
+  padding: 0;
+  /* padding 제거 (MindMap 등에서 100% 활용 위해) */
   box-sizing: border-box;
+  overflow: auto;
+  /* 내부 스크롤 허용 */
+  height: 100%;
+  /* 부모 flex item으로서 꽉 채움 */
 }
 
 /* Sidebar 열렸을 때 */
 .main-content.sidebar-open {
-  margin-left: calc(
-    var(--side-menu-width) + var(--sidebar-width)
-  );
+  margin-left: calc(var(--side-menu-width) + var(--sidebar-width));
 }
 
 /* 🔥 NoteToolBar 열렸을 때만 우측 여백 */

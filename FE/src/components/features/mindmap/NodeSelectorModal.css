@@ -1,0 +1,157 @@
+/* src/components/features/mindmap/NodeSelectorModal.css */
+
+.node-selector-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    z-index: 2000;
+    /* 툴바/헤더보다 위에 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    animation: fadeIn 0.2s forwards;
+}
+
+.node-selector-container {
+    background-color: var(--color-main);
+    width: 600px;
+    max-width: 90%;
+    max-height: 70vh;
+    border-radius: 16px;
+    border: 1px solid var(--color-point);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform: scale(0.95);
+    animation: popIn 0.2s 0.1s forwards;
+    box-sizing: border-box;
+}
+
+.selector-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--color-sub);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.selector-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--font-color);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.selector-close-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--font-color);
+    opacity: 0.6;
+    transition: opacity 0.2s;
+    padding: 4px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.selector-close-btn:hover {
+    opacity: 1;
+    background-color: var(--color-sub);
+}
+
+.selector-search-area {
+    padding: 12px 20px;
+    background-color: var(--color-sub);
+    /* 배경색과 구분 */
+}
+
+.selector-search-input {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background-color: var(--color-main);
+    color: var(--font-color);
+    font-family: var(--font-family);
+    font-size: 0.95rem;
+    outline: none;
+    transition: all 0.2s;
+    box-sizing: border-box;
+    /* Added to prevent overflow */
+}
+
+.selector-search-input:focus {
+    border-color: var(--color-point);
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+}
+
+.selector-list-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.note-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+}
+
+.note-item:hover {
+    background-color: var(--color-sub);
+}
+
+.note-item.selected {
+    background-color: rgba(245, 158, 11, 0.1);
+    border-color: var(--color-point);
+}
+
+.note-item-title {
+    font-weight: 600;
+    color: var(--font-color);
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.note-item-path {
+    font-size: 0.8rem;
+    color: var(--font-color);
+    opacity: 0.6;
+}
+
+.empty-state {
+    padding: 40px;
+    text-align: center;
+    color: var(--font-color);
+    opacity: 0.5;
+    font-size: 0.9rem;
+}
+
+@keyframes fadeIn {
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes popIn {
+    to {
+        transform: scale(1);
+    }
+}

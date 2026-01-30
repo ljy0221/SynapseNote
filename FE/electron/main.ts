@@ -2,6 +2,8 @@ import { app, BrowserWindow, ipcMain } from 'electron' // ipcMain 추가
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
+import { DockerHealthService } from './docker/DockerHealthService'
+import { DockerExecService } from './docker/DockerExecService'
 
 const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -63,6 +65,12 @@ ipcMain.on('window-maximize', () => {
 ipcMain.on('window-close', () => {
   win?.close();
 });
+
+// 외부 브라우저 열기
+import { shell } from 'electron';
+ipcMain.on('open-external', (_, url: string) => {
+  shell.openExternal(url);
+});
 // ==========================================
 
 app.on('window-all-closed', () => {
@@ -78,4 +86,81 @@ app.on('activate', () => {
   }
 })
 
-app.whenReady().then(createWindow)
+// Docker 서비스 초기화
+const healthService = new DockerHealthService();
+const execService = new DockerExecService();
+
+// 앱 종료 시 정리
+app.on('will-quit', async () => {
+  console.log('[Main] Cleaning up sessions before quit');
+  await execService.cleanup();
+});
+
+// Docker IPC 핸들러
+ipcMain.handle('docker:check-installed', async () => {
+  return await healthService.checkInstalled();
+});
+
+ipcMain.handle('docker:check-running', async () => {
+  return await healthService.checkRunning();
+});
+
+// NEW: 통합 실행 핸들러
+ipcMain.handle('docker:execute', async (event, request) => {
+  return await execService.execute(request);
+});
+
+// NEW: 세션 상태 조회
+ipcMain.handle('docker:get-session-status', async (event, noteId, language) => {
+  return execService.getSessionStatus(noteId, language);
+});
+
+// NEW: 세션 종료
+ipcMain.handle('docker:destroy-session', async (event, noteId, language) => {
+  return await execService.destroySession(noteId, language);
+});
+
+// 기존 호환성 유지
+ipcMain.handle('docker:execute-single', async (event, request) => {
+  return await execService.executeSingle(request);
+});
+
+
+// Deep Link 설정
+if (process.defaultApp) {
+  if (process.argv.length >= 2) {
+    app.setAsDefaultProtocolClient('synapse', process.execPath, [path.resolve(process.argv[1])])
+  }
+} else {
+  app.setAsDefaultProtocolClient('synapse')
+}
+
+const gotTheLock = app.requestSingleInstanceLock()
+
+if (!gotTheLock) {
+  app.quit()
+} else {
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
+    // 누군가 두 번째 인스턴스를 실행하려고 하면 메인 윈도우를 포커스
+    if (win) {
+      if (win.isMinimized()) win.restore()
+      win.focus()
+
+      // Deep Link URL 찾기 (Windows/Linux)
+      const url = commandLine.find((arg) => arg.startsWith('synapse://'));
+      if (url) {
+        win.webContents.send('deep-link-url', url);
+      }
+    }
+  })
+
+  // macOS용 open-url 이벤트
+  app.on('open-url', (event, url) => {
+    event.preventDefault();
+    if (win) {
+      win.webContents.send('deep-link-url', url);
+    }
+  });
+
+  app.whenReady().then(createWindow)
+}

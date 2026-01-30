@@ -1,0 +1,177 @@
+/* src/components/features/mindmap/NoteNode.css */
+
+.note-node-container {
+    padding: 0;
+    border-radius: 16px;
+    /* 모서리가 둥근 정사각형 느낌 */
+    background-color: var(--color-main);
+    border: 2px solid var(--color-point);
+    /* 아이콘 색상과 동일한 외곽선 */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    width: 60px;
+    height: 60px;
+    min-width: 60px;
+    min-height: 60px;
+    aspect-ratio: 1 / 1;
+    /* 비율 강제 */
+    /* 내용물 중앙 정렬 */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+    font-family: var(--font-family);
+    color: var(--font-color);
+
+    /* 둥실둥실 애니메이션 적용 (delay는 인라인 스타일로 개별 적용) */
+    animation: floating 3s ease-in-out infinite;
+}
+
+/* 둥실둥실 키프레임 */
+@keyframes floating {
+    0% {
+        transform: translateY(0) scale(var(--scale, 1));
+    }
+
+    50% {
+        transform: translateY(-5px) scale(var(--scale, 1));
+    }
+
+    /* 위로 살짝 뜸 */
+    100% {
+        transform: translateY(0) scale(var(--scale, 1));
+    }
+}
+
+/* 호버 시 살짝 커지는 효과 */
+.note-node-container:hover {
+    transform: scale(1.15);
+    /* 작아졌으므로 확대 비율을 조금 더 키움 */
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    z-index: 10;
+    color: var(--color-point);
+    /* 호버 시 아이콘 색상 변경 */
+    border-color: var(--color-point);
+}
+
+/* 노드가 선택되었을 때 (클릭 시) 포인트 컬러 강조 */
+/* 노드가 선택되었을 때 (클릭 시) 포인트 컬러 강조 */
+/* 노드가 선택되었을 때 (클릭 시): 커진 상태 유지 + 빛나는 글로우 효과 */
+.note-node-container.selected {
+    border-color: var(--color-point);
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.6);
+    /* 강한 글로우 */
+    transform: scale(1.15);
+    z-index: 20;
+    color: var(--color-point);
+}
+
+/* 말풍선 툴팁 스타일 */
+/* 말풍선 툴팁 스타일 */
+.note-node-tooltip {
+    position: absolute;
+    top: -55px;
+    /* 위치 조금 더 위로 */
+    left: 50%;
+    transform: translateX(-50%);
+
+    background-color: var(--tooltip-bg, var(--color-point));
+    color: #fff;
+    padding: 6px 10px 6px 14px;
+    /* 오른쪽 패딩은 버튼 고려하여 조정 */
+    border-radius: 12px;
+    /* 모서리가 둥근 사각형 느낌 */
+
+    /* 내부 레이아웃 */
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+
+    animation: tooltipFadeIn 0.2s ease-out forwards;
+    /* pointer-events: none; -> 버튼 클릭을 위해 제거 또는 auto로 변경해야 함.
+       하지만 전체 노드가 draggable이라 까다로움. 
+       React Flow 노드 내부의 버튼 클릭은 nodrag 클래스가 필요할 수 있음.
+    */
+    pointer-events: auto;
+    z-index: 100;
+}
+
+.tooltip-nav-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.tooltip-nav-btn:hover {
+    color: #fff;
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* 말풍선 꼬리 */
+.note-node-tooltip::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 7px 6px 0;
+    border-style: solid;
+    border-color: var(--tooltip-bg, var(--color-point)) transparent transparent transparent;
+}
+
+@keyframes tooltipFadeIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, 10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+
+.note-node-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+/* 텍스트 관련 스타일 제거 또는 숨김 */
+.note-node-title,
+.note-node-desc {
+    display: none;
+}
+
+/* React Flow 핸들(연결점) 스타일 커스텀 */
+.note-node-handle {
+    width: 8px;
+    height: 8px;
+    background-color: var(--color-point);
+    border: 2px solid var(--color-main);
+    transition: background-color 0.2s;
+}
+
+.note-node-handle:hover {
+    background-color: var(--color-point);
+}
+
+/* 연결 중일 때 핸들 강조 */
+.react-flow__handle-connecting .note-node-handle {
+    background-color: var(--color-point) !important;
+}

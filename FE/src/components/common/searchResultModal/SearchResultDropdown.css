@@ -1,0 +1,59 @@
+.search-dropdown {
+  background: var(--color-main);
+  border: 1px solid var(--color-sub);
+  border-radius: 8px;
+
+  /* ContextMenu랑 같은 계열 */
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  z-index: 1000;
+}
+
+/* 상단 라벨 (header 느낌 최소화) */
+.search-dropdown-header {
+  padding: 6px 12px;
+  font-size: 12px;
+  color: var(--font-color);
+  opacity: 0.7;
+
+  border-bottom: 1px solid var(--color-sub);
+}
+
+.search-dropdown-content {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+/* 상태 메시지 */
+.search-dropdown-state {
+  padding: 16px;
+  text-align: center;
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+/* 결과 아이템 */
+.search-dropdown-item {
+  padding: 8px 12px;
+  cursor: pointer;
+
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.search-dropdown-item:hover {
+  background: var(--color-sub);
+}
+
+/* 제목 */
+.search-dropdown-title {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* 경로 */
+.search-dropdown-path {
+  font-size: 11px;
+  opacity: 0.6;
+}

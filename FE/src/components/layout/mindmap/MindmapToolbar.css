@@ -1,0 +1,77 @@
+/* src/components/layout/mindmap/MindmapToolbar.css */
+
+.mindmap-toolbar-layout {
+    /* 1. 위치 및 배치 */
+    position: absolute;
+    top: 4.5rem;
+    /* 좌상단 라벨(1.5rem + 높이) 아래로 이동 */
+    left: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    /* 세로형 툴바 */
+    gap: 8px;
+    /* 전체 섹션 간 간격 축소 (12px -> 8px) */
+    padding: 12px;
+
+    /* 2. 테마 기반 스타일 */
+    background-color: var(--color-main);
+    border: 1px solid var(--color-sub);
+    border-radius: 20px;
+    /* 좀 더 둥글게 처리하여 부드러운 인상 */
+
+    /* 3. 시각 효과 */
+    /* 배경이 살짝 비치는 효과를 주어 캔버스와의 입체감 형성 */
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+
+    /* 다크모드/라이트모드 모두 어울리는 부드러운 그림자 */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08),
+        0 4px 10px rgba(0, 0, 0, 0.04);
+
+    /* 캔버스 요소들보다 항상 위에 위치 */
+    z-index: 100;
+
+    /* 툴바 자체가 드래그되거나 선택되지 않도록 보호 */
+    user-select: none;
+}
+
+/* [New] 섹션 내부 버튼 간격 조정 */
+.toolbar-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    /* 상단 버튼끼리는 더 떨어뜨림 (기존 0 -> 16px) */
+}
+
+/* 툴바 내 기능 그룹을 나눌 때 사용하는 구분선 */
+.toolbar-divider {
+    width: 24px;
+    /* 세로형이므로 가로 길이를 제한 */
+    height: 1px;
+    background-color: var(--color-sub);
+    margin: 2px auto;
+    /* 마진 축소 (4px -> 2px) */
+    opacity: 0.6;
+}
+
+/* 툴바 내 버튼들이 중앙 정렬되도록 보장 */
+.mindmap-toolbar-layout>button {
+    margin: 0 auto;
+}
+
+/* 툴바가 너무 길어질 경우를 대비한 반응형 처리 (선택 사항) */
+@media (max-height: 500px) {
+    .mindmap-toolbar-layout {
+        flex-direction: row;
+        top: auto;
+        bottom: 1.5rem;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    .toolbar-divider {
+        width: 1px;
+        height: 20px;
+        margin: 0 4px;
+    }
+}

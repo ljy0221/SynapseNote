@@ -1,118 +1,185 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 // 스타일 임포트
 import './components/common/styles/Theme.css';
 import './App.css';
 
-// 레이아웃 컴포넌트 (폴더: camelCase, 파일: PascalCase)
+// Context 임포트
+import { ToastProvider } from './context/ToastContext';
+import { UserProvider } from './context/UserContext';
+
+// 레이아웃 컴포넌트
 import { Header } from './components/layout/header/Header';
 import { Sidebar } from './components/layout/sidebar/Sidebar';
 import { SideMenuBar } from './components/layout/sideMenuBar/SideMenuBar';
-import { NoteToolBar } from './components/layout/noteToolbar/NoteToolbar';
 
 // 공통 컴포넌트
-import WindowControlButton from './components/common/windowControlButton/WindowControlButton';
 import ThemeToggle from './components/common/themeToggle/ThemeToggle';
+import WindowControlButton from './components/common/WindowControlButton/WindowControlButton';
+import { useTheme } from './components/features/theme/UseTheme';
+import { DockerErrorModal } from './components/common/modal/DockerErrorModal';
+
+// Electron 체크
+const isElectron = typeof window !== 'undefined' && (window as any).electronAPI !== undefined;
 
 // 페이지 컴포넌트
-import Home from './pages/home/Home'; // home 폴더 안에 Home.tsx가 있다고 가정
+import Home from './pages/home/Home';
 import Login from './pages/login/Login';
+import OAuthCallback from './pages/login/OAuthCallback';
 import Note from './pages/note/Note';
 import MindMap from './pages/mindmap/MindMap';
-import Recommend from './pages/recommend/Recommend';
-// 사이드바가 허용되는 경로
-const SIDEBAR_ROUTES = ['/mindmap', '/note'];
+import Bookmark from './pages/bookmark/Bookmark';
+
+// 경로 설정
+const SIDEBAR_ROUTES = ['/note'];
+const TOOLBAR_ROUTES = ['/note'];
 
 function AppContent() {
-    const [isSidebarActive, setIsSidebarActive] = useState(false); // 가변 사이드바 상태
-    const [isToolbarActive, setIsToolbarActive] = useState(true);
-    const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+    const [isSidebarActive, setIsSidebarActive] = useState(false);
+    const [isToolbarActive] = useState(true);
+    const [dockerStatus, setDockerStatus] = useState<'checking' | 'ok' | 'error'>('checking');
+    const [dockerErrorType, setDockerErrorType] = useState<'installed' | 'running' | null>(null);
+    const [isDockerErrorOpen, setIsDockerErrorOpen] = useState(false);
 
+    const { themeMode, toggleTheme } = useTheme();
     const location = useLocation();
+    const navigate = useNavigate();
     const isLoginPage = location.pathname === '/login';
 
-    useEffect(() => {
-        document.documentElement.setAttribute('data-theme', theme);
-    }, [theme]);
+    // Docker 헬스 체크
+    async function checkDocker() {
+        if (!isElectron) {
+            setDockerStatus('ok');
+            return;
+        }
 
-    const handleThemeToggle = () => setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
+        try {
+            const installed = await (window as any).dockerAPI.checkInstalled();
+            if (!installed) {
+                setDockerStatus('error');
+                setDockerErrorType('installed');
+                setIsDockerErrorOpen(true);
+                return;
+            }
+
+            const running = await (window as any).dockerAPI.checkRunning();
+            if (!running) {
+                setDockerStatus('error');
+                setDockerErrorType('running');
+                setIsDockerErrorOpen(true);
+                return;
+            }
+
+            setDockerStatus('ok');
+            setDockerErrorType(null);
+            setIsDockerErrorOpen(false);
+        } catch (error) {
+            console.error('[App] Docker health check failed:', error);
+            setDockerStatus('error');
+            setDockerErrorType('running');
+            setIsDockerErrorOpen(true);
+        }
+    }
+
+    useEffect(() => {
+        checkDocker();
+    }, []);
+
+    const handleRetryDocker = () => {
+        setIsDockerErrorOpen(false);
+        setDockerStatus('checking');
+        setTimeout(() => {
+            checkDocker();
+        }, 1000);
+    };
+
+    const handleCloseDockerError = () => {
+        setIsDockerErrorOpen(false);
+    };
+
+    // Deep Link 리스너
+    useEffect(() => {
+        if (!isElectron || !window.ipcRenderer) return;
+
+        window.ipcRenderer.on('deep-link-url', (_event, url: any) => {
+            console.log('[App] Received deep link:', url);
+            if (typeof url === 'string' && url.startsWith('synapse://')) {
+                const path = url.replace('synapse://', '/');
+                navigate(path);
+            }
+        });
+    }, [navigate]);
+
     const toggleSidebar = () => setIsSidebarActive(prev => !prev);
 
-
-
-    
-    /** Sidebar */
     const isSidebarAllowed = SIDEBAR_ROUTES.some(path =>
         location.pathname.startsWith(path)
     );
+
     useEffect(() => {
         if (isSidebarAllowed) {
-        setIsSidebarActive(true);
+            setIsSidebarActive(true);
         } else {
-        setIsSidebarActive(false);
+            setIsSidebarActive(false);
         }
     }, [isSidebarAllowed]);
 
+    const isToolbarAllowed = TOOLBAR_ROUTES.some(path =>
+        location.pathname.startsWith(path)
+    );
 
     return (
         <div className="app-container">
-            {/* 1. 헤더 영역 */}
             {isLoginPage ? (
                 <div className="login-window-header">
                     <div className="header-spacer"></div>
                     <div className="header-right-zone">
-                        <ThemeToggle isDark={theme === 'dark'} onToggle={handleThemeToggle} />
-                        <WindowControlButton />
+                        <ThemeToggle themeMode={themeMode} onToggle={toggleTheme} />
+                        {isElectron && <WindowControlButton />}
                     </div>
                 </div>
             ) : (
                 <Header
-                    theme={theme}
-                    onToggleTheme={handleThemeToggle}
+                    isSidebarActive={isSidebarActive}
                     onToggleSidebar={toggleSidebar}
                 />
             )}
 
-            {/* 2. 네비게이션 및 사이드바 영역 (로그인 아닐 때만) */}
+            <DockerErrorModal
+                isOpen={isDockerErrorOpen}
+                type={dockerErrorType}
+                onRetry={handleRetryDocker}
+                onClose={handleCloseDockerError}
+            />
+
             {!isLoginPage && (
                 <>
-                    {/* 최좌측 고정 네비게이션 바 */}
                     <SideMenuBar />
-
-                    {/* 헤더 버튼으로 열고 닫는 가변 사이드바 (디렉토리 등) */}
                     {isSidebarAllowed && (
-                    <Sidebar 
-                        isOpen={isSidebarActive}
-                        onToggle={toggleSidebar}
-                    >
-                        <div className="sidebar-content">
-                        {/* 추후 이곳에 디렉토리 구조 등이 들어감 */}
-                        <p>Directory Structure</p>
-                        </div>
-                    </Sidebar>
+                        <Sidebar
+                            isOpen={isSidebarActive}
+                            onToggle={toggleSidebar}
+                        />
                     )}
                 </>
             )}
 
-            {/* 3. 메인 콘텐츠 영역 */}
-            {/* 클래스명을 통해 SideMenuBar(고정)와 Sidebar(가변)의 너비만큼 마진 조정 */}
             <main
                 className={[
                     !isLoginPage ? 'main-content' : '',
                     !isLoginPage && isSidebarAllowed && isSidebarActive ? 'sidebar-open' : '',
-                    !isLoginPage && isToolbarActive ? 'toolbar-open' : '',
+                    !isLoginPage && isToolbarActive && isToolbarAllowed ? 'toolbar-open' : '',
                 ].join(' ')}
             >
-
-
                 <Routes>
                     <Route path="/" element={<Navigate to="/login" replace />} />
+                    <Route path="/auth/:provider/callback" element={<OAuthCallback />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/home" element={<Home />} />
                     <Route path="/note" element={<Note />} />
                     <Route path="/mindmap" element={<MindMap />} />
-                    <Route path="/recommend" element={<Recommend />} />
+                    <Route path="/recommend" element={<Bookmark />} />
                 </Routes>
             </main>
         </div>
@@ -122,7 +189,11 @@ function AppContent() {
 export default function App() {
     return (
         <Router>
-            <AppContent />
+            <ToastProvider>
+                <UserProvider>
+                    <AppContent />
+                </UserProvider>
+            </ToastProvider>
         </Router>
     );
 }

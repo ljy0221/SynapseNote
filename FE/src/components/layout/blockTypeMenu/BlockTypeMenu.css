@@ -1,0 +1,79 @@
+.block-menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 999;
+    background: transparent;
+}
+
+.block-type-menu {
+    position: absolute;
+    left: 40px;
+    top: 0;
+    background: var(--color-sub);
+    border: 1px solid rgba(128, 128, 128, 0.2);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 8px;
+    z-index: 1000;
+    min-width: 280px;
+}
+
+.menu-header {
+    padding: 8px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(128, 128, 128, 0.8);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 10px 12px;
+    background: none;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: left;
+    transition: background-color 0.2s;
+}
+
+.menu-item:hover {
+    background-color: rgba(128, 128, 128, 0.1);
+}
+
+.menu-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    background: rgba(128, 128, 128, 0.1);
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--font-color);
+}
+
+.menu-content {
+    flex: 1;
+}
+
+.menu-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--font-color);
+    margin-bottom: 2px;
+}
+
+.menu-description {
+    font-size: 12px;
+    color: rgba(128, 128, 128, 0.7);
+}

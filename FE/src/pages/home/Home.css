@@ -12,7 +12,8 @@
 
 /* Header */
 .home-header {
-  margin-bottom: 24px;
+  /* develop: 상단 여백을 넓혀 헤더와의 간격 확보 */
+  margin-top: 48px;
 }
 
 .home-header h2 {
@@ -28,8 +29,8 @@
 /* 카드 그리드 */
 .home-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
-  /* 🔥 좌: 메인 / 우: 보조 */
+  /* 기본적으로 1열 구조로 시작 (아래 미디어 쿼리 혹은 그리드 설정에 따라 조정 가능) */
+  grid-template-columns: 1fr;
   gap: 24px;
 }
 
@@ -42,12 +43,8 @@
   box-sizing: border-box;
 }
 
-.home-grid {
-  grid-template-columns: 1fr;
-}
-
-/* 스트릭 카드 전용 */
-.streak-card {
+/* 섹션 카드 (스트릭 및 주요 섹션용) */
+.section-card {
   width: 100%;
   max-width: 750px;
   padding: 0;

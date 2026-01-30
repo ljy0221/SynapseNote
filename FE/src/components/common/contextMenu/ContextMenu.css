@@ -1,0 +1,23 @@
+/* ContextMenu.css */
+.context-menu {
+  position: fixed;
+  background: var(--color-main);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  padding: 4px;
+  z-index: 9999;
+}
+
+.context-menu-item {
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.context-menu-item:hover {
+  background: var(--color-sub);
+}
+
+.context-menu-item.danger {
+  color: #e54848;
+}

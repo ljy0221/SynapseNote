@@ -1,88 +1,99 @@
 /* src/components/layout/noteMain/NoteMain.css */
 
 .note-main-layout {
+    flex: 1;
+    /* 남은 공간 차지 */
     display: flex;
     flex-direction: column;
-    width: 100%;
-    max-width: 900px;
-    margin: 0 auto;
-    /* 좌우 패딩을 24px -> 16px 정도로 줄여서 콘텐츠 영역을 넓힙니다. */
-    padding: 40px 16px; 
+    height: 100%;
+
+    background-color: var(--color-sub);
+    /* 노션/Jupyter 느낌의 배경색 */
+    overflow-y: scroll;
+    /* 스크롤바 강제 */
+    overflow-x: hidden;
+
     box-sizing: border-box;
-    /* 툴바에 밀리지 않도록 최소 너비 해제 */
-    min-width: 0; 
+    position: relative;
 }
 
-/* 카드 공통 스타일 */
-.content-card {
-    background-color: var(--bg-secondary, rgba(255, 255, 255, 0.03));
-    border-radius: 12px;
-    border: 1px solid rgba(128, 128, 128, 0.1);
-    overflow: hidden;
-    margin-bottom: 20px;
+/* 내부 스타일: 헤더 영역 */
+.note-main-header {
+    width: 100%;
+    max-width: 1400px;
+    /* 콘텐츠 폭 확장 */
+    margin: 0 auto;
+    padding-left: 40px;
+    padding-right: 40px;
+    box-sizing: border-box;
+    margin-top: 80px;
+    margin-bottom: 40px;
+    flex-shrink: 0;
 }
 
-.media-block {
-    height: 300px;
-    background-color: #000; /* 비디오 영역 */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-}
-
-.block-header {
-    display: flex;
-    justify-content: space-between;
-    padding: 12px 16px;
-    background-color: rgba(0, 0, 0, 0.05);
-}
-
-.lang-tag {
-    background-color: var(--color-point); /* Amber 색상 */
-    color: #fff;
-    border-radius: 4px;
-    font-size: 11px; /* 글자 크기를 살짝 줄이면 더 세련되어 보입니다. */
-    font-weight: 700;
-    
-    /* ✅ 핵심: 수직/수평 중앙 정렬 */
-    display: inline-flex;
-    align-items: center;    /* 수직 중앙 */
-    justify-content: center; /* 수평 중앙 */
-    
-    /* ✅ 상하 패딩을 줄이고 line-height를 1로 설정하여 상자 높이를 슬림하게 조절 */
-    padding: 2px 8px;
-    line-height: 1;
-    height: 18px; /* 명시적으로 높이를 잡아주면 더 정확하게 정렬됩니다. */
-}
-
-/* 목업의 + Add Block 버튼 */
-.add-block-button {
-    background-color: var(--color-point);
-    color: #fff;
+/* 제목 입력창 */
+.note-main-title-input {
+    width: 100%;
     border: none;
-    padding: 10px 24px;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity 0.2s;
+    outline: none;
+    background: transparent;
+    font-size: 42px;
+    font-weight: 800;
+    color: var(--font-color, #2c2c2c);
+    font-family: var(--font-family, 'Pretendard', sans-serif);
 }
 
-.add-block-button:hover {
-    opacity: 0.9;
-}
-
-.note-file-info {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    opacity: 0.7;
-    color: var(--font-color);
-}
-
+/* 콘텐츠 영역 */
 .note-content-area {
     width: 100%;
-    display: flex;
-    flex-direction: column;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding-left: 40px;
+    padding-right: 40px;
+    box-sizing: border-box;
+    overflow: visible;
+    padding-bottom: 70vh; /* 하단 여백 충분히 확보 */
 }
 
+/* 텍스트 및 헤딩 블록 */
+.text-block-wrapper,
+.heading-block-wrapper {
+    width: 100%;
+    position: relative;
+    display: flex;
+}
+
+.editable-text-area {
+    width: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 18px;
+    line-height: 1.6;
+    color: var(--font-color, #333);
+    font-family: var(--font-family, 'Pretendard', sans-serif);
+    resize: none;
+    padding: 6px 0;
+    overflow: hidden;
+}
+
+/* 스크롤바 디자인 (커스텀) */
+.note-main-layout::-webkit-scrollbar {
+    display: block !important;
+    width: 14px;
+    background-color: transparent;
+}
+
+.note-main-layout::-webkit-scrollbar-thumb {
+    background-color: var(--font-color-sub);
+    /* 테마 변수 사용 */
+    border: 4px solid transparent;
+    /* 투명 테두리로 슬림한 느낌 부여 */
+    border-radius: 10px;
+    background-clip: content-box;
+    opacity: 0.5;
+}
+
+.note-main-layout::-webkit-scrollbar-thumb:hover {
+    background-color: var(--font-color);
+}

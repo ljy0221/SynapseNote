@@ -1,0 +1,18 @@
+/* src/components/common/blockCopyButton/BlockCopyButton.css */
+.block-copy-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  color: var(--font-color, #333);
+  opacity: 0.7;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 4px 8px;
+  transition: opacity 0.2s;
+}
+
+.block-copy-btn:hover {
+  opacity: 1;
+}
