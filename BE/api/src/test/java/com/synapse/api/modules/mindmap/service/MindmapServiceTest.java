@@ -11,7 +11,7 @@ import com.synapse.api.modules.mindmap.entity.MindmapEdge;
 import com.synapse.api.modules.mindmap.repository.MindmapEdgeRepository;
 import com.synapse.api.modules.note.entity.Note;
 import com.synapse.api.modules.note.repository.NoteRepository;
-import com.synapse.api.modules.user.entity.User;
+import com.synapse.api.modules.member.entity.Member;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -43,25 +43,25 @@ class MindmapServiceTest {
     @InjectMocks
     private MindmapService mindmapService;
 
-    private UUID userId;
+    private UUID memberId;
     private UUID noteId;
-    private User user;
+    private Member member;
     private Note note;
 
     @BeforeEach
     void setUp() {
-        userId = UUID.randomUUID();
+        memberId = UUID.randomUUID();
         noteId = UUID.randomUUID();
 
-        user = User.builder()
-                .id(userId)
+        member = Member.builder()
+                .id(memberId)
                 .email("test@example.com")
                 .build();
 
         note = Note.builder()
                 .id(noteId)
                 .title("Test Note")
-                .createdBy(user)
+                .createdBy(member)
                 .build();
     }
 
@@ -80,7 +80,7 @@ class MindmapServiceTest {
             given(noteRepository.findById(noteId)).willReturn(Optional.of(note));
 
             // when
-            mindmapService.addMindMapNode(userId, request);
+            mindmapService.addMindMapNode(memberId, request);
 
             // then
             then(noteRepository).should().findById(noteId);
@@ -106,13 +106,13 @@ class MindmapServiceTest {
             parentNote = Note.builder()
                     .id(parentId)
                     .title("Parent Note")
-                    .createdBy(user)
+                    .createdBy(member)
                     .build();
 
             childNote = Note.builder()
                     .id(childId)
                     .title("Child Note")
-                    .createdBy(user)
+                    .createdBy(member)
                     .build();
         }
 
@@ -125,7 +125,7 @@ class MindmapServiceTest {
             given(noteRepository.findById(parentId)).willReturn(Optional.of(parentNote));
 
             // when
-            mindmapService.addMindMapEdge(userId, request);
+            mindmapService.addMindMapEdge(memberId, request);
 
             // then
             then(mindmapEdgeRepository).should().save(any(MindmapEdge.class));
@@ -144,7 +144,7 @@ class MindmapServiceTest {
             given(noteRepository.findById(noteId)).willReturn(Optional.of(note));
 
             // when
-            mindmapService.deleteNode(userId, noteId);
+            mindmapService.deleteNode(memberId, noteId);
 
             // then
             then(mindmapEdgeRepository).should().deleteByTo_Id(noteId);
@@ -162,15 +162,15 @@ class MindmapServiceTest {
         @DisplayName("마인드맵 전체 삭제 시 모든 엣지 삭제 및 노드 좌표 초기화")
         void deleteMindmap() {
             // given
-            given(mindmapEdgeRepository.deleteAllByUserId(userId)).willReturn(5);
-            given(noteRepository.resetMindmapNodePositions(userId)).willReturn(3);
+            given(mindmapEdgeRepository.deleteAllByMemberId(memberId)).willReturn(5);
+            given(noteRepository.resetMindmapNodePositions(memberId)).willReturn(3);
 
             // when
-            mindmapService.deleteMindmap(userId);
+            mindmapService.deleteMindmap(memberId);
 
             // then
-            then(mindmapEdgeRepository).should().deleteAllByUserId(userId);
-            then(noteRepository).should().resetMindmapNodePositions(userId);
+            then(mindmapEdgeRepository).should().deleteAllByMemberId(memberId);
+            then(noteRepository).should().resetMindmapNodePositions(memberId);
         }
     }
 
@@ -185,13 +185,13 @@ class MindmapServiceTest {
             UUID parentId = UUID.randomUUID();
             UUID childId = UUID.randomUUID();
             MindmapEdgeRequest request = new MindmapEdgeRequest(parentId, childId);
-            given(mindmapEdgeRepository.deleteByUserAndEdge(userId, parentId, childId)).willReturn(1);
+            given(mindmapEdgeRepository.deleteByMemberAndEdge(memberId, parentId, childId)).willReturn(1);
 
             // when
-            mindmapService.deleteConnection(userId, request);
+            mindmapService.deleteConnection(memberId, request);
 
             // then
-            then(mindmapEdgeRepository).should().deleteByUserAndEdge(userId, parentId, childId);
+            then(mindmapEdgeRepository).should().deleteByMemberAndEdge(memberId, parentId, childId);
         }
     }
 
@@ -209,14 +209,14 @@ class MindmapServiceTest {
             Note note1 = Note.builder()
                     .id(note1Id)
                     .title("Note 1")
-                    .createdBy(user)
+                    .createdBy(member)
                     .build();
             note1.updatePosition(100.0, 200.0);
 
             Note note2 = Note.builder()
                     .id(note2Id)
                     .title("Note 2")
-                    .createdBy(user)
+                    .createdBy(member)
                     .build();
             note2.updatePosition(300.0, 400.0);
 
@@ -225,11 +225,11 @@ class MindmapServiceTest {
             MindmapEdge edge = MindmapEdge.createMindMapEdge(note1, note2);
             List<MindmapEdge> edges = List.of(edge);
 
-            given(noteRepository.findMindMapNodesByUser(userId)).willReturn(notes);
-            given(mindmapEdgeRepository.findAllByUser(userId)).willReturn(edges);
+            given(noteRepository.findMindMapNodesByMember(memberId)).willReturn(notes);
+            given(mindmapEdgeRepository.findAllByMember(memberId)).willReturn(edges);
 
             // when
-            MindmapResponse response = mindmapService.getMindmap(userId);
+            MindmapResponse response = mindmapService.getMindmap(memberId);
 
             // then
             assertThat(response.nodes()).hasSize(2);
@@ -263,7 +263,7 @@ class MindmapServiceTest {
             given(noteRepository.findAllById(List.of(noteId))).willReturn(List.of(note));
 
             // when
-            mindmapService.updateNodePositions(userId, request);
+            mindmapService.updateNodePositions(memberId, request);
 
             // then
             assertThat(note.getPointX()).isEqualTo(150.0);

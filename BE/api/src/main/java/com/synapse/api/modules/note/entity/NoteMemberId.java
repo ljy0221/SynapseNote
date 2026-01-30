@@ -21,6 +21,6 @@ public class NoteMemberId implements Serializable {
     @Column(name = "note_id", columnDefinition = "uuid")
     private UUID noteId;
 
-    @Column(name = "user_id", columnDefinition = "uuid")
-    private UUID userId;
+    @Column(name = "member_id", columnDefinition = "uuid")
+    private UUID memberId;
 }

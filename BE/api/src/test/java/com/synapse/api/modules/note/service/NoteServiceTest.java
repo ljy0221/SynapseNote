@@ -8,8 +8,7 @@ import com.synapse.api.modules.note.dto.response.NotePageResponse;
 import com.synapse.api.modules.note.entity.Note;
 import com.synapse.api.modules.note.repository.NoteMemberRepository;
 import com.synapse.api.modules.note.repository.NoteRepository;
-import com.synapse.api.modules.user.entity.User;
-import com.synapse.api.util.exception.BusinessException;
+import com.synapse.api.modules.member.entity.Member;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -54,10 +53,10 @@ class NoteServiceTest {
                 // given
                 UUID userId = UUID.randomUUID();
                 UUID noteId = UUID.randomUUID();
-                User user = User.builder().id(userId).build();
+                Member member = Member.builder().id(userId).build();
                 Note note = Note.builder()
                                 .id(noteId)
-                                .createdBy(user)
+                                .createdBy(member)
                                 .bookmark(false)
                                 .build();
 
@@ -76,10 +75,10 @@ class NoteServiceTest {
                 // given
                 UUID userId = UUID.randomUUID();
                 UUID noteId = UUID.randomUUID();
-                User user = User.builder().id(userId).build();
+                Member member = Member.builder().id(userId).build();
                 Note note = Note.builder()
                                 .id(noteId)
-                                .createdBy(user)
+                                .createdBy(member)
                                 .bookmark(true)
                                 .build();
 
@@ -99,12 +98,12 @@ class NoteServiceTest {
                 UUID userId = UUID.randomUUID();
                 int page = 0;
                 int size = 10;
-                User user = User.builder().id(userId).name("Test User").build();
+                Member member = Member.builder().id(userId).name("Test User").build();
 
                 Note note1 = Note.builder()
                                 .id(UUID.randomUUID())
                                 .title("Note 1")
-                                .createdBy(user)
+                                .createdBy(member)
                                 .bookmark(true)
                                 .createdAt(LocalDateTime.now())
                                 .updatedAt(LocalDateTime.now())
@@ -113,7 +112,7 @@ class NoteServiceTest {
                 Note note2 = Note.builder()
                                 .id(UUID.randomUUID())
                                 .title("Note 2")
-                                .createdBy(user)
+                                .createdBy(member)
                                 .bookmark(true)
                                 .createdAt(LocalDateTime.now())
                                 .updatedAt(LocalDateTime.now())
@@ -122,7 +121,7 @@ class NoteServiceTest {
                 List<Note> notes = List.of(note1, note2);
                 Page<Note> notePage = new PageImpl<>(notes, PageRequest.of(page, size), notes.size());
 
-                given(noteRepository.findBookmarkedNotesByUserId(eq(userId), any(Pageable.class)))
+                given(noteRepository.findBookmarkedNotesByMemberId(eq(userId), any(Pageable.class)))
                                 .willReturn(notePage);
 
                 // when
@@ -134,7 +133,7 @@ class NoteServiceTest {
                 assertThat(response.totalElements()).isEqualTo(2);
                 assertThat(response.content().get(0).bookmark()).isTrue();
 
-                verify(noteRepository).findBookmarkedNotesByUserId(eq(userId), any(Pageable.class));
+                verify(noteRepository).findBookmarkedNotesByMemberId(eq(userId), any(Pageable.class));
         }
 
         // =========================================================================
@@ -148,10 +147,10 @@ class NoteServiceTest {
                 UUID userId = UUID.randomUUID();
                 UUID noteId = UUID.randomUUID();
                 String blockId = "block-uuid-001";
-                User user = User.builder().id(userId).build();
+                Member member = Member.builder().id(userId).build();
                 Note note = Note.builder()
                                 .id(noteId)
-                                .createdBy(user)
+                                .createdBy(member)
                                 .directoryPath("/test/path")
                                 .build();
 
@@ -171,10 +170,10 @@ class NoteServiceTest {
                 UUID userId = UUID.randomUUID();
                 UUID noteId = UUID.randomUUID();
                 String blockId = "block-uuid-001";
-                User user = User.builder().id(userId).build();
+                Member member = Member.builder().id(userId).build();
                 Note note = Note.builder()
                                 .id(noteId)
-                                .createdBy(user)
+                                .createdBy(member)
                                 .directoryPath("/test/path")
                                 .build();
 
@@ -195,10 +194,10 @@ class NoteServiceTest {
                 UUID noteId = UUID.randomUUID();
                 int page = 0;
                 int size = 10;
-                User user = User.builder().id(userId).build();
+                Member member = Member.builder().id(userId).build();
                 Note note = Note.builder()
                                 .id(noteId)
-                                .createdBy(user)
+                                .createdBy(member)
                                 .directoryPath("/projects/backend")
                                 .build();
 
