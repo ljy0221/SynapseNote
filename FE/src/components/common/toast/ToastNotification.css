@@ -16,6 +16,19 @@
     animation: fadeInOut 2.3s ease-in-out forwards;
 }
 
+/* Success Type (Default) */
+.toast-notification.success {
+    border-color: var(--color-point);
+    color: var(--font-color);
+}
+
+/* Error Type */
+.toast-notification.error {
+    border-color: #ef4444; /* Red-500 equivalent */
+    color: #ef4444;
+    background-color: rgba(239, 68, 68, 0.1); /* Light red background */
+}
+
 @keyframes fadeInOut {
     0% {
         opacity: 0;
