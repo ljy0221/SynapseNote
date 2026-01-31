@@ -3,7 +3,7 @@ export type NoteMemberRole = 'OWNER' | 'EDITOR' | 'VIEWER';
 
 /** 노트 멤버 (owner, members 공용) */
 export interface NoteMember {
-  userId: string;
+  memberId: string;
   email: string;
   name: string;
   role?: NoteMemberRole;
