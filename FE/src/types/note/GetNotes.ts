@@ -2,8 +2,8 @@
 export type NoteRole = 'OWNER' | 'EDITOR' | 'VIEWER';
 
 export interface NoteListItem {
-  noteId: string;        // ⭐ 유일 식별자
-  userId: string;        // ⭐ 소유자
+  noteId: string;        //  유일 식별자
+  memberId: string;        //  소유자
   title: string;
   directoryPath: string;
   pointX: number;
