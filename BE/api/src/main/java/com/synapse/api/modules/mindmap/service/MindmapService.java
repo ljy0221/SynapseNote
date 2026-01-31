@@ -31,20 +31,6 @@ public class MindmapService {
     private final MindmapEdgeRepository mindmapEdgeRepository;
     private final NoteRepository noteRepository;
 
-    private void addMindMapEdge(UUID memberId, @Valid MindmapEdgeDto request) {
-        Note child = noteRepository.findById(request.fromId())
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
-        Note parent = noteRepository.findById(request.toId())
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
-
-        validNoteOwner(memberId, child);
-        validNoteOwner(memberId, parent);
-
-        MindmapEdge mindMapEdge = MindmapEdge.of(child, parent);
-
-        mindmapEdgeRepository.save(mindMapEdge);
-    }
-
     public MindmapResponse getMindmap(UUID memberId) {
         List<Note> notes = noteRepository.findMindMapNodesByMember(memberId);
         List<MindmapEdge> edges = mindmapEdgeRepository.findAllByMember(memberId);
@@ -81,25 +67,37 @@ public class MindmapService {
 
     @Transactional
     public void syncMindmap(UUID memberId, SyncMindmapRequest request) {
-        if (request.nodes() != null && !request.nodes().isEmpty()) {
-            List<UUID> nodeIds = request.nodes().stream()
-                    .map(NodePositionDto::nodeId)
-                    .toList();
+        if (request.nodes() != null) {
 
-            List<Note> notes = noteRepository.findAllById(nodeIds);
+            List<Note> currentMindmapNodes = noteRepository.findMindMapNodesByMember(memberId);
+            Map<UUID, Note> currentNodeMap = currentMindmapNodes.stream()
+                    .collect(Collectors.toMap(Note::getId, n -> n));
 
-            if (notes.size() != nodeIds.size()) {
-                throw new BusinessException(ErrorCode.NOTE_NOT_FOUND);
+            if (!request.nodes().isEmpty()) {
+                List<UUID> validNodeIds = request.nodes().stream()
+                        .map(NodePositionDto::nodeId)
+                        .toList();
+
+                Map<UUID, NodePositionDto> requestNodeMap = request.nodes().stream()
+                        .collect(Collectors.toMap(NodePositionDto::nodeId, dto -> dto));
+
+                List<Note> requestedNotes = noteRepository.findAllById(validNodeIds);
+
+                if (requestedNotes.size() != validNodeIds.size()) {
+                    throw new BusinessException(ErrorCode.NOTE_NOT_FOUND);
+                }
+
+                for (Note note : requestedNotes) {
+                    validNoteOwner(memberId, note);
+                    NodePositionDto dto = requestNodeMap.get(note.getId());
+                    note.updatePosition(dto.x(), dto.y());
+
+                    currentNodeMap.remove(note.getId());
+                }
             }
 
-            Map<UUID, NodePositionDto> positionMap = request.nodes().stream()
-                    .collect(Collectors.toMap(NodePositionDto::nodeId, dto -> dto));
-
-            for (Note note : notes) {
-                validNoteOwner(memberId, note);
-
-                NodePositionDto dto = positionMap.get(note.getId());
-                note.updatePosition(dto.x(), dto.y());
+            for (Note noteToRemove : currentNodeMap.values()) {
+                noteToRemove.deleteNode();
             }
         }
 
@@ -135,10 +133,30 @@ public class MindmapService {
                 .toList();
 
         if (!edgesToAdd.isEmpty()) {
+            java.util.Set<UUID> relatedNodeIds = java.util.stream.Stream.concat(
+                    edgesToAdd.stream().map(MindmapEdgeDto::fromId),
+                    edgesToAdd.stream().map(MindmapEdgeDto::toId)).collect(Collectors.toSet());
+
+            Map<UUID, Note> relatedNotes = noteRepository.findAllById(relatedNodeIds).stream()
+                    .collect(Collectors.toMap(Note::getId, n -> n));
+
+            if (relatedNotes.size() != relatedNodeIds.size()) {
+                throw new BusinessException(ErrorCode.NOTE_NOT_FOUND);
+            }
+
+            List<MindmapEdge> newEdges = new java.util.ArrayList<>();
 
             for (MindmapEdgeDto req : edgesToAdd) {
-                addMindMapEdge(memberId, req);
+                Note child = relatedNotes.get(req.fromId());
+                Note parent = relatedNotes.get(req.toId());
+
+                validNoteOwner(memberId, child);
+                validNoteOwner(memberId, parent);
+
+                newEdges.add(MindmapEdge.of(child, parent));
             }
+
+            mindmapEdgeRepository.saveAll(newEdges);
         }
     }
 }

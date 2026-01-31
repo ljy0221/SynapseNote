@@ -122,21 +122,32 @@ class MindmapServiceTest {
     class SyncMindmapTest {
 
         @Test
-        @DisplayName("노드 위치만 업데이트")
-        void syncMindmap_NodesOnly() {
+        @DisplayName("노드 위치 업데이트 및 미포함 노드 제거")
+        void syncMindmap_Nodes() {
             // given
-            note.updatePosition(100.0, 200.0);
+            Note note1 = Note.builder().id(noteId).createdBy(member).build();
+            note1.updatePosition(100.0, 200.0);
+
+            UUID node2Id = UUID.randomUUID();
+            Note note2 = Note.builder().id(node2Id).createdBy(member).build();
+            note2.updatePosition(500.0, 600.0);
+
+            given(noteRepository.findMindMapNodesByMember(memberId)).willReturn(List.of(note1, note2));
+
             NodePositionDto positionDto = new NodePositionDto(noteId, 150.0, 250.0);
             SyncMindmapRequest request = new SyncMindmapRequest(List.of(positionDto), null);
 
-            given(noteRepository.findAllById(List.of(noteId))).willReturn(List.of(note));
+            given(noteRepository.findAllById(List.of(noteId))).willReturn(List.of(note1));
 
             // when
             mindmapService.syncMindmap(memberId, request);
 
             // then
-            assertThat(note.getPointX()).isEqualTo(150.0);
-            assertThat(note.getPointY()).isEqualTo(250.0);
+            assertThat(note1.getPointX()).isEqualTo(150.0);
+            assertThat(note1.getPointY()).isEqualTo(250.0);
+
+            assertThat(note2.getPointX()).isNull();
+            assertThat(note2.getPointY()).isNull();
         }
 
         @Test
@@ -151,26 +162,20 @@ class MindmapServiceTest {
             Note note2 = Note.builder().id(node2Id).createdBy(member).build();
             Note note3 = Note.builder().id(node3Id).createdBy(member).build();
 
-            // Existing Edge: Node1 -> Node2
             MindmapEdge existingEdge = MindmapEdge.of(note1, note2);
             given(mindmapEdgeRepository.findAllByMember(memberId)).willReturn(List.of(existingEdge));
 
-            // Request: Edge Node1 -> Node3 (Add), Edge Node1 -> Node2 (Delete via omission)
             MindmapEdgeDto edgeRequest = new MindmapEdgeDto(node1Id, node3Id);
             SyncMindmapRequest request = new SyncMindmapRequest(null, List.of(edgeRequest));
 
-            given(noteRepository.findById(node3Id)).willReturn(Optional.of(note3));
-            given(noteRepository.findById(node1Id)).willReturn(Optional.of(note1));
+            given(noteRepository.findAllById(any())).willReturn(List.of(note1, note3));
 
             // when
             mindmapService.syncMindmap(memberId, request);
 
             // then
-            // Node1->Node2 should be deleted
             then(mindmapEdgeRepository).should().deleteAll(any());
-
-            // Node1->Node3 should be saved
-            then(mindmapEdgeRepository).should().save(any(MindmapEdge.class));
+            then(mindmapEdgeRepository).should().saveAll(any());
         }
     }
 }
