@@ -9,7 +9,7 @@ import {
     Node,
     ReactFlowProvider, // useReactFlow 사용을 위한 필수 Provider
     useReactFlow,      // 캔버스 제어를 위한 훅
-    updateEdge         // 엣지 업데이트 유틸리티
+    updateEdge,        // 엣지 업데이트 유틸리티
 } from 'reactflow';
 
 // 컴포넌트 임포트 (아키텍처 경로 준수)
@@ -22,6 +22,9 @@ import { useNodeRepulsion } from '../../hooks/useNodeRepulsion';
 import './MindMap.css';
 
 // ... (기존 임포트 유지)
+import { getMindmapApi, syncMindmapApi } from '../../api/mindmap/Mindmap.api';
+import { SyncMindmapRequest } from '../../types/mindmap/Requests';
+import { MindmapNode, MindmapEdge } from '../../types/mindmap/Mindmap';
 
 const MindMapContent: React.FC = () => {
     // 1. 상태 관리
@@ -32,32 +35,132 @@ const MindMapContent: React.FC = () => {
     const [isSelectorOpen, setIsSelectorOpen] = useState(false);
 
     // 2. React Flow 전용 노드/엣지 상태
-    const [nodes, setNodes, onNodesChange] = useNodesState([
-        {
-            id: 'world-boundary',
-            type: 'default',
-            data: { title: '' },
-            position: { x: -4000, y: -3000 },
-            style: {
-                width: 8000,
-                height: 6000,
-                border: '4px dashed rgba(200, 200, 200, 0.5)',
-                backgroundColor: 'transparent',
-                zIndex: -1000,
-                pointerEvents: 'none',
-            },
-            draggable: false,
-            selectable: false,
-            connectable: false,
-        },
-        {
-            id: '1',
-            type: 'note',
-            data: { title: '시냅스 시작점', directoryPath: '/root' },
-            position: { x: 0, y: 0 },
-        },
-    ]);
+    const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+
+    // [New] 데이터 로딩 상태 (사용 예정 or 제거)
+    // const [loading, setLoading] = useState(true);
+
+    // [New] 초기 데이터 로드 (API)
+    useEffect(() => {
+        const fetchMindmap = async () => {
+            try {
+                // setLoading(true);
+                const response = await getMindmapApi();
+                if (response) {
+                    const { nodes: serverNodes, edges: serverEdges } = response;
+
+                    // 1. 서버 노드 -> ReactFlow 노드 변환
+                    let constructedNodes: Node[] = [];
+
+                    if (serverNodes && serverNodes.length > 0) {
+                        constructedNodes = serverNodes.map((n: MindmapNode) => ({
+                            id: n.id,
+                            type: 'note',
+                            position: { x: n.x, y: n.y },
+                            data: { title: n.title, connectionCount: 0 },
+                        }));
+                        // Boundary Node 추가 (필수)
+                        const boundaryNode = {
+                            id: 'world-boundary',
+                            type: 'default',
+                            data: { title: '' },
+                            position: { x: -4000, y: -3000 },
+                            style: {
+                                width: 8000,
+                                height: 6000,
+                                border: '4px dashed rgba(200, 200, 200, 0.5)',
+                                backgroundColor: 'transparent',
+                                zIndex: -1000,
+                                pointerEvents: 'none' as const,
+                            },
+                            draggable: false,
+                            selectable: false,
+                            connectable: false,
+                        };
+                        setNodes([boundaryNode, ...constructedNodes]);
+                    } else {
+                        // 데이터가 없으면 기본 노드 설정 (Boundary만 추가)
+                        setNodes([
+                            {
+                                id: 'world-boundary',
+                                type: 'default',
+                                data: { title: '' },
+                                position: { x: -4000, y: -3000 },
+                                style: {
+                                    width: 8000,
+                                    height: 6000,
+                                    border: '4px dashed rgba(200, 200, 200, 0.5)',
+                                    backgroundColor: 'transparent',
+                                    zIndex: -1000,
+                                    pointerEvents: 'none' as const,
+                                },
+                                draggable: false,
+                                selectable: false,
+                                connectable: false,
+                            },
+                        ]);
+                    }
+
+                    // 2. 서버 엣지 -> ReactFlow 엣지 변환
+                    if (serverEdges && serverEdges.length > 0) {
+                        const newEdges = serverEdges.map((e: MindmapEdge) => {
+                            // [Fix] 스코프 문제 해결된 노드 리스트 사용
+                            const sourceNode = constructedNodes.find(n => n.id === e.fromId);
+                            const targetNode = constructedNodes.find(n => n.id === e.toId);
+
+                            let sourceHandle = 'bottom-s';
+                            let targetHandle = 'top-t';
+
+                            if (sourceNode && targetNode) {
+                                const dx = targetNode.position.x - sourceNode.position.x;
+                                const dy = targetNode.position.y - sourceNode.position.y;
+
+                                if (Math.abs(dx) > Math.abs(dy)) {
+                                    if (dx > 0) { // 타겟이 오른쪽에 있음
+                                        sourceHandle = 'right-s';
+                                        targetHandle = 'left-t';
+                                    } else { // 타겟이 왼쪽에 있음
+                                        sourceHandle = 'left-s';
+                                        targetHandle = 'right-t';
+                                    }
+                                } else {
+                                    if (dy > 0) { // 타겟이 아래에 있음
+                                        sourceHandle = 'bottom-s';
+                                        targetHandle = 'top-t';
+                                    } else { // 타겟이 위에 있음
+                                        sourceHandle = 'top-s';
+                                        targetHandle = 'bottom-t';
+                                    }
+                                }
+                            }
+
+                            return {
+                                id: `e${e.fromId}-${e.toId}`,
+                                source: e.fromId,
+                                target: e.toId,
+                                sourceHandle, // calculated handle
+                                targetHandle, // calculated handle
+                                animated: true,
+                                style: { stroke: 'var(--color-point)', strokeWidth: 2 }
+                            };
+                        });
+                        setEdges(newEdges);
+                    } else {
+                        setEdges([]);
+                    }
+                }
+            } catch (error) {
+                console.error("마인드맵 로드 실패:", error);
+                // 에러 처리 (토스트 등)
+                showToast("마인드맵 데이터를 불러오는데 실패했습니다.", 'error');
+            } finally {
+                // setLoading(false);
+            }
+        };
+
+        fetchMindmap();
+    }, [setNodes, setEdges]);
 
     // 3. 삭제 모달 상태 관리
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -176,6 +279,7 @@ const MindMapContent: React.FC = () => {
     // [New] 토스트 알림 상태
     const [toastMessage, setToastMessage] = useState('');
     const [isToastVisible, setIsToastVisible] = useState(false);
+    const [toastType, setToastType] = useState<'success' | 'error'>('success');
 
     // [New] 방향 전환 확인 모달 상태
     const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
@@ -183,8 +287,9 @@ const MindMapContent: React.FC = () => {
 
     // ... (기존 state 유지)
 
-    const showToast = useCallback((message: string) => {
+    const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
         setToastMessage(message);
+        setToastType(type);
         setIsToastVisible(true);
     }, []);
 
@@ -214,7 +319,7 @@ const MindMapContent: React.FC = () => {
 
         // [New] 자기 자신 연결 방지 (제약 조건 추가)
         if (params.source === params.target) {
-            showToast("자기 자신에게는 연결할 수 없습니다.");
+            showToast("자기 자신에게는 연결할 수 없습니다.", 'error');
             return;
         }
 
@@ -301,8 +406,13 @@ const MindMapContent: React.FC = () => {
             const newX = lastNode ? lastNode.position.x + 150 : startX;
             const newY = lastNode ? lastNode.position.y : startY;
 
+            if (!noteData.id) {
+                console.error("Invalid note data: missing ID");
+                return nds;
+            }
+
             const newNode = {
-                id: noteData.id || Date.now().toString(), // 노트 ID 사용 (없으면 타임스탬프)
+                id: noteData.id, // 노트 ID 사용 (UUID 필수)
                 type: 'note',
                 data: {
                     title: noteData.title,
@@ -598,7 +708,42 @@ const MindMapContent: React.FC = () => {
                 <div className="floating-top-right">
                     <button
                         className={`action-btn ${isEditMode ? 'btn-save' : 'btn-edit'}`}
-                        onClick={() => setIsEditMode(!isEditMode)}
+                        onClick={async () => {
+                            if (isEditMode) {
+                                // [Save Logic] 저장 버튼 클릭 시
+                                try {
+                                    // 1. 노드 변환 (Boundary 제외)
+                                    const contentNodes = nodes.filter(n => n.id !== 'world-boundary');
+                                    const nodeDtos = contentNodes.map(n => ({
+                                        nodeId: n.id,
+                                        x: n.position.x,
+                                        y: n.position.y
+                                    }));
+
+                                    // 2. 엣지 변환
+                                    const edgeDtos = edges.map(e => ({
+                                        fromId: e.source,
+                                        toId: e.target
+                                    }));
+
+                                    // 3. API 호출
+                                    const requestBody: SyncMindmapRequest = {
+                                        nodes: nodeDtos,
+                                        edges: edgeDtos
+                                    };
+
+                                    await syncMindmapApi(requestBody);
+                                    showToast("마인드맵이 저장되었습니다.", 'success');
+                                    setIsEditMode(false); // 저장 후 보기 모드로 전환
+                                } catch (error) {
+                                    console.error("저장 실패:", error);
+                                    showToast("저장에 실패했습니다.", 'error');
+                                }
+                            } else {
+                                // [Edit Mode] 편집 모드 진입
+                                setIsEditMode(true);
+                            }
+                        }}
                         title={isEditMode ? '변경사항 저장 (Save)' : '편집 모드 활성화 (Edit)'}
                     >
                         {isEditMode ? <Save size={20} /> : <Edit size={20} />}
@@ -651,6 +796,7 @@ const MindMapContent: React.FC = () => {
                     message={toastMessage}
                     isVisible={isToastVisible}
                     onClose={closeToast}
+                    type={toastType}
                 />
             </main>
         </div>
