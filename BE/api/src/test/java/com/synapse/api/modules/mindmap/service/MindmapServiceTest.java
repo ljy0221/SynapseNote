@@ -3,9 +3,8 @@ package com.synapse.api.modules.mindmap.service;
 import com.synapse.api.modules.mindmap.dto.MindmapEdgeDto;
 import com.synapse.api.modules.mindmap.dto.MindmapNodeDto;
 import com.synapse.api.modules.mindmap.dto.NodePositionDto;
-import com.synapse.api.modules.mindmap.dto.request.AddMindmapNodeRequest;
-import com.synapse.api.modules.mindmap.dto.request.MindmapEdgeRequest;
-import com.synapse.api.modules.mindmap.dto.request.UpdateMindmapPositionsRequest;
+
+import com.synapse.api.modules.mindmap.dto.request.SyncMindmapRequest;
 import com.synapse.api.modules.mindmap.dto.response.MindmapResponse;
 import com.synapse.api.modules.mindmap.entity.MindmapEdge;
 import com.synapse.api.modules.mindmap.repository.MindmapEdgeRepository;
@@ -66,136 +65,6 @@ class MindmapServiceTest {
     }
 
     @Nested
-    @DisplayName("addMindMapNode 테스트")
-    class AddMindMapNodeTest {
-
-        @Test
-        @DisplayName("노트를 마인드맵 노드로 추가")
-        void addMindMapNode() {
-            // given
-            Double pointX = 100.0;
-            Double pointY = 200.0;
-            AddMindmapNodeRequest request = new AddMindmapNodeRequest(pointX, pointY, noteId);
-
-            given(noteRepository.findById(noteId)).willReturn(Optional.of(note));
-
-            // when
-            mindmapService.addMindMapNode(memberId, request);
-
-            // then
-            then(noteRepository).should().findById(noteId);
-            assertThat(note.getPointX()).isEqualTo(pointX);
-            assertThat(note.getPointY()).isEqualTo(pointY);
-        }
-    }
-
-    @Nested
-    @DisplayName("addMindMapEdge 테스트")
-    class AddMindMapEdgeTest {
-
-        private UUID parentId;
-        private UUID childId;
-        private Note parentNote;
-        private Note childNote;
-
-        @BeforeEach
-        void setUp() {
-            parentId = UUID.randomUUID();
-            childId = UUID.randomUUID();
-
-            parentNote = Note.builder()
-                    .id(parentId)
-                    .title("Parent Note")
-                    .createdBy(member)
-                    .build();
-
-            childNote = Note.builder()
-                    .id(childId)
-                    .title("Child Note")
-                    .createdBy(member)
-                    .build();
-        }
-
-        @Test
-        @DisplayName("마인드맵 엣지 추가")
-        void addMindMapEdge() {
-            // given
-            MindmapEdgeRequest request = new MindmapEdgeRequest(parentId, childId);
-            given(noteRepository.findById(childId)).willReturn(Optional.of(childNote));
-            given(noteRepository.findById(parentId)).willReturn(Optional.of(parentNote));
-
-            // when
-            mindmapService.addMindMapEdge(memberId, request);
-
-            // then
-            then(mindmapEdgeRepository).should().save(any(MindmapEdge.class));
-        }
-    }
-
-    @Nested
-    @DisplayName("deleteNode 테스트")
-    class DeleteNodeTest {
-
-        @Test
-        @DisplayName("노드 삭제 시 연결된 엣지도 삭제되고 좌표가 null로 변경됨")
-        void deleteNode() {
-            // given
-            note.updatePosition(100.0, 200.0);
-            given(noteRepository.findById(noteId)).willReturn(Optional.of(note));
-
-            // when
-            mindmapService.deleteNode(memberId, noteId);
-
-            // then
-            then(mindmapEdgeRepository).should().deleteByTo_Id(noteId);
-            then(mindmapEdgeRepository).should().deleteByFrom_Id(noteId);
-            assertThat(note.getPointX()).isNull();
-            assertThat(note.getPointY()).isNull();
-        }
-    }
-
-    @Nested
-    @DisplayName("deleteMindmap 테스트")
-    class DeleteMindmapTest {
-
-        @Test
-        @DisplayName("마인드맵 전체 삭제 시 모든 엣지 삭제 및 노드 좌표 초기화")
-        void deleteMindmap() {
-            // given
-            given(mindmapEdgeRepository.deleteAllByMemberId(memberId)).willReturn(5);
-            given(noteRepository.resetMindmapNodePositions(memberId)).willReturn(3);
-
-            // when
-            mindmapService.deleteMindmap(memberId);
-
-            // then
-            then(mindmapEdgeRepository).should().deleteAllByMemberId(memberId);
-            then(noteRepository).should().resetMindmapNodePositions(memberId);
-        }
-    }
-
-    @Nested
-    @DisplayName("deleteConnection 테스트")
-    class DeleteConnectionTest {
-
-        @Test
-        @DisplayName("특정 연결 삭제")
-        void deleteConnection() {
-            // given
-            UUID parentId = UUID.randomUUID();
-            UUID childId = UUID.randomUUID();
-            MindmapEdgeRequest request = new MindmapEdgeRequest(parentId, childId);
-            given(mindmapEdgeRepository.deleteByMemberAndEdge(memberId, parentId, childId)).willReturn(1);
-
-            // when
-            mindmapService.deleteConnection(memberId, request);
-
-            // then
-            then(mindmapEdgeRepository).should().deleteByMemberAndEdge(memberId, parentId, childId);
-        }
-    }
-
-    @Nested
     @DisplayName("getMindmap 테스트")
     class GetMindmapTest {
 
@@ -249,25 +118,64 @@ class MindmapServiceTest {
     }
 
     @Nested
-    @DisplayName("updateNodePositions 테스트")
-    class UpdateNodePositionsTest {
+    @DisplayName("syncMindmap 테스트")
+    class SyncMindmapTest {
 
         @Test
-        @DisplayName("노드 위치 업데이트")
-        void updateNodePositions() {
+        @DisplayName("노드 위치 업데이트 및 미포함 노드 제거")
+        void syncMindmap_Nodes() {
             // given
-            note.updatePosition(100.0, 200.0);
-            NodePositionDto positionDto = new NodePositionDto(noteId, 150.0, 250.0);
-            UpdateMindmapPositionsRequest request = new UpdateMindmapPositionsRequest(List.of(positionDto));
+            Note note1 = Note.builder().id(noteId).createdBy(member).build();
+            note1.updatePosition(100.0, 200.0);
 
-            given(noteRepository.findAllById(List.of(noteId))).willReturn(List.of(note));
+            UUID node2Id = UUID.randomUUID();
+            Note note2 = Note.builder().id(node2Id).createdBy(member).build();
+            note2.updatePosition(500.0, 600.0);
+
+            given(noteRepository.findMindMapNodesByMember(memberId)).willReturn(List.of(note1, note2));
+
+            NodePositionDto positionDto = new NodePositionDto(noteId, 150.0, 250.0);
+            SyncMindmapRequest request = new SyncMindmapRequest(List.of(positionDto), null);
+
+            given(noteRepository.findAllById(List.of(noteId))).willReturn(List.of(note1));
 
             // when
-            mindmapService.updateNodePositions(memberId, request);
+            mindmapService.syncMindmap(memberId, request);
 
             // then
-            assertThat(note.getPointX()).isEqualTo(150.0);
-            assertThat(note.getPointY()).isEqualTo(250.0);
+            assertThat(note1.getPointX()).isEqualTo(150.0);
+            assertThat(note1.getPointY()).isEqualTo(250.0);
+
+            assertThat(note2.getPointX()).isNull();
+            assertThat(note2.getPointY()).isNull();
+        }
+
+        @Test
+        @DisplayName("엣지 동기화 (추가 및 삭제)")
+        void syncMindmap_Edges() {
+            // given
+            UUID node1Id = UUID.randomUUID();
+            UUID node2Id = UUID.randomUUID();
+            UUID node3Id = UUID.randomUUID();
+
+            Note note1 = Note.builder().id(node1Id).createdBy(member).build();
+            Note note2 = Note.builder().id(node2Id).createdBy(member).build();
+            Note note3 = Note.builder().id(node3Id).createdBy(member).build();
+
+            MindmapEdge existingEdge = MindmapEdge.of(note1, note2);
+            given(mindmapEdgeRepository.findAllByMember(memberId)).willReturn(List.of(existingEdge));
+
+            MindmapEdgeDto edgeRequest = new MindmapEdgeDto(node1Id, node3Id);
+            SyncMindmapRequest request = new SyncMindmapRequest(null, List.of(edgeRequest));
+
+            given(noteRepository.findAllById(any())).willReturn(List.of(note1, note3));
+
+            // when
+            mindmapService.syncMindmap(memberId, request);
+
+            // then
+            then(mindmapEdgeRepository).should().deleteAll(any());
+            then(mindmapEdgeRepository).should().saveAll(any());
         }
     }
 }
