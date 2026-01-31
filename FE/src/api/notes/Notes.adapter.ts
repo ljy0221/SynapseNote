@@ -6,7 +6,7 @@ export const adaptNotesForSidebar = (
 ): NoteListItem[] => {
   return res.content.map(note => ({
     noteId: note.noteId,
-    userId: note.userId,
+    memberId: note.memberId,
     title: note.title,
     directoryPath: note.directoryPath || '/',
     pointX: note.pointX ?? 0,
