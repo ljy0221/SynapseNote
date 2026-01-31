@@ -153,6 +153,7 @@ const MindMapContent: React.FC = () => {
             } catch (error) {
                 console.error("마인드맵 로드 실패:", error);
                 // 에러 처리 (토스트 등)
+                showToast("마인드맵 데이터를 불러오는데 실패했습니다.", 'error');
             } finally {
                 // setLoading(false);
             }
@@ -278,6 +279,7 @@ const MindMapContent: React.FC = () => {
     // [New] 토스트 알림 상태
     const [toastMessage, setToastMessage] = useState('');
     const [isToastVisible, setIsToastVisible] = useState(false);
+    const [toastType, setToastType] = useState<'success' | 'error'>('success');
 
     // [New] 방향 전환 확인 모달 상태
     const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
@@ -285,8 +287,9 @@ const MindMapContent: React.FC = () => {
 
     // ... (기존 state 유지)
 
-    const showToast = useCallback((message: string) => {
+    const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
         setToastMessage(message);
+        setToastType(type);
         setIsToastVisible(true);
     }, []);
 
@@ -316,7 +319,7 @@ const MindMapContent: React.FC = () => {
 
         // [New] 자기 자신 연결 방지 (제약 조건 추가)
         if (params.source === params.target) {
-            showToast("자기 자신에게는 연결할 수 없습니다.");
+            showToast("자기 자신에게는 연결할 수 없습니다.", 'error');
             return;
         }
 
@@ -730,11 +733,11 @@ const MindMapContent: React.FC = () => {
                                     };
 
                                     await syncMindmapApi(requestBody);
-                                    showToast("마인드맵이 저장되었습니다.");
+                                    showToast("마인드맵이 저장되었습니다.", 'success');
                                     setIsEditMode(false); // 저장 후 보기 모드로 전환
                                 } catch (error) {
                                     console.error("저장 실패:", error);
-                                    showToast("저장에 실패했습니다.");
+                                    showToast("저장에 실패했습니다.", 'error');
                                 }
                             } else {
                                 // [Edit Mode] 편집 모드 진입
@@ -793,6 +796,7 @@ const MindMapContent: React.FC = () => {
                     message={toastMessage}
                     isVisible={isToastVisible}
                     onClose={closeToast}
+                    type={toastType}
                 />
             </main>
         </div>
