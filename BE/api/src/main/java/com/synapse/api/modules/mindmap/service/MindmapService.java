@@ -3,9 +3,8 @@ package com.synapse.api.modules.mindmap.service;
 import com.synapse.api.modules.mindmap.dto.MindmapEdgeDto;
 import com.synapse.api.modules.mindmap.dto.MindmapNodeDto;
 import com.synapse.api.modules.mindmap.dto.NodePositionDto;
-import com.synapse.api.modules.mindmap.dto.request.MindmapEdgeRequest;
-import com.synapse.api.modules.mindmap.dto.request.AddMindmapNodeRequest;
-import com.synapse.api.modules.mindmap.dto.request.UpdateMindmapPositionsRequest;
+
+import com.synapse.api.modules.mindmap.dto.request.SyncMindmapRequest;
 import com.synapse.api.modules.mindmap.dto.response.MindmapResponse;
 import com.synapse.api.modules.mindmap.entity.MindmapEdge;
 import com.synapse.api.modules.mindmap.repository.MindmapEdgeRepository;
@@ -32,21 +31,10 @@ public class MindmapService {
     private final MindmapEdgeRepository mindmapEdgeRepository;
     private final NoteRepository noteRepository;
 
-    @Transactional
-    public void addMindMapNode(UUID memberId, @Valid AddMindmapNodeRequest request) {
-        Note note = noteRepository.findById(request.noteId())
+    private void addMindMapEdge(UUID memberId, @Valid MindmapEdgeDto request) {
+        Note child = noteRepository.findById(request.fromId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
-
-        validNoteOwner(memberId, note);
-
-        note.updatePosition(request.pointX(), request.pointY());
-    }
-
-    @Transactional
-    public void addMindMapEdge(UUID memberId, @Valid MindmapEdgeRequest request) {
-        Note child = noteRepository.findById(request.child())
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
-        Note parent = noteRepository.findById(request.parent())
+        Note parent = noteRepository.findById(request.toId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
 
         validNoteOwner(memberId, child);
@@ -55,37 +43,6 @@ public class MindmapService {
         MindmapEdge mindMapEdge = MindmapEdge.of(child, parent);
 
         mindmapEdgeRepository.save(mindMapEdge);
-    }
-
-    @Transactional
-    public void deleteNode(UUID memberId, UUID nodeId) {
-        mindmapEdgeRepository.deleteByTo_Id(nodeId);
-        mindmapEdgeRepository.deleteByFrom_Id(nodeId);
-
-        Note note = noteRepository.findById(nodeId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
-
-        validNoteOwner(memberId, note);
-
-        note.deleteNode();
-    }
-
-    @Transactional
-    public void deleteMindmap(UUID memberId) {
-        mindmapEdgeRepository.deleteAllByMemberId(memberId);
-        noteRepository.resetMindmapNodePositions(memberId);
-    }
-
-    @Transactional
-    public void deleteConnection(UUID memberId, MindmapEdgeRequest request) {
-        int deleted = mindmapEdgeRepository.deleteByMemberAndEdge(
-                memberId,
-                request.parent(),
-                request.child());
-
-        if (deleted == 0) {
-            throw new BusinessException(ErrorCode.MINDMAP_EDGE_NOT_DELETABLE);
-        }
     }
 
     public MindmapResponse getMindmap(UUID memberId) {
@@ -123,35 +80,65 @@ public class MindmapService {
     }
 
     @Transactional
-    public void updateNodePositions(UUID memberId, UpdateMindmapPositionsRequest request) {
-        if (request.nodes() == null || request.nodes().isEmpty()) {
-            return;
-        }
+    public void syncMindmap(UUID memberId, SyncMindmapRequest request) {
+        if (request.nodes() != null && !request.nodes().isEmpty()) {
+            List<UUID> nodeIds = request.nodes().stream()
+                    .map(NodePositionDto::nodeId)
+                    .toList();
 
-        List<UUID> nodeIds = request.nodes().stream()
-                .map(NodePositionDto::nodeId)
-                .toList();
+            List<Note> notes = noteRepository.findAllById(nodeIds);
 
-        List<Note> notes = noteRepository.findAllById(nodeIds);
+            if (notes.size() != nodeIds.size()) {
+                throw new BusinessException(ErrorCode.NOTE_NOT_FOUND);
+            }
 
-        if (notes.size() != nodeIds.size()) {
-            throw new BusinessException(ErrorCode.NOTE_NOT_FOUND);
-        }
+            Map<UUID, NodePositionDto> positionMap = request.nodes().stream()
+                    .collect(Collectors.toMap(NodePositionDto::nodeId, dto -> dto));
 
-        for (Note note : notes) {
-            validNoteOwner(memberId, note);
+            for (Note note : notes) {
+                validNoteOwner(memberId, note);
 
-            if (note.getPointX() == null || note.getPointY() == null) {
-                throw new BusinessException(ErrorCode.NOTE_NOT_IN_MINDMAP);
+                NodePositionDto dto = positionMap.get(note.getId());
+                note.updatePosition(dto.x(), dto.y());
             }
         }
 
-        Map<UUID, NodePositionDto> positionMap = request.nodes().stream()
-                .collect(Collectors.toMap(NodePositionDto::nodeId, dto -> dto));
+        if (request.edges() != null) {
+            syncEdges(memberId, request.edges());
+        }
+    }
 
-        for (Note note : notes) {
-            NodePositionDto dto = positionMap.get(note.getId());
-            note.updatePosition(dto.x(), dto.y());
+    private void syncEdges(UUID memberId, List<MindmapEdgeDto> requestedEdges) {
+        List<MindmapEdge> existingEdges = mindmapEdgeRepository.findAllByMember(memberId);
+
+        Map<String, MindmapEdge> existingEdgeMap = existingEdges.stream()
+                .collect(Collectors.toMap(
+                        e -> e.getFrom().getId().toString() + ":" + e.getTo().getId().toString(),
+                        e -> e));
+
+        Map<String, MindmapEdgeDto> requestedEdgeMap = requestedEdges.stream()
+                .collect(Collectors.toMap(
+                        e -> e.fromId().toString() + ":" + e.toId().toString(),
+                        e -> e,
+                        (e1, e2) -> e1));
+        List<MindmapEdge> edgesToDelete = existingEdges.stream()
+                .filter(e -> !requestedEdgeMap
+                        .containsKey(e.getFrom().getId().toString() + ":" + e.getTo().getId().toString()))
+                .toList();
+
+        if (!edgesToDelete.isEmpty()) {
+            mindmapEdgeRepository.deleteAll(edgesToDelete);
+        }
+
+        List<MindmapEdgeDto> edgesToAdd = requestedEdges.stream()
+                .filter(e -> !existingEdgeMap.containsKey(e.fromId().toString() + ":" + e.toId().toString()))
+                .toList();
+
+        if (!edgesToAdd.isEmpty()) {
+
+            for (MindmapEdgeDto req : edgesToAdd) {
+                addMindMapEdge(memberId, req);
+            }
         }
     }
 }
