@@ -19,7 +19,7 @@ import { SideMenuBar } from './components/layout/sideMenuBar/SideMenuBar';
 // 공통 컴포넌트
 import ThemeToggle from './components/common/themeToggle/ThemeToggle';
 import WindowControlButton from './components/common/WindowControlButton/WindowControlButton';
-import { useTheme } from './components/features/theme/UseTheme'; // Hook 추가
+import { useTheme, ThemeProvider } from './components/features/theme/ThemeContext'; // Context 사용
 import { DockerErrorModal } from './components/common/modal/DockerErrorModal'; // Docker 에러 모달 추가
 
 // Electron 전용 컴포넌트 (웹 빌드에서는 사용 안 함)
@@ -224,7 +224,9 @@ export default function App() {
         <Router>
             <ToastProvider>
                 <UserProvider>
-                    <AppContent />
+                    <ThemeProvider>
+                        <AppContent />
+                    </ThemeProvider>
                 </UserProvider>
             </ToastProvider>
         </Router>
