@@ -1,4 +1,4 @@
-package com.synapse.api.modules.note.repository;
+package com.synapse.api.modules.member.repository;
 
 import com.synapse.api.modules.member.entity.Streak;
 import com.synapse.api.modules.member.entity.StreakId;
