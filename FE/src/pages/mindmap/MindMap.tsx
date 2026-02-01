@@ -26,6 +26,7 @@ import { getMindmapApi, syncMindmapApi } from '../../api/mindmap/Mindmap.api';
 import { SyncMindmapRequest } from '../../types/mindmap/Requests';
 import { MindmapNode, MindmapEdge } from '../../types/mindmap/Mindmap';
 
+
 const MindMapContent: React.FC = () => {
     // 1. 상태 관리
     const [isEditMode, setIsEditMode] = useState<boolean>(false);
@@ -141,7 +142,7 @@ const MindMapContent: React.FC = () => {
                                 target: e.toId,
                                 sourceHandle, // calculated handle
                                 targetHandle, // calculated handle
-                                animated: true,
+                                type: 'synapse', // [New] 시냅스 엣지 사용
                                 style: { stroke: 'var(--color-point)', strokeWidth: 2 }
                             };
                         });
@@ -173,6 +174,18 @@ const MindMapContent: React.FC = () => {
     // [New] 연결 해제 모드 상태
     const [isDisconnectMode, setIsDisconnectMode] = useState(false);
     const [disconnectSource, setDisconnectSource] = useState<Node | null>(null);
+
+    // [Safety] Edit Mode 해제 시 모든 인터랙션 모드 초기화
+    useEffect(() => {
+        if (!isEditMode) {
+            setIsConnectMode(false);
+            setConnectSource(null);
+            setIsDisconnectMode(false);
+            setDisconnectSource(null);
+            setIsSelectorOpen(false); // 선택 모달도 닫기
+            setIsDeleteModalOpen(false); // 삭제 모달도 닫기
+        }
+    }, [isEditMode]);
 
     // 5. React Flow 내부 제어 함수 가져오기
     const { fitView, setCenter } = useReactFlow();
@@ -336,11 +349,19 @@ const MindMapContent: React.FC = () => {
         // 3. 정상 연결 (새로운 연결)
         const newEdge = {
             ...params,
-            animated: true,
+            type: 'synapse', // [New] 시냅스 엣지 사용
             style: { stroke: 'var(--color-point)', strokeWidth: 2 }
         };
         setEdges((eds) => addEdge(newEdge, eds));
-    }, [edges, setEdges]); // edges 의존성 추가 필요
+
+        // [Toast] 연결 성공 알림
+        const sourceNode = nodes.find(n => n.id === params.source);
+        const targetNode = nodes.find(n => n.id === params.target);
+        const sTitle = sourceNode?.data?.title || 'Unknown';
+        const tTitle = targetNode?.data?.title || 'Unknown';
+        showToast(`'${sTitle}'와 '${tTitle}'의 지식이 연결되었습니다.`);
+
+    }, [edges, setEdges, nodes, showToast]);
 
     // [New] 연결 방향 교체 실행 핸들러
     const handleConfirmSwap = useCallback(() => {
@@ -350,13 +371,11 @@ const MindMapContent: React.FC = () => {
             // 1. 기존 역방향 엣지 삭제
             const filtered = eds.filter(e => e.id !== swapParams.oldEdgeId);
 
-            // 2. 새로운 방향 엣지 생성 (핸들 계산 로직 필요 시 추가, 여기선 기본값 사용)
-            // 참고: onConnect의 로직을 재사용하거나 단순 추가
-            // 여기선 단순 추가 (onConnect 내부 로직과 동일하게)
+            // 2. 새로운 방향 엣지 생성
             const newEdge = {
                 ...swapParams.newConnection,
                 id: `e${swapParams.newConnection.source}-${swapParams.newConnection.target}-${Date.now()}`,
-                animated: true,
+                type: 'synapse', // [New] 시냅스 엣지 사용
                 style: { stroke: 'var(--color-point)', strokeWidth: 2 }
             };
 
@@ -374,8 +393,6 @@ const MindMapContent: React.FC = () => {
         setSwapParams(null);
     }, []);
 
-
-
     /**
      * 기능 1-1: 모달에서 노트를 선택했을 때 실제 노드 생성
      */
@@ -391,7 +408,6 @@ const MindMapContent: React.FC = () => {
 
             const boundaryNode = nds.find(n => n.id === 'world-boundary');
             if (boundaryNode) {
-                // width/height가 있으면 중앙값 계산: x + width/2
                 if (boundaryNode.style?.width && boundaryNode.style?.height) {
                     const bx = boundaryNode.position.x;
                     const by = boundaryNode.position.y;
@@ -402,7 +418,6 @@ const MindMapContent: React.FC = () => {
                 }
             }
 
-            // 기존 노드가 있으면 마지막 노드 기준 우측 배치, 없으면 계산된 중앙값
             const newX = lastNode ? lastNode.position.x + 150 : startX;
             const newY = lastNode ? lastNode.position.y : startY;
 
@@ -412,7 +427,7 @@ const MindMapContent: React.FC = () => {
             }
 
             const newNode = {
-                id: noteData.id, // 노트 ID 사용 (UUID 필수)
+                id: noteData.id,
                 type: 'note',
                 data: {
                     title: noteData.title,
@@ -423,33 +438,23 @@ const MindMapContent: React.FC = () => {
                 selected: true,
             };
 
-            // 생성된 노드로 화면 이동 (포커싱)
             setTimeout(() => {
                 setCenter(newX + 30, newY + 30, { zoom: 1.2, duration: 1000 });
             }, 50);
 
-            // 기존 노드들의 선택 해제 후 새 노드 추가
             return nds.map(n => ({ ...n, selected: false })).concat([newNode]);
         });
 
         setIsSelectorOpen(false); // 모달 닫기
     }, [setNodes, setCenter]);
 
-    // ... (기존 핸들러들: handleDeleteElements, executeDelete 등 유지)
-
-
-    // ... (export 유지)
-
-    /**
-     * 기능 2: 선택된 노드 및 연결선 삭제
-     */
     /**
      * 기능 2: 선택된 노드 및 연결선 삭제 (모달 호출)
      */
     const handleDeleteElements = useCallback(() => {
         const selectedNodes = nodes.filter((node) => node.selected);
 
-        if (selectedNodes.length === 0) return; // 선택된 게 없으면 무시
+        if (selectedNodes.length === 0) return;
 
         if (selectedNodes.length === 1) {
             setDeleteMessage(`정말 '${selectedNodes[0].data.title}' 노드를\n삭제하시겠습니까?`);
@@ -464,33 +469,37 @@ const MindMapContent: React.FC = () => {
      * 기능 2-1: 실제 삭제 실행 (모달 확인 시)
      */
     const executeDelete = useCallback(() => {
+        // [Toast] 삭제 알림 로직
+        const selectedNodes = nodes.filter((node) => node.selected);
+        const count = selectedNodes.length;
+
+        if (count > 0) {
+            if (count === 1) {
+                showToast(`'${selectedNodes[0].data.title}'의 지식이 삭제되었습니다.`);
+            } else {
+                showToast(`${count}개의 지식이 삭제되었습니다.`);
+            }
+        }
+
         setNodes((nds) => nds.filter((node) => !node.selected));
         setEdges((eds) => eds.filter((edge) => !edge.selected));
         setIsDeleteModalOpen(false); // 모달 닫기
-    }, [setNodes, setEdges]);
+    }, [setNodes, setEdges, nodes, showToast]);
 
     const cancelDelete = useCallback(() => {
         setIsDeleteModalOpen(false);
     }, []);
 
     /**
-     * 기능 3: 화면 최적화 (Fit View)
-     */
-    // handleFitView unused removed
-
-
-
-    /**
      * 기능 5: 노드 클릭 시 화면 중앙으로 부드럽게 이동
      * + [New] 연결 모드일 경우 소스/타겟 지정하여 연결 생성
      */
     const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
-        // A. 연결 모드일 때
-        if (isConnectMode) {
+        // A. 연결 모드일 때 (Edit Mode일 때만 동작)
+        if (isConnectMode && isEditMode) {
             if (!connectSource) {
                 // 1단계: 소스 노드 선택
                 setConnectSource(node);
-                // 시각적 피드백 (선택됨)
                 setNodes(nds => nds.map(n => ({
                     ...n,
                     selected: n.id === node.id
@@ -502,25 +511,18 @@ const MindMapContent: React.FC = () => {
                     return;
                 }
 
-                // ... (연결 로직은 기존 유지) ...
-
-
-                // [New] 최적의 핸들 방향 계산 로직
                 const { sourceHandle, targetHandle } = getSmartHandlePosition(connectSource, node);
 
-                // [Modified] 단방향 연결 제약 추가
-                // 1. 중복 연결 방지
+                // 중복 연결 방지
                 const isDuplicate = edges.some(e => e.source === connectSource.id && e.target === node.id);
                 if (isDuplicate) {
                     setConnectSource(null);
                     return;
                 }
 
-                // 2. 역방향 연결 감지
+                // 역방향 연결 감지
                 const reverseEdge = edges.find(e => e.source === node.id && e.target === connectSource.id);
                 if (reverseEdge) {
-                    // 역방향 연결이 존재하면 모달 띄우기
-                    // 주의: 여기서는 params 형태가 아니라 직접 Connection 객체 구조를 만들어야 함
                     const newConnection: Connection = {
                         source: connectSource.id,
                         target: node.id,
@@ -529,42 +531,44 @@ const MindMapContent: React.FC = () => {
                     };
                     setSwapParams({ oldEdgeId: reverseEdge.id, newConnection });
                     setIsSwapModalOpen(true);
-                    setConnectSource(null); // 연결 소스 초기화
+                    setConnectSource(null);
                     return;
                 }
 
-                // 3. 정상 연결 (엣지 생성)
+                // 정상 연결
                 const newEdge = {
                     id: `e${connectSource.id}-${node.id}-${Date.now()}`,
                     source: connectSource.id,
                     target: node.id,
-                    sourceHandle: sourceHandle, // 계산된 소스 핸들
-                    targetHandle: targetHandle, // 계산된 타겟 핸들
-                    animated: true,
+                    sourceHandle: sourceHandle,
+                    targetHandle: targetHandle,
+                    type: 'synapse',
                     style: { stroke: 'var(--color-point)', strokeWidth: 2 }
                 };
                 setEdges((eds) => addEdge(newEdge, eds));
 
-                // 초기화
+                // [Toast] 연결 성공 알림 (Click Mode)
+                const sTitle = connectSource.data?.title || 'Unknown';
+                const tTitle = node.data?.title || 'Unknown';
+                showToast(`'${sTitle}'와 '${tTitle}'의 지식이 연결되었습니다.`);
+
                 setConnectSource(null);
             }
-            return; // 연결 모드에선 줌인/이동 방지
+            return;
         }
 
-        // B. [New] 연결 해제 모드일 때
-        if (isDisconnectMode) {
+        // B. [New] 연결 해제 모드일 때 (Edit Mode일 때만 동작)
+        if (isDisconnectMode && isEditMode) {
             if (!disconnectSource) {
-                // 1단계: 삭제할 연결의 시작점 노드 선택
                 setDisconnectSource(node);
                 setNodes(nds => nds.map(n => ({ ...n, selected: n.id === node.id })));
             } else {
-                // 2단계: 끝점 노드 선택하여 엣지 삭제
                 if (disconnectSource.id === node.id) {
                     setDisconnectSource(null);
                     return;
                 }
 
-                // 두 노드 사이의 엣지 찾기 (방향 무관)
+                // 두 노드 사이의 엣지 찾기
                 const targetEdge = edges.find(e =>
                     (e.source === disconnectSource.id && e.target === node.id) ||
                     (e.source === node.id && e.target === disconnectSource.id)
@@ -572,6 +576,11 @@ const MindMapContent: React.FC = () => {
 
                 if (targetEdge) {
                     setEdges(eds => eds.filter(e => e.id !== targetEdge.id));
+
+                    // [Toast] 자식 연결 해제 알림
+                    const myTitle = disconnectSource.data?.title || 'Unknown';
+                    const otherTitle = node.data?.title || 'Unknown';
+                    showToast(`'${myTitle}'와 '${otherTitle}'의 지식이 연결해제되었습니다.`);
                 }
 
                 setDisconnectSource(null);
@@ -579,21 +588,22 @@ const MindMapContent: React.FC = () => {
             return;
         }
 
-        // C. 일반 모드일 때 (기존 로직)
-        // 노드의 중심 좌표 계산
-        const targetX = node.position.x + 30; // 노드 너비 절반
-        const targetY = node.position.y + 30; // 노드 높이 절반
+        // C. 일반 모드일 때
+        const targetX = node.position.x + 30;
+        const targetY = node.position.y + 30;
         setCenter(targetX, targetY, { zoom: 1.2, duration: 1000 });
     }, [
         isConnectMode,
         connectSource,
-        isDisconnectMode,     // [Fix] 의존성 추가
-        disconnectSource,     // [Fix] 의존성 추가
-        edges,                // [Fix] 엣지 검색을 위해 필수
+        isDisconnectMode,
+        disconnectSource,
+        edges,
         setCenter,
         setNodes,
         setEdges,
-        getSmartHandlePosition // 의존성 추가
+        getSmartHandlePosition,
+        nodes,
+        showToast
     ]);
 
     /**
@@ -601,14 +611,14 @@ const MindMapContent: React.FC = () => {
      */
     const toggleConnectMode = useCallback(() => {
         setIsConnectMode(prev => !prev);
-        setIsDisconnectMode(false); // [New] 상호 배제
+        setIsDisconnectMode(false);
         setConnectSource(null);
     }, []);
 
     // [New] 연결 해제 모드 토글
     const toggleDisconnectMode = useCallback(() => {
         setIsDisconnectMode(prev => !prev);
-        setIsConnectMode(false); // [New] 상호 배제
+        setIsConnectMode(false);
         setDisconnectSource(null);
     }, []);
 
@@ -670,7 +680,10 @@ const MindMapContent: React.FC = () => {
 
             return alignedNodes;
         });
-    }, [setNodes, setEdges]);
+
+        // [Toast] 정렬 완료 알림
+        showToast("지식들을 정리했습니다.");
+    }, [setNodes, setEdges, showToast]);
 
     /**
      * 기능 6: 엣지 재연결 (Reconnect)
@@ -688,7 +701,13 @@ const MindMapContent: React.FC = () => {
                 {/* [New] 좌상단 모드 라벨 (툴바 위쪽) */}
                 <div className={`mode-label-top-left ${isEditMode ? 'edit' : 'view'}`}>
                     <span className="mode-dot" />
-                    {isEditMode ? 'EDIT MODE' : 'READ MODE'}
+                    {isEditMode
+                        ? isConnectMode
+                            ? 'EDIT MODE : 연결'
+                            : isDisconnectMode
+                                ? 'EDIT MODE : 연결해제'
+                                : 'EDIT MODE : 편집'
+                        : 'READ MODE'}
                 </div>
 
                 {/* [조건부 렌더링] 편집 모드일 때만 레이아웃 툴바 노출 */}
@@ -733,7 +752,7 @@ const MindMapContent: React.FC = () => {
                                     };
 
                                     await syncMindmapApi(requestBody);
-                                    showToast("마인드맵이 저장되었습니다.", 'success');
+                                    showToast("지식이 저장되었습니다.", 'success');
                                     setIsEditMode(false); // 저장 후 보기 모드로 전환
                                 } catch (error) {
                                     console.error("저장 실패:", error);
@@ -773,6 +792,7 @@ const MindMapContent: React.FC = () => {
                     isOpen={isSelectorOpen}
                     onClose={() => setIsSelectorOpen(false)}
                     onSelect={handleSelectNote}
+                    existingNodeIds={nodes.map(n => n.id)}
                 />
 
                 {/* 삭제 확인 모달 */}
