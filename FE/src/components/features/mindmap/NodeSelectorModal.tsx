@@ -18,54 +18,50 @@ interface NodeSelectorModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSelect: (note: NoteItem) => void;
+    existingNodeIds: string[]; // [New] 이미 배치된 노드 ID 목록
 }
 
 export const NodeSelectorModal: React.FC<NodeSelectorModalProps> = ({
     isOpen,
     onClose,
-    onSelect
+    onSelect,
+    existingNodeIds = [] // 기본값 설정
 }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [notes, setNotes] = useState<NoteItem[]>([]);
 
+    // ... (useEffect, filteredNotes 로직 유지) ...
+
     useEffect(() => {
-      const fetchNotes = async () => {
-        try {
-          const res = await getNotesApi();
+        const fetchNotes = async () => {
+            try {
+                const res = await getNotesApi();
+                const noteList: NoteListItem[] = adaptNotesForSidebar(res);
+                const mapped: NoteItem[] = noteList.map(note => ({
+                    id: note.noteId,
+                    title: note.title,
+                    path: note.directoryPath,
+                    summary: '설명 없음',
+                }));
+                setNotes(mapped);
+            } catch (e) {
+                console.error('노트 목록 로딩 실패', e);
+            }
+        };
 
-          // ✅ api → adapter
-          const noteList: NoteListItem[] =
-            adaptNotesForSidebar(res);
-
-          // ✅ 화면 전용 가공은 여기서
-          const mapped: NoteItem[] = noteList.map(note => ({
-            id: note.noteId,
-            title: note.title,
-            path: note.directoryPath,
-            summary: '설명 없음',
-          }));
-
-          setNotes(mapped);
-        } catch (e) {
-          console.error('노트 목록 로딩 실패', e);
+        if (isOpen) {
+            fetchNotes();
         }
-      };
-
-      if (isOpen) {
-        fetchNotes();
-      }
-}, [isOpen]);
+    }, [isOpen]);
 
     // 검색 로직
     const filteredNotes = useMemo(() => {
-      if (!searchTerm) return notes;
-
-      const term = searchTerm.toLowerCase();
-
-      return notes.filter(note =>
-        note.title.toLowerCase().includes(term) ||
-        note.path.toLowerCase().includes(term)
-      );
+        if (!searchTerm) return notes;
+        const term = searchTerm.toLowerCase();
+        return notes.filter(note =>
+            note.title.toLowerCase().includes(term) ||
+            note.path.toLowerCase().includes(term)
+        );
     }, [searchTerm, notes]);
 
 
@@ -100,20 +96,29 @@ export const NodeSelectorModal: React.FC<NodeSelectorModalProps> = ({
                 {/* 노트 리스트 */}
                 <div className="selector-list-area">
                     {filteredNotes.length > 0 ? (
-                        filteredNotes.map(note => (
-                            <div
-                                key={note.id}
-                                className="note-item"
-                                onClick={() => onSelect(note)}
-                            >
-                                <div className="note-item-title">
-                                    {note.title}
+                        filteredNotes.map(note => {
+                            const isPlaced = existingNodeIds.includes(note.id);
+                            return (
+                                <div
+                                    key={note.id}
+                                    className={`note-item ${isPlaced ? 'placed' : ''}`}
+                                    onClick={() => onSelect(note)}
+                                >
+                                    <div className="note-info">
+                                        <div className="note-item-title">
+                                            {note.title}
+                                        </div>
+                                        <div className="note-item-path">
+                                            {note.path}
+                                        </div>
+                                    </div>
+                                    {/* [New] 배치 상태 뱃지 */}
+                                    <span className={`status-badge ${isPlaced ? 'placed' : 'not-placed'}`}>
+                                        {isPlaced ? '배치완료' : '미배치'}
+                                    </span>
                                 </div>
-                                <div className="note-item-path">
-                                    {note.path}
-                                </div>
-                            </div>
-                        ))
+                            );
+                        })
                     ) : (
                         <div className="empty-state">
                             <Search size={32} style={{ marginBottom: 8 }} />
@@ -124,4 +129,5 @@ export const NodeSelectorModal: React.FC<NodeSelectorModalProps> = ({
             </div>
         </div>
     );
+
 };

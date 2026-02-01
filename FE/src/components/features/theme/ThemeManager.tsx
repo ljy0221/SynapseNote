@@ -1,5 +1,5 @@
 import React from 'react';
-import { useTheme } from './UseTheme'; // 상대 경로 .ts 파일이지만 확장자 생략 가능
+import { useTheme } from './ThemeContext';
 import ThemeToggle from '../../common/themeToggle/ThemeToggle';
 
 /**
