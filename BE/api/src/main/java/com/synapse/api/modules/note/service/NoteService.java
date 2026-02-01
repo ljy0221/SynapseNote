@@ -3,9 +3,10 @@ package com.synapse.api.modules.note.service;
 import com.synapse.api.modules.block.document.BaseBlock;
 import com.synapse.api.modules.block.dto.response.BlockPageResponse;
 import com.synapse.api.modules.block.service.BlockService;
+import com.synapse.api.modules.note.dto.response.StreakResponse;
 import com.synapse.api.modules.member.entity.Streak;
 import com.synapse.api.modules.member.entity.StreakId;
-import com.synapse.api.modules.member.repository.StreakRepository;
+import com.synapse.api.modules.note.repository.StreakRepository;
 import com.synapse.api.modules.note.dto.request.ExecutionHistoryRequest;
 import com.synapse.api.modules.note.dto.request.NoteCreateRequest;
 import com.synapse.api.modules.note.dto.request.NotePositionUpdateRequest;
@@ -31,6 +32,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -77,11 +79,11 @@ public class NoteService {
         noteMemberRepository.save(noteMember);
 
         // 스트릭 (일일 1회 제한)
-        java.time.LocalDate today = java.time.LocalDate.now();
+        LocalDate today = LocalDate.now();
         StreakId streakId = new StreakId(memberId, today);
 
         if (!streakRepository.existsById(streakId)) {
-            Streak streak = Streak.of(member,today);
+            Streak streak = Streak.of(member, today);
             streakRepository.save(streak);
         }
 
@@ -234,6 +236,26 @@ public class NoteService {
         return results.stream()
                 .map(NoteResponse::from)
                 .toList();
+    }
+
+    public List<StreakResponse> getStreak(UUID memberId) {
+        LocalDate today = LocalDate.now();
+        LocalDate startDate = today.minusDays(179);
+
+        List<Streak> streaks = streakRepository.findStreaksByMemberAndDateRange(memberId, startDate, today);
+
+        // 빠른 조회를 위해 날짜 Set으로 변환
+        java.util.Set<LocalDate> streakDates = streaks.stream()
+                .map(streak -> streak.getId().getStreakDate())
+                .collect(java.util.stream.Collectors.toSet());
+
+        List<StreakResponse> result = new java.util.ArrayList<>();
+        for (int i = 0; i < 180; i++) {
+            LocalDate date = startDate.plusDays(i);
+            result.add(StreakResponse.of(date, streakDates.contains(date)));
+        }
+
+        return result;
     }
 
     @Transactional

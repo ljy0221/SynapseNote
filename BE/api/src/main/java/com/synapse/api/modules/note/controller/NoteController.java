@@ -1,6 +1,7 @@
 package com.synapse.api.modules.note.controller;
 
 import com.synapse.api.modules.block.dto.response.BlockPageResponse;
+import com.synapse.api.modules.note.dto.response.StreakResponse;
 import com.synapse.api.modules.note.dto.request.ExecutionHistoryRequest;
 import com.synapse.api.modules.note.dto.request.NoteCreateRequest;
 import com.synapse.api.modules.note.dto.request.NoteUpdateRequest;
@@ -179,6 +180,13 @@ public class NoteController {
             @RequestParam(defaultValue = "10") int size) {
         UUID memberId = details.id();
         BlockPageResponse response = noteService.getBlockBookmarks(memberId, noteId, page - 1, size);
+        return DataResponse.of(response);
+    }
+
+    @GetMapping("/v1/members/{memberId}/streak")
+    public DataResponse<List<StreakResponse>> getStreak(@PathVariable UUID memberId) {
+        log.info("Getting streak for member: {}", memberId);
+        List<StreakResponse> response = noteService.getStreak(memberId);
         return DataResponse.of(response);
     }
 }
