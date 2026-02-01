@@ -46,44 +46,14 @@ const NoteNode: React.FC<NodeProps<NoteNodeData>> = ({ data, selected, isConnect
     // [New] 랜덤한 애니메이션 딜레이 생성
     const randomDelay = React.useMemo(() => `-${Math.random() * 2}s`, []);
 
-    // [New] Tooltip Layout Variations (Deterministic Random)
-    const layout = React.useMemo(() => {
-        const variants = [
-            // 1. Bottom-Right (기본)
-            {
-                path: "M 35 68 V 90 L 60 105",
-                dotStart: { cx: 35, cy: 68 },
-                dotEnd: { cx: 60, cy: 105 },
-                style: { top: 105, left: 60, transform: 'translateY(-50%)' }
-            },
-            // 2. Bottom-Left
-            {
-                path: "M 35 68 V 90 L 10 105",
-                dotStart: { cx: 35, cy: 68 },
-                dotEnd: { cx: 10, cy: 105 },
-                style: { top: 105, left: 10, transform: 'translate(-100%, -50%)', flexDirection: 'row-reverse' }
-                // row-reverse: 버튼이 이름보다 바깥쪽(왼쪽)에 오도록
-            },
-            // 3. Top-Right
-            {
-                path: "M 35 2 V -20 L 60 -35",
-                dotStart: { cx: 35, cy: 2 },
-                dotEnd: { cx: 60, cy: -35 },
-                style: { top: -35, left: 60, transform: 'translateY(-50%)' }
-            },
-            // 4. Top-Left
-            {
-                path: "M 35 2 V -20 L 10 -35",
-                dotStart: { cx: 35, cy: 2 },
-                dotEnd: { cx: 10, cy: -35 },
-                style: { top: -35, left: 10, transform: 'translate(-100%, -50%)', flexDirection: 'row-reverse' }
-            }
-        ];
-
-        // 간단한 해시 생성 (Title 길이 + Fan-out)
-        const seed = (data.title?.length || 0) + (data.connectionCount || 0);
-        return variants[seed % 4];
-    }, [data.title, data.connectionCount]);
+    // [Refactor] Predictable Tooltip Layout (Top-Right Fixed)
+    // 기존의 랜덤 위치 방식은 데이터 변경 시 깜빡임/겹침 문제를 유발하므로 고정된 위치(Top-Right)로 개선합니다.
+    const layout = React.useMemo(() => ({
+        path: "M 35 2 V -20 L 60 -35",
+        dotStart: { cx: 35, cy: 2 },
+        dotEnd: { cx: 60, cy: -35 },
+        style: { top: -35, left: 60, transform: 'translateY(-50%)' }
+    }), []);
 
     return (
         <div

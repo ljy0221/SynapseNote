@@ -1,4 +1,5 @@
-import React, { memo, useState, useEffect } from 'react';
+import React, { memo } from 'react';
+import { useTheme } from '../theme/ThemeContext';
 import { BaseEdge, EdgeProps, getBezierPath, useStore } from 'reactflow';
 
 const THEME_PALETTES: Record<string, string[]> = {
@@ -42,27 +43,9 @@ const SynapseEdge: React.FC<EdgeProps> = ({
     const targetCount = targetNode?.data?.connectionCount || 0;
 
     // 2. 테마 색상 결정 (Start -> End Gradient)
-    // [Fix] Theme Reactivity: MutationObserver로 data-theme 변경 감지
-    const [theme, setTheme] = useState(() => document.documentElement.getAttribute('data-theme') || 'light');
-
-    useEffect(() => {
-        // 초기값 동기화
-        setTheme(document.documentElement.getAttribute('data-theme') || 'light');
-
-        const observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
-                    setTheme(document.documentElement.getAttribute('data-theme') || 'light');
-                }
-            });
-        });
-
-        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-
-        return () => observer.disconnect();
-    }, []);
-
-    const currentPalette = THEME_PALETTES[theme] || THEME_PALETTES['light'];
+    // [Fix] Theme Reactivity: Context 사용
+    const { themeMode } = useTheme();
+    const currentPalette = THEME_PALETTES[themeMode] || THEME_PALETTES['light'];
 
     const sourceColor = currentPalette[getLevelIndex(sourceCount)];
     const targetColor = currentPalette[getLevelIndex(targetCount)];

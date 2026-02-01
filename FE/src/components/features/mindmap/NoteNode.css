@@ -36,24 +36,11 @@
 /* [Hexagon Background explicit fill] */
 .hexagon-base-layer {
     transition: fill 0.3s ease;
-    fill: #ffffff;
-    /* Default (Light) */
+    fill: var(--node-bg);
+    /* Use Theme Variable instead of hardcoded values & !important */
 }
 
-[data-theme='cookie'] .hexagon-base-layer {
-    fill: #5d534a !important;
-    /* Warm Walnut/Mocha */
-}
-
-[data-theme='dark'] .hexagon-base-layer {
-    fill: #262626 !important;
-    /* Dark Grey */
-}
-
-[data-theme='deepblue'] .hexagon-base-layer {
-    fill: #1e293b !important;
-    /* Navy Slate */
-}
+/* Theme-specific overrides removed as they are handled by --node-bg */
 
 /* 둥실둥실 키프레임 */
 @keyframes floating {
