@@ -5,10 +5,14 @@ import com.synapse.api.modules.member.dto.request.LoginRequest;
 import com.synapse.api.modules.member.dto.response.LoginResponse;
 import com.synapse.api.modules.member.dto.response.LoginResult;
 import com.synapse.api.modules.member.dto.response.ProfileResponse;
+import com.synapse.api.modules.member.dto.response.StreakResponse;
 import com.synapse.api.modules.member.entity.OAuthAccount;
 import com.synapse.api.modules.member.entity.Member;
+import com.synapse.api.modules.member.entity.Streak;
+import com.synapse.api.modules.member.entity.StreakId;
 import com.synapse.api.modules.member.repository.OAuthRepository;
 import com.synapse.api.modules.member.repository.MemberRepository;
+import com.synapse.api.modules.member.repository.StreakRepository;
 import com.synapse.api.util.exception.BusinessException;
 import com.synapse.api.util.response.ErrorCode;
 import com.synapse.api.util.redis.TokenRedisService;
@@ -17,7 +21,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -30,6 +37,9 @@ public class MemberService {
     private final OAuthServiceFactory oAuthServiceFactory;
     private final TokenRedisService tokenRedisService;
     private final JwtUtil jwtUtil;
+    private final StreakRepository streakRepository;
+
+    private static final int STREAK_PERIOD_DAYS = 180;
 
     @Transactional
     public LoginResult login(LoginRequest request) {
@@ -49,8 +59,7 @@ public class MemberService {
 
             // 다른 provider로 가입했는지 체크
             Optional<OAuthAccount> optionalOAuth = oAuthRepository.findByProviderAndProviderId(
-                    oAuthMemberInfo.getProvider(), oAuthMemberInfo.getProviderId()
-                    );
+                    oAuthMemberInfo.getProvider(), oAuthMemberInfo.getProviderId());
             if (optionalOAuth.isEmpty()) {
                 throw new BusinessException(ErrorCode.MEMBER_ALREADY_EXISTS_ANOTHER_PROVIDER);
             }
@@ -73,8 +82,7 @@ public class MemberService {
                         .email(member.getEmail())
                         .name(member.getName())
                         .provider(oauth.getProvider())
-                        .build()
-                )
+                        .build())
                 .sessionReplaced(sessionReplaced)
                 .build();
 
@@ -102,15 +110,13 @@ public class MemberService {
         Member member = memberRepository.save(Member.builder()
                 .email(oAuthMemberInfo.getEmail())
                 .name(oAuthMemberInfo.getName())
-                .build()
-        );
+                .build());
 
         oAuthRepository.save(OAuthAccount.builder()
                 .provider(oAuthMemberInfo.getProvider())
                 .providerId(oAuthMemberInfo.getProviderId())
                 .member(member)
-                .build()
-        );
+                .build());
 
         return member;
     }
@@ -179,4 +185,40 @@ public class MemberService {
                 .build();
     }
 
+    public List<StreakResponse> getStreak(UUID memberId) {
+        LocalDate today = LocalDate.now();
+        LocalDate startDate = today.minusDays(STREAK_PERIOD_DAYS - 1);
+
+        List<Streak> streaks = streakRepository
+                .findStreaksByMemberAndDateRange(memberId, startDate, today);
+
+        Set<LocalDate> streakDates = streaks.stream()
+                .map(streak -> streak.getId().getStreakDate())
+                .collect(java.util.stream.Collectors.toSet());
+
+        List<StreakResponse> result = new java.util.ArrayList<>();
+        for (int i = 0; i < STREAK_PERIOD_DAYS; i++) {
+            LocalDate date = startDate.plusDays(i);
+            result.add(StreakResponse.builder()
+                    .date(date)
+                    .isStreak(streakDates.contains(date))
+                    .build());
+        }
+
+        return result;
+    }
+
+    @Transactional
+    public void updateStreak(UUID memberId) {
+        LocalDate today = LocalDate.now();
+        StreakId streakId = new StreakId(
+                memberId, today);
+
+        if (!streakRepository.existsById(streakId)) {
+            Member member = memberRepository.getReferenceById(memberId);
+            Streak streak = Streak
+                    .of(member, today);
+            streakRepository.save(streak);
+        }
+    }
 }
