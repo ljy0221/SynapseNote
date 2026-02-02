@@ -1,7 +1,8 @@
 package com.synapse.api.modules.note.controller;
 
+import com.synapse.api.modules.block.dto.response.BlockDetailResponse;
 import com.synapse.api.modules.block.dto.response.BlockPageResponse;
-
+import com.synapse.api.modules.block.service.BlockService;
 import com.synapse.api.modules.note.dto.request.ExecutionHistoryRequest;
 import com.synapse.api.modules.note.dto.request.NoteCreateRequest;
 import com.synapse.api.modules.note.dto.request.NoteUpdateRequest;
@@ -30,6 +31,7 @@ import java.util.UUID;
 public class NoteController {
 
     private final NoteService noteService;
+    private final BlockService blockService;
 
     @PostMapping("/v1/notes")
     public DataResponse<NoteResponse> createNote(
@@ -180,6 +182,13 @@ public class NoteController {
             @RequestParam(defaultValue = "10") int size) {
         UUID memberId = details.id();
         BlockPageResponse response = noteService.getBlockBookmarks(memberId, noteId, page - 1, size);
+        return DataResponse.of(response);
+    }
+
+    @GetMapping("/v1/notes/{noteId}/blocks")
+    public DataResponse<List<BlockDetailResponse>> getBlocks(@AuthenticationPrincipal CustomMemberDetails details,
+                                                             @PathVariable UUID noteId) {
+        List<BlockDetailResponse> response = blockService.getBlocks(details.id(), noteId);
         return DataResponse.of(response);
     }
 
