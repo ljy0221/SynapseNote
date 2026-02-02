@@ -1,6 +1,7 @@
 package com.synapse.api.modules.block.service;
 
 import com.synapse.api.modules.block.document.BaseBlock;
+import com.synapse.api.modules.block.document.BlockType;
 import com.synapse.api.modules.block.document.CodeBlock;
 import com.synapse.api.modules.block.document.TextBlock;
 import com.synapse.api.modules.block.dto.response.BlockDetailResponse;
@@ -48,6 +49,7 @@ public class BlockResponseMapper {
 
             return TextBlockResponse.builder()
                     .id(tb.getId())
+                    .type(BlockType.TEXT)
                     .noteId(tb.getNoteId())
                     .blockId(tb.getBlockId())
                     .order(tb.getOrder())
@@ -81,6 +83,7 @@ public class BlockResponseMapper {
 
             return CodeBlockResponse.builder()
                     .id(cb.getId())
+                    .type(BlockType.CODE)
                     .noteId(cb.getNoteId())
                     .blockId(cb.getBlockId())
                     .order(cb.getOrder())
