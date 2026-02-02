@@ -88,7 +88,6 @@ public class BlockHistoryService {
         /**
          * 슬롯에 저장
          */
-        @Transactional
         public BlockHistoryResponse saveToSlot(
                         String noteId,
                         String blockId,
@@ -117,10 +116,14 @@ public class BlockHistoryService {
                                 .changeDescription(String.format("Saved to slot %d", slotNumber))
                                 .build();
 
-                existingSlot.ifPresent(slot -> blockHistoryRepository.deleteById(slot.getId()));
+                boolean isOverwrite = existingSlot.isPresent();
+                existingSlot.ifPresent(slot -> {
+                        log.info("Overwriting existing slot: blockId={}, slotNumber={}", blockId, slotNumber);
+                        blockHistoryRepository.deleteById(slot.getId());
+                });
                 BlockHistory saved = blockHistoryRepository.save(newHistory);
 
-                log.info("Saved to slot: blockId={}, slotNumber={}", blockId, slotNumber);
+                log.info("Saved to slot: blockId={}, slotNumber={}, isOverwrite={}", blockId, slotNumber, isOverwrite);
 
                 return BlockHistoryResponse.from(saved);
         }
@@ -173,11 +176,10 @@ public class BlockHistoryService {
                 CodeBlock codeBlock = (CodeBlock) block;
                 CodeBlock.CodeProperties props = codeBlock.getProperties();
                 if (props != null) {
-                        properties.put("language", props.getLanguage() != null ? props.getLanguage() : "");
-                        properties.put("code", props.getCode() != null ? props.getCode() : "");
-                        properties.put("version", props.getVersion() != null ? props.getVersion() : "");
-                        properties.put("executionMode",
-                                        props.getExecutionMode() != null ? props.getExecutionMode() : "");
+                        properties.put("language", java.util.Objects.requireNonNullElse(props.getLanguage(), ""));
+                        properties.put("code", java.util.Objects.requireNonNullElse(props.getCode(), ""));
+                        properties.put("version", java.util.Objects.requireNonNullElse(props.getVersion(), ""));
+                        properties.put("executionMode", java.util.Objects.requireNonNullElse(props.getExecutionMode(), ""));
                 }
 
                 return properties;
