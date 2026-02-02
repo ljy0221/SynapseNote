@@ -4,7 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import { WithdrawalModal } from './WithdrawalModal';
 import { ModalHeader } from './ModalHeader';
 import { getStreakApi } from '../../../api/streak/Streak.api';
+import { updateNickname } from '../../../api/authApi';
 import { calculateStreakCount } from '../../features/streakCount/streakcount';
+import { useToast } from '../../../context/ToastContext';
+import { useUser } from '../../../context/UserContext';
 import './UserProfileModal.css';
 
 interface UserProfileModalProps {
@@ -19,6 +22,8 @@ interface UserProfileModalProps {
 
 export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, user }) => {
     const modalRef = useRef<HTMLDivElement>(null);
+    const { showToast } = useToast();
+    const { refreshUserInfo } = useUser();
 
     // 모달 외부 클릭 시 닫기
     useEffect(() => {
@@ -62,10 +67,25 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
         }
     }, [isOpen, user]);
 
-    const handleSaveNickname = () => {
-        // TODO: API 연동
-        console.log('New Nickname:', tempName);
-        setIsEditing(false);
+    const handleSaveNickname = async () => {
+        if (!tempName.trim()) {
+            showToast('닉네임을 입력해주세요.');
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                await updateNickname(token, tempName);
+                await refreshUserInfo(); // 전역 상태 업데이트
+                showToast('닉네임이 변경되었습니다.');
+            }
+        } catch (error) {
+            console.error('Failed to update nickname:', error);
+            showToast('닉네임 변경에 실패했습니다.');
+        } finally {
+            setIsEditing(false);
+        }
     };
 
     const handleCancelEdit = () => {
@@ -87,6 +107,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
         // 로그인 페이지로 이동
         navigate('/login');
         onClose();
+        showToast('로그아웃 되었습니다.');
     };
 
     const handleConfirmWithdraw = () => {
