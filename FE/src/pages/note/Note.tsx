@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import NoteButton from "../../components/common/noteButton/NoteButton";
 import NoteMain from "../../components/layout/noteMain/NoteMain";
-import { createNote } from '../../utils/noteAPI';
+import { createNoteApi } from '../../api/notes/CreateNote.api';
 import { getNoteDetailApi } from '../../api/notes/GetNoteDetail.api';
 import { getBlocksApi } from '../../api/notes/GetBlocks.api';
 import type { CreateNoteRequest } from '../../types/note/CreateNote';
@@ -49,21 +49,23 @@ const Note: React.FC = () => {
 
             if (blocksRes) {
                 const adaptedBlocks: BlockData[] = blocksRes.map((b: any) => {
+                    const lowType = b.type?.toLowerCase();
+                    const type: BlockType = lowType === 'code' ? 'code' : 'text';
                     let content = '';
                     let language = b.language;
 
-                    if (b.type === 'text') {
+                    if (type === 'text') {
                         content = b.properties?.content || '';
-                    } else if (b.type === 'code') {
+                    } else if (type === 'code') {
                         content = b.properties?.code || '';
                         language = b.properties?.language || 'javascript';
                     }
 
                     return {
                         id: b.blockId,
-                        type: b.type,
-                        content: content,
-                        language: language
+                        type,
+                        content,
+                        language
                     };
                 });
 
@@ -199,7 +201,7 @@ const Note: React.FC = () => {
                 invitationUrl: "",
                 directoryPath: "/",
             };
-            const result = await createNote(newNoteReq);
+            const result = await createNoteApi(newNoteReq);
             console.log("노트 생성 성공:", result);
             setIsEditing(true);
             setTimeout(() => {
