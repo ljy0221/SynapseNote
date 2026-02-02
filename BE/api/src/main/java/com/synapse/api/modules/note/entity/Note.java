@@ -1,10 +1,11 @@
 package com.synapse.api.modules.note.entity;
 
-import com.synapse.api.modules.mindmap.entity.MindmapEdge;
 import com.synapse.api.modules.member.entity.Member;
+import com.synapse.api.modules.mindmap.entity.MindmapEdge;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.Where; // (선택) Soft Delete 자동 처리용
+import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.annotations.Where;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -26,7 +27,8 @@ import java.util.UUID;
 public class Note {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue
+    @UuidGenerator(style = UuidGenerator.Style.TIME)
     private UUID id;
 
     @Column(nullable = false)
