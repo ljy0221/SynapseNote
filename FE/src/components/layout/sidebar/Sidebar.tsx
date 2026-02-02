@@ -165,7 +165,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
    */
   useEffect(() => {
     fetchSidebarData(1);
-    const handleNotesChanged = () => fetchSidebarData(1);
+    const handleNotesChanged = (e: any) => {
+      if (e instanceof CustomEvent && e.detail?.skipRefetch) return;
+      fetchSidebarData(1);
+    };
     window.addEventListener(NOTES_CHANGED_EVENT, handleNotesChanged);
     return () => {
       window.removeEventListener(NOTES_CHANGED_EVENT, handleNotesChanged);
@@ -242,9 +245,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         title: newTitle,
         directoryPath: target.directoryPath,
       });
-      emitNotesChanged();
+      emitNotesChanged({ skipRefetch: true });
     } catch {
-      emitNotesChanged();
+      emitNotesChanged(); // Rollback on failure
     }
   };
 
@@ -279,9 +282,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         title: target.title,
         directoryPath: normalizedPath,
       });
-      emitNotesChanged();
+      emitNotesChanged({ skipRefetch: true });
     } catch {
-      emitNotesChanged(); // 실패 시 서버 기준 복구
+      emitNotesChanged(); // 실패 시 서버 기준 복구 (리셋 유도)
     }
   };
 
@@ -304,12 +307,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
     setNotes(prev => [...prev, tempNote]);
 
     try {
-      await createNoteApi({
+      const res = await createNoteApi({
         title: '새 노트',
         invitationUrl: '',
         directoryPath,
       });
-      emitNotesChanged();
+
+      // 임시 노트를 실제 데이터로 교체
+      setNotes(prev =>
+        prev.map(n => n.noteId === tempNote.noteId ? {
+          ...res.data,
+          updatedAt: new Date(res.data.updatedAt).getTime(),
+          createdAt: new Date(res.data.createdAt).getTime()
+        } as NoteListItem : n)
+      );
+
+      emitNotesChanged({ skipRefetch: true });
     } catch {
       setNotes(prev => prev.filter(n => n.noteId !== tempNote.noteId));
     }
@@ -322,7 +335,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     setNotes(prev => prev.filter(n => n.noteId !== noteId));
     try {
       await deleteNoteApi(noteId);
-      emitNotesChanged();
+      emitNotesChanged({ skipRefetch: true });
     } catch {
       emitNotesChanged();
     }

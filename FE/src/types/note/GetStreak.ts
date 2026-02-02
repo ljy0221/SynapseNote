@@ -4,6 +4,4 @@ export interface StreakDay {
   isStreak: boolean;
 }
 
-export interface GetStreakResponse {
-  data: StreakDay[];
-}
+export type GetStreakResponse = StreakDay[];
