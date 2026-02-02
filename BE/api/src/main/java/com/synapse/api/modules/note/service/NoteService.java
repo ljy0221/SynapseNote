@@ -42,6 +42,7 @@ public class NoteService {
     private final NoteMemberRepository noteMemberRepository;
     private final MemberRepository memberRepository;
     private final MemberService memberService;
+    private final NoteValidator noteValidator;
 
     // [위임] 블록 데이터 및 실행 로직 담당
     private final BlockService blockService;
@@ -94,10 +95,10 @@ public class NoteService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
 
         // 2. 권한 검증
-        validateAccess(note, memberId);
+        noteValidator.validateAccess(note, memberId);
 
         // 3. Mongo 블록 리스트 조회 (BlockService 위임)
-        List<BaseBlock> blocks = blockService.getBlocksByNoteId(noteId.toString());
+        List<BaseBlock> blocks = blockService.getBlocksByNoteId(noteId);
 
         // 4. DTO 조합
         return NoteDetailResponse.from(note, blocks);
@@ -120,7 +121,7 @@ public class NoteService {
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
 
-        validateEditPermission(noteId, memberId);
+        noteValidator.validateEditPermission(noteId, memberId);
 
         // Dirty Checking으로 업데이트 (제목, 경로 등)
         note.updateTitle(request.title());
@@ -137,7 +138,7 @@ public class NoteService {
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
 
-        validateEditPermission(noteId, memberId);
+        noteValidator.validateEditPermission(noteId, memberId);
 
         note.updatePosition(request.pointX(), request.pointY());
     }
@@ -154,7 +155,7 @@ public class NoteService {
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
 
-        validateOwnership(note, memberId);
+        noteValidator.validateOwnership(note, memberId);
 
         // RDB Soft Delete (deletedAt 설정)
         note.delete();
@@ -172,24 +173,24 @@ public class NoteService {
     // =========================================================================
 
     @Transactional
-    public void saveExecutionHistory(UUID noteId, String blockId, UUID memberId, ExecutionHistoryRequest request) {
-        validateEditPermission(noteId, memberId);
+    public void saveExecutionHistory(UUID noteId, UUID blockId, UUID memberId, ExecutionHistoryRequest request) {
+        noteValidator.validateEditPermission(noteId, memberId);
 
         // 실행 및 저장은 BlockService에 전적으로 위임
-        blockService.saveExecutionHistory(noteId.toString(), blockId, request);
+        blockService.saveExecutionHistory(noteId, blockId, request);
     }
 
     /**
      * [요청하신 메소드] 실행 히스토리 조회
      */
-    public List<ExecutionHistoryResponse> getExecutionHistory(UUID noteId, String blockId, UUID memberId) {
+    public List<ExecutionHistoryResponse> getExecutionHistory(UUID noteId, UUID blockId, UUID memberId) {
         // 1. 노트 접근 권한 확인
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
-        validateAccess(note, memberId);
+        noteValidator.validateAccess(note, memberId);
 
         // 2. 히스토리 조회 위임
-        return blockService.getExecutionHistory(noteId.toString(), blockId);
+        return blockService.getExecutionHistory(noteId, blockId);
     }
 
     @Transactional
@@ -197,7 +198,7 @@ public class NoteService {
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
 
-        validateOwnership(note, memberId);
+        noteValidator.validateOwnership(note, memberId);
 
         note.setBookmark();
     }
@@ -207,7 +208,7 @@ public class NoteService {
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
 
-        validateOwnership(note, memberId);
+        noteValidator.validateOwnership(note, memberId);
 
         note.unBookmark();
     }
@@ -229,67 +230,37 @@ public class NoteService {
     }
 
     @Transactional
-    public void bookmarkBlock(UUID memberId, UUID noteId, String blockId) {
+    public void bookmarkBlock(UUID memberId, UUID noteId, UUID blockId) {
         // 노트 조회 및 접근 권한 검증
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
-        validateAccess(note, memberId);
+        noteValidator.validateAccess(note, memberId);
 
         // BlockService에 위임
-        blockService.bookmarkBlock(blockId, noteId.toString());
+        blockService.bookmarkBlock(blockId, noteId);
     }
 
     @Transactional
-    public void unbookmarkBlock(UUID memberId, UUID noteId, String blockId) {
+    public void unbookmarkBlock(UUID memberId, UUID noteId, UUID blockId) {
         // 노트 조회 및 접근 권한 검증
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
-        validateAccess(note, memberId);
+        noteValidator.validateAccess(note, memberId);
 
         // BlockService에 위임
-        blockService.unbookmarkBlock(blockId, noteId.toString());
+        blockService.unbookmarkBlock(blockId, noteId);
     }
 
     public BlockPageResponse getBlockBookmarks(UUID memberId, UUID noteId, int page, int size) {
         // 노트 조회 및 접근 권한 검증
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
-        validateAccess(note, memberId);
+        noteValidator.validateAccess(note, memberId);
 
         // BlockService에서 블록 목록 조회
-        Page<BaseBlock> blockPage = blockService.getBookmarkedBlocks(noteId.toString(), page, size);
+        Page<BaseBlock> blockPage = blockService.getBookmarkedBlocks(noteId, page, size);
 
         return BlockPageResponse.from(blockPage, note.getDirectoryPath());
     }
 
-    private void validateAccess(Note note, UUID memberId) {
-        if (note.getCreatedBy().getId().equals(memberId))
-            return;
-
-        boolean isMember = noteMemberRepository.existsByNoteIdAndMemberId(note.getId(), memberId);
-        if (!isMember) {
-            throw new BusinessException(ErrorCode.NOTE_ACCESS_DENIED);
-        }
-    }
-
-    private void validateEditPermission(UUID noteId, UUID memberId) {
-        Note note = noteRepository.findById(noteId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
-
-        if (note.getCreatedBy().getId().equals(memberId))
-            return;
-
-        NoteRole role = noteMemberRepository.findRoleByNoteIdAndMemberId(noteId, memberId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_ACCESS_DENIED));
-
-        if (!role.canEdit()) {
-            throw new BusinessException(ErrorCode.NOTE_EDIT_PERMISSION_DENIED);
-        }
-    }
-
-    private void validateOwnership(Note note, UUID memberId) {
-        if (!note.getCreatedBy().getId().equals(memberId)) {
-            throw new BusinessException(ErrorCode.NOTE_DELETE_PERMISSION_DENIED);
-        }
-    }
 }
