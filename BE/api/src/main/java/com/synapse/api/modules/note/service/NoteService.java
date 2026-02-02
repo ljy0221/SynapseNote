@@ -3,9 +3,9 @@ package com.synapse.api.modules.note.service;
 import com.synapse.api.modules.block.document.BaseBlock;
 import com.synapse.api.modules.block.dto.response.BlockPageResponse;
 import com.synapse.api.modules.block.service.BlockService;
-import com.synapse.api.modules.member.entity.Streak;
-import com.synapse.api.modules.member.entity.StreakId;
-import com.synapse.api.modules.member.repository.StreakRepository;
+import com.synapse.api.modules.member.entity.Member;
+import com.synapse.api.modules.member.repository.MemberRepository;
+import com.synapse.api.modules.member.service.MemberService;
 import com.synapse.api.modules.note.dto.request.ExecutionHistoryRequest;
 import com.synapse.api.modules.note.dto.request.NoteCreateRequest;
 import com.synapse.api.modules.note.dto.request.NotePositionUpdateRequest;
@@ -20,8 +20,6 @@ import com.synapse.api.modules.note.entity.NoteMemberId;
 import com.synapse.api.modules.note.entity.NoteRole;
 import com.synapse.api.modules.note.repository.NoteMemberRepository;
 import com.synapse.api.modules.note.repository.NoteRepository;
-import com.synapse.api.modules.member.entity.Member;
-import com.synapse.api.modules.member.repository.MemberRepository;
 import com.synapse.api.util.exception.BusinessException;
 import com.synapse.api.util.response.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +41,7 @@ public class NoteService {
     private final NoteRepository noteRepository;
     private final NoteMemberRepository noteMemberRepository;
     private final MemberRepository memberRepository;
-    private final StreakRepository streakRepository;
+    private final MemberService memberService;
 
     // [위임] 블록 데이터 및 실행 로직 담당
     private final BlockService blockService;
@@ -76,14 +74,8 @@ public class NoteService {
                 .build();
         noteMemberRepository.save(noteMember);
 
-        // 스트릭 (일일 1회 제한)
-        java.time.LocalDate today = java.time.LocalDate.now();
-        StreakId streakId = new StreakId(memberId, today);
-
-        if (!streakRepository.existsById(streakId)) {
-            Streak streak = Streak.of(member,today);
-            streakRepository.save(streak);
-        }
+        // 스트릭 (일일 1회 제한) - MemberService 위임
+        memberService.updateStreak(memberId);
 
         log.info("Created note: {} by member: {}", savedNote.getId(), noteMemberId);
         return NoteResponse.from(savedNote);

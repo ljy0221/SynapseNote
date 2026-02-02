@@ -2,7 +2,12 @@ import React, { useRef, useEffect, useState } from 'react';
 import { X, User as UserIcon, Edit2, Check, UserX, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { WithdrawalModal } from './WithdrawalModal';
-import { ModalHeader } from './ModalHeader'; // 추가
+import { ModalHeader } from './ModalHeader';
+import { getStreakApi } from '../../../api/streak/Streak.api';
+import { updateNickname } from '../../../api/authApi';
+import { calculateStreakCount } from '../../features/streakCount/streakcount';
+import { useToast } from '../../../context/ToastContext';
+import { useUser } from '../../../context/UserContext';
 import './UserProfileModal.css';
 
 interface UserProfileModalProps {
@@ -17,6 +22,8 @@ interface UserProfileModalProps {
 
 export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, user }) => {
     const modalRef = useRef<HTMLDivElement>(null);
+    const { showToast } = useToast();
+    const { refreshUserInfo } = useUser();
 
     // 모달 외부 클릭 시 닫기
     useEffect(() => {
@@ -38,17 +45,47 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
     const [isEditing, setIsEditing] = useState(false);
     const [tempName, setTempName] = useState('');
     const [isWithdrawalOpen, setIsWithdrawalOpen] = useState(false);
+    const [streakCount, setStreakCount] = useState(0);
 
     useEffect(() => {
         if (isOpen && user) {
             setTempName(user.name);
+
+            // 스트릭 조회
+            const fetchStreak = async () => {
+                try {
+                    const res = await getStreakApi();
+                    if (res && res.dates) {
+                        const count = calculateStreakCount(res.dates);
+                        setStreakCount(count);
+                    }
+                } catch (e) {
+                    console.error("Failed to fetch streak", e);
+                }
+            };
+            fetchStreak();
         }
     }, [isOpen, user]);
 
-    const handleSaveNickname = () => {
-        // TODO: API 연동
-        console.log('New Nickname:', tempName);
-        setIsEditing(false);
+    const handleSaveNickname = async () => {
+        if (!tempName.trim()) {
+            showToast('닉네임을 입력해주세요.');
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                await updateNickname(token, tempName);
+                await refreshUserInfo(); // 전역 상태 업데이트
+                showToast('닉네임이 변경되었습니다.');
+            }
+        } catch (error) {
+            console.error('Failed to update nickname:', error);
+            showToast('닉네임 변경에 실패했습니다.');
+        } finally {
+            setIsEditing(false);
+        }
     };
 
     const handleCancelEdit = () => {
@@ -70,6 +107,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
         // 로그인 페이지로 이동
         navigate('/login');
         onClose();
+        showToast('로그아웃 되었습니다.');
     };
 
     const handleConfirmWithdraw = () => {
@@ -85,7 +123,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
     return (
         <div className="user-profile-modal-overlay">
             <div className="user-profile-modal-content" ref={modalRef} onClick={(e) => e.stopPropagation()}>
-                {/* 모달 헤더 (메인 헤더 스타일 통일) */}
+                {/* 모달 헤더 */}
                 <ModalHeader onClose={onClose} />
 
                 <div className="profile-image-wrapper">
@@ -94,18 +132,23 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
                     ) : (
                         <UserIcon size={40} className="profile-placeholder-icon" />
                     )}
+                    {streakCount > 0 && (
+                        <div className="streak-badge" title={`${streakCount}일 연속 학습 중!`}>
+                            🔥 {streakCount}
+                        </div>
+                    )}
                 </div>
 
                 <div className="profile-info-container">
-                    {/* 이메일 (ID 역할) */}
+                    {/* 이메일 (ID) */}
                     <div className="profile-field">
-                        <label className="profile-label">아이디 (Email)</label>
+                        <label className="profile-label">ID</label>
                         <div className="profile-value">{user?.email || '-'}</div>
                     </div>
 
-                    {/* 닉네임 (수정 가능) */}
+                    {/* 닉네임 (지식제공자) */}
                     <div className="profile-field">
-                        <label className="profile-label">닉네임</label>
+                        <label className="profile-label">지식제공자</label>
                         <div className="profile-nickname-row">
                             {isEditing ? (
                                 <div className="nickname-edit-box">

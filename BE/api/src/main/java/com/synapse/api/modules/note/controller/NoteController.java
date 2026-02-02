@@ -1,6 +1,7 @@
 package com.synapse.api.modules.note.controller;
 
 import com.synapse.api.modules.block.dto.response.BlockPageResponse;
+
 import com.synapse.api.modules.note.dto.request.ExecutionHistoryRequest;
 import com.synapse.api.modules.note.dto.request.NoteCreateRequest;
 import com.synapse.api.modules.note.dto.request.NoteUpdateRequest;
@@ -181,4 +182,5 @@ public class NoteController {
         BlockPageResponse response = noteService.getBlockBookmarks(memberId, noteId, page - 1, size);
         return DataResponse.of(response);
     }
+
 }
