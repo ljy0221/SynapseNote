@@ -17,7 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -66,7 +65,14 @@ public class BlockHistoryService {
          * 블록 소유권 확인 (블록 반환)
          */
         private BaseBlock verifyBlockOwnership(String blockId, String noteId) {
-                BaseBlock block = blockRepository.findByBlockId(blockId)
+                UUID blockUuid;
+                try {
+                        blockUuid = UUID.fromString(blockId);
+                } catch (IllegalArgumentException e) {
+                        throw new BusinessException(ErrorCode.CODE_BLOCK_NOT_FOUND);
+                }
+
+                BaseBlock block = blockRepository.findByBlockId(blockUuid)
                                 .orElseThrow(() -> new BusinessException(ErrorCode.CODE_BLOCK_NOT_FOUND));
 
                 if (!block.getNoteId().equals(noteId)) {
