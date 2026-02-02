@@ -11,12 +11,7 @@ import java.util.Optional;
 
 public interface BlockHistoryRepository extends MongoRepository<BlockHistory, String> {
 
-    Page<BlockHistory> findByBlockIdOrderByVersionDesc(String blockId, Pageable pageable);
-
-    Optional<BlockHistory> findByBlockIdAndVersion(String blockId, int version);
-
-    @Query(value = "{ 'blockId': ?0 }", sort = "{ 'version': -1 }")
-    Optional<BlockHistory> findFirstByBlockIdOrderByVersionDesc(String blockId);
+    Page<BlockHistory> findByBlockIdOrderByChangedAtDesc(String blockId, Pageable pageable);
 
     long countByBlockId(String blockId);
 

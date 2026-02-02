@@ -14,9 +14,9 @@ import java.util.Map;
 
 @Document(collection = "block_histories")
 @CompoundIndexes({
-    @CompoundIndex(name = "block_slot_unique_idx", def = "{'blockId': 1, 'slotNumber': 1}", unique = true),
-    @CompoundIndex(name = "note_changed_idx", def = "{'noteId': 1, 'changedAt': -1}"),
-    @CompoundIndex(name = "user_activity_idx", def = "{'changedBy.memberId': 1, 'changedAt': -1}")
+        @CompoundIndex(name = "block_slot_unique_idx", def = "{'blockId': 1, 'slotNumber': 1}", unique = true),
+        @CompoundIndex(name = "note_changed_idx", def = "{'noteId': 1, 'changedAt': -1}"),
+        @CompoundIndex(name = "user_activity_idx", def = "{'changedBy.memberId': 1, 'changedAt': -1}")
 })
 @Getter
 @Builder
@@ -30,7 +30,6 @@ public class BlockHistory {
     private String blockId;
     private String noteId;
     private int slotNumber;
-    private int version;
 
     private Map<String, Object> properties;
     private String blockType;

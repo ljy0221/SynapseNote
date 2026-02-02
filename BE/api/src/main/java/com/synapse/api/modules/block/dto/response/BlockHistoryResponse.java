@@ -11,7 +11,6 @@ import java.time.LocalDateTime;
 public class BlockHistoryResponse {
     private String blockId;
     private int slotNumber;
-    private int version;
     private String blockType;
     private String changedByMemberId;
     private String changedByMemberName;
@@ -22,7 +21,6 @@ public class BlockHistoryResponse {
         return BlockHistoryResponse.builder()
                 .blockId(history.getBlockId())
                 .slotNumber(history.getSlotNumber())
-                .version(history.getVersion())
                 .blockType(history.getBlockType())
                 .changedByMemberId(history.getChangedBy().getMemberId())
                 .changedByMemberName(history.getChangedBy().getMemberName())
