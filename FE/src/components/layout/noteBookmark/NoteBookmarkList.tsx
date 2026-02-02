@@ -3,13 +3,11 @@ import NoteBookmarkItem from './NoteBookmarkItem';
 
 import type { BookmarkedNote } from '../../../types/bookmark/Bookmark';
 
-import { getBookmarksApi } from '../../../api/bookmark/Bookmarks.api';
 import {
-  adaptBookmarkedNotes,
-} from '../../../api/bookmark/Bookmarks.adapter';
-import { removeBookmarkApi } from '../../../api/bookmark/Bookmarks.api';
-
-
+  getBookmarksApi,
+  removeBookmarkApi,
+} from '../../../api/bookmark/Bookmarks.api';
+import { adaptBookmarkedNotes } from '../../../api/bookmark/Bookmarks.adapter';
 
 const NoteBookmarkList = () => {
   const [notes, setNotes] = useState<BookmarkedNote[]>([]);
@@ -20,20 +18,7 @@ const NoteBookmarkList = () => {
       setIsLoading(true);
       try {
         const res = await getBookmarksApi();
-        const bookmarkedNotes = adaptBookmarkedNotes(res);
-
-        setNotes(bookmarkedNotes);
-
-        // ✅ 성공 로그 (개발용)
-        console.log(
-          '[NoteBookmarkList] 즐겨찾기 로딩 성공',
-          {
-            count: bookmarkedNotes.length,
-            notes: bookmarkedNotes,
-          }
-        );
-      } catch (e) {
-        console.error('[NoteBookmarkList] 즐겨찾기 로딩 실패', e);
+        setNotes(adaptBookmarkedNotes(res));
       } finally {
         setIsLoading(false);
       }
@@ -43,40 +28,21 @@ const NoteBookmarkList = () => {
   }, []);
 
   const handleRemove = async (noteId: string) => {
-    // 1. optimistic UI
+    // optimistic UI
     setNotes(prev => prev.filter(n => n.noteId !== noteId));
-
-    console.log(
-      '[NoteBookmarkList] 즐겨찾기 제거 (optimistic)',
-      { noteId }
-    );
 
     try {
       await removeBookmarkApi(noteId);
-
-      console.log(
-        '[NoteBookmarkList] 즐겨찾기 제거 성공',
-        { noteId }
-      );
-    } catch (e) {
-      console.error(
-        '[NoteBookmarkList] 즐겨찾기 제거 실패',
-        e
-      );
-
-      // ❌ rollback (다시 불러오는 게 가장 안전)
+    } catch {
+      // rollback: 서버 기준 재동기화
       try {
         const res = await getBookmarksApi();
         setNotes(adaptBookmarkedNotes(res));
-      } catch (reloadError) {
-        console.error(
-          '[NoteBookmarkList] 즐겨찾기 재동기화 실패',
-          reloadError
-        );
+      } catch {
+        // 여기서는 더 이상 할 수 있는 게 없음 → 조용히 실패
       }
     }
   };
-
 
   if (isLoading) {
     return <div className="bookmark-loading">Loading...</div>;

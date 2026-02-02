@@ -6,11 +6,12 @@ import com.synapse.api.modules.block.document.TextBlock;
 import lombok.Builder;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Builder
 public record BlockResponse(
-        String blockId,
-        String noteId,
+        UUID blockId,
+        UUID noteId,
         String notePath,
         String type,
         Object content, // CodeBlock.CodeProperties or TextBlock.TextProperties

@@ -2,6 +2,7 @@
 
 export interface LoginResult {
     accessToken: string;
+    memberId: string;
 }
 
 export const socialLogin = async (provider: string, code: string): Promise<LoginResult> => {
@@ -22,12 +23,17 @@ export const socialLogin = async (provider: string, code: string): Promise<Login
         throw new Error(errorData.message || '로그인 처리에 실패했습니다.');
     }
 
-    const data = await response.json();
-    // 백엔드 응답 구조가 DataResponse({data: ...}) 형태라고 가정
-    return data.data;
+    const json = await response.json();
+    const data = json.data;
+
+    return {
+        accessToken: data.accessToken,
+        memberId: data.member.id,
+    };
 };
 
 export interface UserInfo {
+    memberId: string;
     email: string;
     name: string;
     provider: string;
@@ -52,6 +58,42 @@ export const getUserInfo = async (token: string): Promise<UserInfo> => {
         throw new Error('Failed to fetch user info');
     }
 
-    const data = await response.json();
-    return data.data;
+    const json = await response.json();
+    const data = json.data;
+
+    return {
+        ...data,
+        memberId: data.id,
+    };
+};
+
+export const updateNickname = async (token: string, newNickname: string): Promise<UserInfo> => {
+    if (!token) {
+        throw new Error('No access token provided');
+    }
+
+    const response = await fetch('/api/v1/members/me', {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+            name: newNickname,
+        }),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || '닉네임 변경에 실패했습니다.');
+    }
+
+    const json = await response.json();
+    const data = json.data;
+
+    return {
+        ...data,
+        memberId: data.id,
+    };
 };
