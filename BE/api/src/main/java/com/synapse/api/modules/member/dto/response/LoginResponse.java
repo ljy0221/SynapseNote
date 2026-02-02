@@ -1,6 +1,7 @@
 package com.synapse.api.modules.member.dto.response;
 
 import com.synapse.api.modules.member.dto.oauth.OAuthProvider;
+import com.synapse.api.modules.member.entity.Theme;
 import lombok.Builder;
 
 import java.util.UUID;
@@ -17,7 +18,7 @@ public record LoginResponse(
             UUID id,
             String email,
             String name,
-            boolean isLight,
+            Theme theme,
             OAuthProvider provider
     ) {
     }

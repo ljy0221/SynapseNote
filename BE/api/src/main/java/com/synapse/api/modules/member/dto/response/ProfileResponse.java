@@ -1,6 +1,7 @@
 package com.synapse.api.modules.member.dto.response;
 
 import com.synapse.api.modules.member.dto.oauth.OAuthProvider;
+import com.synapse.api.modules.member.entity.Theme;
 import lombok.Builder;
 
 import java.time.LocalDateTime;
@@ -11,7 +12,7 @@ public record ProfileResponse(
         UUID id,
         String email,
         String name,
-        boolean isLight,
+        Theme theme,
         OAuthProvider provider,
         LocalDateTime createdAt
 ) {

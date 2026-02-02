@@ -30,14 +30,14 @@ public class Member extends BaseEntity {
     @Column(nullable = false, length = 100)
     private String name;
 
+    @Enumerated(EnumType.STRING)
     @Builder.Default
-    @Column(nullable = false, columnDefinition = "boolean default true")
-    private boolean light = true;
-
+    @Column(nullable = false)
+    private Theme theme = Theme.LIGHT;
 
     public void updateName(String name) {
         this.name = name;
     }
-    public void updateLight(boolean isLight) { this.light = isLight; }
+    public void updateLight(Theme theme) { this.theme = theme; }
 
 }
