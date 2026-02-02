@@ -10,12 +10,12 @@ import { saveExecutionToBackend } from "../../../utils/executionAPI.ts";
 import { LanguageSelector } from "./LanguageSelector.tsx";
 
 interface CodeBlockProps {
-    id: number;
+    id: number | string;
     language: Language;
     code: string;
     noteId?: string;
-    onDelete: (id: number) => void;
-    onChange: (id: number, newCode: string) => void;
+    onDelete: (id: number | string) => void;
+    onChange: (id: number | string, newCode: string) => void;
     onFocus: () => void;
     draggable?: boolean;
     onDragStart?: (e: React.DragEvent) => void;
