@@ -35,13 +35,13 @@ public class BlockService {
     private final NoteMemberRepository noteMemberRepository;
 
     // 노트 ID로 블록 목록 조회 (순서 보장)
-    public List<BaseBlock> getBlocksByNoteId(String noteId) {
+    public List<BaseBlock> getBlocksByNoteId(UUID noteId) {
         return blockRepository.findByNoteIdOrderByOrderAsc(noteId);
     }
 
     // 코드 실행 이력 저장
     @Transactional
-    public void saveExecutionHistory(String noteId, String blockId, ExecutionHistoryRequest request) {
+    public void saveExecutionHistory(UUID noteId, UUID blockId, ExecutionHistoryRequest request) {
         // 1. 블록 조회
         BaseBlock baseBlock = blockRepository.findByBlockId(blockId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CODE_BLOCK_NOT_FOUND));
@@ -64,7 +64,7 @@ public class BlockService {
         }
     }
 
-    public List<ExecutionHistoryResponse> getExecutionHistory(String noteId, String blockId) {
+    public List<ExecutionHistoryResponse> getExecutionHistory(UUID noteId, UUID blockId) {
         // 1. 블록 조회
         BaseBlock baseBlock = blockRepository.findByBlockId(blockId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CODE_BLOCK_NOT_FOUND));
@@ -94,7 +94,7 @@ public class BlockService {
     }
 
     @Transactional
-    public void bookmarkBlock(String blockId, String noteId) {
+    public void bookmarkBlock(UUID blockId, UUID noteId) {
         BaseBlock block = blockRepository.findByBlockId(blockId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CODE_BLOCK_NOT_FOUND));
 
@@ -109,7 +109,7 @@ public class BlockService {
     }
 
     @Transactional
-    public void unbookmarkBlock(String blockId, String noteId) {
+    public void unbookmarkBlock(UUID blockId, UUID noteId) {
         BaseBlock block = blockRepository.findByBlockId(blockId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CODE_BLOCK_NOT_FOUND));
 
@@ -123,7 +123,7 @@ public class BlockService {
         log.info("Unbookmarked block: {}", blockId);
     }
 
-    public Page<BaseBlock> getBookmarkedBlocks(String noteId, int page, int size) {
+    public Page<BaseBlock> getBookmarkedBlocks(UUID noteId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         return blockRepository.findByNoteIdAndBookmarkTrueOrderByUpdatedAtDesc(noteId, pageable);
     }

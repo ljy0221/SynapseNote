@@ -97,7 +97,7 @@ public class NoteService {
         validateAccess(note, memberId);
 
         // 3. Mongo 블록 리스트 조회 (BlockService 위임)
-        List<BaseBlock> blocks = blockService.getBlocksByNoteId(noteId.toString());
+        List<BaseBlock> blocks = blockService.getBlocksByNoteId(noteId);
 
         // 4. DTO 조합
         return NoteDetailResponse.from(note, blocks);
@@ -172,24 +172,24 @@ public class NoteService {
     // =========================================================================
 
     @Transactional
-    public void saveExecutionHistory(UUID noteId, String blockId, UUID memberId, ExecutionHistoryRequest request) {
+    public void saveExecutionHistory(UUID noteId, UUID blockId, UUID memberId, ExecutionHistoryRequest request) {
         validateEditPermission(noteId, memberId);
 
         // 실행 및 저장은 BlockService에 전적으로 위임
-        blockService.saveExecutionHistory(noteId.toString(), blockId, request);
+        blockService.saveExecutionHistory(noteId, blockId, request);
     }
 
     /**
      * [요청하신 메소드] 실행 히스토리 조회
      */
-    public List<ExecutionHistoryResponse> getExecutionHistory(UUID noteId, String blockId, UUID memberId) {
+    public List<ExecutionHistoryResponse> getExecutionHistory(UUID noteId, UUID blockId, UUID memberId) {
         // 1. 노트 접근 권한 확인
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
         validateAccess(note, memberId);
 
         // 2. 히스토리 조회 위임
-        return blockService.getExecutionHistory(noteId.toString(), blockId);
+        return blockService.getExecutionHistory(noteId, blockId);
     }
 
     @Transactional
@@ -229,25 +229,25 @@ public class NoteService {
     }
 
     @Transactional
-    public void bookmarkBlock(UUID memberId, UUID noteId, String blockId) {
+    public void bookmarkBlock(UUID memberId, UUID noteId, UUID blockId) {
         // 노트 조회 및 접근 권한 검증
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
         validateAccess(note, memberId);
 
         // BlockService에 위임
-        blockService.bookmarkBlock(blockId, noteId.toString());
+        blockService.bookmarkBlock(blockId, noteId);
     }
 
     @Transactional
-    public void unbookmarkBlock(UUID memberId, UUID noteId, String blockId) {
+    public void unbookmarkBlock(UUID memberId, UUID noteId, UUID blockId) {
         // 노트 조회 및 접근 권한 검증
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
         validateAccess(note, memberId);
 
         // BlockService에 위임
-        blockService.unbookmarkBlock(blockId, noteId.toString());
+        blockService.unbookmarkBlock(blockId, noteId);
     }
 
     public BlockPageResponse getBlockBookmarks(UUID memberId, UUID noteId, int page, int size) {
@@ -257,7 +257,7 @@ public class NoteService {
         validateAccess(note, memberId);
 
         // BlockService에서 블록 목록 조회
-        Page<BaseBlock> blockPage = blockService.getBookmarkedBlocks(noteId.toString(), page, size);
+        Page<BaseBlock> blockPage = blockService.getBookmarkedBlocks(noteId, page, size);
 
         return BlockPageResponse.from(blockPage, note.getDirectoryPath());
     }

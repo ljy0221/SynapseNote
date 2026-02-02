@@ -99,7 +99,7 @@ public class NoteController {
     public StatusResponse saveExecutionHistory(
             @AuthenticationPrincipal CustomMemberDetails details,
             @PathVariable UUID noteId,
-            @PathVariable String blockId,
+            @PathVariable UUID blockId,
             @Valid @RequestBody ExecutionHistoryRequest request) {
         UUID memberId = details.id();
         log.info("Saving execution history for block: {} in note: {}", blockId, noteId);
@@ -111,7 +111,7 @@ public class NoteController {
     public DataResponse<List<ExecutionHistoryResponse>> getExecutionHistory(
             @AuthenticationPrincipal CustomMemberDetails details,
             @PathVariable UUID noteId,
-            @PathVariable String blockId) {
+            @PathVariable UUID blockId) {
         UUID memberId = details.id();
         log.info("Getting execution history for block: {} in note: {}", blockId, noteId);
         List<ExecutionHistoryResponse> response = noteService.getExecutionHistory(noteId, blockId, memberId);
@@ -158,7 +158,7 @@ public class NoteController {
     public StatusResponse bookmarkBlock(
             @AuthenticationPrincipal CustomMemberDetails details,
             @PathVariable UUID noteId,
-            @PathVariable String blockId) {
+            @PathVariable UUID blockId) {
         UUID memberId = details.id();
         noteService.bookmarkBlock(memberId, noteId, blockId);
         return StatusResponse.of();
@@ -168,7 +168,7 @@ public class NoteController {
     public StatusResponse unbookmarkBlock(
             @AuthenticationPrincipal CustomMemberDetails details,
             @PathVariable UUID noteId,
-            @PathVariable String blockId) {
+            @PathVariable UUID blockId) {
         UUID memberId = details.id();
         noteService.unbookmarkBlock(memberId, noteId, blockId);
         return StatusResponse.of();
