@@ -1,10 +1,11 @@
 package com.synapse.api.modules.note.entity;
 
-import com.synapse.api.modules.mindmap.entity.MindmapEdge;
 import com.synapse.api.modules.member.entity.Member;
+import com.synapse.api.modules.mindmap.entity.MindmapEdge;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.Where; // (선택) Soft Delete 자동 처리용
+import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.annotations.UuidGenerator;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -21,12 +22,12 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @EntityListeners(AuditingEntityListener.class)
-// [선택] 조회 시 삭제된(deleted_at is not null) 데이터는 자동으로 제외
-@Where(clause = "deleted_at IS NULL")
+@SQLRestriction("deleted_at IS NULL")
 public class Note {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue
+    @UuidGenerator(style = UuidGenerator.Style.TIME)
     private UUID id;
 
     @Column(nullable = false)
