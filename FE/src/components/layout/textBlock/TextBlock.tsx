@@ -96,6 +96,10 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 heading: {
                     levels: [1, 2, 3],
                 },
+                // @ts-ignore - Some versions include these, some don't. Explicitly disable to avoid duplicates.
+                link: false,
+                // @ts-ignore
+                underline: false,
             }),
             Image,
             TextStyle,

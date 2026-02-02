@@ -10,8 +10,7 @@ interface NoteMainProps {
     onUpdateTitle: (newTitle: string) => void;
     blocks: BlockData[];
     onUpdateBlock: (id: number | string, content: string) => void;
-    onAddBlockAfter: (afterId: number | string, type: BlockType) => void;
-    onAddBlockAtEnd: (type: BlockType) => void;  // 새로 추가
+    onAddBlockAtEnd: (type: BlockType) => void;
     onDeleteBlock: (id: number | string) => void;
     onFocusBlock: (id: number | string) => void;
     focusedBlockId: number | string | null; // [추가]
@@ -23,11 +22,10 @@ const NoteMain: React.FC<NoteMainProps> = ({
     onUpdateTitle,
     blocks,
     onUpdateBlock,
-    onAddBlockAfter,
-    onAddBlockAtEnd,  // 새로 추가
+    onAddBlockAtEnd,
     onDeleteBlock,
     onFocusBlock,
-    focusedBlockId, // [추가]
+    focusedBlockId,
     onMoveBlock,
     titleInputRef
 }) => {
