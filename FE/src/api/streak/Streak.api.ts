@@ -5,6 +5,6 @@ import type { GetStreakResponse } from '../../types/note/GetStreak';
 export const getStreakApi = (memberId: string) => {
   return request<GetStreakResponse>(
     'get',
-    `/members/${memberId}/streak`
+    `/v1/members/${memberId}/streak`
   );
 };

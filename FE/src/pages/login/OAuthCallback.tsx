@@ -45,7 +45,7 @@ const OAuthCallback: React.FC = () => {
                 const result = await socialLogin(provider, code);
 
                 // Store를 통해 로그인 처리 (토큰 저장 및 유저 정보 갱신)
-                await login(result.accessToken);
+                await login(result.accessToken, result.memberId);
 
                 console.log('[OAuth] Login success');
                 navigate('/home', { replace: true });

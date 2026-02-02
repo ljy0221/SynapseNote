@@ -1,5 +1,5 @@
 // src/components/home/NoteStreak.tsx
-import React,{ useMemo } from 'react';
+import React, { useMemo } from 'react';
 import './NoteStreak.css';
 import { calculateStreakCount } from '../../features/streakCount/streakcount';
 
@@ -32,37 +32,64 @@ const NoteStreak: React.FC<NoteStreakProps> = ({ streak }) => {
     [activityDates]
   );
 
-  /** 최근 180일 날짜 생성 */
-  const days: Date[] = Array.from({ length: DAYS }, (_, i) => {
-    const d = new Date(today);
-    d.setDate(today.getDate() - (DAYS - 1 - i));
-    return d;
-  });
+  /** 현재 전시할 전시 기간 (약 180일 전부터 이번 주 토요일까지) */
+  const days: Date[] = useMemo(() => {
+    const end = new Date(today);
+    // 이번 주 토요일까지 채우기 (일:0 ~ 토:6)
+    const dayOfWeek = today.getDay();
+    end.setDate(today.getDate() + (6 - dayOfWeek));
+
+    const result: Date[] = [];
+    for (let i = 0; i < DAYS; i++) {
+      const d = new Date(end);
+      d.setDate(end.getDate() - (DAYS - 1 - i));
+      result.push(d);
+    }
+    return result;
+  }, [today]);
 
   /** 주(week) 단위로 묶기 */
-  const weeks: Date[][] = [];
-  let currentWeek: Date[] = [];
+  const weeks: Date[][] = useMemo(() => {
+    const result: Date[][] = [];
+    let currentWeek: Date[] = [];
 
-  days.forEach(date => {
-    currentWeek.push(date);
-    if (currentWeek.length === 7) {
-      weeks.push(currentWeek);
-      currentWeek = [];
-    }
-  });
-  if (currentWeek.length) weeks.push(currentWeek);
+    days.forEach(date => {
+      currentWeek.push(date);
+      if (currentWeek.length === 7) {
+        result.push(currentWeek);
+        currentWeek = [];
+      }
+    });
+    if (currentWeek.length) result.push(currentWeek);
+    return result;
+  }, [days]);
 
-  /** 월 라벨 계산 (월이 바뀌는 주의 첫 번째 열) */
-  const monthLabels = weeks.map((week, index) => {
-    const firstDay = week[0];
-    if (firstDay.getDate() <= 7) {
-      return {
-        index,
-        label: `${firstDay.getMonth() + 1}월`,
-      };
-    }
-    return null;
-  }).filter(Boolean) as { index: number; label: string }[];
+  /** 월 라벨 계산 (월이 시작되는 첫 번째 주에 라벨 표시) */
+  const monthLabels = useMemo(() => {
+    const labels: { index: number; label: string }[] = [];
+    let lastMonth = -1;
+
+    weeks.forEach((week, index) => {
+      // 해당 주의 어떤 하루라도 이전 달과 다르다면 (그 달의 첫 주라고 판단)
+      const hasMonthStart = week.some(d => {
+        const m = d.getMonth();
+        if (m !== lastMonth) {
+          lastMonth = m;
+          return true;
+        }
+        return false;
+      });
+
+      if (hasMonthStart) {
+        // 주의 중간에 월이 바뀌더라도 해당 열에 라벨 표시
+        labels.push({
+          index,
+          label: `${lastMonth + 1}월`,
+        });
+      }
+    });
+    return labels;
+  }, [weeks]);
 
   return (
     <section className="note-streak">
@@ -81,9 +108,11 @@ const NoteStreak: React.FC<NoteStreakProps> = ({ streak }) => {
       <div className="streak-months">
         {monthLabels.map(m => (
           <span
-            key={m.index}
+            key={`${m.index}-${m.label}`}
             className="month-label"
-            style={{ gridColumnStart: m.index + 1 }}
+            style={{
+              left: `${m.index * (24 + 3)}px` // cellWidth + gap
+            }}
           >
             {m.label}
           </span>
