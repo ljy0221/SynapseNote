@@ -27,7 +27,7 @@
     align-items: center;
     position: relative;
     animation: slideUp 0.3s ease-out;
-    border: 1px solid var(--color-border);
+    border: 2px solid var(--color-point);
 }
 
 .profile-image-wrapper {
@@ -40,13 +40,46 @@
     align-items: center;
     margin-bottom: 24px;
     border: 2px solid var(--color-point);
-    overflow: hidden;
+    position: relative;
+    /* Badge positioning context */
 }
 
 .profile-image {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    border-radius: 50%;
+    /* Ensure image is round */
+}
+
+.streak-badge {
+    position: absolute;
+    bottom: -5px;
+    right: -5px;
+    background-color: var(--color-main);
+    border: 2px solid var(--color-point);
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--color-point);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes popIn {
+    from {
+        transform: scale(0);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 .profile-placeholder-icon {
@@ -58,32 +91,48 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
-    margin-bottom: 30px;
+    margin-bottom: 24px;
 }
+
+
 
 .profile-field {
     display: flex;
-    flex-direction: column;
-    gap: 6px;
+    flex-direction: row;
+    align-items: center;
+    /* justify-content: space-between; 제거: 좌측 정렬 위함 */
+    gap: 12px;
+    width: 100%;
 }
 
 .profile-label {
-    font-size: 0.85rem;
+    font-size: 1rem;
     color: var(--font-color-sub);
     font-weight: 500;
+    flex-shrink: 0;
+    width: 90px;
+    /* 고정 너비 부여 */
 }
 
 .profile-value {
-    font-size: 1rem;
+    font-size: 1.2rem;
     color: var(--font-color);
     font-weight: 600;
+    text-align: left;
+    /* 우측 정렬 -> 좌측 정렬 */
+    word-break: break-all;
+    flex: 1;
+    /* 남은 공간 차지 */
 }
 
 .profile-nickname-row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    height: 36px;
+    justify-content: flex-start;
+    /* 우측 정렬 -> 좌측 정렬 */
+    gap: 8px;
+    flex: 1;
+    height: auto;
 }
 
 /* 닉네임 수정 모드 */
@@ -92,9 +141,15 @@
     align-items: center;
     gap: 8px;
     width: 100%;
+    justify-content: flex-start;
+    /* 우측 정렬 -> 좌측 정렬 */
 }
 
 .nickname-input {
+    width: 100%;
+    /* 인풋 너비 늘림 */
+    min-width: 0;
+    /* Flexbox overflow fix */
     flex: 1;
     background-color: var(--color-sub);
     border: 1px solid var(--color-border);
@@ -103,6 +158,8 @@
     color: var(--font-color);
     font-size: 0.95rem;
     outline: none;
+    text-align: left;
+    /* 인풋 텍스트 좌측 정렬 */
 }
 
 .nickname-input:focus {
