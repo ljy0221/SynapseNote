@@ -2,6 +2,7 @@ import * as Y from 'yjs';
 import { Block, BlockHistory, BlockProperties } from '../models/Block';
 import { loadEnv } from '../config/env';
 import _ from 'lodash';
+import connectionManager, { UserContext } from '../ws/connectionManager';
 
 // Yjs에서 넘어오는 블록 데이터 구조 인터페이스
 interface YjsBlockData {
@@ -37,8 +38,7 @@ class BridgeService {
     this.debounceTimers.set(noteId, timer);
   }
 
-
-  private async syncToDB(noteId: string, yDoc: Y.Doc): Promise<void> {
+  private async syncToDB(noteId: string, yDoc: Y.Doc, userContext?: UserContext): Promise<void> {
     try {
       console.log(`[Bridge] syncToDB started for ${noteId}`);
       // 1. Yjs 데이터 추출
@@ -57,7 +57,6 @@ class BridgeService {
       const dbBlocksMap = new Map(dbBlocks.map(b => [b.blockId, b]));
 
       const bulkOps: any[] = [];
-      const historyOps: any[] = []; // History 벌크 저장을 위한 배열
       const currentBlockIds = new Set<string>();
 
       // 3. 루프 돌며 비교 (Diff Logic)
@@ -104,16 +103,7 @@ class BridgeService {
           }
 
           if (isPropsChanged || isTypeChanged || isRootChanged || isClassChanged) {
-            // A. 히스토리 저장 (벌크용 배열에 추가)
-            historyOps.push({
-              blockId: yBlock.id,
-              noteId: noteId,
-              previousProperties: existingBlock.properties,
-              previousType: existingBlock.type,
-              changedAt: new Date()
-            });
-
-            // B. 블록 업데이트
+            // 히스토리 자동 저장 제거 - 블록 업데이트만 수행
             bulkOps.push({
               updateOne: {
                 filter: { blockId: yBlock.id },
@@ -169,30 +159,18 @@ class BridgeService {
         });
       }
 
-      // 5. 실행
-      const promises = [];
-
+      // 5. 실행 (히스토리 저장 제거)
       if (bulkOps.length > 0) {
-        promises.push(Block.bulkWrite(bulkOps));
-      }
-
-      // History 벌크 저장
-      if (historyOps.length > 0) {
-        promises.push(BlockHistory.insertMany(historyOps));
-      }
-
-      if (promises.length > 0) {
-        await Promise.all(promises);
-        console.log(`[Bridge] Sync Success for ${noteId}. Updates: ${bulkOps.length}, History: ${historyOps.length}`);
-        if (bulkOps.length > 0) {
-          console.log(`[Bridge] Sample of synced block IDs: ${currentBlocks.slice(0, 3).map(b => b.id).join(", ")}`);
-        }
+        await Block.bulkWrite(bulkOps);
+        console.log(`[Bridge] Sync Success for ${noteId}. Updates: ${bulkOps.length}`);
+        console.log(`[Bridge] Sample of synced block IDs: ${currentBlocks.slice(0, 3).map(b => b.id).join(", ")}`);
       }
 
     } catch (error) {
       console.error(`[Bridge Error] Failed to sync ${noteId}:`, error);
     }
   }
+
 }
 
 export default new BridgeService();
