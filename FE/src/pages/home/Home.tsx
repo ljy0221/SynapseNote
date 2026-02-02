@@ -10,44 +10,44 @@ import { getStreakApi } from '../../api/streak/Streak.api';
 import { adaptStreakDates } from '../../api/streak/Streak.adapter';
 
 import type { NoteListItem } from '../../types/note/GetNotes';
+import { useAuthStore } from '../../store/useAuthStore';
 
 const Home: React.FC = () => {
+  const { userInfo, isLoading: userLoading } = useAuthStore();
+  const memberId = userInfo?.memberId;
+
   const [recentNotes, setRecentNotes] = useState<NoteListItem[]>([]);
   const [streakDates, setStreakDates] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    //  memberId 없으면 절대 호출 안 함
+    if (!memberId) return;
+
     const fetchDashboardData = async () => {
       setLoading(true);
-  
-      const results = await Promise.allSettled([
-        getNotesApi(),
-        getStreakApi(),
-      ]);
-  
-      const [notesResult, streakResult] = results;
-  
-      if (notesResult.status === 'fulfilled') {
-        setRecentNotes(adaptNotesForSidebar(notesResult.value));
-      } else {
-        console.error('[Home] Notes 로딩 실패', notesResult.reason);
+
+      try {
+        const [notesRes, streakRes] = await Promise.all([
+          getNotesApi(),
+          getStreakApi(memberId),
+        ]);
+
+        setRecentNotes(adaptNotesForSidebar(notesRes));
+        setStreakDates(adaptStreakDates(streakRes));
+      } catch (e) {
+        console.error('[Home] Dashboard 로딩 실패', e);
+        setStreakDates([]);
+      } finally {
+        setLoading(false);
       }
-  
-      if (streakResult.status === 'fulfilled') {
-        setStreakDates(adaptStreakDates(streakResult.value));
-      } else {
-        console.error('[Home] Streak 로딩 실패', streakResult.reason);
-        setStreakDates([]); // fallback
-      }
-  
-      setLoading(false);
     };
-  
+
     fetchDashboardData();
-  }, []);
+  }, [memberId]);
 
-
-  if (loading) {
+  //  인증 로딩 + 데이터 로딩 분리
+  if (userLoading || loading) {
     return <div className="home-container">Loading...</div>;
   }
 
