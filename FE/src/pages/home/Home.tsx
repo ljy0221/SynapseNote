@@ -21,7 +21,7 @@ const Home: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // ✅ memberId 없으면 절대 호출 안 함
+    //  memberId 없으면 절대 호출 안 함
     if (!memberId) return;
 
     const fetchDashboardData = async () => {
@@ -46,7 +46,7 @@ const Home: React.FC = () => {
     fetchDashboardData();
   }, [memberId]);
 
-  // ✅ 인증 로딩 + 데이터 로딩 분리
+  //  인증 로딩 + 데이터 로딩 분리
   if (userLoading || loading) {
     return <div className="home-container">Loading...</div>;
   }
