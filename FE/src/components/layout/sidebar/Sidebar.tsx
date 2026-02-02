@@ -214,8 +214,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       pointX: 0,
       pointY: 0,
       role: 'OWNER',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: Date.now(),
+      updatedAt: Date.now()
     };
 
     setNotes(prev => [...prev, tempNote]);
