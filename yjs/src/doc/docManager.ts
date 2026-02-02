@@ -42,7 +42,7 @@ export function registerDoc(noteId: string, ydoc: Y.Doc): DocEntry {
     const yArray = ydoc.getArray("blocks");
     console.log(`[DOC] Current blocks in Yjs: ${yArray.length}`);
 
-    BridgeService.handleUpdate(noteId, ydoc);
+    // History 자동 저장 제거 - 실시간 동기화만 유지
 
     entry!.pendingUpdates.push(update);
     entry!.dirty = true;
