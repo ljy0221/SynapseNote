@@ -17,9 +17,8 @@ public class AiServiceFactory {
     public AiService getService(AiProvider provider) {
         return switch (provider) {
             case OPENAI -> services.get("openAiService");
-            case ANTHROPIC, GEMINI ->
-                    throw new BusinessException(ErrorCode.AI_PROVIDER_NOT_SUPPORTED,
-                            String.format("%s 프로바이더는 아직 지원하지 않습니다.", provider.name()));
+            case GEMINI -> services.get("geminiService");
+            case ANTHROPIC -> services.get("claudeService");
         };
     }
 }

@@ -27,8 +27,8 @@ public class NoteSummaryService {
     private final NoteValidator noteValidator;
     private final BlockRepository blockRepository;
 
-    @Value("${ai.default.provider}")
-    private String defaultProvider;
+    @Value("${ai.summary.provider}")
+    private String summaryProvider;
 
     @Transactional(readOnly = true)
     public NoteSummaryResponse summarizeNote(UUID noteId, UUID userId,
@@ -45,7 +45,7 @@ public class NoteSummaryService {
 
         AiProvider provider = request.provider() != null
                 ? request.provider()
-                : AiProvider.valueOf(defaultProvider.toUpperCase());
+                : AiProvider.valueOf(summaryProvider.toUpperCase());
 
         AiService aiService = aiServiceFactory.getService(provider);
         String summary = aiService.complete(systemPrompt, userPrompt);
