@@ -2,6 +2,7 @@ package com.synapse.api.modules.member.controller;
 
 import com.synapse.api.modules.member.dto.request.LoginRequest;
 import com.synapse.api.modules.member.dto.request.UpdateNicknameRequest;
+import com.synapse.api.modules.member.dto.request.UpdateThemeRequest;
 import com.synapse.api.modules.member.dto.response.LoginResponse;
 import com.synapse.api.modules.member.dto.response.LoginResult;
 import com.synapse.api.modules.member.dto.response.ProfileResponse;
@@ -79,6 +80,14 @@ public class MemberController {
             @RequestBody @Valid UpdateNicknameRequest request,
             @AuthenticationPrincipal CustomMemberDetails details) {
         ProfileResponse updatedProfile = memberService.updateNickname(details.id(), request.name());
+        return DataResponse.of(updatedProfile);
+    }
+
+    @PatchMapping("/v1/members/me/theme")
+    public DataResponse<ProfileResponse> updateTheme(
+            @RequestBody @Valid UpdateThemeRequest request,
+            @AuthenticationPrincipal CustomMemberDetails details) {
+        ProfileResponse updatedProfile = memberService.updateTheme(details.id(), request);
         return DataResponse.of(updatedProfile);
     }
 

@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -15,6 +16,7 @@ import javax.naming.AuthenticationException;
 import java.nio.file.AccessDeniedException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 @RestControllerAdvice
 @Slf4j
@@ -112,6 +114,30 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(response);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleHttpMessageNotReadable(
+            HttpMessageNotReadableException e,
+            HttpServletRequest request
+    ) {
+        Throwable t = e;
+        while (t != null) {
+            if (t instanceof BaseException be) {
+                log.debug("Deserialization failed with BaseException: code={}, path={}",
+                        be.getErrorCode().name(), request.getRequestURI(), e);
+
+                return ResponseEntity
+                        .status(be.getErrorCode().getHttpStatus())
+                        .body(ErrorResponse.of(be.getErrorCode()));
+            }
+            t = t.getCause();
+        }
+
+        log.debug("HttpMessageNotReadable: {}", Objects.requireNonNull(e).getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponse.of(ErrorCode.INVALID_INPUT_VALUE));
     }
 
     // 처리되지 않은 모든 예외
