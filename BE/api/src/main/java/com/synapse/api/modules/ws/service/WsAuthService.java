@@ -1,7 +1,5 @@
 package com.synapse.api.modules.ws.service;
 
-import com.synapse.api.modules.member.entity.Member;
-import com.synapse.api.modules.member.repository.MemberRepository;
 import com.synapse.api.modules.note.repository.NoteMemberRepository;
 import com.synapse.api.modules.note.repository.NoteRepository;
 import com.synapse.api.modules.ws.dto.request.WsAuthRequest;
@@ -23,7 +21,6 @@ public class WsAuthService {
 
     private final NoteRepository noteRepository;
     private final NoteMemberRepository noteMemberRepository;
-    private final MemberRepository memberRepository;
     private final JwtUtil jwtUtil;
 
     public WsAuthResponse issueTicket(UUID memberId, WsAuthRequest request) {
@@ -35,17 +32,12 @@ public class WsAuthService {
         noteMemberRepository.findByNoteIdAndMemberId(noteId, memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_ACCESS_DENIED));
 
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
-
         Instant expiresAt = Instant.now().plus(TICKET_TTL);
 
-        String ticket = jwtUtil.generateTicket(memberId, member.getName(), noteId, expiresAt);
+        String ticket = jwtUtil.generateTicket(memberId, noteId, expiresAt);
 
         return WsAuthResponse.builder()
                 .ticket(ticket)
-                .memberId(memberId.toString())
-                .memberName(member.getName())
                 .build();
     }
 
