@@ -1,0 +1,207 @@
+package com.synapse.api.modules.block.service;
+
+import com.synapse.api.modules.block.document.BaseBlock;
+import com.synapse.api.modules.block.document.BlockHistory;
+import com.synapse.api.modules.block.document.CodeBlock;
+import com.synapse.api.modules.block.document.TextBlock;
+import com.synapse.api.modules.block.dto.response.BlockHistoryDetailResponse;
+import com.synapse.api.modules.block.dto.response.BlockHistoryResponse;
+import com.synapse.api.modules.block.repository.BlockHistoryRepository;
+import com.synapse.api.modules.block.repository.BlockRepository;
+import com.synapse.api.modules.member.entity.Member;
+import com.synapse.api.modules.member.repository.MemberRepository;
+import com.synapse.api.modules.note.repository.NoteMemberRepository;
+import com.synapse.api.util.exception.BusinessException;
+import com.synapse.api.util.response.ErrorCode;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class BlockHistoryService {
+
+    private final BlockHistoryRepository blockHistoryRepository;
+    private final BlockRepository blockRepository;
+    private final NoteMemberRepository noteMemberRepository;
+    private final MemberRepository memberRepository;
+
+    /**
+     * 블록 히스토리 목록 조회
+     */
+    public Page<BlockHistoryResponse> getBlockHistory(
+            String noteId,
+            String blockId,
+            UUID memberId,
+            Pageable pageable
+    ) {
+        verifyNoteAccess(noteId, memberId);
+        verifyBlockOwnership(blockId, noteId);
+
+        return blockHistoryRepository
+                .findByBlockIdOrderByVersionDesc(blockId, pageable)
+                .map(BlockHistoryResponse::from);
+    }
+
+    /**
+     * 특정 버전의 블록 히스토리 조회
+     */
+    public BlockHistoryDetailResponse getBlockHistoryVersion(
+            String noteId,
+            String blockId,
+            int version,
+            UUID memberId
+    ) {
+        verifyNoteAccess(noteId, memberId);
+        verifyBlockOwnership(blockId, noteId);
+
+        BlockHistory history = blockHistoryRepository
+                .findByBlockIdAndVersion(blockId, version)
+                .orElseThrow(() -> new BusinessException(ErrorCode.BLOCK_HISTORY_NOT_FOUND));
+
+        return BlockHistoryDetailResponse.from(history);
+    }
+
+    /**
+     * 노트 접근 권한 확인
+     */
+    private void verifyNoteAccess(String noteId, UUID memberId) {
+        noteMemberRepository.findByNoteIdAndMemberId(
+                UUID.fromString(noteId), memberId
+        ).orElseThrow(() -> new BusinessException(ErrorCode.NOTE_ACCESS_DENIED));
+    }
+
+    /**
+     * 블록 소유권 확인 (블록 반환)
+     */
+    private BaseBlock verifyBlockOwnership(String blockId, String noteId) {
+        BaseBlock block = blockRepository.findByBlockId(blockId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CODE_BLOCK_NOT_FOUND));
+
+        if (!block.getNoteId().equals(noteId)) {
+            throw new BusinessException(ErrorCode.NOTE_ACCESS_DENIED);
+        }
+
+        return block;
+    }
+
+    /**
+     * 슬롯에 저장
+     */
+    @Transactional
+    public BlockHistoryResponse saveToSlot(
+            String noteId,
+            String blockId,
+            int slotNumber,
+            UUID memberId
+    ) {
+        verifyNoteAccess(noteId, memberId);
+        BaseBlock currentBlock = verifyBlockOwnership(blockId, noteId);
+
+        Optional<BlockHistory> existingSlot = blockHistoryRepository
+                .findByBlockIdAndSlotNumber(blockId, slotNumber);
+
+        int nextVersion = existingSlot.map(h -> h.getVersion() + 1).orElse(1);
+
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        Map<String, Object> currentProperties = extractProperties(currentBlock);
+
+        BlockHistory newHistory = BlockHistory.builder()
+                .blockId(blockId)
+                .noteId(noteId)
+                .slotNumber(slotNumber)
+                .version(nextVersion)
+                .properties(currentProperties)
+                .blockType(currentBlock.getType())
+                .changedBy(new BlockHistory.ChangedBy(memberId.toString(), member.getName()))
+                .changedAt(LocalDateTime.now())
+                .changeDescription(String.format("Saved to slot %d (v%d)", slotNumber, nextVersion))
+                .build();
+
+        existingSlot.ifPresent(slot -> blockHistoryRepository.deleteById(slot.getId()));
+        BlockHistory saved = blockHistoryRepository.save(newHistory);
+
+        log.info("Saved to slot: blockId={}, slotNumber={}, version={}",
+                blockId, slotNumber, nextVersion);
+
+        return BlockHistoryResponse.from(saved);
+    }
+
+    /**
+     * 슬롯 조회
+     */
+    public BlockHistoryDetailResponse getSlot(
+            String noteId,
+            String blockId,
+            int slotNumber,
+            UUID memberId
+    ) {
+        verifyNoteAccess(noteId, memberId);
+        verifyBlockOwnership(blockId, noteId);
+
+        BlockHistory history = blockHistoryRepository
+                .findByBlockIdAndSlotNumber(blockId, slotNumber)
+                .orElseThrow(() -> new BusinessException(ErrorCode.BLOCK_HISTORY_NOT_FOUND));
+
+        return BlockHistoryDetailResponse.from(history);
+    }
+
+    /**
+     * 모든 슬롯 조회
+     */
+    public List<BlockHistoryResponse> getAllSlots(
+            String noteId,
+            String blockId,
+            UUID memberId
+    ) {
+        verifyNoteAccess(noteId, memberId);
+        verifyBlockOwnership(blockId, noteId);
+
+        List<BlockHistory> allSlots = blockHistoryRepository
+                .findByBlockIdOrderBySlotNumberAsc(blockId);
+
+        return allSlots.stream()
+                .map(BlockHistoryResponse::from)
+                .toList();
+    }
+
+    /**
+     * 블록에서 properties 추출
+     */
+    private Map<String, Object> extractProperties(BaseBlock block) {
+        Map<String, Object> properties = new HashMap<>();
+
+        if (block instanceof CodeBlock codeBlock) {
+            CodeBlock.CodeProperties props = codeBlock.getProperties();
+            if (props != null) {
+                properties.put("language", props.getLanguage() != null ? props.getLanguage() : "");
+                properties.put("code", props.getCode() != null ? props.getCode() : "");
+                properties.put("version", props.getVersion() != null ? props.getVersion() : "");
+                properties.put("executionMode", props.getExecutionMode() != null ? props.getExecutionMode() : "");
+            }
+        } else if (block instanceof TextBlock textBlock) {
+            TextBlock.TextProperties props = textBlock.getProperties();
+            if (props != null) {
+                properties.put("content", props.getContent() != null ? props.getContent() : "");
+                if (props.getAttributes() != null) {
+                    properties.put("attributes", props.getAttributes());
+                }
+            }
+        }
+
+        return properties;
+    }
+}
