@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -45,6 +46,9 @@ class NoteServiceTest {
 
         @Mock
         private BlockService blockService;
+
+        @Spy
+        private NoteValidator noteValidator = new NoteValidator(noteRepository, noteMemberRepository);
 
         @Test
         @DisplayName("노트 즐겨찾기를 설정한다")
