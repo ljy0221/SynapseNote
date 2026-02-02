@@ -4,7 +4,6 @@ import com.synapse.api.modules.block.document.BaseBlock;
 import com.synapse.api.modules.block.document.CodeBlock;
 import com.synapse.api.modules.block.document.TextBlock;
 import com.synapse.api.modules.block.repository.BlockRepository;
-import com.synapse.api.util.exception.BusinessException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,9 +18,9 @@ import org.springframework.data.domain.Pageable;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -40,8 +39,8 @@ class BlockServiceTest {
     @DisplayName("블록 즐겨찾기를 설정한다")
     void bookmarkBlock() {
         // given
-        String blockId = "block-uuid-001";
-        String noteId = "note-uuid-001";
+        UUID blockId = UUID.randomUUID();
+        UUID noteId = UUID.randomUUID();
 
         CodeBlock codeBlock = CodeBlock.builder()
                 .blockId(blockId)
@@ -67,8 +66,8 @@ class BlockServiceTest {
     @DisplayName("블록 즐겨찾기를 해제한다")
     void unbookmarkBlock() {
         // given
-        String blockId = "block-uuid-001";
-        String noteId = "note-uuid-001";
+        UUID blockId = UUID.randomUUID();
+        UUID noteId = UUID.randomUUID();
 
         TextBlock textBlock = TextBlock.builder()
                 .blockId(blockId)
@@ -93,12 +92,12 @@ class BlockServiceTest {
     @DisplayName("즐겨찾기된 블록 목록을 페이징하여 조회한다")
     void getBookmarkedBlocks() {
         // given
-        String noteId = "note-uuid-001";
+        UUID noteId = UUID.randomUUID();
         int page = 0;
         int size = 10;
 
         CodeBlock codeBlock = CodeBlock.builder()
-                .blockId("block-uuid-001")
+                .blockId(UUID.randomUUID())
                 .noteId(noteId)
                 .bookmark(true)
                 .order(1.0)
@@ -111,7 +110,7 @@ class BlockServiceTest {
                 .build();
 
         TextBlock textBlock = TextBlock.builder()
-                .blockId("block-uuid-002")
+                .blockId(UUID.randomUUID())
                 .noteId(noteId)
                 .bookmark(true)
                 .order(2.0)
@@ -145,7 +144,7 @@ class BlockServiceTest {
     @DisplayName("즐겨찾기된 블록이 없으면 빈 페이지를 반환한다")
     void getBookmarkedBlocks_EmptyResult() {
         // given
-        String noteId = "note-uuid-001";
+        UUID noteId = UUID.randomUUID();
         int page = 0;
         int size = 10;
 
