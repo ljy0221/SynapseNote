@@ -44,22 +44,6 @@ public class BlockHistoryController {
         }
 
         /**
-         * 특정 버전의 블록 히스토리 조회
-         * 
-         * @apiNote CodeBlock 전용 기능. TextBlock 호출 시 400 에러 (BLOCK_010) 반환
-         */
-        @GetMapping("/{version}")
-        public DataResponse<BlockHistoryDetailResponse> getBlockHistoryVersion(
-                        @PathVariable String noteId,
-                        @PathVariable String blockId,
-                        @PathVariable int version,
-                        @AuthenticationPrincipal CustomMemberDetails details) {
-                BlockHistoryDetailResponse response = blockHistoryService.getBlockHistoryVersion(
-                                noteId, blockId, version, details.id());
-                return DataResponse.of(response);
-        }
-
-        /**
          * 슬롯에 현재 블록 상태 저장
          * 
          * @apiNote CodeBlock 전용 기능. TextBlock 호출 시 400 에러 (BLOCK_010) 반환

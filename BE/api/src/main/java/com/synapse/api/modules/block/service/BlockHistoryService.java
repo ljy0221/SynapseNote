@@ -49,27 +49,8 @@ public class BlockHistoryService {
                 validateCodeBlock(block);
 
                 return blockHistoryRepository
-                                .findByBlockIdOrderByVersionDesc(blockId, pageable)
+                                .findByBlockIdOrderByChangedAtDesc(blockId, pageable)
                                 .map(BlockHistoryResponse::from);
-        }
-
-        /**
-         * 특정 버전의 블록 히스토리 조회
-         */
-        public BlockHistoryDetailResponse getBlockHistoryVersion(
-                        String noteId,
-                        String blockId,
-                        int version,
-                        UUID memberId) {
-                verifyNoteAccess(noteId, memberId);
-                BaseBlock block = verifyBlockOwnership(blockId, noteId);
-                validateCodeBlock(block);
-
-                BlockHistory history = blockHistoryRepository
-                                .findByBlockIdAndVersion(blockId, version)
-                                .orElseThrow(() -> new BusinessException(ErrorCode.BLOCK_HISTORY_NOT_FOUND));
-
-                return BlockHistoryDetailResponse.from(history);
         }
 
         /**
@@ -120,8 +101,6 @@ public class BlockHistoryService {
                 Optional<BlockHistory> existingSlot = blockHistoryRepository
                                 .findByBlockIdAndSlotNumber(blockId, slotNumber);
 
-                int nextVersion = existingSlot.map(h -> h.getVersion() + 1).orElse(1);
-
                 Member member = memberRepository.findById(memberId)
                                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
@@ -131,19 +110,17 @@ public class BlockHistoryService {
                                 .blockId(blockId)
                                 .noteId(noteId)
                                 .slotNumber(slotNumber)
-                                .version(nextVersion)
                                 .properties(currentProperties)
                                 .blockType(currentBlock.getType())
                                 .changedBy(new BlockHistory.ChangedBy(memberId.toString(), member.getName()))
                                 .changedAt(LocalDateTime.now())
-                                .changeDescription(String.format("Saved to slot %d (v%d)", slotNumber, nextVersion))
+                                .changeDescription(String.format("Saved to slot %d", slotNumber))
                                 .build();
 
                 existingSlot.ifPresent(slot -> blockHistoryRepository.deleteById(slot.getId()));
                 BlockHistory saved = blockHistoryRepository.save(newHistory);
 
-                log.info("Saved to slot: blockId={}, slotNumber={}, version={}",
-                                blockId, slotNumber, nextVersion);
+                log.info("Saved to slot: blockId={}, slotNumber={}", blockId, slotNumber);
 
                 return BlockHistoryResponse.from(saved);
         }

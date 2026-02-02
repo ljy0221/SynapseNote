@@ -12,7 +12,6 @@ import java.util.Map;
 public class BlockHistoryDetailResponse {
     private String blockId;
     private int slotNumber;
-    private int version;
     private Map<String, Object> properties;
     private String blockType;
     private ChangedByInfo changedBy;
@@ -30,7 +29,6 @@ public class BlockHistoryDetailResponse {
         return BlockHistoryDetailResponse.builder()
                 .blockId(history.getBlockId())
                 .slotNumber(history.getSlotNumber())
-                .version(history.getVersion())
                 .properties(history.getProperties())
                 .blockType(history.getBlockType())
                 .changedBy(ChangedByInfo.builder()
