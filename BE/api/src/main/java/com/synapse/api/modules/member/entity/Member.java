@@ -1,11 +1,10 @@
 package com.synapse.api.modules.member.entity;
 
 import com.synapse.api.util.entity.BaseEntity;
-import com.synapse.api.util.generator.UuidV7Generator;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
-import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.UuidGenerator;
 
 import java.util.UUID;
 
@@ -20,11 +19,8 @@ import java.util.UUID;
 public class Member extends BaseEntity {
 
     @Id
-    @GeneratedValue(generator = "uuid-v7")
-    @GenericGenerator(
-        name = "uuid-v7",
-        type = UuidV7Generator.class
-    )
+    @GeneratedValue
+    @UuidGenerator(style = UuidGenerator.Style.TIME)
     @Column(columnDefinition = "uuid")
     private UUID id;
 
