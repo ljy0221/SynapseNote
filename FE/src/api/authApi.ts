@@ -55,3 +55,29 @@ export const getUserInfo = async (token: string): Promise<UserInfo> => {
     const data = await response.json();
     return data.data;
 };
+
+export const updateNickname = async (token: string, newNickname: string): Promise<UserInfo> => {
+    if (!token) {
+        throw new Error('No access token provided');
+    }
+
+    const response = await fetch('/api/v1/members/me', {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+            name: newNickname,
+        }),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || '닉네임 변경에 실패했습니다.');
+    }
+
+    const data = await response.json();
+    return data.data;
+};
