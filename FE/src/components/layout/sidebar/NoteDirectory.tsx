@@ -20,6 +20,7 @@ interface NoteDirectoryProps {
 
   onConfirmRename: (noteId: string, newTitle: string) => void;
   onCancelRename: () => void;
+  onMoveNote: (noteId: string, targetPath: string) => void;
 }
 
 export const NoteDirectory: React.FC<NoteDirectoryProps> = ({
@@ -33,15 +34,17 @@ export const NoteDirectory: React.FC<NoteDirectoryProps> = ({
   onContextMenu,
   onConfirmRename,
   onCancelRename,
+  onMoveNote,
 }) => {
   const [isOpen, setIsOpen] = useState(true);
+  const [isDragOver, setIsDragOver] = useState(false);
   const isRoot = node.name === 'root';
 
   return (
     <div className="note-directory">
       {!isRoot && (
         <div
-          className="tree-row directory"
+          className={`tree-row directory ${isDragOver ? 'drag-over' : ''}`}
           style={{ paddingLeft: depth * 14 }}
           onClick={() => setIsOpen(prev => !prev)}
           onContextMenu={(e) => {
@@ -53,6 +56,19 @@ export const NoteDirectory: React.FC<NoteDirectoryProps> = ({
               type: 'DIRECTORY',
               directoryPath: node.path,
             });
+          }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setIsDragOver(true);
+          }}
+          onDragLeave={() => setIsDragOver(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setIsDragOver(false);
+            const noteId = e.dataTransfer.getData('noteId');
+            if (noteId) {
+              onMoveNote(noteId, node.path);
+            }
           }}
         >
           <span className="tree-icon">
@@ -77,6 +93,7 @@ export const NoteDirectory: React.FC<NoteDirectoryProps> = ({
               onContextMenu={onContextMenu}
               onConfirmRename={onConfirmRename}
               onCancelRename={onCancelRename}
+              onMoveNote={onMoveNote}
             />
           ))}
 
@@ -89,9 +106,8 @@ export const NoteDirectory: React.FC<NoteDirectoryProps> = ({
             return (
               <div
                 key={note.noteId}
-                className={`tree-row note ${
-                  activeNoteId === note.noteId ? 'active' : ''
-                }`}
+                className={`tree-row note ${activeNoteId === note.noteId ? 'active' : ''
+                  }`}
                 style={{ paddingLeft: (depth + 1) * 14 }}
                 onClick={() => {
                   if (!isEditing) {
@@ -106,7 +122,13 @@ export const NoteDirectory: React.FC<NoteDirectoryProps> = ({
                     y: e.clientY,
                     type: 'NOTE',
                     targetId: note.noteId,
+                    directoryPath: node.path,
                   });
+                }}
+                draggable={!isEditing && !isTempNote}
+                onDragStart={(e) => {
+                  e.dataTransfer.setData('noteId', note.noteId);
+                  e.dataTransfer.effectAllowed = 'move';
                 }}
               >
                 <span className="tree-icon">

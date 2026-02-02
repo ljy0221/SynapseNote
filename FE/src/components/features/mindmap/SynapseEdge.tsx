@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { useTheme } from '../theme/ThemeContext';
+import { useThemeStore } from '../../../store/useThemeStore';
 import { BaseEdge, EdgeProps, getBezierPath, useStore } from 'reactflow';
 
 const THEME_PALETTES: Record<string, string[]> = {
@@ -43,8 +43,8 @@ const SynapseEdge: React.FC<EdgeProps> = ({
     const targetCount = targetNode?.data?.connectionCount || 0;
 
     // 2. 테마 색상 결정 (Start -> End Gradient)
-    // [Fix] Theme Reactivity: Context 사용
-    const { themeMode } = useTheme();
+    // [Fix] Theme Reactivity: Store 사용
+    const { themeMode } = useThemeStore();
     const currentPalette = THEME_PALETTES[themeMode] || THEME_PALETTES['light'];
 
     const sourceColor = currentPalette[getLevelIndex(sourceCount)];

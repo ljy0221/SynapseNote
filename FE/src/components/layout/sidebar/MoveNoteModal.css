@@ -1,0 +1,111 @@
+/* 배경 오버레이 */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+
+  background: rgba(0, 0, 0, 0.55);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 모달 본체 */
+.modal {
+  width: 420px;
+  max-width: calc(100vw - 32px);
+
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+
+  padding: 20px;
+
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  color: var(--font-color);
+  font-family: var(--font-family);
+  pointer-events: auto;
+}
+
+/* 제목 */
+.modal h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--font-color);
+
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* 입력창 */
+.modal input {
+  position: relative;
+  width: 95%;
+  height: 40px;
+
+  padding: 0 12px;
+  border-radius: 8px;
+
+  background: var(--color-sub);
+  border: 1px solid var(--color-border);
+  color: var(--font-color);
+
+  font-size: 14px;
+}
+
+.modal input::placeholder {
+  color: var(--font-color-sub);
+}
+
+.modal input:focus {
+  outline: none;
+  border-color: var(--color-point);
+}
+
+/* 버튼 영역 */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/* 공통 버튼 */
+.modal-actions button {
+  height: 36px;
+  min-width: 80px;
+
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+
+  font-size: 13px;
+  font-weight: 500;
+
+  cursor: pointer;
+  background: var(--color-sub);
+  color: var(--font-color);
+}
+
+/* 취소 버튼 */
+.modal-actions button:first-child:hover {
+  background: var(--color-hover);
+}
+
+/* 변경 버튼 */
+.modal-actions button:last-child {
+  background: var(--color-point);
+  border-color: var(--color-point);
+  color: var(--color-main);
+}
+
+.modal-actions button:last-child:hover {
+  opacity: 0.9;
+}

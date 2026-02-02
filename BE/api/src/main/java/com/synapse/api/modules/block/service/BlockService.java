@@ -2,9 +2,13 @@ package com.synapse.api.modules.block.service;
 
 import com.synapse.api.modules.block.document.BaseBlock;
 import com.synapse.api.modules.block.document.CodeBlock;
+import com.synapse.api.modules.block.dto.response.BlockDetailResponse;
 import com.synapse.api.modules.block.repository.BlockRepository;
 import com.synapse.api.modules.note.dto.request.ExecutionHistoryRequest;
 import com.synapse.api.modules.note.dto.response.ExecutionHistoryResponse;
+import com.synapse.api.modules.note.repository.NoteMemberRepository;
+import com.synapse.api.modules.note.repository.NoteRepository;
+import com.synapse.api.modules.note.service.NoteValidator;
 import com.synapse.api.util.exception.BusinessException;
 import com.synapse.api.util.response.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -25,15 +30,18 @@ import java.util.List;
 public class BlockService {
 
     private final BlockRepository blockRepository;
+    private final NoteRepository noteRepository;
+    private final NoteMemberRepository noteMemberRepository;
+    private final NoteValidator noteValidator;
 
     // 노트 ID로 블록 목록 조회 (순서 보장)
-    public List<BaseBlock> getBlocksByNoteId(String noteId) {
+    public List<BaseBlock> getBlocksByNoteId(UUID noteId) {
         return blockRepository.findByNoteIdOrderByOrderAsc(noteId);
     }
 
     // 코드 실행 이력 저장
     @Transactional
-    public void saveExecutionHistory(String noteId, String blockId, ExecutionHistoryRequest request) {
+    public void saveExecutionHistory(UUID noteId, UUID blockId, ExecutionHistoryRequest request) {
         // 1. 블록 조회
         BaseBlock baseBlock = blockRepository.findByBlockId(blockId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CODE_BLOCK_NOT_FOUND));
@@ -56,10 +64,7 @@ public class BlockService {
         }
     }
 
-    /**
-     * [요청하신 메소드] 실행 히스토리 조회
-     */
-    public List<ExecutionHistoryResponse> getExecutionHistory(String noteId, String blockId) {
+    public List<ExecutionHistoryResponse> getExecutionHistory(UUID noteId, UUID blockId) {
         // 1. 블록 조회
         BaseBlock baseBlock = blockRepository.findByBlockId(blockId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CODE_BLOCK_NOT_FOUND));
@@ -88,11 +93,8 @@ public class BlockService {
         return List.of();
     }
 
-    /**
-     * 블록 북마크 설정
-     */
     @Transactional
-    public void bookmarkBlock(String blockId, String noteId) {
+    public void bookmarkBlock(UUID blockId, UUID noteId) {
         BaseBlock block = blockRepository.findByBlockId(blockId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CODE_BLOCK_NOT_FOUND));
 
@@ -106,11 +108,8 @@ public class BlockService {
         log.info("Bookmarked block: {}", blockId);
     }
 
-    /**
-     * 블록 북마크 해제
-     */
     @Transactional
-    public void unbookmarkBlock(String blockId, String noteId) {
+    public void unbookmarkBlock(UUID blockId, UUID noteId) {
         BaseBlock block = blockRepository.findByBlockId(blockId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CODE_BLOCK_NOT_FOUND));
 
@@ -124,11 +123,20 @@ public class BlockService {
         log.info("Unbookmarked block: {}", blockId);
     }
 
-    /**
-     * 북마크된 블록 목록 조회 (페이지네이션)
-     */
-    public Page<BaseBlock> getBookmarkedBlocks(String noteId, int page, int size) {
+    public Page<BaseBlock> getBookmarkedBlocks(UUID noteId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         return blockRepository.findByNoteIdAndBookmarkTrueOrderByUpdatedAtDesc(noteId, pageable);
     }
+
+    public List<BlockDetailResponse> getBlocks(UUID memberId, UUID noteId) {
+        // 노트 접근 권한
+        noteValidator.validateReadPermission(memberId, noteId);
+
+        List<BaseBlock> blocks = blockRepository.findByNoteIdOrderByOrderAsc(noteId);
+
+        return blocks.stream()
+                .map(BlockResponseMapper::from)
+                .toList();
+    }
+
 }
