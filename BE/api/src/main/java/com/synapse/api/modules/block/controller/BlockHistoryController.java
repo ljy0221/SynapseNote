@@ -16,6 +16,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api")
@@ -32,8 +33,8 @@ public class BlockHistoryController {
      */
     @GetMapping("/v1/notes/{noteId}/blocks/{blockId}/history")
     public DataResponse<Page<BlockHistoryResponse>> getBlockHistory(
-            @PathVariable String noteId,
-            @PathVariable String blockId,
+            @PathVariable UUID noteId,
+            @PathVariable UUID blockId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @AuthenticationPrincipal CustomMemberDetails details) {
@@ -50,8 +51,8 @@ public class BlockHistoryController {
      */
     @PostMapping("/v1/notes/{noteId}/blocks/{blockId}/history/slots/{slotNumber}")
     public DataResponse<BlockHistoryResponse> saveToSlot(
-            @PathVariable String noteId,
-            @PathVariable String blockId,
+            @PathVariable UUID noteId,
+            @PathVariable UUID blockId,
             @PathVariable @Min(1) @Max(5) int slotNumber,
             @AuthenticationPrincipal CustomMemberDetails details) {
         BlockHistoryResponse response = blockHistoryService.saveToSlot(
@@ -66,8 +67,8 @@ public class BlockHistoryController {
      */
     @GetMapping("/v1/notes/{noteId}/blocks/{blockId}/history/slots/{slotNumber}")
     public DataResponse<BlockHistoryDetailResponse> getSlot(
-            @PathVariable String noteId,
-            @PathVariable String blockId,
+            @PathVariable UUID noteId,
+            @PathVariable UUID blockId,
             @PathVariable @Min(1) @Max(5) int slotNumber,
             @AuthenticationPrincipal CustomMemberDetails details) {
         BlockHistoryDetailResponse response = blockHistoryService.getSlot(
@@ -82,8 +83,8 @@ public class BlockHistoryController {
      */
     @GetMapping("/v1/notes/{noteId}/blocks/{blockId}/history/slots")
     public DataResponse<List<BlockHistoryResponse>> getAllSlots(
-            @PathVariable String noteId,
-            @PathVariable String blockId,
+            @PathVariable UUID noteId,
+            @PathVariable UUID blockId,
             @AuthenticationPrincipal CustomMemberDetails details) {
         List<BlockHistoryResponse> slots = blockHistoryService.getAllSlots(
                 noteId, blockId, details.id());
