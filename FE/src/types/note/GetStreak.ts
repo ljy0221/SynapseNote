@@ -1,3 +1,9 @@
+// src/types/streak/GetStreak.ts
+export interface StreakDay {
+  date: string;      // YYYY-MM-DD
+  isStreak: boolean;
+}
+
 export interface GetStreakResponse {
-  dates: string[]; // 'YYYY-MM-DD'
+  data: StreakDay[];
 }
