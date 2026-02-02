@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // 1. useNavigate 추가
 import './Header.css';
 import { ThemeManager } from '../../features/theme/ThemeManager';
 import SearchBar from '../../common/searchBar/searchBar.tsx';
@@ -17,6 +18,7 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = () => {
+  const navigate = useNavigate(); // 2. navigate 훅 사용
   const [searchQuery, setSearchQuery] = useState<string | null>(null);
   const [searchResults, setSearchResults] = useState<SearchedNote[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -55,7 +57,8 @@ export const Header: React.FC<HeaderProps> = () => {
               onClose={() => setSearchQuery(null)}
               onSelectNote={(noteId) => {
                 console.log('선택한 노트:', noteId);
-                setSearchQuery(null);
+                navigate(`/note/${noteId}`); // 3. 해당 노트 페이지로 이동
+                setSearchQuery(null); // 이동 후 검색창 닫기
               }}
             />
           )}
