@@ -5,10 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.synapse.api.modules.ai.dto.request.CodeReviewRequest;
 import com.synapse.api.modules.ai.dto.response.CodeReviewResponse;
 import com.synapse.api.modules.ai.enums.AiProvider;
-import com.synapse.api.modules.note.document.CodeBlock;
-import com.synapse.api.modules.note.document.NoteContent;
-import com.synapse.api.modules.note.repository.NoteContentRepository;
-import com.synapse.api.modules.note.service.NoteService;
+import com.synapse.api.modules.block.document.BaseBlock;
+import com.synapse.api.modules.block.document.CodeBlock;
+import com.synapse.api.modules.block.repository.BlockRepository;
+import com.synapse.api.modules.note.service.NoteValidator;
 import com.synapse.api.util.exception.BusinessException;
 import com.synapse.api.util.response.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -28,8 +28,8 @@ import java.util.UUID;
 public class CodeAssistantService {
 
     private final AiServiceFactory aiServiceFactory;
-    private final NoteService noteService;
-    private final NoteContentRepository noteContentRepository;
+    private final NoteValidator noteValidator;
+    private final BlockRepository blockRepository;
     private final ObjectMapper objectMapper;
 
     @Value("${ai.default.provider}")
@@ -38,25 +38,47 @@ public class CodeAssistantService {
     private static final int MAX_CODE_LENGTH = 5000;
 
     @Transactional(readOnly = true)
-    public CodeReviewResponse reviewCode(UUID noteId, String blockId,
+    public CodeReviewResponse reviewCode(UUID noteId, UUID blockId,
                                           UUID userId, CodeReviewRequest request) {
-        noteService.validateEditPermission(noteId, userId);
+        // 편집 권한 검증
+        noteValidator.validateEditPermission(noteId, userId);
 
-        NoteContent noteContent = noteContentRepository.findByNoteId(noteId.toString())
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_CONTENT_NOT_FOUND));
-
-        CodeBlock codeBlock = noteContent.getCodeBlocks().stream()
-                .filter(b -> b.getId().equals(blockId))
-                .findFirst()
+        // 블록 조회
+        BaseBlock baseBlock = blockRepository.findByBlockId(blockId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CODE_BLOCK_NOT_FOUND));
 
-        if (codeBlock.getCode().length() > MAX_CODE_LENGTH) {
+        // 노트 소유권 확인
+        if (!baseBlock.getNoteId().equals(noteId)) {
+            throw new BusinessException(ErrorCode.NOTE_ACCESS_DENIED);
+        }
+
+        // CodeBlock 타입 확인
+        if (!(baseBlock instanceof CodeBlock codeBlock)) {
+            throw new BusinessException(ErrorCode.INVALID_BLOCK_TYPE);
+        }
+
+        // 코드 길이 검증
+        String code = codeBlock.getProperties().getCode();
+        if (code.length() > MAX_CODE_LENGTH) {
             throw new BusinessException(ErrorCode.AI_INVALID_REQUEST,
                     "Code too large for review (max 5000 characters)");
         }
 
-        String systemPrompt = buildCodeReviewSystemPrompt(codeBlock.getLanguage());
-        String userPrompt = buildCodeReviewUserPrompt(codeBlock, request.focusAreas());
+        String language = codeBlock.getProperties().getLanguage();
+        String systemPrompt = buildCodeReviewSystemPrompt(language);
+
+        // 세션 모드: 전체 블록 컨텍스트 포함
+        List<CodeBlock> contextBlocks = null;
+        if (Boolean.TRUE.equals(request.includeContext())) {
+            contextBlocks = blockRepository.findByNoteIdOrderByOrderAsc(noteId).stream()
+                    .filter(block -> block instanceof CodeBlock)
+                    .map(block -> (CodeBlock) block)
+                    .filter(block -> !block.getBlockId().equals(blockId))  // 현재 블록 제외
+                    .toList();
+            log.info("Including {} context blocks for code review", contextBlocks.size());
+        }
+
+        String userPrompt = buildCodeReviewUserPrompt(code, language, request.focusAreas(), contextBlocks);
 
         AiProvider provider = request.provider() != null
                 ? request.provider()
@@ -65,54 +87,73 @@ public class CodeAssistantService {
         AiService aiService = aiServiceFactory.getService(provider);
         String aiResponse = aiService.complete(systemPrompt, userPrompt);
 
-        log.info("Code review completed: noteId={}, blockId={}, provider={}", noteId, blockId, provider);
+        log.info("Code review completed: noteId={}, blockId={}, provider={}, contextBlocks={}",
+                noteId, blockId, provider, contextBlocks != null ? contextBlocks.size() : 0);
 
-        return parseCodeReviewResponse(blockId, codeBlock, aiResponse);
+        return parseCodeReviewResponse(blockId.toString(), language, code, aiResponse);
     }
 
     private String buildCodeReviewSystemPrompt(String language) {
         return """
-                You are an expert code reviewer for %s.
-                Analyze the code for:
-                - Security vulnerabilities
-                - Performance issues
-                - Code quality and readability
-                - Best practices
+                당신은 %s 언어 전문 코드 리뷰어입니다.
+                다음 관점에서 코드를 분석하세요:
+                - 보안 취약점
+                - 성능 이슈
+                - 코드 품질 및 가독성
+                - 모범 사례
 
-                Provide structured feedback with:
-                1. Specific issues (with severity: error, warning, info)
-                2. Best practice recommendations
-                3. Overall summary
+                다음 내용을 포함한 구조화된 피드백을 제공하세요:
+                1. 구체적인 문제점 (심각도: error, warning, info)
+                2. 모범 사례 권장사항
+                3. 전체 요약
 
-                Be concise but actionable.
-                Respond ONLY with valid JSON, no markdown code blocks.
+                간결하면서도 실행 가능한 조언을 제공하세요.
+                응답은 반드시 유효한 JSON 형식으로만 작성하세요. 마크다운 코드 블록은 사용하지 마세요.
                 """.formatted(language);
     }
 
-    private String buildCodeReviewUserPrompt(CodeBlock block, List<String> focusAreas) {
+    private String buildCodeReviewUserPrompt(String code, String language,
+                                              List<String> focusAreas,
+                                              List<CodeBlock> contextBlocks) {
         StringBuilder prompt = new StringBuilder();
-        prompt.append("Review this ").append(block.getLanguage()).append(" code:\n\n");
-        prompt.append("```").append(block.getLanguage()).append("\n");
-        prompt.append(block.getCode()).append("\n```\n\n");
+
+        // 컨텍스트 블록이 있으면 먼저 추가
+        if (contextBlocks != null && !contextBlocks.isEmpty()) {
+            prompt.append("## 참고: 이 노트의 다른 코드 블록들\n\n");
+            for (int i = 0; i < contextBlocks.size(); i++) {
+                CodeBlock ctx = contextBlocks.get(i);
+                prompt.append("### 컨텍스트 블록 ").append(i + 1)
+                        .append(" (").append(ctx.getProperties().getLanguage()).append(")\n");
+                prompt.append("```").append(ctx.getProperties().getLanguage()).append("\n");
+                prompt.append(ctx.getProperties().getCode()).append("\n```\n\n");
+            }
+            prompt.append("---\n\n");
+        }
+
+        // 리뷰 대상 코드
+        prompt.append("## 리뷰 대상 코드\n\n");
+        prompt.append("다음 ").append(language).append(" 코드를 리뷰해주세요:\n\n");
+        prompt.append("```").append(language).append("\n");
+        prompt.append(code).append("\n```\n\n");
 
         if (focusAreas != null && !focusAreas.isEmpty()) {
-            prompt.append("Focus on: ").append(String.join(", ", focusAreas)).append("\n\n");
+            prompt.append("집중 검토 영역: ").append(String.join(", ", focusAreas)).append("\n\n");
         }
 
         prompt.append("""
-                Provide your review in JSON format:
+                다음 JSON 형식으로 리뷰를 제공하세요:
                 {
                   "reviews": [
                     {
                       "severity": "error|warning|info",
                       "category": "security|performance|style|logic",
-                      "issue": "description of the issue",
-                      "suggestion": "how to fix it",
+                      "issue": "문제점 설명",
+                      "suggestion": "개선 방법",
                       "lineNumber": null
                     }
                   ],
-                  "bestPractices": ["practice 1", "practice 2"],
-                  "summary": "brief overall assessment"
+                  "bestPractices": ["모범 사례 1", "모범 사례 2"],
+                  "summary": "전체 평가 요약"
                 }
                 """);
 
@@ -120,7 +161,8 @@ public class CodeAssistantService {
     }
 
     private CodeReviewResponse parseCodeReviewResponse(String blockId,
-                                                         CodeBlock block,
+                                                         String language,
+                                                         String code,
                                                          String aiResponse) {
         try {
             String jsonContent = extractJsonFromMarkdown(aiResponse);
@@ -132,8 +174,8 @@ public class CodeAssistantService {
 
             return new CodeReviewResponse(
                     blockId,
-                    block.getLanguage(),
-                    block.getCode(),
+                    language,
+                    code,
                     reviews,
                     bestPractices,
                     summary,
