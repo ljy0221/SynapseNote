@@ -6,9 +6,9 @@ import com.synapse.api.modules.block.dto.response.BlockDetailResponse;
 import com.synapse.api.modules.block.repository.BlockRepository;
 import com.synapse.api.modules.note.dto.request.ExecutionHistoryRequest;
 import com.synapse.api.modules.note.dto.response.ExecutionHistoryResponse;
-import com.synapse.api.modules.note.entity.Note;
 import com.synapse.api.modules.note.repository.NoteMemberRepository;
 import com.synapse.api.modules.note.repository.NoteRepository;
+import com.synapse.api.modules.note.service.NoteValidator;
 import com.synapse.api.util.exception.BusinessException;
 import com.synapse.api.util.response.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +32,7 @@ public class BlockService {
     private final BlockRepository blockRepository;
     private final NoteRepository noteRepository;
     private final NoteMemberRepository noteMemberRepository;
+    private final NoteValidator noteValidator;
 
     // 노트 ID로 블록 목록 조회 (순서 보장)
     public List<BaseBlock> getBlocksByNoteId(UUID noteId) {
@@ -129,26 +130,13 @@ public class BlockService {
 
     public List<BlockDetailResponse> getBlocks(UUID memberId, UUID noteId) {
         // 노트 접근 권한
-        validateReadPermission(memberId, noteId);
+        noteValidator.validateReadPermission(memberId, noteId);
 
         List<BaseBlock> blocks = blockRepository.findByNoteIdOrderByOrderAsc(noteId);
 
         return blocks.stream()
                 .map(BlockResponseMapper::from)
                 .toList();
-    }
-
-    public void validateReadPermission(UUID memberId, UUID noteId) {
-        // 노트가 있는지
-        Note note = noteRepository.findById(noteId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
-
-        // 노트 작성자인 경우
-        if (note.getCreatedBy().getId().equals(memberId)) return;
-
-        // 노트 멤버인 경우
-        noteMemberRepository.findRoleByNoteIdAndMemberId(noteId, memberId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_ACCESS_DENIED));
     }
 
 }
