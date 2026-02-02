@@ -80,8 +80,8 @@ public enum ErrorCode {
     BLOCK_HISTORY_NOT_FOUND(HttpStatus.NOT_FOUND, "BLOCK_006", "블록 히스토리를 찾을 수 없습니다."),
     BLOCK_ROLLBACK_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "BLOCK_007", "블록 롤백에 실패했습니다."),
     BLOCK_VERSION_CONFLICT(HttpStatus.CONFLICT, "BLOCK_008", "블록 버전 충돌이 발생했습니다."),
-    INVALID_SLOT_NUMBER(HttpStatus.BAD_REQUEST, "BLOCK_009", "슬롯 번호는 1-5 범위여야 합니다.");
-
+    INVALID_SLOT_NUMBER(HttpStatus.BAD_REQUEST, "BLOCK_009", "슬롯 번호는 1-5 범위여야 합니다."),
+    INVALID_BLOCK_TYPE_FOR_HISTORY(HttpStatus.BAD_REQUEST, "BLOCK_010", "히스토리 기능은 코드 블록에서만 사용할 수 있습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
