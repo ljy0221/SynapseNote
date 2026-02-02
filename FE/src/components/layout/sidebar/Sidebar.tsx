@@ -253,6 +253,39 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   /**
+   * 노트 이동 (Drag & Drop 또는 Modal)
+   */
+  const handleMoveNote = async (noteId: string, newPath: string) => {
+    const normalizedPath = normalizeDirectoryPath(newPath);
+    const target = notes.find(n => n.noteId === noteId);
+
+    if (!target) {
+      console.error('[MOVE] target note not found');
+      return;
+    }
+
+    // 현재 경로와 동일하면 무시 (단, '/'와 DEFAULT_DIR_PATH 구분 주의 - 여기서는 API 레벨이므로 normalizedPath 기준)
+    if (target.directoryPath === normalizedPath) return;
+
+    // UI 즉시 반영 (Optimistic UI)
+    setNotes(prev =>
+      prev.map(n =>
+        n.noteId === noteId ? { ...n, directoryPath: normalizedPath } : n
+      )
+    );
+
+    try {
+      await updateNoteApi(noteId, {
+        title: target.title,
+        directoryPath: normalizedPath,
+      });
+      emitNotesChanged();
+    } catch {
+      emitNotesChanged(); // 실패 시 서버 기준 복구
+    }
+  };
+
+  /**
    * 노트 생성
    */
   const handleCreateNote = async (directoryPath: string) => {
@@ -324,6 +357,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onContextMenu={setContextMenu}
                 onConfirmRename={handleConfirmRename}
                 onCancelRename={handleCancelRename}
+                onMoveNote={handleMoveNote}
               />
 
               {/* 무한 스크롤 트리거 & 로딩 표시 */}
@@ -371,33 +405,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           }
           onConfirm={async (newPath) => {
             if (!moveModal.noteId) return;
-
-            const normalizedPath = normalizeDirectoryPath(newPath);
-
-            const target = notes.find(
-              n => n.noteId === moveModal.noteId
-            );
-
-            if (!target) {
-              console.error('[MOVE] target note not found');
-              return;
-            }
-
-            try {
-              await updateNoteApi(moveModal.noteId, {
-                title: target.title,
-                directoryPath: normalizedPath,
-              });
-              emitNotesChanged();
-            } catch {
-              emitNotesChanged(); // 실패 시 서버 기준 복구
-            } finally {
-              setMoveModal({
-                open: false,
-                noteId: null,
-                currentPath: '',
-              });
-            }
+            await handleMoveNote(moveModal.noteId, newPath);
+            setMoveModal({
+              open: false,
+              noteId: null,
+              currentPath: '',
+            });
           }}
         />
       )}
