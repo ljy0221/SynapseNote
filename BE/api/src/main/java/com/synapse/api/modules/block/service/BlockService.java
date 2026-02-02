@@ -131,7 +131,7 @@ public class BlockService {
         // 노트 접근 권한
         validateReadPermission(memberId, noteId);
 
-        List<BaseBlock> blocks = blockRepository.findAllByNoteIdOrderByOrderAsc(noteId);
+        List<BaseBlock> blocks = blockRepository.findByNoteIdOrderByOrderAsc(noteId);
 
         return blocks.stream()
                 .map(BlockResponseMapper::from)
