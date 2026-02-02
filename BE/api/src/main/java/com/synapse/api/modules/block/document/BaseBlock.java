@@ -13,6 +13,7 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Getter
 @SuperBuilder
@@ -31,10 +32,10 @@ public abstract class BaseBlock {
         private String id; // MongoDB ObjectId
 
         @Indexed
-        private String noteId; // PostgreSQL Note ID (UUID.toString())
+        private UUID noteId; // PostgreSQL Note ID (UUID.toString())
 
         @Indexed(unique = true)
-        private String blockId; // Yjs/Frontend UUID
+        private UUID blockId; // Yjs/Frontend UUID
 
         private boolean bookmark;
 
