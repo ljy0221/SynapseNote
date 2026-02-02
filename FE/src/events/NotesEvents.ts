@@ -1,5 +1,5 @@
 export const NOTES_CHANGED_EVENT = 'notes:changed';
 
-export const emitNotesChanged = () => {
-  window.dispatchEvent(new Event(NOTES_CHANGED_EVENT));
+export const emitNotesChanged = (detail?: { skipRefetch?: boolean }) => {
+  window.dispatchEvent(new CustomEvent(NOTES_CHANGED_EVENT, { detail }));
 };
