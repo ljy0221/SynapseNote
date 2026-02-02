@@ -1,5 +1,5 @@
 // FE/src/pages/note/Note.tsx
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react'; // useEffect 추가
 import NoteButton from "../../components/common/noteButton/NoteButton";
 import NoteMain from "../../components/layout/noteMain/NoteMain";
 import { createNote } from '../../utils/noteAPI';
@@ -42,7 +42,12 @@ const Note: React.FC = () => {
         const index = blocks.findIndex(b => b.id === afterId);
         const newBlocks = [...blocks];
         newBlocks.splice(index + 1, 0, newBlock);
+
+        // 블록 추가
         setBlocks(newBlocks);
+
+        // (선택사항) UX 향상: 새로 생성된 블록으로 포커스를 이동하려면 아래 주석 해제
+        // setFocusedBlockId(newBlock.id); 
     };
 
     // 마지막에 블록 추가하는 함수 (하단 툴바용)
@@ -58,8 +63,71 @@ const Note: React.FC = () => {
                 language: type === 'code' ? 'javascript' : undefined,
             };
             setBlocks([newBlock]);
+            // (선택사항) UX 향상
+            // setFocusedBlockId(newBlock.id);
         }
     };
+
+    // -------------------------------------------------------------
+    // [추가] 단축키 핸들러 로직 (제언)
+    // -------------------------------------------------------------
+    const handleShortcutCreate = (type: BlockType) => {
+        if (focusedBlockId !== null) {
+            // 포커스 된 블록이 있다면 그 바로 뒤에 추가
+            addBlockAfter(focusedBlockId, type);
+        } else {
+            // 포커스 된 블록이 없다면 맨 마지막에 추가
+            handleAddBlockAtEnd(type);
+        }
+    };
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.isComposing) return;
+            // [기존] 블록 생성 단축키 (Alt + 1, Alt + 2)
+            if (e.altKey && (e.key === '1' || e.key === '2')) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            if (e.altKey && e.key === '1') handleShortcutCreate('text');
+            if (e.altKey && e.key === '2') handleShortcutCreate('code');
+            // ---------------------------------------------------------
+            // [추가됨] 블록 삭제 단축키: Shift + Delete (또는 Backspace)
+            // ---------------------------------------------------------
+            if (e.shiftKey && (e.key === 'Delete' || e.key === 'Backspace')) {
+                // 포커스된 블록이 있고, 블록이 2개 이상일 때만 삭제 허용
+                if (focusedBlockId !== null && blocks.length > 1) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // 1. 삭제 대상 인덱스 찾기
+                    const currentIndex = blocks.findIndex(b => b.id === focusedBlockId);
+                    if (currentIndex === -1) return;
+                    // 2. 포커스 이동할 대상 찾기 (이전 블록 우선, 없으면 다음 블록)
+                    // currentIndex가 0보다 크면 바로 앞(currentIndex - 1)
+                    // currentIndex가 0이면(첫번째면) 바로 뒤(currentIndex + 1) -> 삭제되면 인덱스 0이 됨
+                    let nextFocusId: number | null = null;
+                    if (currentIndex > 0) {
+                        nextFocusId = blocks[currentIndex - 1].id;
+                    } else if (blocks.length > 1) {
+                        nextFocusId = blocks[currentIndex + 1].id;
+                    }
+                    // 3. 블록 삭제
+                    setBlocks(prevBlocks => prevBlocks.filter(b => b.id !== focusedBlockId));
+                    // 4. 포커스 이동 (React 상태 업데이트 반영을 위해 setTimeout 사용 권장)
+                    if (nextFocusId) {
+                        setFocusedBlockId(nextFocusId);
+
+                        // 실제 포커스 이동을 위해 약간의 지연 필요할 수 있음 (선택사항)
+                        // setTimeout(() => { ... DOM focus logic ... }, 0);
+                    }
+                }
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown, { capture: true });
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown, { capture: true });
+        };
+    }, [blocks, focusedBlockId]); // 의존성 배열 유지
 
     // 블록 내용 업데이트
     const updateBlock = (id: number, content: string) => {
