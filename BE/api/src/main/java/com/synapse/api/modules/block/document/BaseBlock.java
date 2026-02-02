@@ -48,7 +48,7 @@ public abstract class BaseBlock {
         private LocalDateTime updatedAt;
 
         // DB에는 저장하지 않고, JSON 응답에만 포함 (하위 클래스에서 구현)
-        public abstract String getType();
+        public abstract BlockType getType();
 
         // 북마크 설정
         public void setBookmark() {
