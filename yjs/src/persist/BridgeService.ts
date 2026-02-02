@@ -103,7 +103,7 @@ class BridgeService {
           }
 
           if (isPropsChanged || isTypeChanged || isRootChanged || isClassChanged) {
-            // 히스토리 자동 저장 제거 - 블록 업데이트만 수행
+            // 블록 업데이트
             bulkOps.push({
               updateOne: {
                 filter: { blockId: yBlock.id },
@@ -159,7 +159,7 @@ class BridgeService {
         });
       }
 
-      // 5. 실행 (히스토리 저장 제거)
+      // 5. 블록 업데이트 실행
       if (bulkOps.length > 0) {
         await Block.bulkWrite(bulkOps);
         console.log(`[Bridge] Sync Success for ${noteId}. Updates: ${bulkOps.length}`);
