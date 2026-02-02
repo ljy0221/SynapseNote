@@ -21,6 +21,7 @@ public enum ErrorCode {
     TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "AUTH_004", "토큰이 잘못되었습니다"),
     HEADER_INVALID(HttpStatus.FORBIDDEN, "AUTH_005", "인증 헤더가 잘못되었습니다"),
     INVALID_REFRESH_TOKEN(HttpStatus.FORBIDDEN, "AUTH_006", "리프레시 토큰이 유효하지 않습니다"),
+    NOT_FOUND_REFRESH(HttpStatus.FORBIDDEN, "AUTH_007", "리프레시 토큰이 존재하지 않습니다"),
 
     // Member
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "MEMBER_001", "사용자를 찾을 수 없습니다"),
