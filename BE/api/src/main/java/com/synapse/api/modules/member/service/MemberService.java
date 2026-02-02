@@ -2,6 +2,7 @@ package com.synapse.api.modules.member.service;
 
 import com.synapse.api.modules.member.dto.oauth.OAuthUserInfo;
 import com.synapse.api.modules.member.dto.request.LoginRequest;
+import com.synapse.api.modules.member.dto.request.UpdateThemeRequest;
 import com.synapse.api.modules.member.dto.response.LoginResponse;
 import com.synapse.api.modules.member.dto.response.LoginResult;
 import com.synapse.api.modules.member.dto.response.ProfileResponse;
@@ -79,8 +80,10 @@ public class MemberService {
                 .accessToken(access)
                 .isNewMember(optionalMember.isEmpty())
                 .member(LoginResponse.Member.builder()
+                        .id(member.getId())
                         .email(member.getEmail())
                         .name(member.getName())
+                        .theme(member.getTheme())
                         .provider(oauth.getProvider())
                         .build())
                 .sessionReplaced(sessionReplaced)
@@ -129,8 +132,10 @@ public class MemberService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         return ProfileResponse.builder()
+                .id(member.getId())
                 .email(member.getEmail())
                 .name(member.getName())
+                .theme(member.getTheme())
                 .provider(oauth.getProvider())
                 .createdAt(member.getCreatedAt())
                 .build();
@@ -178,8 +183,10 @@ public class MemberService {
 
         // 4. 업데이트된 프로필 반환 (기존 member 객체 재사용)
         return ProfileResponse.builder()
+                .id(member.getId())
                 .email(member.getEmail())
                 .name(member.getName())
+                .theme(member.getTheme())
                 .provider(oauth.getProvider())
                 .createdAt(member.getCreatedAt())
                 .build();
@@ -221,4 +228,28 @@ public class MemberService {
             streakRepository.save(streak);
         }
     }
+
+    @Transactional
+    public ProfileResponse updateTheme(UUID memberId, UpdateThemeRequest request) {
+        // 사용자 조회
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        // OAuth 정보 조회
+        OAuthAccount oauth = oAuthRepository.findByMemberId(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        member.updateLight(request.theme());
+
+        // 업데이트된 프로필 반환
+        return ProfileResponse.builder()
+                .id(member.getId())
+                .email(member.getEmail())
+                .name(member.getName())
+                .theme(member.getTheme())
+                .provider(oauth.getProvider())
+                .createdAt(member.getCreatedAt())
+                .build();
+    }
+
 }
