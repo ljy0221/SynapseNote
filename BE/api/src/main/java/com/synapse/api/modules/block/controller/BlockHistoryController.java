@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/notes/{noteId}/blocks/{blockId}/history")
+@RequestMapping("/api")
 @RequiredArgsConstructor
 @Validated
 public class BlockHistoryController {
@@ -30,7 +30,7 @@ public class BlockHistoryController {
          * 
          * @apiNote CodeBlock 전용 기능. TextBlock 호출 시 400 에러 (BLOCK_010) 반환
          */
-        @GetMapping
+        @GetMapping("/v1/notes/{noteId}/blocks/{blockId}/history")
         public DataResponse<Page<BlockHistoryResponse>> getBlockHistory(
                         @PathVariable String noteId,
                         @PathVariable String blockId,
@@ -48,7 +48,7 @@ public class BlockHistoryController {
          * 
          * @apiNote CodeBlock 전용 기능. TextBlock 호출 시 400 에러 (BLOCK_010) 반환
          */
-        @PostMapping("/slots/{slotNumber}")
+        @PostMapping("/v1/notes/{noteId}/blocks/{blockId}/history/slots/{slotNumber}")
         public DataResponse<BlockHistoryResponse> saveToSlot(
                         @PathVariable String noteId,
                         @PathVariable String blockId,
@@ -64,7 +64,7 @@ public class BlockHistoryController {
          * 
          * @apiNote CodeBlock 전용 기능. TextBlock 호출 시 400 에러 (BLOCK_010) 반환
          */
-        @GetMapping("/slots/{slotNumber}")
+        @GetMapping("/v1/notes/{noteId}/blocks/{blockId}/history/slots/{slotNumber}")
         public DataResponse<BlockHistoryDetailResponse> getSlot(
                         @PathVariable String noteId,
                         @PathVariable String blockId,
@@ -80,7 +80,7 @@ public class BlockHistoryController {
          * 
          * @apiNote CodeBlock 전용 기능. TextBlock 호출 시 400 에러 (BLOCK_010) 반환
          */
-        @GetMapping("/slots")
+        @GetMapping("/v1/notes/{noteId}/blocks/{blockId}/history/slots")
         public DataResponse<List<BlockHistoryResponse>> getAllSlots(
                         @PathVariable String noteId,
                         @PathVariable String blockId,
