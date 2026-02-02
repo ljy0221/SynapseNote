@@ -46,7 +46,6 @@ export interface IBlockHistory extends Document {
   blockId: string;
   noteId: string;
   slotNumber: number;
-  version: number;
 
   properties: BlockProperties;
   blockType: string;
@@ -85,7 +84,6 @@ const BlockHistorySchema: Schema = new Schema({
   blockId: { type: String, required: true, index: true },
   noteId: { type: String, required: true, index: true },
   slotNumber: { type: Number, required: true, min: 1, max: 5 },
-  version: { type: Number, required: true, default: 1 },
 
   properties: { type: Object, required: true },
   blockType: { type: String, required: true },

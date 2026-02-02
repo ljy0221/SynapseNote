@@ -42,7 +42,8 @@ export function registerDoc(noteId: string, ydoc: Y.Doc): DocEntry {
     const yArray = ydoc.getArray("blocks");
     console.log(`[DOC] Current blocks in Yjs: ${yArray.length}`);
 
-    // History 자동 저장 제거 - 실시간 동기화만 유지
+    // 실시간 블록 동기화 (히스토리 저장은 제거됨)
+    BridgeService.handleUpdate(noteId, ydoc);
 
     entry!.pendingUpdates.push(update);
     entry!.dirty = true;
