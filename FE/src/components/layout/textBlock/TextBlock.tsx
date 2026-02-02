@@ -44,6 +44,7 @@ interface TextBlockProps {
     onDragStart?: (e: React.DragEvent) => void;
     onDragOver?: (e: React.DragEvent) => void;
     onDrop?: (e: React.DragEvent) => void;
+    isFocused?: boolean; // [추가]
 }
 
 // 색상 팔레트
@@ -77,7 +78,8 @@ const TextBlock: React.FC<TextBlockProps> = ({
     draggable,
     onDragStart,
     onDragOver,
-    onDrop
+    onDrop,
+    isFocused: shouldFocus // [추가] prop 이름 충돌 방지를 위해 별칭 사용
 }) => {
     const [isFocused, setIsFocused] = React.useState(false);
     const [showColorPicker, setShowColorPicker] = React.useState(false);
@@ -129,6 +131,13 @@ const TextBlock: React.FC<TextBlockProps> = ({
             setIsFocused(false);
         },
     });
+
+    // [추가] 외부에서 포커스 요청 시 에디터 포커스
+    useEffect(() => {
+        if (shouldFocus && editor && !editor.isFocused) {
+            editor.commands.focus();
+        }
+    }, [shouldFocus, editor]);
     useEffect(() => {
         if (editor && content !== editor.getHTML()) {
             editor.commands.setContent(content);
