@@ -2,9 +2,14 @@ package com.synapse.api.modules.block.service;
 
 import com.synapse.api.modules.block.document.BaseBlock;
 import com.synapse.api.modules.block.document.CodeBlock;
+import com.synapse.api.modules.block.dto.response.BlockDetailResponse;
 import com.synapse.api.modules.block.repository.BlockRepository;
 import com.synapse.api.modules.note.dto.request.ExecutionHistoryRequest;
 import com.synapse.api.modules.note.dto.response.ExecutionHistoryResponse;
+import com.synapse.api.modules.note.entity.Note;
+import com.synapse.api.modules.note.entity.NoteRole;
+import com.synapse.api.modules.note.repository.NoteMemberRepository;
+import com.synapse.api.modules.note.repository.NoteRepository;
 import com.synapse.api.util.exception.BusinessException;
 import com.synapse.api.util.response.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -25,6 +31,8 @@ import java.util.List;
 public class BlockService {
 
     private final BlockRepository blockRepository;
+    private final NoteRepository noteRepository;
+    private final NoteMemberRepository noteMemberRepository;
 
     // 노트 ID로 블록 목록 조회 (순서 보장)
     public List<BaseBlock> getBlocksByNoteId(String noteId) {
@@ -56,9 +64,6 @@ public class BlockService {
         }
     }
 
-    /**
-     * [요청하신 메소드] 실행 히스토리 조회
-     */
     public List<ExecutionHistoryResponse> getExecutionHistory(String noteId, String blockId) {
         // 1. 블록 조회
         BaseBlock baseBlock = blockRepository.findByBlockId(blockId)
@@ -88,9 +93,6 @@ public class BlockService {
         return List.of();
     }
 
-    /**
-     * 블록 북마크 설정
-     */
     @Transactional
     public void bookmarkBlock(String blockId, String noteId) {
         BaseBlock block = blockRepository.findByBlockId(blockId)
@@ -106,9 +108,6 @@ public class BlockService {
         log.info("Bookmarked block: {}", blockId);
     }
 
-    /**
-     * 블록 북마크 해제
-     */
     @Transactional
     public void unbookmarkBlock(String blockId, String noteId) {
         BaseBlock block = blockRepository.findByBlockId(blockId)
@@ -124,11 +123,33 @@ public class BlockService {
         log.info("Unbookmarked block: {}", blockId);
     }
 
-    /**
-     * 북마크된 블록 목록 조회 (페이지네이션)
-     */
     public Page<BaseBlock> getBookmarkedBlocks(String noteId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         return blockRepository.findByNoteIdAndBookmarkTrueOrderByUpdatedAtDesc(noteId, pageable);
     }
+
+    public List<BlockDetailResponse> getBlocks(UUID memberId, UUID noteId) {
+        // 노트 접근 권한
+        validateReadPermission(memberId, noteId);
+
+        List<BaseBlock> blocks = blockRepository.findAllByNoteIdOrderByOrderAsc(noteId);
+
+        return blocks.stream()
+                .map(BlockResponseMapper::from)
+                .toList();
+    }
+
+    public void validateReadPermission(UUID memberId, UUID noteId) {
+        // 노트가 있는지
+        Note note = noteRepository.findById(noteId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
+
+        // 노트 작성자인 경우
+        if (note.getCreatedBy().getId().equals(memberId)) return;
+
+        // 노트 멤버인 경우
+        NoteRole role = noteMemberRepository.findRoleByNoteIdAndMemberId(noteId, memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_ACCESS_DENIED));
+    }
+
 }
