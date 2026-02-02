@@ -83,7 +83,7 @@ public class MemberService {
                         .id(member.getId())
                         .email(member.getEmail())
                         .name(member.getName())
-                        .isLight(member.isLight())
+                        .theme(member.getTheme())
                         .provider(oauth.getProvider())
                         .build())
                 .sessionReplaced(sessionReplaced)
@@ -135,7 +135,7 @@ public class MemberService {
                 .id(member.getId())
                 .email(member.getEmail())
                 .name(member.getName())
-                .isLight(member.isLight())
+                .theme(member.getTheme())
                 .provider(oauth.getProvider())
                 .createdAt(member.getCreatedAt())
                 .build();
@@ -186,7 +186,7 @@ public class MemberService {
                 .id(member.getId())
                 .email(member.getEmail())
                 .name(member.getName())
-                .isLight(member.isLight())
+                .theme(member.getTheme())
                 .provider(oauth.getProvider())
                 .createdAt(member.getCreatedAt())
                 .build();
@@ -239,14 +239,14 @@ public class MemberService {
         OAuthAccount oauth = oAuthRepository.findByMemberId(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-        member.updateLight(request.isLight());
+        member.updateLight(request.theme());
 
         // 업데이트된 프로필 반환
         return ProfileResponse.builder()
                 .id(member.getId())
                 .email(member.getEmail())
                 .name(member.getName())
-                .isLight(member.isLight())
+                .theme(member.getTheme())
                 .provider(oauth.getProvider())
                 .createdAt(member.getCreatedAt())
                 .build();

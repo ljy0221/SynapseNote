@@ -26,6 +26,7 @@ public enum ErrorCode {
     MEMBER_ALREADY_EXISTS(HttpStatus.CONFLICT, "MEMBER_002", "이미 존재하는 사용자입니다"),
     VALIDATION_INVALID_PARAMETER(HttpStatus.BAD_REQUEST, "MEMBER_003", "잘못된 요청 파라미터입니다"),
     MEMBER_ALREADY_EXISTS_ANOTHER_PROVIDER(HttpStatus.CONFLICT, "MEMBER_004", "이 이메일은 다른 소셜 로그인으로 이미 가입되어 있습니다"),
+    INVALID_THEME(HttpStatus.BAD_REQUEST, "MEMBER_005", "유효하지 않은 테마 값입니다"),
 
     // Note
     NOTE_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTE_001", "노트를 찾을 수 없습니다"),
