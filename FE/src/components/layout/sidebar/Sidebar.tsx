@@ -180,7 +180,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
    */
   const handleSelectNote = (noteId: string) => {
     if (!noteId || noteId.startsWith('temp-')) return;
-    navigate(`/notes/${noteId}`);
+    navigate(`/note/${noteId}`);
   };
 
   /**
@@ -316,9 +316,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
       // 임시 노트를 실제 데이터로 교체
       setNotes(prev =>
         prev.map(n => n.noteId === tempNote.noteId ? {
-          ...res.data,
-          updatedAt: new Date(res.data.updatedAt).getTime(),
-          createdAt: new Date(res.data.createdAt).getTime()
+          ...res,
+          updatedAt: new Date(res.updatedAt).getTime(),
+          createdAt: new Date(res.createdAt).getTime()
         } as NoteListItem : n)
       );
 
