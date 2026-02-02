@@ -20,7 +20,7 @@ interface AuthState {
     refreshUserInfo: () => Promise<void>;
     initializeAuth: () => Promise<void>; // To be called on app mount
     updateUserNickname: (newNickname: string) => Promise<void>;
-    login: (token: string, memberId?: string | number) => Promise<void>;
+    login: (token: string) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -30,23 +30,15 @@ export const useAuthStore = create<AuthState>()(
             isLoading: true, // Initial loading state
             isAuthenticated: false,
 
-            login: async (token: string, memberId?: string | number) => {
+            login: async (token: string) => {
                 set({ isLoading: true });
                 try {
                     localStorage.setItem('authToken', token);
                     const info = await getUserInfo(token);
-
-                    // info에서 memberId를 가져오거나 매개변수로 받은 값을 우선 사용
-                    const finalMemberId = String(memberId || info.memberId);
-                    if (finalMemberId) {
-                        localStorage.setItem('memberId', finalMemberId);
-                    }
-
                     set({ userInfo: info, isAuthenticated: true, isLoading: false });
                 } catch (error) {
                     console.error('Login failed:', error);
                     localStorage.removeItem('authToken');
-                    localStorage.removeItem('memberId');
                     set({ userInfo: null, isAuthenticated: false, isLoading: false });
                     useToastStore.getState().showToast('로그인에 실패했습니다.', 'error');
                 }
@@ -54,7 +46,6 @@ export const useAuthStore = create<AuthState>()(
 
             logout: () => {
                 localStorage.removeItem('authToken');
-                localStorage.removeItem('memberId');
                 set({ userInfo: null, isAuthenticated: false, isLoading: false });
                 useToastStore.getState().showToast('로그아웃 되었습니다.', 'info');
             },
@@ -66,16 +57,12 @@ export const useAuthStore = create<AuthState>()(
                 set({ isLoading: true });
                 try {
                     const info = await getUserInfo(token);
-                    if (info.memberId) {
-                        localStorage.setItem('memberId', String(info.memberId));
-                    }
                     set({ userInfo: info, isAuthenticated: true, isLoading: false });
 
                 } catch (error) {
                     // Token might be expired
                     console.error('Refresh user info failed:', error);
                     localStorage.removeItem('authToken');
-                    localStorage.removeItem('memberId');
                     set({ userInfo: null, isAuthenticated: false, isLoading: false });
                     useToastStore.getState().showToast('세션이 만료되었습니다.', 'error');
                 }
@@ -90,9 +77,6 @@ export const useAuthStore = create<AuthState>()(
 
                 try {
                     const info = await getUserInfo(token);
-                    if (info.memberId) {
-                        localStorage.setItem('memberId', String(info.memberId));
-                    }
                     set({ userInfo: info, isAuthenticated: true, isLoading: false });
                 } catch (error) {
                     console.error('Auth initialization failed:', error);
