@@ -1,8 +1,9 @@
 // src/components/common/contextMenu/ContextMenu.tsx
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import './ContextMenu.css';
 import { ContextMenuState } from '../../../types/sidebar/ContextMenu';
 import { Pencil, Trash2, FolderPlus, FolderInput } from 'lucide-react';
+
 
 interface Props {
   state: ContextMenuState;
@@ -22,6 +23,10 @@ export default function ContextMenu({
   onMoveNote,
 }: Props) {
   const menuRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState<{ top: number; left: number }>({
+    top: 0,
+    left: 0,
+  });
 
   /**
    *  메뉴 밖 클릭 시 닫기
@@ -45,14 +50,45 @@ export default function ContextMenu({
       document.removeEventListener('click', handleClickOutside);
     };
   }, [state.visible, onClose]);
+  
+  
+  
+  
+  useLayoutEffect(() => {
+    if (!state.visible || !menuRef.current) return;
+    
+    const { x, y } = state;
 
+    const MARGIN = 8;
+    
+    const menu = menuRef.current;
+    const menuHeight = menu.offsetHeight;
+    const menuWidth = menu.offsetWidth;
+    
+    let top = y;
+    let left = x;
+    
+    if (top + menuHeight + MARGIN > window.innerHeight) {
+      top = window.innerHeight - menuHeight - MARGIN;
+    }
+    
+    if (left + menuWidth + MARGIN > window.innerWidth) {
+      left = window.innerWidth - menuWidth - MARGIN;
+    }
+    
+    setPosition({
+      top: Math.max(MARGIN, top),
+      left: Math.max(MARGIN, left),
+    });
+  }, [state]);
+  
   if (!state.visible) return null;
-
+  
   return (
     <div
-      ref={menuRef}
-      className="context-menu"
-      style={{ top: state.y, left: state.x }}
+    ref={menuRef}
+    className="context-menu"
+      style={{ top: position.top, left: position.left }}
       //  루트에서는 propagation만 차단 (preventDefault )
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
