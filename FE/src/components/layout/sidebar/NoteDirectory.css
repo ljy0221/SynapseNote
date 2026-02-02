@@ -11,7 +11,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  position: relative;        /* ⭐ 이거 없으면 100% 실패 */
+  position: relative;
   height: 28px;
   padding: 0 6px;
 
@@ -40,7 +40,7 @@
 ========================= */
 .tree-title {
   flex: 1;
-  padding-right: 24px;       /* ⭐ 버튼 자리 확보 */
+  padding-right: 24px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -81,4 +81,12 @@
 /* active 노트 아이콘 강조 */
 .tree-row.note.active .tree-icon {
   opacity: 1;
+}
+
+/* =========================
+   Drag & Drop
+========================= */
+.tree-row.directory.drag-over {
+  background-color: rgba(255, 165, 0, 0.2);
+  outline: 1px dashed orange;
 }

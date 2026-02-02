@@ -8,7 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.UuidGenerator;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -27,8 +27,8 @@ import java.util.UUID;
 public class Invitation extends BaseEntity {
 
     @Id
-    @GeneratedValue(generator = "uuid-v7")
-    @GenericGenerator(name = "uuid-v7", strategy = "com.synapse.api.util.generator.UuidV7Generator")
+    @GeneratedValue
+    @UuidGenerator(style = UuidGenerator.Style.TIME)
     @Column(columnDefinition = "UUID")
     private UUID id;
 
@@ -43,7 +43,7 @@ public class Invitation extends BaseEntity {
     @JoinColumn(name = "invited_by_id", nullable = false)
     private Member invitedBy;
 
-    @Column(name = "invited_email", nullable = false, length = 255)
+    @Column(name = "invited_email", nullable = false)
     private String invitedEmail;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -12,6 +12,7 @@ public enum ErrorCode {
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "COMMON_002", "지원하지 않는 HTTP 메서드입니다"),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON_003", "서버 내부 오류가 발생했습니다"),
     INVALID_TYPE_VALUE(HttpStatus.BAD_REQUEST, "COMMON_004", "잘못된 타입입니다"),
+    INVALID_ENUM_TYPE(HttpStatus.BAD_REQUEST, "COMMON_005", "ENUM 타입이 올바르지 않습니다"),
 
     // Auth
     AUTH_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "AUTH_001", "인증되지 않은 사용자입니다"),
@@ -63,9 +64,8 @@ public enum ErrorCode {
     SYSTEM_INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "SYSTEM_002", "일시적인 서버 오류가 발생했습니다"),
 
     // OAuthAccount
-    PARSING_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "OAUTH_001", "응답 파싱 중 오류가 발생했습니다"),
-    OAUTH_PROVIDER_ERROR(HttpStatus.BAD_GATEWAY, "OAUTH_002", "OAuth2 제공자로부터 오류 응답을 받았습니다"),
-    OAUTH_TOKEN_ISSUE(HttpStatus.BAD_GATEWAY, "OAUTH_003", "OAuth2 제공자로부터 Access Token을 받지 못했습니다"),
+    OAUTH_PROVIDER_ERROR(HttpStatus.BAD_GATEWAY, "OAUTH_001", "OAuth2 제공자로부터 오류 응답을 받았습니다"),
+    OAUTH_TOKEN_ISSUE(HttpStatus.BAD_GATEWAY, "OAUTH_002", "OAuth2 제공자로부터 Access Token을 받지 못했습니다"),
 
     // AWS S3
     IMAGE_DELETE_FAIL(HttpStatus.BAD_GATEWAY, "IMAGE_001", "이미지 삭제 중 스토리지 서버(S3)와의 통신에 실패했습니다."),
