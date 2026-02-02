@@ -32,8 +32,8 @@ public class CodeAssistantService {
     private final BlockRepository blockRepository;
     private final ObjectMapper objectMapper;
 
-    @Value("${ai.default.provider}")
-    private String defaultProvider;
+    @Value("${ai.code-review.provider}")
+    private String codeReviewProvider;
 
     private static final int MAX_CODE_LENGTH = 5000;
 
@@ -82,7 +82,7 @@ public class CodeAssistantService {
 
         AiProvider provider = request.provider() != null
                 ? request.provider()
-                : AiProvider.valueOf(defaultProvider.toUpperCase());
+                : AiProvider.valueOf(codeReviewProvider.toUpperCase());
 
         AiService aiService = aiServiceFactory.getService(provider);
         String aiResponse = aiService.complete(systemPrompt, userPrompt);
