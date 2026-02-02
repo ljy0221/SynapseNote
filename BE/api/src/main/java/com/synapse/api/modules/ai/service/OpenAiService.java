@@ -59,7 +59,13 @@ public class OpenAiService implements AiService {
             return response.choices().get(0).message().content();
 
         } catch (HttpStatusCodeException e) {
-            log.error("OpenAI API error: status={}", e.getStatusCode(), e);
+            log.error("GMS API error: status={}, url={}, request={}, response={}",
+                e.getStatusCode(),
+                apiUrl,
+                request,
+                e.getResponseBodyAsString(),
+                e
+            );
             throw new BusinessException(ErrorCode.AI_SERVICE_ERROR);
         } catch (ResourceAccessException e) {
             log.error("OpenAI network error", e);
