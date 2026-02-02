@@ -106,6 +106,7 @@ export const NoteDirectory: React.FC<NoteDirectoryProps> = ({
                     y: e.clientY,
                     type: 'NOTE',
                     targetId: note.noteId,
+                    directoryPath: node.path,
                   });
                 }}
               >

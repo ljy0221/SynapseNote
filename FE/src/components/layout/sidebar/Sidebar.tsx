@@ -1,13 +1,16 @@
 // src/components/layout/sidebar/Sidebar.tsx
 import React, { useEffect, useState } from 'react';
 import './Sidebar.css';
+import { Plus } from 'lucide-react';
 
 import type { NoteListItem } from '../../../types/note/GetNotes';
+import type { ContextMenuState } from '../../../types/sidebar/ContextMenu';
+
 import { buildNoteTree } from '../../features/noteDirectory/buildNoteTree';
 import { NoteDirectory } from './NoteDirectory';
 
 import ContextMenu from '../../common/contextMenu/ContextMenu';
-import type { ContextMenuState } from '../../../types/sidebar/ContextMenu';
+import MoveNoteModal from './MoveNoteModal';
 
 import { getNotesApi } from '../../../api/notes/Notes.api';
 import { adaptNotesForSidebar } from '../../../api/notes/Notes.adapter';
@@ -22,7 +25,6 @@ import { adaptBookmarkIds } from '../../../api/bookmark/Bookmarks.adapter';
 import { createNoteApi } from '../../../api/notes/CreateNote.api';
 import { deleteNoteApi } from '../../../api/notes/DeleteNote.api';
 import { updateNoteApi } from '../../../api/notes/UpdateNote.api';
-
 
 import {
   NOTES_CHANGED_EVENT,
@@ -43,15 +45,51 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const navigate = useNavigate();
   const { noteId: routeNoteId } = useParams<{ noteId: string }>();
 
-  /**  active 상태의 단일 기준 = URL */
+  /** active 상태의 단일 기준 = URL */
   const activeNoteId = routeNoteId ?? null;
 
   const [notes, setNotes] = useState<NoteListItem[]>([]);
   const [favoriteNoteIds, setFavoriteNoteIds] =
     useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
+
   const [contextMenu, setContextMenu] =
     useState<ContextMenuState>({ visible: false });
+
+  /** rename 상태 */
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+
+  /** move modal 상태 */
+  const [moveModal, setMoveModal] = useState<{
+    open: boolean;
+    noteId: string | null;
+    currentPath: string;
+  }>({
+    open: false,
+    noteId: null,
+    currentPath: '',
+  });
+
+  /** 디렉토리 경로 정규화 */
+  const normalizeDirectoryPath = (path: string) => {
+    let p = path.trim();
+
+    // 빈 값 방지
+    if (!p) return '/';
+
+    // 항상 /로 시작
+    if (!p.startsWith('/')) {
+      p = '/' + p;
+    }
+
+    // 끝의 / 제거 (루트 제외)
+    if (p.length > 1 && p.endsWith('/')) {
+      p = p.slice(0, -1);
+    }
+
+    return p;
+  };
+
 
   const noteTree = buildNoteTree(notes);
 
@@ -66,16 +104,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         getBookmarksApi(),
       ]);
 
-      console.log('[Sidebar][RAW] bookmarksRes', bookmarksRes);
-
-      const adaptedBookmarkIds = adaptBookmarkIds(bookmarksRes);
-      console.log(
-        '[Sidebar] adaptedBookmarkIds',
-        Array.from(adaptedBookmarkIds)
-      );
-
       setNotes(adaptNotesForSidebar(notesRes));
-      setFavoriteNoteIds(adaptedBookmarkIds);
+      setFavoriteNoteIds(adaptBookmarkIds(bookmarksRes));
     } finally {
       setIsLoading(false);
     }
@@ -86,18 +116,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
    */
   useEffect(() => {
     fetchSidebarData();
-
     window.addEventListener(NOTES_CHANGED_EVENT, fetchSidebarData);
     return () => {
-      window.removeEventListener(
-        NOTES_CHANGED_EVENT,
-        fetchSidebarData
-      );
+      window.removeEventListener(NOTES_CHANGED_EVENT, fetchSidebarData);
     };
   }, []);
 
   /**
-   *  노트 선택 → URL 변경
+   * 노트 선택 → URL 변경
    */
   const handleSelectNote = (noteId: string) => {
     if (!noteId || noteId.startsWith('temp-')) return;
@@ -105,14 +131,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   /**
-   *  즐겨찾기 토글
+   * 즐겨찾기 토글
    */
   const handleToggleFavorite = async (noteId: string) => {
     if (!noteId || noteId.startsWith('temp-')) return;
 
     const isFavorite = favoriteNoteIds.has(noteId);
 
-    // optimistic UI
     setFavoriteNoteIds(prev => {
       const next = new Set(prev);
       isFavorite ? next.delete(noteId) : next.add(noteId);
@@ -120,16 +145,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
     });
 
     try {
-      if (isFavorite) {
-        await removeBookmarkApi(noteId);
-        console.log('[Sidebar] 즐겨찾기 제거 성공', noteId);
-      } else {
-        await addBookmarkApi(noteId);
-        console.log('[Sidebar] 즐겨찾기 추가 성공', noteId);
-      }
-    } catch (e) {
-      console.error('[Sidebar] 즐겨찾기 토글 실패', e);
-
+      isFavorite
+        ? await removeBookmarkApi(noteId)
+        : await addBookmarkApi(noteId);
+    } catch {
       // rollback
       setFavoriteNoteIds(prev => {
         const next = new Set(prev);
@@ -139,14 +158,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
-  // 노트 제목 수정
-  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
-
+  /**
+   * 노트 제목 수정
+   */
   const handleRenameNote = (noteId: string) => {
-    console.log('[Sidebar] rename start', noteId);
     setEditingNoteId(noteId);
   };
-  // 제목 수정 확정
+
   const handleConfirmRename = async (
     noteId: string,
     newTitle: string
@@ -162,15 +180,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       return;
     }
 
-    // optimistic update
     setNotes(prev =>
-      prev.map(note =>
-        note.noteId === noteId
-          ? { ...note, title: newTitle }
-          : note
+      prev.map(n =>
+        n.noteId === noteId ? { ...n, title: newTitle } : n
       )
     );
-
     setEditingNoteId(null);
 
     try {
@@ -178,27 +192,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
         title: newTitle,
         directoryPath: target.directoryPath,
       });
-
       emitNotesChanged();
-      console.log('[Sidebar] rename success', noteId);
-    } catch (e) {
-      console.error('[Sidebar] rename failed', e);
-      emitNotesChanged(); // 서버 기준으로 복구
+    } catch {
+      emitNotesChanged();
     }
   };
 
-  // 제목 수정 취소
   const handleCancelRename = () => {
     setEditingNoteId(null);
   };
 
-
   /**
-   * 노트 생성 (optimistic)
+   * 노트 생성
    */
   const handleCreateNote = async (directoryPath: string) => {
     const tempNote: NoteListItem = {
-      userId: 'temp-user',
+      memberId: 'temp-user',
       noteId: `temp-${Date.now()}`,
       title: '새 노트',
       directoryPath,
@@ -218,11 +227,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         directoryPath,
       });
       emitNotesChanged();
-    } catch (e) {
-      setNotes(prev =>
-        prev.filter(n => n.noteId !== tempNote.noteId)
-      );
-      console.error('[Sidebar] 노트 생성 실패', e);
+    } catch {
+      setNotes(prev => prev.filter(n => n.noteId !== tempNote.noteId));
     }
   };
 
@@ -231,12 +237,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
    */
   const handleDeleteNote = async (noteId: string) => {
     setNotes(prev => prev.filter(n => n.noteId !== noteId));
-
     try {
       await deleteNoteApi(noteId);
       emitNotesChanged();
-    } catch (e) {
-      console.error('[Sidebar] 노트 삭제 실패', e);
+    } catch {
       emitNotesChanged();
     }
   };
@@ -245,31 +249,33 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <div className="sidebar-wrapper">
       <aside className={`sidebar-panel ${isOpen ? 'open' : ''}`}>
         <div className="sidebar-inner">
-           {/*  사이드바 상단 액션 영역 */}
           <div className="sidebar-top-actions">
             <button
               className="sidebar-add-note-btn"
               onClick={() => handleCreateNote('/')}
             >
-              <span className="plus">＋</span>
+              <Plus size={16} />
               <span className="label">새 노트</span>
             </button>
           </div>
 
+
           {isLoading ? (
             <div className="sidebar-loading">Loading...</div>
           ) : (
-            <NoteDirectory
-              node={noteTree}
-              activeNoteId={activeNoteId}
-              favoriteNoteIds={favoriteNoteIds}
-              editingNoteId={editingNoteId}
-              onSelectNote={handleSelectNote}
-              onToggleFavorite={handleToggleFavorite}
-              onContextMenu={setContextMenu}
-              onConfirmRename={handleConfirmRename}
-              onCancelRename={handleCancelRename}
-            />
+            <div className="sidebar-content">
+              <NoteDirectory
+                  node={noteTree}
+                  activeNoteId={activeNoteId}
+                  favoriteNoteIds={favoriteNoteIds}
+                  editingNoteId={editingNoteId}
+                  onSelectNote={handleSelectNote}
+                  onToggleFavorite={handleToggleFavorite}
+                  onContextMenu={setContextMenu}
+                  onConfirmRename={handleConfirmRename}
+                  onCancelRename={handleCancelRename}
+                  />
+            </div>
           )}
         </div>
       </aside>
@@ -287,7 +293,59 @@ export const Sidebar: React.FC<SidebarProps> = ({
         onDeleteNote={handleDeleteNote}
         onCreateNote={handleCreateNote}
         onRenameNote={handleRenameNote}
+        onMoveNote={(noteId, directoryPath) => {
+          if (editingNoteId) return;
+          setMoveModal({
+            open: true,
+            noteId,
+            currentPath: directoryPath,
+          });
+        }}
       />
+
+      {moveModal.open && (
+        <MoveNoteModal
+          isOpen
+          currentPath={moveModal.currentPath}
+          onCancel={() =>
+            setMoveModal({
+              open: false,
+              noteId: null,
+              currentPath: '',
+            })
+          }
+          onConfirm={async (newPath) => {
+            if (!moveModal.noteId) return;
+
+            const normalizedPath = normalizeDirectoryPath(newPath);
+
+            const target = notes.find(
+              n => n.noteId === moveModal.noteId
+            );
+
+            if (!target) {
+              console.error('[MOVE] target note not found');
+              return;
+            }
+
+            try {
+              await updateNoteApi(moveModal.noteId, {
+                title: target.title,
+                directoryPath: normalizedPath,
+              });
+              emitNotesChanged();
+            } catch {
+              emitNotesChanged(); // 실패 시 서버 기준 복구
+            } finally {
+              setMoveModal({
+                open: false,
+                noteId: null,
+                currentPath: '',
+              });
+            }
+          }}
+        />
+      )}
     </div>
   );
 };
