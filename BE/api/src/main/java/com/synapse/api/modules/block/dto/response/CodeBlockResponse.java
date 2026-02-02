@@ -1,5 +1,6 @@
 package com.synapse.api.modules.block.dto.response;
 
+import com.synapse.api.modules.block.document.BlockType;
 import lombok.Builder;
 
 import java.time.LocalDateTime;
@@ -9,6 +10,7 @@ import java.util.UUID;
 @Builder
 public record CodeBlockResponse(
         String id,
+        BlockType type,
         UUID noteId,
         UUID blockId,
         Double order,
