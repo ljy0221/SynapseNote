@@ -116,7 +116,7 @@ public class BlockHistoryService {
                                 .noteId(noteId)
                                 .slotNumber(slotNumber)
                                 .properties(currentProperties)
-                                .blockType(currentBlock.getType())
+                                .blockType(currentBlock.getType().name())
                                 .changedBy(new BlockHistory.ChangedBy(memberId.toString(), member.getName()))
                                 .changedAt(LocalDateTime.now())
                                 .changeDescription(String.format("Saved to slot %d", slotNumber))
