@@ -39,8 +39,8 @@ public class SecurityConfig {
     public SecurityFilterChain addFilterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/v*/login").permitAll()
-                .anyRequest().authenticated()
-        );
+                .requestMatchers("/webrtc/**").permitAll() // WebSocket 경로 허용
+                .anyRequest().authenticated());
 
         http
                 .csrf(AbstractHttpConfigurer::disable)
