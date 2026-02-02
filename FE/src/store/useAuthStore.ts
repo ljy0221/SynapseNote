@@ -1,17 +1,25 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { getUserInfo, UserInfo } from '../api/authApi';
+import { getUserInfo, UserInfo, updateNickname } from '../api/authApi';
 import { useToastStore } from './useToastStore';
 
 interface AuthState {
     userInfo: UserInfo | null;
     isLoading: boolean;
     isAuthenticated: boolean;
-    // Actions
-    login: (token: string) => Promise<void>;
+    /**
+     * 로그아웃 처리
+     * 1. 로컬 스토리지의 액세스 토큰 삭제
+     * 2. 스토어 상태(유저 정보, 인증 상태) 초기화
+     * 3. 로그아웃 완료 토스트 메시지 출력
+     * 
+     * @note Refresh Token은 HttpOnly Cookie로 관리되므로 클라이언트 JavaScript에서 직접 삭제할 수 없습니다.
+     * 따라서 액세스 토큰을 폐기하여 클라이언트 세션을 종료하는 방식으로 처리합니다.
+     */
     logout: () => void;
     refreshUserInfo: () => Promise<void>;
     initializeAuth: () => Promise<void>; // To be called on app mount
+    updateUserNickname: (newNickname: string) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -50,8 +58,7 @@ export const useAuthStore = create<AuthState>()(
                     const info = await getUserInfo(token);
                     set({ userInfo: info, isAuthenticated: true, isLoading: false });
                 } catch (error) {
-                    // Token might be expired, but we don't necessarily want to logout on every refresh error unless 401
-                    // For now, mirroring UserContext logic: logout on error
+                    // Token might be expired
                     console.error('Refresh user info failed:', error);
                     localStorage.removeItem('authToken');
                     set({ userInfo: null, isAuthenticated: false, isLoading: false });
@@ -66,8 +73,6 @@ export const useAuthStore = create<AuthState>()(
                     return;
                 }
 
-                // If we already have persisted user info, we might want to trust it briefly
-                // But generally safe to refresh
                 try {
                     const info = await getUserInfo(token);
                     set({ userInfo: info, isAuthenticated: true, isLoading: false });
@@ -75,9 +80,25 @@ export const useAuthStore = create<AuthState>()(
                     console.error('Auth initialization failed:', error);
                     localStorage.removeItem('authToken');
                     set({ userInfo: null, isAuthenticated: false, isLoading: false });
-                    // Initial check might fail silently or show toast?
-                    // UserContext showed toast "Session expired"
                     useToastStore.getState().showToast('세션이 만료되었습니다. 다시 로그인해주세요.', 'error');
+                }
+            },
+
+            updateUserNickname: async (newNickname: string) => {
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    useToastStore.getState().showToast('로그인이 필요합니다.', 'error');
+                    return;
+                }
+
+                try {
+                    await updateNickname(token, newNickname);
+                    // 닉네임 변경 후 유저 정보 갱신
+                    await get().refreshUserInfo();
+                    useToastStore.getState().showToast('닉네임이 변경되었습니다.', 'success');
+                } catch (error) {
+                    console.error('Failed to update nickname store action:', error);
+                    throw error; // 컴포넌트에서 에러 처리를 할 수 있도록 throw
                 }
             }
         }),
@@ -87,3 +108,4 @@ export const useAuthStore = create<AuthState>()(
         }
     )
 );
+
