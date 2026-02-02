@@ -3,10 +3,7 @@ package com.synapse.api.modules.member.entity;
 import com.synapse.api.util.entity.BaseEntity;
 import com.synapse.api.util.generator.UuidV7Generator;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.GenericGenerator;
 
@@ -37,7 +34,14 @@ public class Member extends BaseEntity {
     @Column(nullable = false, length = 100)
     private String name;
 
+    @Builder.Default
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    private boolean light = true;
+
+
     public void updateName(String name) {
         this.name = name;
     }
+    public void updateLight(boolean isLight) { this.light = isLight; }
+
 }
