@@ -9,12 +9,12 @@ interface NoteMainProps {
     title: string;
     onUpdateTitle: (newTitle: string) => void;
     blocks: BlockData[];
-    onUpdateBlock: (id: number, content: string) => void;
-    onAddBlockAfter: (afterId: number, type: BlockType) => void;
+    onUpdateBlock: (id: number | string, content: string) => void;
+    onAddBlockAfter: (afterId: number | string, type: BlockType) => void;
     onAddBlockAtEnd: (type: BlockType) => void;  // 새로 추가
-    onDeleteBlock: (id: number) => void;
-    onFocusBlock: (id: number) => void;
-    focusedBlockId: number | null; // [추가]
+    onDeleteBlock: (id: number | string) => void;
+    onFocusBlock: (id: number | string) => void;
+    focusedBlockId: number | string | null; // [추가]
     onMoveBlock: (dragIndex: number, hoverIndex: number) => void;
     titleInputRef?: React.RefObject<HTMLInputElement>;
 }
@@ -60,10 +60,10 @@ const NoteMain: React.FC<NoteMainProps> = ({
                     <TextBlock
                         key={block.id}
                         {...commonProps}
-                        id={block.id}
+                        id={block.id as any}
                         content={block.content}
-                        onUpdate={onUpdateBlock}
-                        onDelete={onDeleteBlock}
+                        onUpdate={onUpdateBlock as any}
+                        onDelete={onDeleteBlock as any}
                         onFocus={() => onFocusBlock(block.id)}
                     />
                 );
@@ -72,11 +72,11 @@ const NoteMain: React.FC<NoteMainProps> = ({
                     <CodeBlock
                         key={block.id}
                         {...commonProps}
-                        id={block.id}
+                        id={block.id as any}
                         language={(block.language as any) || 'javascript'}
                         code={block.content}
-                        onDelete={onDeleteBlock}
-                        onChange={onUpdateBlock}
+                        onDelete={onDeleteBlock as any}
+                        onChange={onUpdateBlock as any}
                         onFocus={() => onFocusBlock(block.id)}
                     />
                 );
