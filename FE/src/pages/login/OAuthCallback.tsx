@@ -1,20 +1,22 @@
 import React, { useEffect, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { socialLogin } from '../../api/authApi';
-import { useUser } from '../../context/UserContext';
+import { useAuthStore } from '../../store/useAuthStore';
+import { useToastStore } from '../../store/useToastStore';
 
 const OAuthCallback: React.FC = () => {
     const { provider } = useParams<{ provider: string }>();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const processedRef = useRef(false);
-    const { login } = useUser();
+    const login = useAuthStore((state) => state.login);
+    const showToast = useToastStore((state) => state.showToast);
 
     useEffect(() => {
         const code = searchParams.get('code');
 
         if (!provider || !code) {
-            alert('잘못된 접근입니다.');
+            showToast('잘못된 접근입니다.', 'error');
             navigate('/login');
             return;
         }
@@ -42,7 +44,7 @@ const OAuthCallback: React.FC = () => {
                 console.log(`[OAuth] Processing login for ${provider} with code...`);
                 const result = await socialLogin(provider, code);
 
-                // Context를 통해 로그인 처리 (토큰 저장 및 유저 정보 갱신)
+                // Store를 통해 로그인 처리 (토큰 저장 및 유저 정보 갱신)
                 await login(result.accessToken);
 
                 console.log('[OAuth] Login success');
@@ -50,18 +52,13 @@ const OAuthCallback: React.FC = () => {
             } catch (error: any) {
                 console.error('[OAuth] Login failed:', error);
 
-                // 에러 발생 시 토스트는 UserContext나 App 차원에서 처리될 수도 있지만
-                // 여기서는 흐름상 alert 혹은 토스트가 필요함. 
-                // Context의 toast 기능을 쓰고 싶다면 useToast를 가져와야 함.
-                // 하지만 UserProvider 내부에서 에러 토스트를 띄우는 로직은 fetchUserInfo에 있음.
-                // socialLogin 실패는 여기서 처리해야 함.
-                alert(`로그인 실패: ${error.message}`);
+                showToast(`로그인 실패: ${error.message}`, 'error');
                 navigate('/login', { replace: true });
             }
         };
 
         handleLogin();
-    }, [provider, searchParams, navigate, login]);
+    }, [provider, searchParams, navigate, login, showToast]);
 
     // 브라우저용 안내 화면
     if (!window.electronAPI) {
