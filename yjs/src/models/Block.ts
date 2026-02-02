@@ -41,13 +41,22 @@ export interface IBlock extends Document {
   updatedAt: Date;
 }
 
-// 3. BlockHistory 인터페이스
+// 3. BlockHistory 인터페이스 (슬롯 기반)
 export interface IBlockHistory extends Document {
   blockId: string;
   noteId: string;
-  previousProperties: BlockProperties;
-  previousType?: string;
+  slotNumber: number;
+
+  properties: BlockProperties;
+  blockType: string;
+
+  changedBy: {
+    memberId: string;
+    memberName: string;
+  };
+
   changedAt: Date;
+  changeDescription?: string;
 }
 
 // 4. Mongoose Schema 정의
@@ -73,13 +82,27 @@ const BlockSchema: Schema = new Schema({
 
 const BlockHistorySchema: Schema = new Schema({
   blockId: { type: String, required: true, index: true },
-  noteId: { type: String, required: true },
-  previousProperties: { type: Object },
-  previousType: { type: String },
-  changedAt: { type: Date, default: Date.now }
+  noteId: { type: String, required: true, index: true },
+  slotNumber: { type: Number, required: true, min: 1, max: 5 },
+
+  properties: { type: Object, required: true },
+  blockType: { type: String, required: true },
+
+  changedBy: {
+    memberId: { type: String, required: true },
+    memberName: { type: String, required: true }
+  },
+
+  changedAt: { type: Date, default: Date.now },
+  changeDescription: { type: String }
 }, {
   collection: 'block_histories'
 });
+
+// 복합 인덱스 추가 (슬롯 기반)
+BlockHistorySchema.index({ blockId: 1, slotNumber: 1 }, { unique: true });
+BlockHistorySchema.index({ noteId: 1, changedAt: -1 });
+BlockHistorySchema.index({ 'changedBy.memberId': 1, changedAt: -1 });
 
 export const Block = mongoose.model<IBlock>('Block', BlockSchema);
 export const BlockHistory = mongoose.model<IBlockHistory>('BlockHistory', BlockHistorySchema);
