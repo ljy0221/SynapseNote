@@ -5,6 +5,7 @@ import com.synapse.api.modules.member.dto.request.UpdateNicknameRequest;
 import com.synapse.api.modules.member.dto.response.LoginResponse;
 import com.synapse.api.modules.member.dto.response.LoginResult;
 import com.synapse.api.modules.member.dto.response.ProfileResponse;
+import com.synapse.api.modules.member.dto.response.StreakResponse;
 import com.synapse.api.modules.member.service.MemberService;
 import com.synapse.api.util.exception.BusinessException;
 import com.synapse.api.util.response.DataResponse;
@@ -23,6 +24,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Duration;
+import java.util.List;
+import java.util.UUID;
 
 import static com.synapse.api.util.Constant.AUTHORIZATION_HEADER;
 import static com.synapse.api.util.Constant.BEARER_PREFIX;
@@ -66,7 +69,7 @@ public class MemberController {
 
     @DeleteMapping("/v1/members")
     public StatusResponse deleteMember(HttpServletRequest request,
-                                     @AuthenticationPrincipal CustomMemberDetails details) {
+                                       @AuthenticationPrincipal CustomMemberDetails details) {
         memberService.withdraw(details.id(), extractAccessToken(request));
         return StatusResponse.of(SuccessCode.NO_CONTENT);
     }
@@ -77,6 +80,12 @@ public class MemberController {
             @AuthenticationPrincipal CustomMemberDetails details) {
         ProfileResponse updatedProfile = memberService.updateNickname(details.id(), request.name());
         return DataResponse.of(updatedProfile);
+    }
+
+    @GetMapping("/v1/members/{memberId}/streak")
+    public DataResponse<List<StreakResponse>> getStreak(
+            @PathVariable UUID memberId) {
+        return DataResponse.of(memberService.getStreak(memberId));
     }
 
     private String extractAccessToken(HttpServletRequest request) {
