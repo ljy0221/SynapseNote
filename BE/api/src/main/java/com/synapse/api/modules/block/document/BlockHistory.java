@@ -11,6 +11,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.UUID;
 
 @Document(collection = "block_histories")
 @CompoundIndexes({
@@ -27,8 +28,8 @@ public class BlockHistory {
     @Id
     private String id;
 
-    private String blockId;
-    private String noteId;
+    private UUID blockId;
+    private UUID noteId;
     private int slotNumber;
 
     private Map<String, Object> properties;
