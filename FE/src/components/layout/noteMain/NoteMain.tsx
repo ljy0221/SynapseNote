@@ -14,6 +14,7 @@ interface NoteMainProps {
     onAddBlockAtEnd: (type: BlockType) => void;  // 새로 추가
     onDeleteBlock: (id: number) => void;
     onFocusBlock: (id: number) => void;
+    focusedBlockId: number | null; // [추가]
     onMoveBlock: (dragIndex: number, hoverIndex: number) => void;
     titleInputRef?: React.RefObject<HTMLInputElement>;
 }
@@ -26,6 +27,7 @@ const NoteMain: React.FC<NoteMainProps> = ({
     onAddBlockAtEnd,  // 새로 추가
     onDeleteBlock,
     onFocusBlock,
+    focusedBlockId, // [추가]
     onMoveBlock,
     titleInputRef
 }) => {
@@ -50,6 +52,7 @@ const NoteMain: React.FC<NoteMainProps> = ({
             onDragStart: (e: React.DragEvent) => onDragStart(e, index),
             onDragOver: onDragOver,
             onDrop: () => onDrop(index),
+            isFocused: block.id === focusedBlockId, // [추가] 포커스 여부 전달
         };
         switch (block.type) {
             case 'text':
