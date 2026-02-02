@@ -6,7 +6,6 @@ import { setupWSConnection, setPersistence } from "y-websocket/bin/utils";
 import { registerDoc } from "../doc/docManager";
 
 import { loadEnv } from "../config/env";
-import connectionManager, { UserContext } from "./connectionManager";
 
 function configurePersistence() {
   setPersistence({
@@ -24,8 +23,8 @@ function configurePersistence() {
   });
 }
 
-// Spring Boot Authentication Logic - Returns UserContext on success
-async function authenticate(req: IncomingMessage): Promise<UserContext | null> {
+// Spring Boot Authentication Logic
+async function authenticate(req: IncomingMessage): Promise<boolean> {
   const env = loadEnv();
   const url = req.url || "";
 
@@ -38,7 +37,7 @@ async function authenticate(req: IncomingMessage): Promise<UserContext | null> {
 
   if (!token) {
     console.log("[AUTH] No token provided in query params");
-    return null;
+    return false;
   }
 
   // Ensure Bearer prefix for logic consistency
@@ -49,7 +48,7 @@ async function authenticate(req: IncomingMessage): Promise<UserContext | null> {
 
   if (!noteId) {
     console.log("[AUTH] No noteId found in URL");
-    return null;
+    return false;
   }
 
   try {
@@ -64,32 +63,21 @@ async function authenticate(req: IncomingMessage): Promise<UserContext | null> {
     });
 
     if (response.ok) {
-      const json = (await response.json()) as {
-        data: {
-          ticket: string;
-          memberId: string;
-          memberName: string;
-        };
-      };
+      const json = (await response.json()) as { data: { ticket: string } };
 
       if (json.data && json.data.ticket) {
-        return {
-          memberId: json.data.memberId,
-          memberName: json.data.memberName,
-          noteId: noteId,
-          connectedAt: new Date(),
-        };
+        return true;
       } else {
         console.error(`[AUTH] Invalid response structure from Spring:`, json);
-        return null;
+        return false;
       }
     } else {
       console.log(`[AUTH] Failed: ${response.status} ${response.statusText}`);
-      return null;
+      return false;
     }
   } catch (err) {
     console.error(`[AUTH] Error connecting to Spring:`, err);
-    return null;
+    return false;
   }
 }
 
@@ -113,23 +101,15 @@ export function createWSServer({
     const url = req.url || "unknown";
     console.log("[WS] Connection request:", url);
 
-    const userContext = await authenticate(req);
+    const isAuthenticated = await authenticate(req);
 
-    if (!userContext) {
+    if (!isAuthenticated) {
       conn.close(1008, "Authentication Failed");
       return;
     }
 
-    // Store user context in connection manager
-    connectionManager.setContext(conn, userContext);
-
-    const noteId = userContext.noteId;
+    const noteId = url.split("?")[0].replace(/^\//, "");
     setupWSConnection(conn, req, { docName: noteId, gc: true });
-
-    // Remove context on disconnect
-    conn.on("close", () => {
-      connectionManager.removeContext(conn);
-    });
   });
 
   server.listen(port, host, () => {
