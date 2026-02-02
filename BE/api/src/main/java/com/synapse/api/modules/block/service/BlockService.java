@@ -7,7 +7,6 @@ import com.synapse.api.modules.block.repository.BlockRepository;
 import com.synapse.api.modules.note.dto.request.ExecutionHistoryRequest;
 import com.synapse.api.modules.note.dto.response.ExecutionHistoryResponse;
 import com.synapse.api.modules.note.entity.Note;
-import com.synapse.api.modules.note.entity.NoteRole;
 import com.synapse.api.modules.note.repository.NoteMemberRepository;
 import com.synapse.api.modules.note.repository.NoteRepository;
 import com.synapse.api.util.exception.BusinessException;
@@ -148,7 +147,7 @@ public class BlockService {
         if (note.getCreatedBy().getId().equals(memberId)) return;
 
         // 노트 멤버인 경우
-        NoteRole role = noteMemberRepository.findRoleByNoteIdAndMemberId(noteId, memberId)
+        noteMemberRepository.findRoleByNoteIdAndMemberId(noteId, memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_ACCESS_DENIED));
     }
 

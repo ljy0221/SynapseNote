@@ -144,7 +144,7 @@ class BlockServiceTest {
     @DisplayName("즐겨찾기된 블록이 없으면 빈 페이지를 반환한다")
     void getBookmarkedBlocks_EmptyResult() {
         // given
-        UUID noteId = UUID.randomUUID();;
+        UUID noteId = UUID.randomUUID();
         int page = 0;
         int size = 10;
 
