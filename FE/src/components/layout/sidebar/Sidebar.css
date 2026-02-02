@@ -8,6 +8,13 @@
   --side-menu-width: 70px;
 }
 
+.sidebar-content {
+  flex: 1;                 /* 남은 영역 전부 차지 */
+  overflow-y: auto;        /* 세로 스크롤 */
+  overflow-x: hidden;      /* 가로 스크롤 차단 */
+  padding-bottom: 50px;
+}
+
 /* =========================
    Sidebar Wrapper
    (SideMenuBar 오른쪽에만 존재)
@@ -35,8 +42,9 @@
   left: 0;
 
   width: var(--sidebar-width);
-  height: 100%;
-
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
   background-color: var(--color-main);
   border-right: 1px solid var(--color-sub);
 
@@ -60,6 +68,9 @@
 
   overflow-y: auto;
   overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 /* =========================

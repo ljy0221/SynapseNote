@@ -2,6 +2,7 @@
 import { useEffect, useRef } from 'react';
 import './ContextMenu.css';
 import { ContextMenuState } from '../../../types/sidebar/ContextMenu';
+import { Pencil, Trash2, FolderPlus, FolderInput } from 'lucide-react';
 
 interface Props {
   state: ContextMenuState;
@@ -9,6 +10,7 @@ interface Props {
   onDeleteNote: (noteId: string) => void;
   onCreateNote: (directoryPath: string) => void;
   onRenameNote: (noteId: string) => void;
+  onMoveNote: (noteId: string, directoryPath: string) => void; // ⭐ 추가
 }
 
 export default function ContextMenu({
@@ -17,6 +19,7 @@ export default function ContextMenu({
   onDeleteNote,
   onCreateNote,
   onRenameNote,
+  onMoveNote,
 }: Props) {
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -64,40 +67,15 @@ export default function ContextMenu({
             onClose();
           }}
         >
-          ➕ 이 위치에 새 노트
+          <FolderPlus size={16} />
+          <span>이 위치에 새 노트</span>
         </div>
       )}
 
       {/*  노트 메뉴 */}
       {state.type === 'NOTE' && state.targetId && (
-        // 노트 제목 수정
-        <div
-            className="context-menu-item"
-            onMouseDown={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-            }}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-
-              if (state.targetId.startsWith('temp-')) return;
-
-              console.log(
-                '[ContextMenu] rename note',
-                state.targetId
-              );
-              onRenameNote(state.targetId);
-              onClose();
-            }}
-          >
-            ✏️ 노트 제목 수정
-          </div>
-      )}
-      {state.type === 'NOTE' && state.targetId && (
         <div
           className="context-menu-item"
-          //  핵심: mousedown 단계에서 기본 동작 차단
           onMouseDown={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -106,32 +84,61 @@ export default function ContextMenu({
             e.preventDefault();
             e.stopPropagation();
 
-            if (!state.targetId) {
-              console.warn(
-                '[ContextMenu] delete blocked: targetId missing'
-              );
-              return;
-            }
+            if (state.targetId.startsWith('temp-')) return;
 
-            if (state.targetId.startsWith('temp-')) {
-              console.warn(
-                '[ContextMenu] delete blocked: temp note',
-                state.targetId
-              );
-              return;
-            }
+            onRenameNote(state.targetId);
+            onClose();
+          }}
+        >
+          <Pencil size={16} />
+          <span>노트 제목 수정</span>
+        </div>
+      )}
 
-            console.log(
-              '[ContextMenu] delete note',
-              state.targetId
-            );
+      {state.type === 'NOTE' && state.targetId && (
+        <div
+          className="context-menu-item"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (!state.targetId || state.targetId.startsWith('temp-')) return;
+
             onDeleteNote(state.targetId);
             onClose();
           }}
         >
-          ❌ 노트 삭제
+          <Trash2 size={16} />
+          <span>노트 삭제</span>
         </div>
       )}
+      {/* 노트 위치 변경 */}
+      {state.type === 'NOTE' && state.targetId && (
+        <div
+          className="context-menu-item"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (state.targetId.startsWith('temp-')) return;
+
+            onMoveNote(state.targetId, state.directoryPath);
+            onClose();
+          }}
+        >
+          <FolderInput size={16} />
+          <span>노트 위치 변경</span>
+        </div>
+      )}
+
     </div>
   );
 }
