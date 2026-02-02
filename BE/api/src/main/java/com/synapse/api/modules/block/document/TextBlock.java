@@ -16,8 +16,8 @@ public class TextBlock extends BaseBlock {
     private TextProperties properties;
 
     @Override
-    public String getType() {
-        return "text";
+    public BlockType getType() {
+        return BlockType.TEXT;
     }
 
     @Getter

@@ -1,6 +1,7 @@
 package com.synapse.api.modules.block.dto.response;
 
 import com.synapse.api.modules.block.document.BaseBlock;
+import com.synapse.api.modules.block.document.BlockType;
 import com.synapse.api.modules.block.document.CodeBlock;
 import com.synapse.api.modules.block.document.TextBlock;
 import lombok.Builder;
@@ -13,7 +14,7 @@ public record BlockResponse(
         UUID blockId,
         UUID noteId,
         String notePath,
-        String type,
+        BlockType type,
         Object content, // CodeBlock.CodeProperties or TextBlock.TextProperties
         boolean bookmark,
         Double order,
