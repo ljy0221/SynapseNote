@@ -97,6 +97,6 @@ public class BlockResponseMapper {
                     .build();
         }
 
-        throw new BusinessException(ErrorCode.UNSUPPORTED_BLOCK_TYPE);
+        throw new BusinessException(ErrorCode.INVALID_ENUM_TYPE);
     }
 }
