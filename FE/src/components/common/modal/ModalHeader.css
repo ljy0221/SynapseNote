@@ -3,15 +3,17 @@
 .modal-header-container {
     width: 100%;
     display: flex;
-    justify-content: flex-end;
-    /* 우측 정렬 */
-    margin-bottom: 20px;
-    padding-bottom: 10px;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    padding-bottom: 12px;
     border-bottom: 1px solid var(--color-border);
+    gap: 12px;
 }
 
 .modal-header-controls {
     display: flex;
+    align-items: center;
     gap: 8px;
 }
 
@@ -22,30 +24,15 @@
     border: none;
     padding: 0;
     cursor: default;
-    /* 기본적으로 비활성 커서 */
     position: relative;
     transition: filter 0.2s ease, transform 0.1s ease;
 }
 
-/* 맥 표준 신호등 색상 */
+/* 맥 표준 신호등 색상 - 닫기(레드) */
 .modal-control-btn.close {
     background-color: #ff5f56;
-    /* 레드 */
     border: 0.5px solid #e0443e;
     cursor: pointer;
-    /* 닫기만 활성 */
-}
-
-.modal-control-btn.minimize {
-    background-color: #e0e0e0;
-    /* 비활성 회색 (혹은 #ffbd2e 유지하되 흐리게) */
-    border: 0.5px solid #d0d0d0;
-}
-
-.modal-control-btn.maximize {
-    background-color: #e0e0e0;
-    /* 비활성 회색 (혹은 #27c93f 유지하되 흐리게) */
-    border: 0.5px solid #d0d0d0;
 }
 
 .modal-control-btn.close:hover {
@@ -55,4 +42,30 @@
 .modal-control-btn.close:active {
     transform: scale(0.9);
     filter: brightness(0.8);
+}
+
+/* 주소창 스타일 */
+.modal-address-bar {
+    flex: 1;
+    background-color: var(--color-sub);
+    border-radius: 6px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 0.7rem;
+    color: var(--font-color-sub);
+    padding: 0 8px;
+    user-select: none;
+    cursor: default;
+}
+
+.address-bar-icon {
+    opacity: 0.7;
+}
+
+.address-bar-url {
+    font-family: inherit;
+    font-weight: 400;
 }

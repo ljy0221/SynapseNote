@@ -1,4 +1,3 @@
-// FE/src/pages/note/Note.tsx
 import React, { useState, useRef } from 'react';
 import NoteButton from "../../components/common/noteButton/NoteButton";
 import NoteMain from "../../components/layout/noteMain/NoteMain";
@@ -42,7 +41,12 @@ const Note: React.FC = () => {
         const index = blocks.findIndex(b => b.id === afterId);
         const newBlocks = [...blocks];
         newBlocks.splice(index + 1, 0, newBlock);
+
+        // 블록 추가
         setBlocks(newBlocks);
+
+        // (선택사항) UX 향상: 새로 생성된 블록으로 포커스를 이동하려면 아래 주석 해제
+        // setFocusedBlockId(newBlock.id); 
     };
 
     // 마지막에 블록 추가하는 함수 (하단 툴바용)
@@ -58,6 +62,73 @@ const Note: React.FC = () => {
                 language: type === 'code' ? 'javascript' : undefined,
             };
             setBlocks([newBlock]);
+            // (선택사항) UX 향상
+            // setFocusedBlockId(newBlock.id);
+        }
+    };
+
+    // -------------------------------------------------------------
+    // [추가] 단축키 핸들러 로직 (제언)
+    // -------------------------------------------------------------
+    const handleShortcutCreate = (type: BlockType) => {
+        if (focusedBlockId !== null) {
+            // 포커스 된 블록이 있다면 그 바로 뒤에 추가
+            addBlockAfter(focusedBlockId, type);
+        } else {
+            // 포커스 된 블록이 없다면 맨 마지막에 추가
+            handleAddBlockAtEnd(type);
+        }
+    };
+
+    // [변경] useEffect 제거 및 컴포넌트 핸들러로 변경
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+        if (e.nativeEvent.isComposing) return;
+
+        // [기존] 블록 생성 단축키 (Alt + 1, Alt + 2)
+        if (e.altKey && (e.key === '1' || e.key === '2')) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (e.key === '1') handleShortcutCreate('text');
+            if (e.key === '2') handleShortcutCreate('code');
+            return;
+        }
+
+        // ---------------------------------------------------------
+        // [개선됨] 블록 삭제 단축키: Shift + Delete (또는 Backspace)
+        // ---------------------------------------------------------
+        if (e.shiftKey && (e.key === 'Delete' || e.key === 'Backspace')) {
+            // 포커스된 블록이 있고, 블록이 2개 이상일 때만 삭제 허용
+            if (focusedBlockId !== null && blocks.length > 1) {
+
+                // [추가] 텍스트 입력 중인지 확인 (커서가 0이 아니면 삭제 취소)
+                const selection = window.getSelection();
+                if (selection && selection.anchorOffset !== 0) {
+                    return;
+                }
+
+                e.preventDefault();
+                e.stopPropagation();
+
+                // 1. 삭제 대상 인덱스 찾기
+                const currentIndex = blocks.findIndex(b => b.id === focusedBlockId);
+                if (currentIndex === -1) return;
+
+                // 2. 포커스 이동할 대상 찾기 (이전 블록 우선, 없으면 다음 블록)
+                let nextFocusId: number | null = null;
+                if (currentIndex > 0) {
+                    nextFocusId = blocks[currentIndex - 1].id;
+                } else if (blocks.length > 1) {
+                    nextFocusId = blocks[currentIndex + 1].id;
+                }
+
+                // 3. 블록 삭제
+                setBlocks(prevBlocks => prevBlocks.filter(b => b.id !== focusedBlockId));
+
+                // 4. 포커스 이동
+                if (nextFocusId) {
+                    setFocusedBlockId(nextFocusId);
+                }
+            }
         }
     };
 
@@ -121,7 +192,12 @@ const Note: React.FC = () => {
                     </div>
                 </>
             ) : (
-                <div className="editing-layout-wrapper">
+                <div
+                    className="editing-layout-wrapper"
+                    tabIndex={-1}
+                    onKeyDown={handleKeyDown}
+                    style={{ outline: 'none' }}
+                >
                     <NoteMain
                         title={title}
                         onUpdateTitle={setTitle}
@@ -131,6 +207,7 @@ const Note: React.FC = () => {
                         onAddBlockAtEnd={handleAddBlockAtEnd}
                         onDeleteBlock={deleteBlock}
                         onFocusBlock={setFocusedBlockId}
+                        focusedBlockId={focusedBlockId} // [추가] 포커스 ID 전달
                         onMoveBlock={handleMoveBlock}
                         titleInputRef={titleInputRef}
                     />

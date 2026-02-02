@@ -21,6 +21,7 @@ interface CodeBlockProps {
     onDragStart?: (e: React.DragEvent) => void;
     onDragOver?: (e: React.DragEvent) => void;
     onDrop?: (e: React.DragEvent) => void;
+    isFocused?: boolean; // [추가]
 }
 
 function getDefaultVersion(language: Language): string {
@@ -43,7 +44,8 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     draggable,
     onDragStart,
     onDragOver,
-    onDrop
+    onDrop,
+    isFocused // [추가]
 }) => {
     const [result, setResult] = useState<ExecutionResult | null>(null);
     const [loading, setLoading] = useState(false);
@@ -55,6 +57,13 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    // [추가] 포커스 트리거
+    useEffect(() => {
+        if (isFocused && textareaRef.current) {
+            textareaRef.current.focus();
+        }
+    }, [isFocused]);
 
     useEffect(() => {
         if (textareaRef.current) {
