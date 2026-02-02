@@ -4,10 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { WithdrawalModal } from './WithdrawalModal';
 import { ModalHeader } from './ModalHeader';
 import { getStreakApi } from '../../../api/streak/Streak.api';
-import { updateNickname } from '../../../api/authApi';
 import { calculateStreakCount } from '../../features/streakCount/streakcount';
-import { useToast } from '../../../context/ToastContext';
-import { useUser } from '../../../context/UserContext';
+import { useToastStore } from '../../../store/useToastStore';
+import { useAuthStore } from '../../../store/useAuthStore';
 import './UserProfileModal.css';
 
 interface UserProfileModalProps {
@@ -22,8 +21,11 @@ interface UserProfileModalProps {
 
 export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, user }) => {
     const modalRef = useRef<HTMLDivElement>(null);
-    const { showToast } = useToast();
-    const { refreshUserInfo } = useUser();
+
+    // Selector 최적화
+    const showToast = useToastStore((state) => state.showToast);
+    const logout = useAuthStore((state) => state.logout);
+    const updateUserNickname = useAuthStore((state) => state.updateUserNickname);
 
     // 모달 외부 클릭 시 닫기
     useEffect(() => {
@@ -74,17 +76,12 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
         }
 
         try {
-            const token = localStorage.getItem('authToken');
-            if (token) {
-                await updateNickname(token, tempName);
-                await refreshUserInfo(); // 전역 상태 업데이트
-                showToast('닉네임이 변경되었습니다.');
-            }
-        } catch (error) {
-            console.error('Failed to update nickname:', error);
-            showToast('닉네임 변경에 실패했습니다.');
-        } finally {
+            await updateUserNickname(tempName);
+            // 성공 시 스토어 내부에서 토스트 출력됨
             setIsEditing(false);
+        } catch (error) {
+            // 에러 시 스토어 내부에서 에러 로그 및 throw
+            showToast('닉네임 변경에 실패했습니다.', 'error');
         }
     };
 
@@ -100,14 +97,11 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
     const navigate = useNavigate();
 
     const handleLogout = () => {
-        // 토큰 삭제
-        localStorage.removeItem('authToken');
-        // RefreshToken은 HttpOnly Cookie로 관리되므로 클라이언트에서 삭제 불가 (브라우저 정책 따름)
+        logout(); // Store action
 
         // 로그인 페이지로 이동
         navigate('/login');
         onClose();
-        showToast('로그아웃 되었습니다.');
     };
 
     const handleConfirmWithdraw = () => {
