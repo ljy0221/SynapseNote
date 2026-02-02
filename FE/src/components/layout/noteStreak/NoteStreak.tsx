@@ -2,11 +2,14 @@
 import React,{ useMemo } from 'react';
 import './NoteStreak.css';
 import { calculateStreakCount } from '../../features/streakCount/streakcount';
-import type { GetStreakResponse } from '../../../types/note/GetStreak';
 
+// NoteStreak.tsx
 interface NoteStreakProps {
-  streak: GetStreakResponse;
+  streak: {
+    dates: string[]; // streak인 날짜만
+  };
 }
+
 
 /** 로컬 기준 날짜 포맷 */
 const formatDate = (date: Date) => {

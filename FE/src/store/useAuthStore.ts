@@ -29,10 +29,13 @@ export const useAuthStore = create<AuthState>()(
             isLoading: true, // Initial loading state
             isAuthenticated: false,
 
-            login: async (token: string) => {
+            login: async (token: string, memberId?: string) => {
                 set({ isLoading: true });
                 try {
                     localStorage.setItem('authToken', token);
+                    if (memberId) {
+                        localStorage.setItem('memberId', memberId);
+                    }
                     const info = await getUserInfo(token);
                     set({ userInfo: info, isAuthenticated: true, isLoading: false });
                 } catch (error) {
@@ -57,10 +60,12 @@ export const useAuthStore = create<AuthState>()(
                 try {
                     const info = await getUserInfo(token);
                     set({ userInfo: info, isAuthenticated: true, isLoading: false });
+
                 } catch (error) {
                     // Token might be expired
                     console.error('Refresh user info failed:', error);
                     localStorage.removeItem('authToken');
+                    localStorage.removeItem('memberId');
                     set({ userInfo: null, isAuthenticated: false, isLoading: false });
                     useToastStore.getState().showToast('세션이 만료되었습니다.', 'error');
                 }

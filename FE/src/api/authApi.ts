@@ -2,6 +2,7 @@
 
 export interface LoginResult {
     accessToken: string;
+    memberId: number;
 }
 
 export const socialLogin = async (provider: string, code: string): Promise<LoginResult> => {
@@ -28,6 +29,7 @@ export const socialLogin = async (provider: string, code: string): Promise<Login
 };
 
 export interface UserInfo {
+    memberId: string;
     email: string;
     name: string;
     provider: string;
