@@ -3,7 +3,7 @@ import type { NoteListItem } from '../../types/note/GetNotes';
 import dayjs from 'dayjs';
 
 export const adaptNotesForSidebar = (res: GetNotesResponse): NoteListItem[] => {
-  console.log('변환 전:', res.content[0].createdAt, '변환 후:', dayjs(res.content[0].createdAt).valueOf());
+
   return res.content.map(note => ({
     noteId: note.noteId,
     memberId: note.memberId,
