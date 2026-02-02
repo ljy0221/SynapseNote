@@ -1,5 +1,5 @@
 // src/components/layout/sidebar/Sidebar.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import './Sidebar.css';
 import { Plus } from 'lucide-react';
 
@@ -56,6 +56,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [contextMenu, setContextMenu] =
     useState<ContextMenuState>({ visible: false });
 
+  /** Pagination states */
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const observerTarget = useRef<HTMLDivElement>(null);
+
   /** rename 상태 */
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
 
@@ -96,31 +102,75 @@ export const Sidebar: React.FC<SidebarProps> = ({
   /**
    * Sidebar 단일 진실 소스
    */
-  const fetchSidebarData = async () => {
-    setIsLoading(true);
+  const fetchSidebarData = useCallback(async (targetPage: number = 1) => {
+    if (targetPage === 1) {
+      setIsLoading(true);
+    } else {
+      setIsFetchingMore(true);
+    }
+
     try {
       const [notesRes, bookmarksRes] = await Promise.all([
-        getNotesApi(),
-        getBookmarksApi(),
+        getNotesApi({ page: targetPage }),
+        targetPage === 1 ? getBookmarksApi() : Promise.resolve(null),
       ]);
 
-      setNotes(adaptNotesForSidebar(notesRes));
-      setFavoriteNoteIds(adaptBookmarkIds(bookmarksRes));
+      const newNotes = adaptNotesForSidebar(notesRes);
+
+      setNotes(prev => {
+        if (targetPage === 1) return newNotes;
+
+        // 중복 방지: 기존 노트 ID와 겹치지 않는 것만 추가
+        const existingIds = new Set(prev.map(n => n.noteId));
+        const uniqueNewNotes = newNotes.filter(n => !existingIds.has(n.noteId));
+        return [...prev, ...uniqueNewNotes];
+      });
+
+      if (bookmarksRes) {
+        setFavoriteNoteIds(adaptBookmarkIds(bookmarksRes));
+      }
+
+      setHasMore(notesRes.currentPage < notesRes.totalPages);
+      setPage(notesRes.currentPage);
     } finally {
       setIsLoading(false);
+      setIsFetchingMore(false);
     }
-  };
+  }, []);
+
+  /**
+   * 무한 스크롤 관찰기
+   */
+  useEffect(() => {
+    if (isLoading || !hasMore || isFetchingMore) return;
+
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0].isIntersecting) {
+          fetchSidebarData(page + 1);
+        }
+      },
+      { threshold: 1.0 }
+    );
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
+
+    return () => observer.disconnect();
+  }, [isLoading, hasMore, isFetchingMore, page, fetchSidebarData]);
 
   /**
    * 최초 로딩 + 이벤트 구독
    */
   useEffect(() => {
-    fetchSidebarData();
-    window.addEventListener(NOTES_CHANGED_EVENT, fetchSidebarData);
+    fetchSidebarData(1);
+    const handleNotesChanged = () => fetchSidebarData(1);
+    window.addEventListener(NOTES_CHANGED_EVENT, handleNotesChanged);
     return () => {
-      window.removeEventListener(NOTES_CHANGED_EVENT, fetchSidebarData);
+      window.removeEventListener(NOTES_CHANGED_EVENT, handleNotesChanged);
     };
-  }, []);
+  }, [fetchSidebarData]);
 
   /**
    * 노트 선택 → URL 변경
@@ -265,16 +315,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
           ) : (
             <div className="sidebar-content">
               <NoteDirectory
-                  node={noteTree}
-                  activeNoteId={activeNoteId}
-                  favoriteNoteIds={favoriteNoteIds}
-                  editingNoteId={editingNoteId}
-                  onSelectNote={handleSelectNote}
-                  onToggleFavorite={handleToggleFavorite}
-                  onContextMenu={setContextMenu}
-                  onConfirmRename={handleConfirmRename}
-                  onCancelRename={handleCancelRename}
-                  />
+                node={noteTree}
+                activeNoteId={activeNoteId}
+                favoriteNoteIds={favoriteNoteIds}
+                editingNoteId={editingNoteId}
+                onSelectNote={handleSelectNote}
+                onToggleFavorite={handleToggleFavorite}
+                onContextMenu={setContextMenu}
+                onConfirmRename={handleConfirmRename}
+                onCancelRename={handleCancelRename}
+              />
+
+              {/* 무한 스크롤 트리거 & 로딩 표시 */}
+              <div ref={observerTarget} className="sidebar-load-more">
+                {isFetchingMore && <div className="spinner-small" />}
+              </div>
             </div>
           )}
         </div>
