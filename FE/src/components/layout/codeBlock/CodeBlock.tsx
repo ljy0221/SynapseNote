@@ -4,7 +4,7 @@ import VersionButton from '../../common/versionButton/VersionButton';
 import BlockRunButton from '../../common/blockRunButton/BlockRunButton';
 import BlockCopyButton from '../../common/blockCopyButton/BlockCopyButton';
 import BlockDeleteButton from '../../common/blockDeleteButton/BlockDeleteButton';
-import type { Language, ExecutionResult, ExecutionMode, SessionInfo, SessionExecutionResult } from '../../../types/execution/ExecutionTypes';
+import type { Language, ExecutionResult, ExecutionMode, SessionInfo } from '../../../types/execution/ExecutionTypes';
 import './CodeBlock.css';
 import { saveExecutionToBackend } from "../../../utils/executionAPI.ts";
 import { LanguageSelector } from "./LanguageSelector.tsx";
