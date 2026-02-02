@@ -4,8 +4,6 @@ import lombok.Builder;
 
 @Builder
 public record WsAuthResponse(
-        String ticket,
-        String memberId,
-        String memberName
+        String ticket
 ) {
 }
