@@ -174,14 +174,13 @@ public class NoteController {
         return StatusResponse.of();
     }
 
-    @GetMapping("/v1/notes/{noteId}/blocks/bookmarks")
+    @GetMapping("/v1/notes/blocks")
     public DataResponse<BlockPageResponse> getBlockBookmarks(
             @AuthenticationPrincipal CustomMemberDetails details,
-            @PathVariable UUID noteId,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
         UUID memberId = details.id();
-        BlockPageResponse response = noteService.getBlockBookmarks(memberId, noteId, page - 1, size);
+        BlockPageResponse response = blockService.getAllBookmarkedBlocks(memberId, page - 1, size);
         return DataResponse.of(response);
     }
 
@@ -191,5 +190,4 @@ public class NoteController {
         List<BlockDetailResponse> response = blockService.getBlocks(details.id(), noteId);
         return DataResponse.of(response);
     }
-
 }

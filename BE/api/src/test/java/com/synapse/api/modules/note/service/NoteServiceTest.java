@@ -23,6 +23,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -197,16 +198,11 @@ class NoteServiceTest {
                 UUID noteId = UUID.randomUUID();
                 int page = 0;
                 int size = 10;
-                Member member = Member.builder().id(userId).build();
-                Note note = Note.builder()
-                                .id(noteId)
-                                .createdBy(member)
-                                .directoryPath("/projects/backend")
-                                .build();
 
                 CodeBlock codeBlock = CodeBlock.builder()
                                 .blockId(UUID.randomUUID())
                                 .noteId(noteId)
+                                .ownerId(userId)
                                 .bookmark(true)
                                 .order(1.0)
                                 .properties(CodeBlock.CodeProperties.builder()
@@ -219,12 +215,13 @@ class NoteServiceTest {
 
                 List<BaseBlock> blocks = List.of(codeBlock);
                 Page<BaseBlock> blockPage = new PageImpl<>(blocks, PageRequest.of(page, size), blocks.size());
+                BlockPageResponse expectedResponse = BlockPageResponse.from(blockPage,
+                                Map.of(noteId, "/projects/backend"));
 
-                given(noteRepository.findById(noteId)).willReturn(Optional.of(note));
-                given(blockService.getBookmarkedBlocks(noteId, page, size)).willReturn(blockPage);
+                given(blockService.getAllBookmarkedBlocks(userId, page, size)).willReturn(expectedResponse);
 
                 // when
-                BlockPageResponse response = noteService.getBlockBookmarks(userId, noteId, page, size);
+                BlockPageResponse response = blockService.getAllBookmarkedBlocks(userId, page, size);
 
                 // then
                 assertThat(response.content()).hasSize(1);
@@ -234,6 +231,6 @@ class NoteServiceTest {
                 assertThat(response.content().get(0).notePath()).isEqualTo("/projects/backend");
                 assertThat(response.content().get(0).bookmark()).isTrue();
 
-                verify(blockService).getBookmarkedBlocks(noteId, page, size);
+                verify(blockService).getAllBookmarkedBlocks(userId, page, size);
         }
 }

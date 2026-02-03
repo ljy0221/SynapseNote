@@ -9,6 +9,7 @@ import lombok.experimental.SuperBuilder;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -34,6 +35,9 @@ public abstract class BaseBlock {
         @Indexed
         private UUID noteId; // PostgreSQL Note ID (UUID.toString())
 
+        @Indexed
+        private UUID ownerId; // Note owner's ID (from Note.createdBy.id)
+
         @Indexed(unique = true)
         private UUID blockId; // Yjs/Frontend UUID
 
@@ -47,6 +51,8 @@ public abstract class BaseBlock {
         @LastModifiedDate
         private LocalDateTime updatedAt;
 
+        private LocalDateTime deletedAt;
+
         // DB에는 저장하지 않고, JSON 응답에만 포함 (하위 클래스에서 구현)
         public abstract BlockType getType();
 
@@ -58,5 +64,10 @@ public abstract class BaseBlock {
         // 북마크 해제
         public void unBookmark() {
                 this.bookmark = false;
+        }
+
+        // Soft Delete
+        public void delete() {
+                this.deletedAt = LocalDateTime.now();
         }
 }
