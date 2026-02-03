@@ -12,7 +12,7 @@ export interface NoteMember {
 
 /** 노트 상세 응답 data */
 export interface GetNoteDetailResponse {
-  noteId: string;
+  id: string;
   title: string;
   invitationUrl: string;
   directoryPath: string;
@@ -22,4 +22,6 @@ export interface GetNoteDetailResponse {
 
   createdAt: string;
   updatedAt: string;
+
+  blocks: any[]; // [추가] NoteDetail 에 이미 블록이 포함되어 있음
 }

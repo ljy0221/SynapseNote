@@ -3,7 +3,11 @@ package com.synapse.api.modules.member.entity;
 import com.synapse.api.modules.member.dto.oauth.OAuthProvider;
 import com.synapse.api.util.entity.BaseEntity;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.UuidGenerator;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.util.UUID;
@@ -18,7 +22,8 @@ import java.util.UUID;
 public class OAuthAccount extends BaseEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue
+    @UuidGenerator(style = UuidGenerator.Style.TIME)
     @Column(columnDefinition = "uuid")
     private UUID id;
 

@@ -4,16 +4,17 @@ import com.synapse.api.modules.block.document.BaseBlock;
 import com.synapse.api.modules.block.document.CodeBlock;
 import com.synapse.api.modules.block.dto.response.BlockPageResponse;
 import com.synapse.api.modules.block.service.BlockService;
+import com.synapse.api.modules.member.entity.Member;
 import com.synapse.api.modules.note.dto.response.NotePageResponse;
 import com.synapse.api.modules.note.entity.Note;
 import com.synapse.api.modules.note.repository.NoteMemberRepository;
 import com.synapse.api.modules.note.repository.NoteRepository;
-import com.synapse.api.modules.member.entity.Member;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -22,11 +23,11 @@ import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -46,6 +47,9 @@ class NoteServiceTest {
 
         @Mock
         private BlockService blockService;
+
+        @Spy
+        private NoteValidator noteValidator = new NoteValidator(noteRepository, noteMemberRepository);
 
         @Test
         @DisplayName("노트 즐겨찾기를 설정한다")
@@ -146,7 +150,7 @@ class NoteServiceTest {
                 // given
                 UUID userId = UUID.randomUUID();
                 UUID noteId = UUID.randomUUID();
-                String blockId = "block-uuid-001";
+                UUID blockId = UUID.randomUUID();
                 Member member = Member.builder().id(userId).build();
                 Note note = Note.builder()
                                 .id(noteId)
@@ -160,7 +164,7 @@ class NoteServiceTest {
                 noteService.bookmarkBlock(userId, noteId, blockId);
 
                 // then
-                verify(blockService).bookmarkBlock(blockId, noteId.toString());
+                verify(blockService).bookmarkBlock(blockId, noteId);
         }
 
         @Test
@@ -169,7 +173,7 @@ class NoteServiceTest {
                 // given
                 UUID userId = UUID.randomUUID();
                 UUID noteId = UUID.randomUUID();
-                String blockId = "block-uuid-001";
+                UUID blockId = UUID.randomUUID();
                 Member member = Member.builder().id(userId).build();
                 Note note = Note.builder()
                                 .id(noteId)
@@ -183,7 +187,7 @@ class NoteServiceTest {
                 noteService.unbookmarkBlock(userId, noteId, blockId);
 
                 // then
-                verify(blockService).unbookmarkBlock(blockId, noteId.toString());
+                verify(blockService).unbookmarkBlock(blockId, noteId);
         }
 
         @Test
@@ -194,16 +198,11 @@ class NoteServiceTest {
                 UUID noteId = UUID.randomUUID();
                 int page = 0;
                 int size = 10;
-                Member member = Member.builder().id(userId).build();
-                Note note = Note.builder()
-                                .id(noteId)
-                                .createdBy(member)
-                                .directoryPath("/projects/backend")
-                                .build();
 
                 CodeBlock codeBlock = CodeBlock.builder()
-                                .blockId("block-uuid-001")
-                                .noteId(noteId.toString())
+                                .blockId(UUID.randomUUID())
+                                .noteId(noteId)
+                                .ownerId(userId)
                                 .bookmark(true)
                                 .order(1.0)
                                 .properties(CodeBlock.CodeProperties.builder()
@@ -216,21 +215,22 @@ class NoteServiceTest {
 
                 List<BaseBlock> blocks = List.of(codeBlock);
                 Page<BaseBlock> blockPage = new PageImpl<>(blocks, PageRequest.of(page, size), blocks.size());
+                BlockPageResponse expectedResponse = BlockPageResponse.from(blockPage,
+                                Map.of(noteId, "/projects/backend"));
 
-                given(noteRepository.findById(noteId)).willReturn(Optional.of(note));
-                given(blockService.getBookmarkedBlocks(noteId.toString(), page, size)).willReturn(blockPage);
+                given(blockService.getAllBookmarkedBlocks(userId, page, size)).willReturn(expectedResponse);
 
                 // when
-                BlockPageResponse response = noteService.getBlockBookmarks(userId, noteId, page, size);
+                BlockPageResponse response = blockService.getAllBookmarkedBlocks(userId, page, size);
 
                 // then
                 assertThat(response.content()).hasSize(1);
                 assertThat(response.currentPage()).isEqualTo(1); // 1-based
                 assertThat(response.totalElements()).isEqualTo(1);
-                assertThat(response.content().get(0).noteId()).isEqualTo(noteId.toString());
+                assertThat(response.content().get(0).noteId()).isEqualTo(noteId);
                 assertThat(response.content().get(0).notePath()).isEqualTo("/projects/backend");
                 assertThat(response.content().get(0).bookmark()).isTrue();
 
-                verify(blockService).getBookmarkedBlocks(noteId.toString(), page, size);
+                verify(blockService).getAllBookmarkedBlocks(userId, page, size);
         }
 }

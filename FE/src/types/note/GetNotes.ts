@@ -9,8 +9,8 @@ export interface NoteListItem {
   pointX: number;
   pointY: number;
   role: 'OWNER' | 'EDITOR' | 'VIEWER';
-  createdAt: string;
-  updatedAt: string;
+  createdAt: number; // string -> number로 변경
+  updatedAt: number;
 }
 
 export interface GetNotesResponse {
