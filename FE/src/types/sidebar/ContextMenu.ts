@@ -7,6 +7,7 @@ export type ContextMenuState =
       y: number;
       type: 'NOTE';
       targetId: string;
+      directoryPath: string;
     }
   | {
       visible: true;

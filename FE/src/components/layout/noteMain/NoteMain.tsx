@@ -9,27 +9,29 @@ interface NoteMainProps {
     title: string;
     onUpdateTitle: (newTitle: string) => void;
     blocks: BlockData[];
-    onUpdateBlock: (id: number, content: string) => void;
-    onAddBlockAfter: (afterId: number, type: BlockType) => void;
-    onAddBlockAtEnd: (type: BlockType) => void;  // 새로 추가
-    onDeleteBlock: (id: number) => void;
-    onFocusBlock: (id: number) => void;
-    focusedBlockId: number | null; // [추가]
+    onUpdateBlock: (id: number | string, content: string) => void;
+    onAddBlockAfter: (afterId: number | string, type: BlockType) => void; // [추가]
+    onAddBlockAtEnd: (type: BlockType) => void;
+    onDeleteBlock: (id: number | string) => void;
+    onFocusBlock: (id: number | string) => void;
+    focusedBlockId: number | string | null; // [추가]
     onMoveBlock: (dragIndex: number, hoverIndex: number) => void;
     titleInputRef?: React.RefObject<HTMLInputElement>;
+    noteId?: string; // [추가]
 }
 const NoteMain: React.FC<NoteMainProps> = ({
     title,
     onUpdateTitle,
     blocks,
     onUpdateBlock,
-    onAddBlockAfter,
-    onAddBlockAtEnd,  // 새로 추가
+    onAddBlockAfter, // [추가]
+    onAddBlockAtEnd,
     onDeleteBlock,
     onFocusBlock,
-    focusedBlockId, // [추가]
+    focusedBlockId,
     onMoveBlock,
-    titleInputRef
+    titleInputRef,
+    noteId // [추가]
 }) => {
     // DnD 상태 관리
     const [dragIndex, setDragIndex] = React.useState<number | null>(null);
@@ -60,10 +62,10 @@ const NoteMain: React.FC<NoteMainProps> = ({
                     <TextBlock
                         key={block.id}
                         {...commonProps}
-                        id={block.id}
+                        id={block.id as any}
                         content={block.content}
-                        onUpdate={onUpdateBlock}
-                        onDelete={onDeleteBlock}
+                        onUpdate={onUpdateBlock as any}
+                        onDelete={onDeleteBlock as any}
                         onFocus={() => onFocusBlock(block.id)}
                     />
                 );
@@ -72,11 +74,12 @@ const NoteMain: React.FC<NoteMainProps> = ({
                     <CodeBlock
                         key={block.id}
                         {...commonProps}
-                        id={block.id}
+                        id={block.id as any}
+                        noteId={noteId} // [추가]
                         language={(block.language as any) || 'javascript'}
                         code={block.content}
-                        onDelete={onDeleteBlock}
-                        onChange={onUpdateBlock}
+                        onDelete={onDeleteBlock as any}
+                        onChange={onUpdateBlock as any}
                         onFocus={() => onFocusBlock(block.id)}
                     />
                 );

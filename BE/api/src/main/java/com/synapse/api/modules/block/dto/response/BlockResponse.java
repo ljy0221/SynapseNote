@@ -1,18 +1,20 @@
 package com.synapse.api.modules.block.dto.response;
 
 import com.synapse.api.modules.block.document.BaseBlock;
+import com.synapse.api.modules.block.document.BlockType;
 import com.synapse.api.modules.block.document.CodeBlock;
 import com.synapse.api.modules.block.document.TextBlock;
 import lombok.Builder;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Builder
 public record BlockResponse(
-        String blockId,
-        String noteId,
+        UUID blockId,
+        UUID noteId,
         String notePath,
-        String type,
+        BlockType type,
         Object content, // CodeBlock.CodeProperties or TextBlock.TextProperties
         boolean bookmark,
         Double order,

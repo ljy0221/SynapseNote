@@ -20,6 +20,7 @@ import ThemeToggle from './components/common/themeToggle/ThemeToggle';
 import WindowControlButton from './components/common/WindowControlButton/WindowControlButton';
 import { DockerErrorModal } from './components/common/modal/DockerErrorModal';
 import { ToastNotification } from './components/common/toast/ToastNotification';
+import GlobalModal from './components/common/modal/GlobalModal'; // [New]
 
 // Electron 전용 컴포넌트
 const isElectron = typeof window !== 'undefined' && (window as any).electronAPI !== undefined;
@@ -40,7 +41,6 @@ const TOOLBAR_ROUTES = ['/note'];
 function AppContent() {
     const [isSidebarActive, setIsSidebarActive] = useState(false); // 가변 사이드바 상태
     const [isToolbarActive] = useState(true);
-    const [dockerStatus, setDockerStatus] = useState<'checking' | 'ok' | 'error'>('checking');
     const [dockerErrorType, setDockerErrorType] = useState<'installed' | 'running' | null>(null);
     const [isDockerErrorOpen, setIsDockerErrorOpen] = useState(false);
 
@@ -66,14 +66,12 @@ function AppContent() {
     // Docker 헬스 체크 함수
     async function checkDocker() {
         if (!isElectron) {
-            setDockerStatus('ok');
             return;
         }
 
         try {
             const installed = await (window as any).dockerAPI.checkInstalled();
             if (!installed) {
-                setDockerStatus('error');
                 setDockerErrorType('installed');
                 setIsDockerErrorOpen(true);
                 return;
@@ -81,18 +79,15 @@ function AppContent() {
 
             const running = await (window as any).dockerAPI.checkRunning();
             if (!running) {
-                setDockerStatus('error');
                 setDockerErrorType('running');
                 setIsDockerErrorOpen(true);
                 return;
             }
 
-            setDockerStatus('ok');
             setDockerErrorType(null);
             setIsDockerErrorOpen(false);
         } catch (error) {
             console.error('[App] Docker health check failed:', error);
-            setDockerStatus('error');
             setDockerErrorType('running');
             setIsDockerErrorOpen(true);
         }
@@ -105,7 +100,6 @@ function AppContent() {
 
     const handleRetryDocker = () => {
         setIsDockerErrorOpen(false); // 일단 닫고
-        setDockerStatus('checking');
         // 잠시 후 재시도
         setTimeout(() => {
             checkDocker();
@@ -161,6 +155,9 @@ function AppContent() {
                 type={type}
             />
 
+            {/* Global Modal Renderer */}
+            <GlobalModal />
+
             {/* 1. 헤더 영역 */}
             {isLoginPage ? (
                 <div className="login-window-header">
@@ -213,6 +210,7 @@ function AppContent() {
                     <Route path="/login" element={<Login />} />
                     <Route path="/home" element={<Home />} />
                     <Route path="/note" element={<Note />} />
+                    <Route path="/note/:noteId" element={<Note />} />
                     <Route path="/mindmap" element={<MindMap />} />
                     <Route path="/recommend" element={<Bookmark />} />
                 </Routes>
