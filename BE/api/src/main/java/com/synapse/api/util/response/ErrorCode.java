@@ -81,7 +81,14 @@ public enum ErrorCode {
     BLOCK_ROLLBACK_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "BLOCK_007", "블록 롤백에 실패했습니다."),
     BLOCK_VERSION_CONFLICT(HttpStatus.CONFLICT, "BLOCK_008", "블록 버전 충돌이 발생했습니다."),
     INVALID_SLOT_NUMBER(HttpStatus.BAD_REQUEST, "BLOCK_009", "슬롯 번호는 1-5 범위여야 합니다."),
-    INVALID_BLOCK_TYPE_FOR_HISTORY(HttpStatus.BAD_REQUEST, "BLOCK_010", "히스토리 기능은 코드 블록에서만 사용할 수 있습니다.");
+    INVALID_BLOCK_TYPE_FOR_HISTORY(HttpStatus.BAD_REQUEST, "BLOCK_010", "히스토리 기능은 코드 블록에서만 사용할 수 있습니다."),
+
+    // AI
+    AI_INVALID_REQUEST(HttpStatus.BAD_REQUEST, "AI_001", "코드 길이가 너무 깁니다.(500자)"),
+    AI_INVALID_RESPONSE(HttpStatus.BAD_REQUEST, "AI_002", "잘못된 응답입니다."),
+    AI_PROVIDER_NOT_SUPPORTED(HttpStatus.NOT_FOUND, "AI_003", "지원하지 않는 모델입니다."),
+    AI_SERVICE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "AI_004", "AI 서버가 응답하지 않습니다."),
+    AI_TIMEOUT(HttpStatus.REQUEST_TIMEOUT, "AI_005", "응답시간이 초과되었습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
