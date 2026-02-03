@@ -6,10 +6,8 @@ import './PermissionModal.css';
 
 import { getNoteMembersApi } from '../../../api/notes/GetNoteMembers.api';
 import { updateMemberRoleApi } from '../../../api/notes/UpdateMemberRole.api';
-import { deleteMemberApi } from '../../../api/notes/DeleteMember.api';
+import { deleteMemberApi } from '../../../api/notes/DeleteMember.api'; // [New]
 import { NoteMemberItem, NoteMemberRole } from '../../../types/note/GetNoteMembers';
-import { RequestItem } from './RequestItem';
-import ConfirmModal from './ConfirmModal'; // [New]
 
 interface PermissionModalProps {
     isOpen: boolean;
@@ -28,19 +26,8 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
     const [members, setMembers] = useState<NoteMemberItem[]>([]);
     const [requests, setRequests] = useState(MOCK_REQUESTS);
     const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null); // Added error state
 
-    // Confirm Modal State
-    const [confirmState, setConfirmState] = useState<{
-        isOpen: boolean;
-        message: string;
-        targetId?: string;
-    }>({
-        isOpen: false,
-        message: '',
-    });
-
-    useEffect(() => {
+    React.useEffect(() => {
         if (isOpen && noteId) {
             fetchMembers(noteId);
         }
@@ -55,7 +42,6 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
             }
         } catch (error) {
             console.error("Failed to fetch members:", error);
-            setError("멤버 목록을 불러오는데 실패했습니다.");
         } finally {
             setIsLoading(false);
         }
@@ -84,19 +70,8 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
         }
     };
 
-    const handleRemoveMemberClick = (memberId: string) => {
-        setConfirmState({
-            isOpen: true,
-            message: "정말로 이 멤버를 내보내시겠습니까?",
-            targetId: memberId,
-        });
-    };
-
-    const executeRemoveMember = async () => {
-        const memberId = confirmState.targetId;
-        if (!noteId || !memberId) return;
-
-        setConfirmState(prev => ({ ...prev, isOpen: false })); // Close modal
+    const handleRemoveMember = async (memberId: string) => {
+        if (!noteId || !confirm("정말로 이 멤버를 내보내시겠습니까?")) return;
 
         const previousMembers = [...members];
         setMembers(members.filter(m => m.memberId !== memberId));
@@ -106,12 +81,8 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
         } catch (error) {
             console.error("Failed to remove member:", error);
             setMembers(previousMembers);
-            alert("멤버 내보내기에 실패했습니다."); // This alert could also be a Toast in future
+            alert("멤버 내보내기에 실패했습니다.");
         }
-    };
-
-    const closeConfirmModal = () => {
-        setConfirmState(prev => ({ ...prev, isOpen: false }));
     };
 
     const handleAcceptRequest = (requestId: string, role: NoteMemberRole) => {
@@ -155,15 +126,12 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
                     >
                         멤버 목록 ({members.length})
                     </button>
-                    {/* [Pending] API 연동 전까지 숨김 처리 */}
-                    {/*
                     <button
                         className={`tab-btn ${activeTab === 'REQUESTS' ? 'active' : ''}`}
                         onClick={() => setActiveTab('REQUESTS')}
                     >
                         가입 신청 ({requests.length})
                     </button>
-                    */}
                 </div>
 
                 <div className="permission-modal-body">
@@ -210,7 +178,7 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
                                                 {member.role !== 'OWNER' && (
                                                     <button
                                                         className="member-remove-btn"
-                                                        onClick={() => handleRemoveMemberClick(member.memberId)}
+                                                        onClick={() => handleRemoveMember(member.memberId)}
                                                         title="멤버 내보내기"
                                                     >
                                                         <Trash2 size={16} />
@@ -223,17 +191,65 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
                             </div>
                         </>
                     ) : (
-                        // Requests Tab hidden for now
-                        <div className="requests-list"></div>
+                        <>
+                            <p className="permission-modal-description">
+                                노트 접근 권한을 요청한 사용자들입니다.
+                            </p>
+
+                            <div className="requests-list">
+                                {requests.length === 0 ? (
+                                    <div className="empty-state">대기 중인 요청이 없습니다.</div>
+                                ) : (
+                                    requests.map((req) => (
+                                        <div key={req.id} className="request-item">
+                                            <div className="member-info">
+                                                <div className="member-avatar request">
+                                                    <User size={20} />
+                                                </div>
+                                                <div className="member-details">
+                                                    <span className="member-nickname">{req.nickname}</span>
+                                                    <span className="member-email">{req.email}</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="request-actions">
+                                                <div className="role-select-wrapper small">
+                                                    <select
+                                                        className="role-select"
+                                                        id={`role-${req.id}`}
+                                                        defaultValue="VIEWER"
+                                                    >
+                                                        <option value="EDITOR">편집자</option>
+                                                        <option value="VIEWER">뷰어</option>
+                                                    </select>
+                                                    <ChevronDown size={14} className="role-select-icon" />
+                                                </div>
+
+                                                <button
+                                                    className="action-btn accept"
+                                                    onClick={() => {
+                                                        const select = document.getElementById(`role-${req.id}`) as HTMLSelectElement;
+                                                        handleAcceptRequest(req.id, select.value as NoteMemberRole);
+                                                    }}
+                                                    title="수락"
+                                                >
+                                                    <Check size={16} />
+                                                </button>
+                                                <button
+                                                    className="action-btn reject"
+                                                    onClick={() => handleRejectRequest(req.id)}
+                                                    title="거절"
+                                                >
+                                                    <Ban size={16} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </>
                     )}
                 </div>
-
-                <ConfirmModal
-                    isOpen={confirmState.isOpen}
-                    message={confirmState.message}
-                    onConfirm={executeRemoveMember}
-                    onCancel={closeConfirmModal}
-                />
             </div>
         </div>
     );
