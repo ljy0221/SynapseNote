@@ -35,6 +35,8 @@
     "dayjs": "^1.11.19",
     "lucide-react": "^0.562.0",
     "react": "^18.2.0",
+    "react-diff": "^0.0.7",
+    "react-diff-viewer-continued": "^3.4.0",
     "react-dom": "^18.2.0",
     "react-feather": "^2.0.10",
     "react-router-dom": "^7.12.0",

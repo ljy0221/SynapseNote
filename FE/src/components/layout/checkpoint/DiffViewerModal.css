@@ -1,0 +1,169 @@
+/* FE/src/components/layout/checkpoint/DiffViewerModal.css */
+
+.diff-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 1999;
+    animation: fadeIn 0.2s ease;
+}
+
+.diff-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90vw;
+    max-width: 1400px;
+    height: 85vh;
+    background: var(--color-main);
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -45%);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
+}
+
+.diff-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 28px;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-sub);
+}
+
+.diff-modal-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--font-color);
+}
+
+.diff-modal-title svg {
+    color: var(--color-point);
+}
+
+.diff-modal-title h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.diff-modal-subtitle {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--font-color-sub);
+    opacity: 0.6;
+    margin-top: 4px;
+}
+
+.diff-modal-close {
+    background: rgba(255, 255, 255, 0.05);
+    border: none;
+    border-radius: 8px;
+    padding: 8px;
+    cursor: pointer;
+    color: var(--font-color);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.diff-modal-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.05);
+}
+
+.diff-modal-content {
+    flex: 1;
+    overflow: auto;
+    padding: 0;
+    background: var(--color-main);
+}
+
+/* Diff 뷰어 스크롤바 스타일링 */
+.diff-modal-content::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+.diff-modal-content::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.diff-modal-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+}
+
+.diff-modal-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.diff-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 20px 28px;
+    border-top: 1px solid var(--color-border);
+    background: var(--color-sub);
+}
+
+.diff-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.diff-btn-cancel {
+    background: var(--color-hover);
+    color: var(--font-color);
+}
+
+.diff-btn-cancel:hover {
+    filter: brightness(0.95);
+}
+
+.diff-btn-restore {
+    background: var(--color-point);
+    color: #fff;
+    /* 포인트 컬러 위 흰색 텍스트 가정 */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.diff-btn-restore:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+    filter: brightness(1.1);
+}
+
+.diff-btn-restore:active {
+    transform: translateY(0);
+}
