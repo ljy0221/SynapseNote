@@ -283,7 +283,6 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
             {/* 메인 코드 영역 */}
             <div className="code-content-container">
                 <CodeMirrorEditor
-                    blockId={id.toString()}
                     value={editedCode}
                     language={language}
                     onChange={(value) => {
