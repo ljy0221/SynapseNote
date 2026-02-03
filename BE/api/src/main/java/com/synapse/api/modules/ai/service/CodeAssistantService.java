@@ -45,7 +45,7 @@ public class CodeAssistantService {
         noteValidator.validateEditPermission(noteId, userId);
 
         // 블록 조회
-        BaseBlock baseBlock = blockRepository.findByBlockId(blockId)
+        BaseBlock baseBlock = blockRepository.findByBlockIdAndDeletedAtIsNull(blockId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CODE_BLOCK_NOT_FOUND));
 
         // 노트 소유권 확인
@@ -71,10 +71,10 @@ public class CodeAssistantService {
         // 세션 모드: 전체 블록 컨텍스트 포함
         List<CodeBlock> contextBlocks = null;
         if (Boolean.TRUE.equals(request.includeContext())) {
-            contextBlocks = blockRepository.findByNoteIdOrderByOrderAsc(noteId).stream()
+            contextBlocks = blockRepository.findByNoteIdAndDeletedAtIsNullOrderByOrderAsc(noteId).stream()
                     .filter(block -> block instanceof CodeBlock)
                     .map(block -> (CodeBlock) block)
-                    .filter(block -> !block.getBlockId().equals(blockId))  // 현재 블록 제외
+                    .filter(block -> !block.getBlockId().equals(blockId)) // 현재 블록 제외
                     .toList();
             log.info("Including {} context blocks for code review", contextBlocks.size());
         }
@@ -102,20 +102,20 @@ public class CodeAssistantService {
                 - 성능 이슈
                 - 코드 품질 및 가독성
                 - 모범 사례
-
+                
                 다음 내용을 포함한 구조화된 피드백을 제공하세요:
                 1. 구체적인 문제점 (심각도: error, warning, info)
                 2. 모범 사례 권장사항
                 3. 전체 요약
-
+                
                 간결하면서도 실행 가능한 조언을 제공하세요.
                 응답은 반드시 유효한 JSON 형식으로만 작성하세요. 마크다운 코드 블록은 사용하지 마세요.
                 """.formatted(language);
     }
 
     private String buildCodeReviewUserPrompt(String code, String language,
-                                              List<String> focusAreas,
-                                              List<CodeBlock> contextBlocks) {
+                                             List<String> focusAreas,
+                                             List<CodeBlock> contextBlocks) {
         StringBuilder prompt = new StringBuilder();
 
         // 컨텍스트 블록이 있으면 먼저 추가
@@ -162,9 +162,9 @@ public class CodeAssistantService {
     }
 
     private CodeReviewResponse parseCodeReviewResponse(UUID blockId,
-                                                         String language,
-                                                         String code,
-                                                         String aiResponse) {
+                                                       String language,
+                                                       String code,
+                                                       String aiResponse) {
         try {
             String jsonContent = extractJsonFromMarkdown(aiResponse);
             JsonNode root = objectMapper.readTree(jsonContent);
@@ -180,27 +180,23 @@ public class CodeAssistantService {
                     reviews,
                     bestPractices,
                     summary,
-                    LocalDateTime.now()
-            );
+                    LocalDateTime.now());
 
         } catch (JsonProcessingException e) {
             log.error("JSON parsing failed: response={}", aiResponse, e);
             throw new BusinessException(
                     ErrorCode.AI_INVALID_RESPONSE,
-                    "AI 응답을 JSON으로 파싱할 수 없습니다."
-            );
+                    "AI 응답을 JSON으로 파싱할 수 없습니다.");
         } catch (NullPointerException e) {
             log.error("Required field missing in AI response: response={}", aiResponse, e);
             throw new BusinessException(
                     ErrorCode.AI_INVALID_RESPONSE,
-                    "AI 응답에 필수 필드가 없습니다."
-            );
+                    "AI 응답에 필수 필드가 없습니다.");
         } catch (Exception e) {
             log.error("Unexpected error parsing AI response: response={}", aiResponse, e);
             throw new BusinessException(
                     ErrorCode.AI_INVALID_RESPONSE,
-                    "AI 응답 처리 중 예상치 못한 오류가 발생했습니다."
-            );
+                    "AI 응답 처리 중 예상치 못한 오류가 발생했습니다.");
         }
     }
 
@@ -216,8 +212,7 @@ public class CodeAssistantService {
                     item.path("category").asText("style"),
                     item.path("issue").asText(),
                     item.path("suggestion").asText(),
-                    item.path("lineNumber").isNull() ? null : item.path("lineNumber").asInt()
-            ));
+                    item.path("lineNumber").isNull() ? null : item.path("lineNumber").asInt()));
         }
         return items;
     }

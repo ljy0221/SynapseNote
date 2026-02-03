@@ -3,9 +3,11 @@ package com.synapse.api.modules.block.service;
 import com.synapse.api.modules.block.document.BaseBlock;
 import com.synapse.api.modules.block.document.CodeBlock;
 import com.synapse.api.modules.block.dto.response.BlockDetailResponse;
+import com.synapse.api.modules.block.dto.response.BlockPageResponse;
 import com.synapse.api.modules.block.repository.BlockRepository;
 import com.synapse.api.modules.note.dto.request.ExecutionHistoryRequest;
 import com.synapse.api.modules.note.dto.response.ExecutionHistoryResponse;
+import com.synapse.api.modules.note.entity.Note;
 import com.synapse.api.modules.note.repository.NoteMemberRepository;
 import com.synapse.api.modules.note.repository.NoteRepository;
 import com.synapse.api.modules.note.service.NoteValidator;
@@ -19,10 +21,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+
+import static java.util.stream.Collectors.toMap;
 
 @Slf4j
 @Service
@@ -34,16 +39,16 @@ public class BlockService {
     private final NoteMemberRepository noteMemberRepository;
     private final NoteValidator noteValidator;
 
-    // 노트 ID로 블록 목록 조회 (순서 보장)
+    // 노트 ID로 블록 목록 조회 (순서 보장, 삭제 안 된 것만)
     public List<BaseBlock> getBlocksByNoteId(UUID noteId) {
-        return blockRepository.findByNoteIdOrderByOrderAsc(noteId);
+        return blockRepository.findByNoteIdAndDeletedAtIsNullOrderByOrderAsc(noteId);
     }
 
     // 코드 실행 이력 저장
     @Transactional
     public void saveExecutionHistory(UUID noteId, UUID blockId, ExecutionHistoryRequest request) {
-        // 1. 블록 조회
-        BaseBlock baseBlock = blockRepository.findByBlockId(blockId)
+        // 1. 블록 조회 (삭제 안 된 것만)
+        BaseBlock baseBlock = blockRepository.findByBlockIdAndDeletedAtIsNull(blockId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CODE_BLOCK_NOT_FOUND));
 
         // 2. 데이터 무결성 검증 (블록이 해당 노트 소유인지)
@@ -65,8 +70,8 @@ public class BlockService {
     }
 
     public List<ExecutionHistoryResponse> getExecutionHistory(UUID noteId, UUID blockId) {
-        // 1. 블록 조회
-        BaseBlock baseBlock = blockRepository.findByBlockId(blockId)
+        // 1. 블록 조회 (삭제 안 된 것만)
+        BaseBlock baseBlock = blockRepository.findByBlockIdAndDeletedAtIsNull(blockId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CODE_BLOCK_NOT_FOUND));
 
         // 2. 무결성 검증
@@ -95,7 +100,7 @@ public class BlockService {
 
     @Transactional
     public void bookmarkBlock(UUID blockId, UUID noteId) {
-        BaseBlock block = blockRepository.findByBlockId(blockId)
+        BaseBlock block = blockRepository.findByBlockIdAndDeletedAtIsNull(blockId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CODE_BLOCK_NOT_FOUND));
 
         // 블록이 해당 노트에 속하는지 검증
@@ -110,7 +115,7 @@ public class BlockService {
 
     @Transactional
     public void unbookmarkBlock(UUID blockId, UUID noteId) {
-        BaseBlock block = blockRepository.findByBlockId(blockId)
+        BaseBlock block = blockRepository.findByBlockIdAndDeletedAtIsNull(blockId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CODE_BLOCK_NOT_FOUND));
 
         // 블록이 해당 노트에 속하는지 검증
@@ -125,18 +130,47 @@ public class BlockService {
 
     public Page<BaseBlock> getBookmarkedBlocks(UUID noteId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return blockRepository.findByNoteIdAndBookmarkTrueOrderByUpdatedAtDesc(noteId, pageable);
+        return blockRepository.findByNoteIdAndBookmarkTrueAndDeletedAtIsNullOrderByCreatedAtDesc(noteId, pageable);
     }
 
     public List<BlockDetailResponse> getBlocks(UUID memberId, UUID noteId) {
         // 노트 접근 권한
         noteValidator.validateReadPermission(memberId, noteId);
 
-        List<BaseBlock> blocks = blockRepository.findByNoteIdOrderByOrderAsc(noteId);
+        List<BaseBlock> blocks = blockRepository.findByNoteIdAndDeletedAtIsNullOrderByOrderAsc(noteId);
 
         return blocks.stream()
                 .map(BlockResponseMapper::from)
                 .toList();
     }
 
+    public BlockPageResponse getAllBookmarkedBlocks(UUID memberId, int page, int size) {
+        List<UUID> noteIds = noteRepository.findAllNoteIdsByMemberId(memberId);
+
+        Pageable pageable = PageRequest.of(page, size);
+        Page<BaseBlock> blockPage = blockRepository.findByNoteIdInAndBookmarkTrueAndDeletedAtIsNullOrderByCreatedAtDesc(
+                noteIds,
+                pageable);
+
+        List<UUID> blockNoteIds = blockPage.getContent().stream()
+                .map(BaseBlock::getNoteId)
+                .distinct()
+                .toList();
+
+        List<Note> notes = noteRepository
+                .findAllByIdInAndDeletedAtIsNull(blockNoteIds);
+        java.util.Map<UUID, String> notePathMap = notes.stream()
+                .collect(toMap(
+                        Note::getId,
+                        Note::getDirectoryPath));
+
+        return BlockPageResponse.from(blockPage, notePathMap);
+    }
+
+    // 노트 삭제 시 블록 Soft Delete
+    @Transactional
+    public void softDeleteBlocksByNoteId(UUID noteId) {
+        blockRepository.softDeleteByNoteId(noteId, LocalDateTime.now());
+        log.info("Soft deleted blocks for note: {}", noteId);
+    }
 }
