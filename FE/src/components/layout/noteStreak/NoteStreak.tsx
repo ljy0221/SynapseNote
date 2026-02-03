@@ -116,7 +116,7 @@ const NoteStreak: React.FC<NoteStreakProps> = ({ streak }) => {
               key={`${m.index}-${m.label}`}
               className="month-label"
               style={{
-                left: `${m.index * (24 + 3)}px` // cellWidth + gap
+                left: `${m.index * (22 + 3)}px` // cellWidth(22) + gap(3)
               }}
             >
               {m.label}

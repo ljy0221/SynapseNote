@@ -96,19 +96,21 @@ const NoteMain: React.FC<NoteMainProps> = ({
     };
     return (
         <div className="note-main-layout">
-            <header className="note-main-header">
-                <input
-                    ref={titleInputRef}
-                    className="note-main-title-input"
-                    value={title}
-                    onChange={(e) => onUpdateTitle(e.target.value)}
-                    placeholder="제목 없음"
-                />
-            </header>
-            <div className="note-body-wrapper">
-                <div className="note-content-area">
-                    {blocks.map((block, index) => renderBlock(block, index))}
-                    <div className="note-bottom-spacer" style={{ height: '30vh' }} />
+            <div className="note-paper-container">
+                <div className="note-paper">
+                    <header className="note-main-header">
+                        <input
+                            ref={titleInputRef}
+                            className="note-main-title-input"
+                            value={title}
+                            onChange={(e) => onUpdateTitle(e.target.value)}
+                            placeholder="제목 없음"
+                        />
+                    </header>
+                    <div className="note-content-area">
+                        {blocks.map((block, index) => renderBlock(block, index))}
+                        <div className="note-bottom-spacer" style={{ height: '30vh' }} />
+                    </div>
                 </div>
 
                 <div className="note-sidenav-area">
