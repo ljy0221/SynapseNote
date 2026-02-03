@@ -13,7 +13,6 @@ import type { ThemeMode } from '../../../store/useThemeStore';
 import './CodeMirrorEditor.css';
 
 interface CodeMirrorEditorProps {
-    blockId: string;
     value: string;
     language: 'python' | 'javascript' | 'java';
     onChange: (value: string) => void;
@@ -264,7 +263,6 @@ const createHighlightStyle = (themeMode: ThemeMode) => {
 
 
 const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
-    blockId,
     value,
     language,
     onChange,
@@ -276,8 +274,8 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
     const editorRef = useRef<HTMLDivElement>(null);
     const viewRef = useRef<EditorView | null>(null);
 
-    // Zustand 스토어에서 설정 가져오기
-    const { settings, registerEditor, unregisterEditor } = useCodeEditorStore();
+    // Zustand 스토어에서 설정만 가져오기 (인스턴스 관리 제거)
+    const { settings } = useCodeEditorStore();
 
     // 앱 테마 가져오기
     const themeMode = useThemeStore((state) => state.themeMode);
@@ -330,25 +328,29 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
         });
 
         viewRef.current = view;
-        registerEditor(blockId, view);
 
         return () => {
             view.destroy();
-            unregisterEditor(blockId);
+            viewRef.current = null;
         };
     }, []); // 초기 마운트 시에만 실행
 
-    // value prop 변경 시 에디터 업데이트
+    // value prop 변경 시 에디터 업데이트 (커서 위치 보존)
     useEffect(() => {
-        if (viewRef.current) {
+        if (viewRef.current && value !== undefined) {
             const currentValue = viewRef.current.state.doc.toString();
             if (currentValue !== value) {
+                // 현재 커서 위치 저장
+                const cursorPos = viewRef.current.state.selection.main.head;
+
                 viewRef.current.dispatch({
                     changes: {
                         from: 0,
                         to: currentValue.length,
                         insert: value,
                     },
+                    // 커서 위치 보존 (새 텍스트 길이를 초과하지 않도록)
+                    selection: { anchor: Math.min(cursorPos, value.length) },
                 });
             }
         }
