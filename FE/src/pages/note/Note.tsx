@@ -63,20 +63,27 @@ const Note: React.FC = () => {
 
     // Title Auto-save Debounce (ADDED)
     useEffect(() => {
-        if (!noteId) return;
+      if (!noteId) return;
 
-        const timer = setTimeout(async () => {
-            // 변경된 제목 저장
-            try {
-                await updateNoteApi(noteId, { title });
-                console.log("[Note] Title saved:", title);
-            } catch (err) {
-                console.error("[Note] Failed to save title:", err);
-            }
-        }, 1000); // 1초 디바운스
+      const timer = setTimeout(async () => {
+        try {
+          await updateNoteApi(noteId, { title });
 
-        return () => clearTimeout(timer);
+          // 🔥 Sidebar 즉시 반영 트리거
+          emitNotesChanged({
+            type: 'UPDATE_TITLE',
+            noteId,
+            title,
+          });
+          // 또는 아래 방식 (더 좋음, 아래 설명)
+        } catch (err) {
+          console.error('[Note] Failed to save title:', err);
+        }
+      }, 800);
+
+      return () => clearTimeout(timer);
     }, [title, noteId]);
+
 
     // 마지막에 블록 추가 (툴바용)
     const handleAddBlockAtEnd = (type: BlockType) => {
