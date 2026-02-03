@@ -40,9 +40,6 @@ const NoteMain: React.FC<NoteMainProps> = ({
     // [New] 권한 모달 상태
     const [isPermissionModalOpen, setIsPermissionModalOpen] = React.useState(false);
 
-    // [New] 초대 링크 (현재 페이지 URL 사용)
-    const inviteUrl = window.location.href;
-
     // DnD 상태 관리
     const [dragIndex, setDragIndex] = React.useState<number | null>(null);
     const onDragStart = (e: React.DragEvent, index: number) => {

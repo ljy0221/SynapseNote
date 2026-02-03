@@ -8,6 +8,8 @@ import { getNoteMembersApi } from '../../../api/notes/GetNoteMembers.api';
 import { updateMemberRoleApi } from '../../../api/notes/UpdateMemberRole.api';
 import { deleteMemberApi } from '../../../api/notes/DeleteMember.api'; // [New]
 import { NoteMemberItem, NoteMemberRole } from '../../../types/note/GetNoteMembers';
+import ConfirmModal from './ConfirmModal';
+import { ToastNotification } from '../toast/ToastNotification';
 
 interface PermissionModalProps {
     isOpen: boolean;
@@ -26,6 +28,21 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
     const [members, setMembers] = useState<NoteMemberItem[]>([]);
     const [requests, setRequests] = useState(MOCK_REQUESTS);
     const [isLoading, setIsLoading] = useState(false);
+
+    // [New] State for managing selected roles for requests
+    const [requestRoles, setRequestRoles] = useState<Record<string, NoteMemberRole>>({});
+
+    // [New] UI State for Modals and Toasts
+    const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; message: string; targetId: string | null }>({
+        isOpen: false,
+        message: '',
+        targetId: null,
+    });
+    const [toast, setToast] = useState<{ isVisible: boolean; message: string; type: 'success' | 'error' }>({
+        isVisible: false,
+        message: '',
+        type: 'success',
+    });
 
     React.useEffect(() => {
         if (isOpen && noteId) {
@@ -50,6 +67,10 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
 
     if (!isOpen) return null;
 
+    const showToast = (message: string, type: 'success' | 'error') => {
+        setToast({ isVisible: true, message, type });
+    };
+
     const handleRoleChange = async (memberId: string, newRole: NoteMemberRole) => {
         if (!noteId) return;
 
@@ -62,30 +83,46 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
         try {
             await updateMemberRoleApi(noteId, memberId, newRole);
             console.log(`Updated role for ${memberId} to ${newRole}`);
+            showToast("권한이 변경되었습니다.", 'success');
         } catch (error) {
             console.error("Failed to update role:", error);
             // Revert on error
             setMembers(previousMembers);
-            alert("권한 변경에 실패했습니다.");
+            showToast("권한 변경에 실패했습니다.", 'error');
         }
     };
 
-    const handleRemoveMember = async (memberId: string) => {
-        if (!noteId || !confirm("정말로 이 멤버를 내보내시겠습니까?")) return;
+    const confirmRemoveMember = (memberId: string) => {
+        setConfirmModal({
+            isOpen: true,
+            message: "정말로 이 멤버를 내보내시겠습니까?",
+            targetId: memberId,
+        });
+    };
+
+    const executeRemoveMember = async () => {
+        const memberId = confirmModal.targetId;
+        if (!noteId || !memberId) return;
+
+        setConfirmModal({ ...confirmModal, isOpen: false }); // Close modal
 
         const previousMembers = [...members];
         setMembers(members.filter(m => m.memberId !== memberId));
 
         try {
             await deleteMemberApi(noteId, memberId);
+            showToast("멤버를 내보냈습니다.", 'success');
         } catch (error) {
             console.error("Failed to remove member:", error);
             setMembers(previousMembers);
-            alert("멤버 내보내기에 실패했습니다.");
+            showToast("멤버 내보내기에 실패했습니다.", 'error');
         }
     };
 
-    const handleAcceptRequest = (requestId: string, role: NoteMemberRole) => {
+    const handleAcceptRequest = (requestId: string) => {
+        // Use state value or default to VIEWER
+        const role = requestRoles[requestId] || 'VIEWER';
+
         // API call to accept request
         console.log(`Accepted request ${requestId} as ${role}`);
         setRequests(requests.filter(r => r.id !== requestId));
@@ -100,6 +137,7 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
                 role: role,
                 joinedAt: new Date().toISOString(),
             }]);
+            showToast(`${req.nickname}님의 요청을 수락했습니다.`, 'success');
         }
     };
 
@@ -107,6 +145,7 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
         // API call to reject request
         console.log(`Rejected request ${requestId}`);
         setRequests(requests.filter(r => r.id !== requestId));
+        showToast("요청을 거절했습니다.", 'success');
     };
 
     return (
@@ -178,7 +217,7 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
                                                 {member.role !== 'OWNER' && (
                                                     <button
                                                         className="member-remove-btn"
-                                                        onClick={() => handleRemoveMember(member.memberId)}
+                                                        onClick={() => confirmRemoveMember(member.memberId)}
                                                         title="멤버 내보내기"
                                                     >
                                                         <Trash2 size={16} />
@@ -216,8 +255,11 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
                                                 <div className="role-select-wrapper small">
                                                     <select
                                                         className="role-select"
-                                                        id={`role-${req.id}`}
-                                                        defaultValue="VIEWER"
+                                                        value={requestRoles[req.id] || 'VIEWER'}
+                                                        onChange={(e) => setRequestRoles(prev => ({
+                                                            ...prev,
+                                                            [req.id]: e.target.value as NoteMemberRole
+                                                        }))}
                                                     >
                                                         <option value="EDITOR">편집자</option>
                                                         <option value="VIEWER">뷰어</option>
@@ -227,10 +269,7 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
 
                                                 <button
                                                     className="action-btn accept"
-                                                    onClick={() => {
-                                                        const select = document.getElementById(`role-${req.id}`) as HTMLSelectElement;
-                                                        handleAcceptRequest(req.id, select.value as NoteMemberRole);
-                                                    }}
+                                                    onClick={() => handleAcceptRequest(req.id)}
                                                     title="수락"
                                                 >
                                                     <Check size={16} />
@@ -250,6 +289,22 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
                         </>
                     )}
                 </div>
+
+                {/* Confirm Modal */}
+                <ConfirmModal
+                    isOpen={confirmModal.isOpen}
+                    message={confirmModal.message}
+                    onConfirm={executeRemoveMember}
+                    onCancel={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+                />
+
+                {/* Toast Notification */}
+                <ToastNotification
+                    isVisible={toast.isVisible}
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast({ ...toast, isVisible: false })}
+                />
             </div>
         </div>
     );
