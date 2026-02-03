@@ -1,18 +1,23 @@
 // src/api/ai/AiCodeReview.api.ts
 
-import { request } from '../request';
+import { api } from '../axios';
+import type { ApiResponse } from '../../types/common/apiResponse';
 import type { CodeReviewRequest, CodeReviewResponse } from '../../types/ai/CodeReview';
 
-export const requestCodeReview = (
+// AbortController signal 지원 추가
+export const requestCodeReview = async (
   noteId: string,
   blockId: string,
-  body: CodeReviewRequest
+  body: CodeReviewRequest,
+  signal?: AbortSignal
 ): Promise<CodeReviewResponse> => {
-  return request<CodeReviewResponse>(
-    'post',
-    `/v1/notes/${noteId}/blocks/${blockId}/ai/review`,
-    { body }
-  );
+  const res = await api.request<ApiResponse<CodeReviewResponse>>({
+    method: 'post',
+    url: `/v1/notes/${noteId}/blocks/${blockId}/ai/review`,
+    data: body,
+    signal,
+  });
+  return res.data.data;
 };
 
 // 기본 요청 옵션 (고정값)
