@@ -17,6 +17,7 @@ import MindmapCanvas from '../../components/features/mindmap/MindmapCanvas';
 import { NodeSelectorModal } from '../../components/features/mindmap/NodeSelectorModal';
 import { MindmapToolbar } from '../../components/layout/mindmap/MindmapToolbar';
 import ConfirmModal from '../../components/common/modal/ConfirmModal';
+import AlertModal from '../../components/common/modal/AlertModal'; // [New]
 import { ToastNotification } from '../../components/common/toast/ToastNotification'; // [New]
 import { useNodeRepulsion } from '../../hooks/useNodeRepulsion';
 import './MindMap.css';
@@ -167,6 +168,10 @@ const MindMapContent: React.FC = () => {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deleteMessage, setDeleteMessage] = useState('');
 
+    // [New] 중복 노드 알림 모달 상태
+    const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
+    const [duplicateNodeId, setDuplicateNodeId] = useState<string | null>(null);
+
     // 4. [New] 클릭 연결 모드 상태
     const [isConnectMode, setIsConnectMode] = useState(false);
     const [connectSource, setConnectSource] = useState<Node | null>(null);
@@ -184,6 +189,7 @@ const MindMapContent: React.FC = () => {
             setDisconnectSource(null);
             setIsSelectorOpen(false); // 선택 모달도 닫기
             setIsDeleteModalOpen(false); // 삭제 모달도 닫기
+            setIsDuplicateModalOpen(false); // 중복 모달도 닫기
         }
     }, [isEditMode]);
 
@@ -426,6 +432,15 @@ const MindMapContent: React.FC = () => {
                 return nds;
             }
 
+            const isDuplicate = nds.some(n => n.id === noteData.id);
+
+            // [New] 중복 체크 로직
+            if (isDuplicate) {
+                setDuplicateNodeId(noteData.id);
+                setIsDuplicateModalOpen(true);
+                return nds; // 노드 추가하지 않음
+            }
+
             const newNode = {
                 id: noteData.id,
                 type: 'note',
@@ -447,6 +462,30 @@ const MindMapContent: React.FC = () => {
 
         setIsSelectorOpen(false); // 모달 닫기
     }, [setNodes, setCenter]);
+
+    /**
+     * [New] 중복 알림 모달 닫기 및 해당 노드로 이동
+     */
+    const handleDuplicateModalClose = useCallback(() => {
+        setIsDuplicateModalOpen(false);
+
+        if (duplicateNodeId) {
+            const targetNode = nodes.find(n => n.id === duplicateNodeId);
+            if (targetNode) {
+                // 1. 해당 노드만 선택 상태로 변경
+                setNodes(nds => nds.map(n => ({
+                    ...n,
+                    selected: n.id === duplicateNodeId
+                })));
+
+                // 2. 해당 노드 위치로 화면 이동
+                const targetX = targetNode.position.x + 30;
+                const targetY = targetNode.position.y + 30;
+                setCenter(targetX, targetY, { zoom: 1.2, duration: 1000 });
+            }
+            setDuplicateNodeId(null);
+        }
+    }, [duplicateNodeId, nodes, setNodes, setCenter]);
 
     /**
      * 기능 2: 선택된 노드 및 연결선 삭제 (모달 호출)
@@ -801,6 +840,13 @@ const MindMapContent: React.FC = () => {
                     message={deleteMessage}
                     onConfirm={executeDelete}
                     onCancel={cancelDelete}
+                />
+
+                {/* [New] 중복 알림 모달 */}
+                <AlertModal
+                    isOpen={isDuplicateModalOpen}
+                    message="이미 생성되어있는 지식입니다."
+                    onClose={handleDuplicateModalClose}
                 />
 
                 {/* [New] 방향 전환 확인 모달 */}
