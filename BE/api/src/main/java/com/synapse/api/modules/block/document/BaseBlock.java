@@ -35,6 +35,9 @@ public abstract class BaseBlock {
         @Indexed
         private UUID noteId; // PostgreSQL Note ID (UUID.toString())
 
+        @Indexed
+        private UUID ownerId; // Note owner's ID (from Note.createdBy.id)
+
         @Indexed(unique = true)
         private UUID blockId; // Yjs/Frontend UUID
 

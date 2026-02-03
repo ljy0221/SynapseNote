@@ -25,6 +25,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static java.util.stream.Collectors.toMap;
@@ -128,11 +129,6 @@ public class BlockService {
         log.info("Unbookmarked block: {}", blockId);
     }
 
-    public Page<BaseBlock> getBookmarkedBlocks(UUID noteId, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        return blockRepository.findByNoteIdAndBookmarkTrueAndDeletedAtIsNullOrderByCreatedAtDesc(noteId, pageable);
-    }
-
     public List<BlockDetailResponse> getBlocks(UUID memberId, UUID noteId) {
         // 노트 접근 권한
         noteValidator.validateReadPermission(memberId, noteId);
@@ -145,29 +141,28 @@ public class BlockService {
     }
 
     public BlockPageResponse getAllBookmarkedBlocks(UUID memberId, int page, int size) {
-        List<UUID> noteIds = noteRepository.findAllNoteIdsByMemberId(memberId);
-
+        // 1. ownerId로 북마크된 블록 직접 조회 (단일 쿼리)
         Pageable pageable = PageRequest.of(page, size);
-        Page<BaseBlock> blockPage = blockRepository.findByNoteIdInAndBookmarkTrueAndDeletedAtIsNullOrderByCreatedAtDesc(
-                noteIds,
+        Page<BaseBlock> bookmarkedBlocks = blockRepository.findByOwnerIdAndBookmarkTrueAndDeletedAtIsNull(memberId,
                 pageable);
 
-        List<UUID> blockNoteIds = blockPage.getContent().stream()
+        // 2. 빈 결과 처리
+        if (bookmarkedBlocks.isEmpty()) {
+            return BlockPageResponse.from(bookmarkedBlocks, Map.of());
+        }
+
+        // 3. 블록들의 노트 경로 조회
+        List<UUID> noteIdsInPage = bookmarkedBlocks.getContent().stream()
                 .map(BaseBlock::getNoteId)
                 .distinct()
                 .toList();
 
-        List<Note> notes = noteRepository
-                .findAllByIdInAndDeletedAtIsNull(blockNoteIds);
-        java.util.Map<UUID, String> notePathMap = notes.stream()
-                .collect(toMap(
-                        Note::getId,
-                        Note::getDirectoryPath));
+        Map<UUID, String> notePathMap = noteRepository.findAllByIdInAndDeletedAtIsNull(noteIdsInPage).stream()
+                .collect(toMap(Note::getId, note -> note.getDirectoryPath() != null ? note.getDirectoryPath() : ""));
 
-        return BlockPageResponse.from(blockPage, notePathMap);
+        return BlockPageResponse.from(bookmarkedBlocks, notePathMap);
     }
 
-    // 노트 삭제 시 블록 Soft Delete
     @Transactional
     public void softDeleteBlocksByNoteId(UUID noteId) {
         blockRepository.softDeleteByNoteId(noteId, LocalDateTime.now());
