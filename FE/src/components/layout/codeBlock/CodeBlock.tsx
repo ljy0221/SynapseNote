@@ -1,9 +1,10 @@
 /* src/components/layout/codeBlock/CodeBlock.tsx */
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import VersionButton from '../../common/versionButton/VersionButton';
 import BlockRunButton from '../../common/blockRunButton/BlockRunButton';
 import BlockCopyButton from '../../common/blockCopyButton/BlockCopyButton';
 import BlockDeleteButton from '../../common/blockDeleteButton/BlockDeleteButton';
+import CodeMirrorEditor from '../../common/codeMirrorEditor/CodeMirrorEditor';
 import type { Language, ExecutionResult, ExecutionMode, SessionInfo } from '../../../types/execution/ExecutionTypes';
 import './CodeBlock.css';
 import { saveExecutionToBackend } from "../../../utils/executionAPI.ts";
@@ -46,7 +47,6 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     onDragStart,
     onDragOver,
     onDrop,
-    isFocused // [추가]
 }) => {
     const [result, setResult] = useState<ExecutionResult | null>(null);
     const [loading, setLoading] = useState(false);
@@ -72,21 +72,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
         console.log('CodeBlock editedCode updated:', editedCode);
     }, [editedCode]);
 
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-    // [추가] 포커스 트리거
-    useEffect(() => {
-        if (isFocused && textareaRef.current) {
-            textareaRef.current.focus();
-        }
-    }, [isFocused]);
-
-    useEffect(() => {
-        if (textareaRef.current) {
-            textareaRef.current.style.height = 'auto';
-            textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-        }
-    }, [editedCode]);
+    // CodeMirror가 자체적으로 포커스 및 높이를 관리하므로 ref와 useEffect 제거
 
     // 세션 상태 로드 (feat/#63 추가)
     useEffect(() => {
@@ -180,21 +166,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
         }
     };
 
-    // Tab 키 핸들러
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if (e.key === 'Tab') {
-            e.preventDefault();
-            const textarea = e.target as HTMLTextAreaElement;
-            const start = textarea.selectionStart;
-            const end = textarea.selectionEnd;
-            const newValue = editedCode.substring(0, start) + '\t' + editedCode.substring(end);
-            setEditedCode(newValue);
-            onChange(id, newValue);
-            setTimeout(() => {
-                textarea.selectionStart = textarea.selectionEnd = start + 1;
-            }, 0);
-        }
-    };
+    // Tab 키는 CodeMirror 내장 기능으로 처리됨
 
     // 버전 복구 핸들러
     const handleRestore = (code: string) => {
@@ -310,20 +282,17 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
             </div>
             {/* 메인 코드 영역 */}
             <div className="code-content-container">
-                <textarea
-                    ref={textareaRef}
-                    className="code-editor-input"
+                <CodeMirrorEditor
                     value={editedCode}
-                    onChange={(e) => {
-                        setEditedCode(e.target.value);
-                        onChange(id, e.target.value);
+                    language={language}
+                    onChange={(value) => {
+                        setEditedCode(value);
+                        onChange(id, value);
                     }}
                     onFocus={onFocus}
-                    onKeyDown={handleKeyDown}
-                    placeholder="// 새로운 코드를 작성하세요."
-                    spellCheck="false"
-                    disabled={loading}
-                    style={{ overflow: 'hidden' }}
+                    readOnly={loading}
+                    minHeight="150px"
+                    maxHeight="800px"
                 />
             </div>
             {/* 결과 출력 영역 */}
