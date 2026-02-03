@@ -1,7 +1,6 @@
 package com.synapse.api.modules.note.service;
 
 import com.synapse.api.modules.block.document.BaseBlock;
-import com.synapse.api.modules.block.dto.response.BlockPageResponse;
 import com.synapse.api.modules.block.service.BlockService;
 import com.synapse.api.modules.member.entity.Member;
 import com.synapse.api.modules.member.repository.MemberRepository;
@@ -247,18 +246,6 @@ public class NoteService {
 
         // BlockService에 위임
         blockService.unbookmarkBlock(blockId, noteId);
-    }
-
-    public BlockPageResponse getBlockBookmarks(UUID memberId, UUID noteId, int page, int size) {
-        // 노트 조회 및 접근 권한 검증
-        Note note = noteRepository.findById(noteId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
-        noteValidator.validateAccess(note, memberId);
-
-        // BlockService에서 블록 목록 조회
-        Page<BaseBlock> blockPage = blockService.getBookmarkedBlocks(noteId, page, size);
-
-        return BlockPageResponse.from(blockPage, note.getDirectoryPath());
     }
 
 }
