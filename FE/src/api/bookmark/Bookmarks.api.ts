@@ -32,9 +32,15 @@ export const getBookmarksApi = () => {
 };
 
 /** 블록 즐겨찾기 목록 조회 */
-export const getBlockBookmarksApi = () => {
+export const getBlockBookmarksApi = (params?: {
+  page?: number;
+  size?: number;
+}) => {
   return request<GetBookmarkBlocksResponse>(
     'get',
-    '/v1/notes/blocks/bookmarks'
+    '/v1/notes/blocks/bookmarks',
+    {
+      params,
+    }
   );
 };
