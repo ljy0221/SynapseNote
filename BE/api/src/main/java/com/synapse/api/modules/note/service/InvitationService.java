@@ -5,6 +5,7 @@ import com.synapse.api.modules.member.entity.Member;
 import com.synapse.api.modules.member.repository.MemberRepository;
 import com.synapse.api.modules.note.dto.request.InvitationCreateRequest;
 import com.synapse.api.modules.note.dto.response.InvitationAcceptResponse;
+import com.synapse.api.modules.note.dto.response.InvitationListResponse;
 import com.synapse.api.modules.note.dto.response.InvitationResponse;
 import com.synapse.api.modules.note.entity.*;
 import com.synapse.api.modules.note.repository.InvitationRepository;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -155,6 +157,31 @@ public class InvitationService {
                 memberId, invitation.getId(), invitation.getNote().getId());
 
         return InvitationAcceptResponse.from(invitation);
+    }
+
+    /**
+     * PENDING 상태 초대 목록 조회
+     * - OWNER만 가능
+     */
+    public InvitationListResponse getPendingInvitations(UUID noteId, UUID memberId) {
+        // 1. 노트 존재 확인
+        Note note = noteRepository.findById(noteId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
+
+        // 2. OWNER 권한 확인
+        validateOwnership(note, memberId);
+
+        // 3. PENDING 상태 초대 목록 조회
+        List<Invitation> invitations = invitationRepository.findByNoteIdAndStatus(
+                noteId, InvitationStatus.PENDING);
+
+        // 4. DTO 변환
+        List<InvitationResponse> responses = invitations.stream()
+                .map(inv -> InvitationResponse.from(inv, frontendBaseUrl))
+                .toList();
+
+        log.info("Retrieved {} pending invitations for note: {}", responses.size(), noteId);
+        return InvitationListResponse.from(responses);
     }
 
     /**
