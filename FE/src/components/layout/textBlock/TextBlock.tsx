@@ -35,11 +35,11 @@ import {
 import BlockDeleteButton from '../../common/blockDeleteButton/BlockDeleteButton';
 import './TextBlock.css';
 interface TextBlockProps {
-    id: number;
+    id: number | string;
     content: string;
-    onUpdate: (id: number, content: string) => void;
+    onUpdate: (id: number | string, content: string) => void;
     onFocus: () => void;
-    onDelete: (id: number) => void;
+    onDelete: (id: number | string) => void;
     draggable?: boolean;
     onDragStart?: (e: React.DragEvent) => void;
     onDragOver?: (e: React.DragEvent) => void;
@@ -79,7 +79,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
     onDragStart,
     onDragOver,
     onDrop,
-    isFocused: shouldFocus // [추가] prop 이름 충돌 방지를 위해 별칭 사용
+    isFocused: shouldFocus, // [추가] prop 이름 충돌 방지를 위해 별칭 사용
 }) => {
     const [isFocused, setIsFocused] = React.useState(false);
     const [showColorPicker, setShowColorPicker] = React.useState(false);
@@ -96,6 +96,10 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 heading: {
                     levels: [1, 2, 3],
                 },
+                // @ts-ignore - Some versions include these, some don't. Explicitly disable to avoid duplicates.
+                link: false,
+                // @ts-ignore
+                underline: false,
             }),
             Image,
             TextStyle,
@@ -475,6 +479,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                     </div>
                 )}
             </div>
+
         </div>
     );
 };

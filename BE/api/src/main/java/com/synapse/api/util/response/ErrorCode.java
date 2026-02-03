@@ -12,6 +12,7 @@ public enum ErrorCode {
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "COMMON_002", "지원하지 않는 HTTP 메서드입니다"),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON_003", "서버 내부 오류가 발생했습니다"),
     INVALID_TYPE_VALUE(HttpStatus.BAD_REQUEST, "COMMON_004", "잘못된 타입입니다"),
+    INVALID_ENUM_TYPE(HttpStatus.BAD_REQUEST, "COMMON_005", "ENUM 타입이 올바르지 않습니다"),
 
     // Auth
     AUTH_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "AUTH_001", "인증되지 않은 사용자입니다"),
@@ -63,9 +64,8 @@ public enum ErrorCode {
     SYSTEM_INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "SYSTEM_002", "일시적인 서버 오류가 발생했습니다"),
 
     // OAuthAccount
-    PARSING_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "OAUTH_001", "응답 파싱 중 오류가 발생했습니다"),
-    OAUTH_PROVIDER_ERROR(HttpStatus.BAD_GATEWAY, "OAUTH_002", "OAuth2 제공자로부터 오류 응답을 받았습니다"),
-    OAUTH_TOKEN_ISSUE(HttpStatus.BAD_GATEWAY, "OAUTH_003", "OAuth2 제공자로부터 Access Token을 받지 못했습니다"),
+    OAUTH_PROVIDER_ERROR(HttpStatus.BAD_GATEWAY, "OAUTH_001", "OAuth2 제공자로부터 오류 응답을 받았습니다"),
+    OAUTH_TOKEN_ISSUE(HttpStatus.BAD_GATEWAY, "OAUTH_002", "OAuth2 제공자로부터 Access Token을 받지 못했습니다"),
 
     // AWS S3
     IMAGE_DELETE_FAIL(HttpStatus.BAD_GATEWAY, "IMAGE_001", "이미지 삭제 중 스토리지 서버(S3)와의 통신에 실패했습니다."),
@@ -76,8 +76,19 @@ public enum ErrorCode {
     INVALID_BLOCK_CONTENTS(HttpStatus.BAD_REQUEST, "BLOCK_002", "블록 content 형식이 올바르지 않습니다."),
     INVALID_BLOCK_TYPE(HttpStatus.BAD_REQUEST, "BLOCK_003", "블록 타입이 올바르지 않습니다."),
     UNSUPPORTED_LANGUAGE(HttpStatus.BAD_REQUEST, "BLOCK_004", "지원하지 않는 언어 타입입니다."),
-    UNSUPPORTED_BLOCK_TYPE(HttpStatus.BAD_REQUEST, "BLOCK_005", "지원하지 않는 블록 타입입니다.");
+    UNSUPPORTED_BLOCK_TYPE(HttpStatus.BAD_REQUEST, "BLOCK_005", "지원하지 않는 블록 타입입니다."),
+    BLOCK_HISTORY_NOT_FOUND(HttpStatus.NOT_FOUND, "BLOCK_006", "블록 히스토리를 찾을 수 없습니다."),
+    BLOCK_ROLLBACK_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "BLOCK_007", "블록 롤백에 실패했습니다."),
+    BLOCK_VERSION_CONFLICT(HttpStatus.CONFLICT, "BLOCK_008", "블록 버전 충돌이 발생했습니다."),
+    INVALID_SLOT_NUMBER(HttpStatus.BAD_REQUEST, "BLOCK_009", "슬롯 번호는 1-5 범위여야 합니다."),
+    INVALID_BLOCK_TYPE_FOR_HISTORY(HttpStatus.BAD_REQUEST, "BLOCK_010", "히스토리 기능은 코드 블록에서만 사용할 수 있습니다."),
 
+    // AI
+    AI_INVALID_REQUEST(HttpStatus.BAD_REQUEST, "AI_001", "코드 길이가 너무 깁니다.(500자)"),
+    AI_INVALID_RESPONSE(HttpStatus.BAD_REQUEST, "AI_002", "잘못된 응답입니다."),
+    AI_PROVIDER_NOT_SUPPORTED(HttpStatus.NOT_FOUND, "AI_003", "지원하지 않는 모델입니다."),
+    AI_SERVICE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "AI_004", "AI 서버가 응답하지 않습니다."),
+    AI_TIMEOUT(HttpStatus.REQUEST_TIMEOUT, "AI_005", "응답시간이 초과되었습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

@@ -6,9 +6,7 @@ const env = loadEnv();
 
 // MongoDB 연결
 mongoose
-  .connect(env.MONGO_URI, {
-    dbName: "yjs", // 필요시 DB명 명시
-  })
+  .connect(env.MONGO_URI)
   .then(() => {
     console.log("[DB] Connected to MongoDB");
   })

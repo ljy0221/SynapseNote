@@ -13,7 +13,7 @@ const RecentNotes: React.FC<RecentNotesProps> = ({ notes }) => {
 
   const handleClickNote = (noteId: string) => {
     console.log('[RecentNotes] 노트 이동', { noteId });
-    navigate(`/notes/${noteId}`);
+    navigate(`/note/${noteId}`);
   };
 
   return (

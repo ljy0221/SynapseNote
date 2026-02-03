@@ -64,6 +64,14 @@ public interface NoteRepository extends JpaRepository<Note, UUID> {
             "AND n.bookmark = true AND n.deletedAt IS NULL " +
             "ORDER BY n.updatedAt DESC")
     Page<Note> findBookmarkedNotesByMemberId(@Param("memberId") UUID memberId, Pageable pageable);
+
     // 6. 중복 제목 검사 등 (같은 폴더 내 이름 중복 방지용)
-    boolean existsByCreatedByIdAndDirectoryPathAndTitleAndDeletedAtIsNull(UUID memberId, String directoryPath, String title);
+    boolean existsByCreatedByIdAndDirectoryPathAndTitleAndDeletedAtIsNull(UUID memberId, String directoryPath,
+                                                                          String title);
+
+    @Query("SELECT n.id FROM Note n WHERE n.createdBy.id = :memberId AND n.deletedAt IS NULL")
+    List<UUID> findAllNoteIdsByMemberId(@Param("memberId") UUID memberId);
+
+    // 여러 ID로 노트 조회 (DeletedAt IS NULL)
+    List<Note> findAllByIdInAndDeletedAtIsNull(List<UUID> ids);
 }

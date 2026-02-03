@@ -1,7 +1,8 @@
 package com.synapse.api.modules.note.controller;
 
+import com.synapse.api.modules.block.dto.response.BlockDetailResponse;
 import com.synapse.api.modules.block.dto.response.BlockPageResponse;
-
+import com.synapse.api.modules.block.service.BlockService;
 import com.synapse.api.modules.note.dto.request.ExecutionHistoryRequest;
 import com.synapse.api.modules.note.dto.request.NoteCreateRequest;
 import com.synapse.api.modules.note.dto.request.NoteUpdateRequest;
@@ -30,6 +31,7 @@ import java.util.UUID;
 public class NoteController {
 
     private final NoteService noteService;
+    private final BlockService blockService;
 
     @PostMapping("/v1/notes")
     public DataResponse<NoteResponse> createNote(
@@ -97,7 +99,7 @@ public class NoteController {
     public StatusResponse saveExecutionHistory(
             @AuthenticationPrincipal CustomMemberDetails details,
             @PathVariable UUID noteId,
-            @PathVariable String blockId,
+            @PathVariable UUID blockId,
             @Valid @RequestBody ExecutionHistoryRequest request) {
         UUID memberId = details.id();
         log.info("Saving execution history for block: {} in note: {}", blockId, noteId);
@@ -109,7 +111,7 @@ public class NoteController {
     public DataResponse<List<ExecutionHistoryResponse>> getExecutionHistory(
             @AuthenticationPrincipal CustomMemberDetails details,
             @PathVariable UUID noteId,
-            @PathVariable String blockId) {
+            @PathVariable UUID blockId) {
         UUID memberId = details.id();
         log.info("Getting execution history for block: {} in note: {}", blockId, noteId);
         List<ExecutionHistoryResponse> response = noteService.getExecutionHistory(noteId, blockId, memberId);
@@ -156,7 +158,7 @@ public class NoteController {
     public StatusResponse bookmarkBlock(
             @AuthenticationPrincipal CustomMemberDetails details,
             @PathVariable UUID noteId,
-            @PathVariable String blockId) {
+            @PathVariable UUID blockId) {
         UUID memberId = details.id();
         noteService.bookmarkBlock(memberId, noteId, blockId);
         return StatusResponse.of();
@@ -166,21 +168,26 @@ public class NoteController {
     public StatusResponse unbookmarkBlock(
             @AuthenticationPrincipal CustomMemberDetails details,
             @PathVariable UUID noteId,
-            @PathVariable String blockId) {
+            @PathVariable UUID blockId) {
         UUID memberId = details.id();
         noteService.unbookmarkBlock(memberId, noteId, blockId);
         return StatusResponse.of();
     }
 
-    @GetMapping("/v1/notes/{noteId}/blocks/bookmarks")
+    @GetMapping("/v1/notes/blocks")
     public DataResponse<BlockPageResponse> getBlockBookmarks(
             @AuthenticationPrincipal CustomMemberDetails details,
-            @PathVariable UUID noteId,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
         UUID memberId = details.id();
-        BlockPageResponse response = noteService.getBlockBookmarks(memberId, noteId, page - 1, size);
+        BlockPageResponse response = blockService.getAllBookmarkedBlocks(memberId, page - 1, size);
         return DataResponse.of(response);
     }
 
+    @GetMapping("/v1/notes/{noteId}/blocks")
+    public DataResponse<List<BlockDetailResponse>> getBlocks(@AuthenticationPrincipal CustomMemberDetails details,
+                                                             @PathVariable UUID noteId) {
+        List<BlockDetailResponse> response = blockService.getBlocks(details.id(), noteId);
+        return DataResponse.of(response);
+    }
 }

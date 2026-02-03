@@ -21,10 +21,10 @@ export interface BlockProperties {
 // 2. Block 문서 인터페이스 (Java BaseBlock 대응)
 export interface IBlock extends Document {
   _class: string;
-  noteId: string;
-  blockId: string;
-  type: string;
+  noteId: any;
+  blockId: any;
   properties: BlockProperties;
+  bookmark: boolean;
   order: number;
 
   // CodeBlock specific fields (Root Level)
@@ -41,24 +41,34 @@ export interface IBlock extends Document {
   updatedAt: Date;
 }
 
-// 3. BlockHistory 인터페이스
+// 3. BlockHistory 인터페이스 (슬롯 기반)
 export interface IBlockHistory extends Document {
-  blockId: string;
-  noteId: string;
-  previousProperties: BlockProperties;
-  previousType?: string;
+  blockId: any;
+  noteId: any;
+  slotNumber: number;
+
+  properties: BlockProperties;
+  blockType: string;
+
+  changedBy: {
+    memberId: string;
+    memberName: string;
+  };
+
   changedAt: Date;
+  changeDescription?: string;
 }
 
 // 4. Mongoose Schema 정의
 const BlockSchema: Schema = new Schema({
   _class: { type: String, required: true },
-  noteId: { type: String, required: true, index: true },
-  blockId: { type: String, required: true, unique: true },
-  type: { type: String, required: true },
+  noteId: { type: Schema.Types.Buffer, required: true, index: true },
+  blockId: { type: Schema.Types.Buffer, required: true, unique: true },
 
   // Java의 @Field("properties.xxx")와 매핑됨
   properties: { type: Schema.Types.Mixed, default: {} },
+
+  bookmark: { type: Boolean, default: false },
 
   // CodeBlock용 Root Level Fields
   outputHistory: { type: [Schema.Types.Mixed], default: undefined },
@@ -68,18 +78,34 @@ const BlockSchema: Schema = new Schema({
   order: { type: Number, default: 0 }
 }, {
   timestamps: true,
+  versionKey: false,
   collection: 'blocks'
 });
 
 const BlockHistorySchema: Schema = new Schema({
-  blockId: { type: String, required: true, index: true },
-  noteId: { type: String, required: true },
-  previousProperties: { type: Object },
-  previousType: { type: String },
-  changedAt: { type: Date, default: Date.now }
+  blockId: { type: Schema.Types.Buffer, required: true, index: true },
+  noteId: { type: Schema.Types.Buffer, required: true, index: true },
+  slotNumber: { type: Number, required: true, min: 1, max: 5 },
+
+  properties: { type: Object, required: true },
+  blockType: { type: String, required: true },
+
+  changedBy: {
+    memberId: { type: String, required: true },
+    memberName: { type: String, required: true }
+  },
+
+  changedAt: { type: Date, default: Date.now },
+  changeDescription: { type: String }
 }, {
+  versionKey: false,
   collection: 'block_histories'
 });
+
+// 복합 인덱스 추가 (슬롯 기반)
+BlockHistorySchema.index({ blockId: 1, slotNumber: 1 }, { unique: true });
+BlockHistorySchema.index({ noteId: 1, changedAt: -1 });
+BlockHistorySchema.index({ 'changedBy.memberId': 1, changedAt: -1 });
 
 export const Block = mongoose.model<IBlock>('Block', BlockSchema);
 export const BlockHistory = mongoose.model<IBlockHistory>('BlockHistory', BlockHistorySchema);

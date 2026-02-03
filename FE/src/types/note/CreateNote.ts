@@ -9,15 +9,12 @@ export interface CreateNoteRequest {
 }
 
 export interface CreateNoteResponse {
-  success: boolean;
-  data: {
-    noteId: string;
-    title: string;
-    directoryPath: string;
-    pointX: number;
-    pointY: number;
-    role: 'OWNER' | 'EDITOR' | 'VIEWER';
-    createdAt: string;
-    updatedAt: string;
-  };
+  noteId: string;
+  title: string;
+  directoryPath: string;
+  pointX: number;
+  pointY: number;
+  role: 'OWNER' | 'EDITOR' | 'VIEWER';
+  createdAt: string;
+  updatedAt: string;
 }
