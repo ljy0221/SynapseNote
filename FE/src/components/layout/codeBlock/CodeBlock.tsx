@@ -60,6 +60,18 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     // 버전 관리(체크포인트) 상태
     const [showCheckpoints, setShowCheckpoints] = useState(false);
 
+    // props code 변경 시 editedCode 동기화
+    useEffect(() => {
+        if (code !== undefined) {
+            setEditedCode(code);
+        }
+    }, [code]);
+
+    // Debugging logs
+    useEffect(() => {
+        console.log('CodeBlock editedCode updated:', editedCode);
+    }, [editedCode]);
+
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     // [추가] 포커스 트리거
