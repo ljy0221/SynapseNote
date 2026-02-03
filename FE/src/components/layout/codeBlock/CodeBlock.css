@@ -76,21 +76,26 @@
 
 .code-content-container {
     background-color: transparent;
-    min-height: 120px;
+    min-height: 150px;
     display: flex;
+    overflow: hidden;
+    /* CodeMirror 스크롤 처리 */
 }
 
-.code-editor-input {
+/* CodeMirror 에디터 커스터마이징 */
+.code-content-container .cm-editor {
     width: 100%;
-    padding: 20px;
-    border: none;
-    outline: none;
-    background: none;
-    resize: none;
     font-family: 'Fira Code', 'Courier New', monospace;
     font-size: 15px;
     line-height: 1.6;
-    color: var(--font-color);
+}
+
+.code-content-container .cm-scroller {
+    overflow: auto;
+}
+
+.code-content-container .cm-focused {
+    outline: none;
 }
 
 .code-output-zone {
