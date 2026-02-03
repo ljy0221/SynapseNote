@@ -21,7 +21,6 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Document(collection = "blocks")
-@CompoundIndex(name = "idx_bookmark_created_deleted", def = "{'bookmark': 1, 'createdAt': -1, 'deletedAt': 1}")
 // API 응답 시 JSON 타입 추론을 위한 설정 (프론트엔드용)
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
