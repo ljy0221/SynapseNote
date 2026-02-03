@@ -10,6 +10,8 @@ import './CodeBlock.css';
 import { saveExecutionToBackend } from "../../../utils/executionAPI.ts";
 import { LanguageSelector } from "./LanguageSelector.tsx";
 import CheckpointSidebar from '../checkpoint/CheckpointSidebar';
+import AiReviewButton from '../../common/aiReviewButton/AiReviewButton';
+import AiReviewSidebar from '../aiReview/AiReviewSidebar';
 import { getLanguageTemplate, isCodeEmpty } from '../../../utils/languageTemplates';
 import { useCodeEditorStore } from '../../../store/useCodeEditorStore';
 
@@ -67,6 +69,9 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 
     // 버전 관리(체크포인트) 상태
     const [showCheckpoints, setShowCheckpoints] = useState(false);
+
+    // AI 리뷰 사이드바 상태
+    const [showAiReview, setShowAiReview] = useState(false);
 
     // props code 변경 시 editedCode 동기화
     useEffect(() => {
@@ -349,6 +354,16 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                             setShowCheckpoints(true);
                         }}
                     />
+                    <AiReviewButton
+                        onClick={() => {
+                            if (!noteId) {
+                                alert('노트가 저장되어야 AI 리뷰를 사용할 수 있습니다.');
+                                return;
+                            }
+                            setShowAiReview(true);
+                        }}
+                        disabled={loading}
+                    />
                 </div>
             </div>
             {/* 메인 코드 영역 */}
@@ -394,6 +409,16 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                     currentCode={editedCode}
                     onClose={() => setShowCheckpoints(false)}
                     onRestore={handleRestore}
+                />
+            )}
+
+            {/* AI 리뷰 사이드바 */}
+            {showAiReview && noteId && (
+                <AiReviewSidebar
+                    noteId={noteId}
+                    blockId={id.toString()}
+                    language={language}
+                    onClose={() => setShowAiReview(false)}
                 />
             )}
         </div>
