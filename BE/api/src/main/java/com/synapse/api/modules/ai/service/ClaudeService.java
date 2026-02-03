@@ -20,7 +20,7 @@ public class ClaudeService implements AiService {
 
     private final RestClient restClient;
 
-    @Value("${ai.claude.api.key}")
+    @Value("${ai.gms.api.key}")
     private String apiKey;
 
     @Value("${ai.claude.api.url}")

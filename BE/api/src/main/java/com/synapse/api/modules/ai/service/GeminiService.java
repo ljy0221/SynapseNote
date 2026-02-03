@@ -20,7 +20,7 @@ public class GeminiService implements AiService {
 
     private final RestClient restClient;
 
-    @Value("${ai.gemini.api.key}")
+    @Value("${ai.gms.api.key}")
     private String apiKey;
 
     @Value("${ai.gemini.api.url}")
