@@ -11,10 +11,8 @@ export const getCheckpointsApi = (noteId: string, blockId: string) => {
         'get',
         `/v1/notes/${noteId}/blocks/${blockId}/history`
     ).then(res => {
-        console.log('[API] getCheckpointsApi response:', res);
         return res;
     }).catch(err => {
-        console.error('[API] getCheckpointsApi error:', err);
         throw err;
     });
 };
@@ -28,10 +26,8 @@ export const getCheckpointDetailApi = (noteId: string, blockId: string, slotNumb
         'get',
         `/v1/notes/${noteId}/blocks/${blockId}/history/slots/${slotNumber}`
     ).then(res => {
-        console.log('[API] getCheckpointDetailApi response:', res);
         return res;
     }).catch(err => {
-        console.error('[API] getCheckpointDetailApi error:', err);
         throw err;
     });
 };
@@ -47,16 +43,8 @@ export const createCheckpointApi = (noteId: string, blockId: string, slotNumber:
         'post',
         url
     ).then(res => {
-        console.log('[API] createCheckpointApi SUCCESS response:', res);
         return res;
     }).catch(err => {
-        console.error('[API] createCheckpointApi ERROR:', err);
-        console.error('[API] Error details:', {
-            message: err.message,
-            response: err.response,
-            status: err.response?.status,
-            data: err.response?.data
-        });
         throw err;
     });
 };
@@ -70,10 +58,8 @@ export const deleteCheckpointApi = (noteId: string, blockId: string, slotNumber:
         'delete',
         `/v1/notes/${noteId}/blocks/${blockId}/history/slots/${slotNumber}`
     ).then(res => {
-        console.log('[API] deleteCheckpointApi response:', res);
         return res;
     }).catch(err => {
-        console.error('[API] deleteCheckpointApi error:', err);
         throw err;
     });
 };
