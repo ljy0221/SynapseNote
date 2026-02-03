@@ -35,6 +35,7 @@ public class JwtUtil {
                 .compact();
     }
 
+    // web socket ticket 발급
     public String generateTicket(UUID userId, String userName, UUID noteId, Instant expiresAt) {
         return Jwts.builder()
                 .issuer("synapse")
