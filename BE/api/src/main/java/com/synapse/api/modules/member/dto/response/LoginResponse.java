@@ -10,8 +10,7 @@ import java.util.UUID;
 public record LoginResponse(
     String accessToken,
     boolean isNewMember,
-    Member member,
-    boolean sessionReplaced
+    Member member
 ) {
     @Builder
     public record Member (
