@@ -113,6 +113,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 path.matches("^/api/v\\d+/login")
                 || path.matches("^/api/v\\d+/refresh")
         )) || path.matches(".*\\.(js|css|png|jpg|ico)$")
+            || path.startsWith("/webrtc")
             || path.matches("^/test/.*");
     }
 
