@@ -80,6 +80,15 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
         console.log('CodeBlock editedCode updated:', editedCode);
     }, [editedCode]);
 
+    // 초기 로드 시 비어있으면 템플릿 적용
+    useEffect(() => {
+        if (isCodeEmpty(code) && isCodeEmpty(editedCode)) {
+            const template = getLanguageTemplate(language);
+            setEditedCode(template);
+            onChange(id, template);
+        }
+    }, []); // 빈 배열로 마운트 시 한 번만 실행
+
     // CodeMirror가 자체적으로 포커스 및 높이를 관리하므로 ref와 useEffect 제거
 
     // 세션 상태 로드 (feat/#63 추가)
@@ -257,48 +266,54 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                 />
 
                 {/* 모드 선택 버튼 (feat/#63 추가 - Java 제외, 다중 언어 시 비활성화) */}
-                {language !== 'java' && !hasMultipleLanguages(noteId || '') && (
-                    <div className="mode-selector" style={{ marginLeft: '10px', display: 'flex', gap: '5px' }}>
-                        <button
-                            className={`mode-button ${executionMode === 'single' ? 'active' : ''}`}
-                            onClick={() => setExecutionMode('single')}
-                            disabled={loading}
-                            style={{
-                                padding: '4px 10px',
-                                fontSize: '12px',
-                                cursor: loading ? 'not-allowed' : 'pointer',
-                                backgroundColor: executionMode === 'single' ? '#4A90E2' : '#555',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '4px',
-                            }}
-                        >
-                            Single
-                        </button>
-                        <button
-                            className={`mode-button ${executionMode === 'session' ? 'active' : ''}`}
-                            onClick={() => {
-                                if (noteId) {
-                                    setExecutionMode('session');
-                                }
-                            }}
-                            disabled={loading || !noteId}
-                            style={{
-                                padding: '4px 10px',
-                                fontSize: '12px',
-                                cursor: (loading || !noteId) ? 'not-allowed' : 'pointer',
-                                backgroundColor: executionMode === 'session' ? '#4A90E2' : '#555',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '4px',
-                                opacity: !noteId ? 0.5 : 1,
-                            }}
-                            title={!noteId ? '노트를 저장해야 세션 모드를 사용할 수 있습니다' : '세션 모드 활성화'}
-                        >
-                            Session
-                        </button>
-                    </div>
-                )}
+                {(() => {
+                    const isJava = language === 'java';
+                    const hasMultiple = hasMultipleLanguages(noteId || '');
+                    const shouldShow = !isJava && !hasMultiple;
+                    console.log(`[Session Button] lang:${language}, isJava:${isJava}, hasMultiple:${hasMultiple}, noteId:${noteId}, shouldShow:${shouldShow}`);
+                    return shouldShow;
+                })() && (
+                        <div className="mode-selector" style={{ marginLeft: '10px', display: 'flex', gap: '5px' }}>
+                            <button
+                                className={`mode-button ${executionMode === 'single' ? 'active' : ''}`}
+                                onClick={() => setExecutionMode('single')}
+                                disabled={loading}
+                                style={{
+                                    padding: '4px 10px',
+                                    fontSize: '12px',
+                                    cursor: loading ? 'not-allowed' : 'pointer',
+                                    backgroundColor: executionMode === 'single' ? '#4A90E2' : '#555',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                }}
+                            >
+                                Single
+                            </button>
+                            <button
+                                className={`mode-button ${executionMode === 'session' ? 'active' : ''}`}
+                                onClick={() => {
+                                    if (noteId) {
+                                        setExecutionMode('session');
+                                    }
+                                }}
+                                disabled={loading || !noteId}
+                                style={{
+                                    padding: '4px 10px',
+                                    fontSize: '12px',
+                                    cursor: (loading || !noteId) ? 'not-allowed' : 'pointer',
+                                    backgroundColor: executionMode === 'session' ? '#4A90E2' : '#555',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    opacity: !noteId ? 0.5 : 1,
+                                }}
+                                title={!noteId ? '노트를 저장해야 세션 모드를 사용할 수 있습니다' : '세션 모드 활성화'}
+                            >
+                                Session
+                            </button>
+                        </div>
+                    )}
 
                 {/* [우측] 액션 버튼들 (삭제 버튼 제거됨) */}
                 <div className="code-actions">
