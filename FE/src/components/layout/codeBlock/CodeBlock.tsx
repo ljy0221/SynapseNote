@@ -10,6 +10,8 @@ import './CodeBlock.css';
 import { saveExecutionToBackend } from "../../../utils/executionAPI.ts";
 import { LanguageSelector } from "./LanguageSelector.tsx";
 import CheckpointSidebar from '../checkpoint/CheckpointSidebar';
+import { getLanguageTemplate, isCodeEmpty } from '../../../utils/languageTemplates';
+import { useCodeEditorStore } from '../../../store/useCodeEditorStore';
 
 interface CodeBlockProps {
     id: number | string;
@@ -51,7 +53,13 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     const [result, setResult] = useState<ExecutionResult | null>(null);
     const [loading, setLoading] = useState(false);
     const [editedCode, setEditedCode] = useState(code);
-    const [language, setLanguage] = useState<Language>(initialLanguage);
+
+    // Zustand store에서 언어 설정 가져오기
+    const { settings, getNoteLanguage, setNoteLanguage, trackBlockLanguage, hasMultipleLanguages } = useCodeEditorStore();
+
+    // 저장된 언어 설정 로드 (noteId가 있을 때만)
+    const savedLanguage = noteId ? getNoteLanguage(noteId) : undefined;
+    const [language, setLanguage] = useState<Language>(savedLanguage || initialLanguage);
 
     // 세션 모드 상태 (feat/#63 추가)
     const [executionMode, setExecutionMode] = useState<ExecutionMode>('single');
