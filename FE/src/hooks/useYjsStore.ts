@@ -6,6 +6,46 @@ import { BlockData, BlockType } from '../pages/note/Note';
 // Yjs Map에서 사용하는 키 정의
 type YBlockMap = Y.Map<any>;
 
+/**
+ * CRDT-safe 텍스트 diff 적용 함수
+ * 전체 삭제/재삽입 대신 변경된 부분만 계산하여 Y.Text에 반영
+ * 이를 통해 다중 사용자 동시 편집 시 충돌을 방지합니다.
+ * 
+ * @param yText - Yjs Y.Text 객체
+ * @param oldText - 현재 텍스트
+ * @param newText - 새로운 텍스트
+ */
+function applyTextDiff(yText: Y.Text, oldText: string, newText: string): void {
+    // 1. 앞에서부터 공통 접두사 길이 찾기
+    let prefixLen = 0;
+    const minLen = Math.min(oldText.length, newText.length);
+    while (prefixLen < minLen && oldText[prefixLen] === newText[prefixLen]) {
+        prefixLen++;
+    }
+
+    // 2. 뒤에서부터 공통 접미사 길이 찾기
+    let suffixLen = 0;
+    while (
+        suffixLen < minLen - prefixLen &&
+        oldText[oldText.length - 1 - suffixLen] === newText[newText.length - 1 - suffixLen]
+    ) {
+        suffixLen++;
+    }
+
+    // 3. 변경된 구간 계산
+    const deleteFrom = prefixLen;
+    const deleteLen = oldText.length - prefixLen - suffixLen;
+    const insertText = newText.substring(prefixLen, newText.length - suffixLen);
+
+    // 4. Y.Text에 변경 적용 (삭제 후 삽입)
+    if (deleteLen > 0) {
+        yText.delete(deleteFrom, deleteLen);
+    }
+    if (insertText.length > 0) {
+        yText.insert(deleteFrom, insertText);
+    }
+}
+
 export const useYjsStore = (noteId: string | undefined) => {
     const [blocks, setBlocks] = useState<BlockData[]>([]);
     const [isSynced, setIsSynced] = useState(false);
@@ -147,6 +187,7 @@ export const useYjsStore = (noteId: string | undefined) => {
     };
 
     // 블록 업데이트 (내용 변경)
+    // CRDT-safe: diff 기반으로 변경된 부분만 업데이트하여 동시 편집 충돌 방지
     const updateBlock = (blockId: number | string, newContent: string) => {
         const doc = docRef.current;
         const yBlocks = doc.getArray<YBlockMap>('blocks');
@@ -170,8 +211,8 @@ export const useYjsStore = (noteId: string | undefined) => {
             if (yText) {
                 const currentStr = yText.toString();
                 if (currentStr !== newContent) {
-                    yText.delete(0, yText.length);
-                    yText.insert(0, newContent);
+                    // diff 기반 업데이트: 변경된 부분만 수정
+                    applyTextDiff(yText, currentStr, newContent);
                 }
             }
         });
@@ -228,8 +269,7 @@ export const useYjsStore = (noteId: string | undefined) => {
 
             // 2. 새 위치에 삽입 후 기존 삭제 (순서 중요)
             if (fromIndex < toIndex) {
-                // 아래로 이동: 기존 위치보다 뒤에 삽입해야 하므로, toIndex 기준 +1 위치(처럼 보이지만, React DnD 인덱스 기준 고려)
-                // 일반적인 배열 이동: insert at toIndex+1, delete at fromIndex.
+                // 아래로 이동
                 yBlocks.insert(toIndex + 1, [newBlockMap]);
                 yBlocks.delete(fromIndex, 1);
             } else {
