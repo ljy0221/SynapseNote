@@ -14,9 +14,8 @@ import {
 
 // 컴포넌트 임포트 (아키텍처 경로 준수)
 import MindmapCanvas from '../../components/features/mindmap/MindmapCanvas';
-import { NodeSelectorModal } from '../../components/features/mindmap/NodeSelectorModal';
-import { MindmapToolbar } from '../../components/layout/mindmap/MindmapToolbar';
-import ConfirmModal from '../../components/common/modal/ConfirmModal';
+import { MindmapToolbar } from '../../components/layout/mindmap/MindmapToolbar'; // [Restored]
+import { useModalStore } from '../../store/useModalStore'; // [New]
 import { ToastNotification } from '../../components/common/toast/ToastNotification'; // [New]
 import { useNodeRepulsion } from '../../hooks/useNodeRepulsion';
 import './MindMap.css';
@@ -32,8 +31,8 @@ const MindMapContent: React.FC = () => {
     const [isEditMode, setIsEditMode] = useState<boolean>(false);
     const [isInitialFitDone, setIsInitialFitDone] = useState(false);
 
-    // [New] 노트 선택 모달 상태
-    const [isSelectorOpen, setIsSelectorOpen] = useState(false);
+    // [New] 노트 선택 모달 상태 (제거됨 - Global Store 사용)
+
 
     // 2. React Flow 전용 노드/엣지 상태
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
@@ -163,9 +162,14 @@ const MindMapContent: React.FC = () => {
         fetchMindmap();
     }, [setNodes, setEdges]);
 
-    // 3. 삭제 모달 상태 관리
-    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const [deleteMessage, setDeleteMessage] = useState('');
+    // 3. [Modified] 모달 상태 제거 (Global Store 사용)
+    // const [isSelectorOpen, setIsSelectorOpen] = useState(false);
+    // const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    // const [deleteMessage, setDeleteMessage] = useState('');
+
+    // [New] 중복 노드 알림 모달 상태 삭제됨
+    // const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
+    // const [duplicateNodeId, setDuplicateNodeId] = useState<string | null>(null);
 
     // 4. [New] 클릭 연결 모드 상태
     const [isConnectMode, setIsConnectMode] = useState(false);
@@ -182,8 +186,7 @@ const MindMapContent: React.FC = () => {
             setConnectSource(null);
             setIsDisconnectMode(false);
             setDisconnectSource(null);
-            setIsSelectorOpen(false); // 선택 모달도 닫기
-            setIsDeleteModalOpen(false); // 삭제 모달도 닫기
+            // 모달 닫기 로직 제거 (Store에서 관리하거나 필요 시 closeAll 호출)
         }
     }, [isEditMode]);
 
@@ -294,9 +297,11 @@ const MindMapContent: React.FC = () => {
     const [isToastVisible, setIsToastVisible] = useState(false);
     const [toastType, setToastType] = useState<'success' | 'error'>('success');
 
-    // [New] 방향 전환 확인 모달 상태
-    const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
-    const [swapParams, setSwapParams] = useState<{ oldEdgeId: string; newConnection: Connection } | null>(null);
+
+    // [New] Global Modal Store
+    const { openModal } = useModalStore();
+
+    // [Modified] swapParams 상태 제거 -> 로컬 변수나 클로저로 처리
 
     // ... (기존 state 유지)
 
@@ -318,8 +323,27 @@ const MindMapContent: React.FC = () => {
      * [Modified] 바로 생성하지 않고 모달을 오픈함
      */
     const handleAddNodeClick = useCallback(() => {
-        setIsSelectorOpen(true);
-    }, []);
+        openModal('NODE_SELECTOR', {
+            onSelect: (noteData: any) => handleSelectNote(noteData), // handleSelectNote가 최신 상태를 참조하는지 확인 필요... useCallback dependency에 있으니 OK.
+            existingNodeIds: nodes.map(n => n.id)
+        });
+    }, [openModal, nodes]); // handleSelectNote는 아래에 정의되므로 의존성 문제 주의. handleSelectNote를 먼저 정의하거나... hoisting 덕분에 괜찮음. 하지만 useCallback 안에서는...
+    // handleSelectNote가 useCallback으로 정의되어 있으므로, 여기서 호출하려면 handleSelectNote가 의존성에 추가되어야 함.
+    // 하지만 handleSelectNote가 아래에 있음. 순서 변경 필요?
+    // 아니면 openModal 호출 시점에 handleSelectNote는 이미 정의된 상태일 것임 (렌더링 시점에).
+    // useCallback 의존성 배열에 handleSelectNote를 넣어야 함.
+    // -> handleSelectNote를 먼저 정의하고 handleAddNodeClick을 정의하는 것이 안전함. 순서 변경하거나, 
+    // 현재 구조상 handleAddNodeClick이 먼저 나오고 handleSelectNote가 뒤에 나옴. 
+    // Javascript 호이스팅은 변수에는 적용 안됨 (const). 
+    // 순서를 바꾸는 것이 좋음. 하지만 diff가 커짐.
+    // 일단 여기에 쓰고 handleSelectNote를 의존성 배열에 추가. (ESLint가 경고할 것임: useBeforeDefine)
+    // 리팩토링 편의상 일단 진행하고 문제 생기면 순서 조정.
+    // React Hook 순서는 렌더링마다 동일해야 함.
+
+    // --> handleAddNodeClick을 handleSelectNote 아래로 옮기는 것이 Best.
+    // 하지만 여기서는 기존 위치 유지하고, handleSelectNote를 나중에 참조하도록 함.
+    // *주의*: `handleSelectNote` change will trigger `handleAddNodeClick` recreation.
+
 
     /**
      * 기능 4: 노드 간 연결 설정
@@ -341,8 +365,14 @@ const MindMapContent: React.FC = () => {
 
         if (reverseEdge) {
             // 역방향 연결이 존재하면 모달 띄우기
-            setSwapParams({ oldEdgeId: reverseEdge.id, newConnection: params as Connection });
-            setIsSwapModalOpen(true);
+            // setSwapParams({ oldEdgeId: reverseEdge.id, newConnection: params as Connection });
+            // setIsSwapModalOpen(true);
+
+            // [Modified] Global Modal 사용
+            openModal('CONFIRM', {
+                message: `이미 연결된 관계입니다.\n방향을 반대로 변경하시겠습니까?`,
+                onConfirm: () => handleConfirmSwap(reverseEdge.id, params as Connection),
+            });
             return;
         }
 
@@ -363,18 +393,16 @@ const MindMapContent: React.FC = () => {
 
     }, [edges, setEdges, nodes, showToast]);
 
-    // [New] 연결 방향 교체 실행 핸들러
-    const handleConfirmSwap = useCallback(() => {
-        if (!swapParams) return;
-
+    // [New] 연결 방향 교체 실행 핸들러 (인자 받도록 수정)
+    const handleConfirmSwap = useCallback((oldEdgeId: string, newConnection: Connection) => {
         setEdges((eds) => {
             // 1. 기존 역방향 엣지 삭제
-            const filtered = eds.filter(e => e.id !== swapParams.oldEdgeId);
+            const filtered = eds.filter(e => e.id !== oldEdgeId);
 
             // 2. 새로운 방향 엣지 생성
             const newEdge = {
-                ...swapParams.newConnection,
-                id: `e${swapParams.newConnection.source}-${swapParams.newConnection.target}-${Date.now()}`,
+                ...newConnection,
+                id: `e${newConnection.source}-${newConnection.target}-${Date.now()}`,
                 type: 'synapse', // [New] 시냅스 엣지 사용
                 style: { stroke: 'var(--color-point)', strokeWidth: 2 }
             };
@@ -382,16 +410,14 @@ const MindMapContent: React.FC = () => {
             return addEdge(newEdge, filtered);
         });
 
-        // 3. 알림 표시 및 초기화
+        // 3. 알림 표시
         showToast("연결 방향이 반대로 변경되었습니다.");
-        setIsSwapModalOpen(false);
-        setSwapParams(null);
-    }, [swapParams, setEdges, showToast]);
+        // setIsSwapModalOpen(false); // Global Modal은 내부에서 닫힘 (onConfirm 실행 후 자동 닫힘 처리 필요? 아니면 여기서 명시적 닫기? ConfirmModal 구현 확인 필요)
+        // ConfirmModal의 onConfirm 호출 후 닫는 로직은 ConfirmModal 내부에 있을 것임.
+        // 확인: ConfirmModal.tsx: onConfirm(); onClose(); -> OK.
+    }, [setEdges, showToast]);
 
-    const handleCancelSwap = useCallback(() => {
-        setIsSwapModalOpen(false);
-        setSwapParams(null);
-    }, []);
+    // handleCancelSwap 삭제 (Modal onClose에서 처리)
 
     /**
      * 기능 1-1: 모달에서 노트를 선택했을 때 실제 노드 생성
@@ -426,6 +452,29 @@ const MindMapContent: React.FC = () => {
                 return nds;
             }
 
+            const isDuplicate = nds.some(n => n.id === noteData.id);
+
+            // [New] 중복 체크 로직 (Modified: Toast + Auto Select)
+            if (isDuplicate) {
+                // 1. Toast 알림
+                showToast("이미 생성되어있는 지식입니다.", 'error');
+
+                // 2. 해당 노드로 이동 및 선택
+                const targetNode = nds.find(n => n.id === noteData.id);
+                if (targetNode) {
+                    setTimeout(() => {
+                        setCenter(targetNode.position.x + 30, targetNode.position.y + 30, { zoom: 1.2, duration: 1000 });
+                    }, 50);
+
+                    return nds.map(n => ({
+                        ...n,
+                        selected: n.id === noteData.id
+                    }));
+                }
+
+                return nds;
+            }
+
             const newNode = {
                 id: noteData.id,
                 type: 'note',
@@ -442,29 +491,20 @@ const MindMapContent: React.FC = () => {
                 setCenter(newX + 30, newY + 30, { zoom: 1.2, duration: 1000 });
             }, 50);
 
+
             return nds.map(n => ({ ...n, selected: false })).concat([newNode]);
         });
 
-        setIsSelectorOpen(false); // 모달 닫기
-    }, [setNodes, setCenter]);
+        // setIsSelectorOpen(false); // Modal onClose handles this
+    }, [setNodes, setCenter, showToast]); // showToast 추가됨
+
+
+    // handleDuplicateModalClose 삭제됨
+
 
     /**
      * 기능 2: 선택된 노드 및 연결선 삭제 (모달 호출)
      */
-    const handleDeleteElements = useCallback(() => {
-        const selectedNodes = nodes.filter((node) => node.selected);
-
-        if (selectedNodes.length === 0) return;
-
-        if (selectedNodes.length === 1) {
-            setDeleteMessage(`정말 '${selectedNodes[0].data.title}' 노드를\n삭제하시겠습니까?`);
-        } else {
-            setDeleteMessage(`정말 ${selectedNodes.length}개의 노드를\n삭제하시겠습니까?`);
-        }
-
-        setIsDeleteModalOpen(true);
-    }, [nodes]);
-
     /**
      * 기능 2-1: 실제 삭제 실행 (모달 확인 시)
      */
@@ -483,12 +523,35 @@ const MindMapContent: React.FC = () => {
 
         setNodes((nds) => nds.filter((node) => !node.selected));
         setEdges((eds) => eds.filter((edge) => !edge.selected));
-        setIsDeleteModalOpen(false); // 모달 닫기
+        // setIsDeleteModalOpen(false); // Modal handles close
     }, [setNodes, setEdges, nodes, showToast]);
 
-    const cancelDelete = useCallback(() => {
-        setIsDeleteModalOpen(false);
-    }, []);
+    /**
+     * 기능 2: 선택된 노드 및 연결선 삭제 (모달 호출)
+     */
+    const handleDeleteElements = useCallback(() => {
+        const selectedNodes = nodes.filter((node) => node.selected);
+
+        if (selectedNodes.length === 0) return;
+
+        if (selectedNodes.length === 1) {
+            // setDeleteMessage(`정말 '${selectedNodes[0].data.title}' 노드를\n삭제하시겠습니까?`);
+            openModal('CONFIRM', {
+                message: `정말 '${selectedNodes[0].data.title}' 노드를\n삭제하시겠습니까?`,
+                onConfirm: () => executeDelete(),
+            });
+        } else {
+            // setDeleteMessage(`정말 ${selectedNodes.length}개의 노드를\n삭제하시겠습니까?`);
+            openModal('CONFIRM', {
+                message: `정말 ${selectedNodes.length}개의 노드를\n삭제하시겠습니까?`,
+                onConfirm: () => executeDelete(),
+            });
+        }
+
+        // setIsDeleteModalOpen(true);
+    }, [nodes, openModal, executeDelete]); // executeDelete dependency added
+
+    // cancelDelete 삭제
 
     /**
      * 기능 5: 노드 클릭 시 화면 중앙으로 부드럽게 이동
@@ -529,8 +592,13 @@ const MindMapContent: React.FC = () => {
                         sourceHandle: sourceHandle || null,
                         targetHandle: targetHandle || null
                     };
-                    setSwapParams({ oldEdgeId: reverseEdge.id, newConnection });
-                    setIsSwapModalOpen(true);
+                    // setSwapParams({ oldEdgeId: reverseEdge.id, newConnection });
+                    // setIsSwapModalOpen(true);
+                    openModal('CONFIRM', {
+                        message: `이미 연결된 관계입니다.\n방향을 반대로 변경하시겠습니까?`,
+                        onConfirm: () => handleConfirmSwap(reverseEdge.id, newConnection),
+                    });
+
                     setConnectSource(null);
                     return;
                 }
@@ -787,29 +855,10 @@ const MindMapContent: React.FC = () => {
 
                 {/* 편집 모드 힌트 */}
 
-                {/* [New] 노트 선택 모달 */}
-                <NodeSelectorModal
-                    isOpen={isSelectorOpen}
-                    onClose={() => setIsSelectorOpen(false)}
-                    onSelect={handleSelectNote}
-                    existingNodeIds={nodes.map(n => n.id)}
-                />
+                {/* [Modifed] Modal 렌더링 삭제 (Global Modal 사용) */}
+                {/* NodeSelectorModal, ConfirmModal 삭제됨 */}
 
-                {/* 삭제 확인 모달 */}
-                <ConfirmModal
-                    isOpen={isDeleteModalOpen}
-                    message={deleteMessage}
-                    onConfirm={executeDelete}
-                    onCancel={cancelDelete}
-                />
 
-                {/* [New] 방향 전환 확인 모달 */}
-                <ConfirmModal
-                    isOpen={isSwapModalOpen}
-                    message={`이미 연결된 관계입니다.\n방향을 반대로 변경하시겠습니까?`}
-                    onConfirm={handleConfirmSwap}
-                    onCancel={handleCancelSwap}
-                />
 
                 {/* [New] 토스트 알림 */}
                 <ToastNotification

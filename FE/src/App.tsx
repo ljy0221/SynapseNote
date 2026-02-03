@@ -20,6 +20,7 @@ import ThemeToggle from './components/common/themeToggle/ThemeToggle';
 import WindowControlButton from './components/common/WindowControlButton/WindowControlButton';
 import { DockerErrorModal } from './components/common/modal/DockerErrorModal';
 import { ToastNotification } from './components/common/toast/ToastNotification';
+import GlobalModal from './components/common/modal/GlobalModal'; // [New]
 
 // Electron 전용 컴포넌트
 const isElectron = typeof window !== 'undefined' && (window as any).electronAPI !== undefined;
@@ -153,6 +154,9 @@ function AppContent() {
                 onClose={closeToast}
                 type={type}
             />
+
+            {/* Global Modal Renderer */}
+            <GlobalModal />
 
             {/* 1. 헤더 영역 */}
             {isLoginPage ? (

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom'; // [New]
 import { Handle, Position, NodeProps } from 'reactflow';
 import { Brain, Atom, Share2, BrainCircuit, Globe, ArrowRightCircle } from 'lucide-react';
 import './NoteNode.css';
@@ -18,7 +19,9 @@ export interface NoteNodeData {
 /**
  * 시냅스(Synapse) 스타일의 커스텀 노드 컴포넌트
  */
-const NoteNode: React.FC<NodeProps<NoteNodeData>> = ({ data, selected, isConnectable }) => {
+const NoteNode: React.FC<NodeProps<NoteNodeData>> = ({ id, data, selected, isConnectable }) => {
+    const navigate = useNavigate(); // [New]
+
     // Fan-out에 따른 크기 조절 (육각형이라 크기 조금 더 키워도 됨)
     const scale = Math.min(1 + (data.connectionCount || 0) * 0.1, 2);
 
@@ -109,8 +112,7 @@ const NoteNode: React.FC<NodeProps<NoteNodeData>> = ({ data, selected, isConnect
                             className="tooltip-nav-btn"
                             onClick={(e) => {
                                 e.stopPropagation(); // 노드 선택 해제 방지
-                                console.log(`Navigate to ${data.directoryPath}`);
-                                // 추후 라우팅 로직 추가
+                                navigate(`/note/${id}`); // [New] 노트 페이지로 이동
                             }}
                             title="이 노트로 이동"
                         >
