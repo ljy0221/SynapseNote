@@ -10,26 +10,28 @@ interface NoteMainProps {
     onUpdateTitle: (newTitle: string) => void;
     blocks: BlockData[];
     onUpdateBlock: (id: number | string, content: string) => void;
+    onAddBlockAfter: (afterId: number | string, type: BlockType) => void; // [추가]
     onAddBlockAtEnd: (type: BlockType) => void;
-    onAddBlockAfter: (id: number | string, type: BlockType) => void; // [추가]
     onDeleteBlock: (id: number | string) => void;
     onFocusBlock: (id: number | string) => void;
     focusedBlockId: number | string | null; // [추가]
     onMoveBlock: (dragIndex: number, hoverIndex: number) => void;
     titleInputRef?: React.RefObject<HTMLInputElement>;
+    noteId?: string; // [추가]
 }
 const NoteMain: React.FC<NoteMainProps> = ({
     title,
     onUpdateTitle,
     blocks,
     onUpdateBlock,
-    onAddBlockAtEnd,
     onAddBlockAfter, // [추가]
+    onAddBlockAtEnd,
     onDeleteBlock,
     onFocusBlock,
     focusedBlockId,
     onMoveBlock,
-    titleInputRef
+    titleInputRef,
+    noteId // [추가]
 }) => {
     // DnD 상태 관리
     const [dragIndex, setDragIndex] = React.useState<number | null>(null);
@@ -65,7 +67,6 @@ const NoteMain: React.FC<NoteMainProps> = ({
                         onUpdate={onUpdateBlock as any}
                         onDelete={onDeleteBlock as any}
                         onFocus={() => onFocusBlock(block.id)}
-                    // onAddBlockAfter={(type) => onAddBlockAfter(block.id, type)} // TextBlock에 prop이 있다면 전달 필요
                     />
                 );
             case 'code':
@@ -74,12 +75,12 @@ const NoteMain: React.FC<NoteMainProps> = ({
                         key={block.id}
                         {...commonProps}
                         id={block.id as any}
+                        noteId={noteId} // [추가]
                         language={(block.language as any) || 'javascript'}
                         code={block.content}
                         onDelete={onDeleteBlock as any}
                         onChange={onUpdateBlock as any}
                         onFocus={() => onFocusBlock(block.id)}
-                    // onAddBlockAfter={(type) => onAddBlockAfter(block.id, type)} // CodeBlock에 prop이 있다면 전달 필요
                     />
                 );
             default:

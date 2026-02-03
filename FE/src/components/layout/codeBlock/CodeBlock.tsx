@@ -8,6 +8,7 @@ import type { Language, ExecutionResult, ExecutionMode, SessionInfo } from '../.
 import './CodeBlock.css';
 import { saveExecutionToBackend } from "../../../utils/executionAPI.ts";
 import { LanguageSelector } from "./LanguageSelector.tsx";
+import CheckpointSidebar from '../checkpoint/CheckpointSidebar';
 
 interface CodeBlockProps {
     id: number | string;
@@ -55,6 +56,9 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     // 세션 모드 상태 (feat/#63 추가)
     const [executionMode, setExecutionMode] = useState<ExecutionMode>('single');
     const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
+
+    // 버전 관리(체크포인트) 상태
+    const [showCheckpoints, setShowCheckpoints] = useState(false);
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -180,6 +184,12 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
         }
     };
 
+    // 버전 복구 핸들러
+    const handleRestore = (code: string) => {
+        setEditedCode(code);
+        onChange(id, code);
+    };
+
     return (
         <div
             className="code-block-wrapper"
@@ -275,7 +285,15 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 
                     <BlockRunButton onClick={handleRun} disabled={loading} />
                     <BlockCopyButton onCopy={handleCopy} />
-                    <VersionButton onClick={() => console.log("버전 관리 실행")} />
+                    <VersionButton
+                        onClick={() => {
+                            if (!noteId) {
+                                alert('노트가 저장되어야 버전 관리를 사용할 수 있습니다.');
+                                return;
+                            }
+                            setShowCheckpoints(true);
+                        }}
+                    />
                 </div>
             </div>
             {/* 메인 코드 영역 */}
@@ -314,6 +332,17 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                 <div className="code-output-zone">
                     <p className="output-label">실행 중...</p>
                 </div>
+            )}
+
+            {/* 버전 관리 사이드바 */}
+            {showCheckpoints && noteId && (
+                <CheckpointSidebar
+                    noteId={noteId}
+                    blockId={id.toString()}
+                    currentCode={editedCode}
+                    onClose={() => setShowCheckpoints(false)}
+                    onRestore={handleRestore}
+                />
             )}
         </div>
     );

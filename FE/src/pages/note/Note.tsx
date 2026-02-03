@@ -191,6 +191,7 @@ const Note: React.FC = () => {
                     style={{ outline: 'none' }}
                 >
                     <NoteMain
+                        noteId={noteId}
                         title={title}
                         onUpdateTitle={setTitle}
                         blocks={blocks}
