@@ -13,35 +13,41 @@ import java.util.UUID;
 public class TokenRedisService {
 
     private final RedisUtil redisUtil;
-    private static final SecureRandom secureRandom = new SecureRandom(); // thread-safe
+    private static final SecureRandom secureRandom = new SecureRandom();
     private static final Base64.Encoder base64Encoder = Base64.getUrlEncoder().withoutPadding();
 
-
-    public String generateRefreshToken(UUID id) {
+    // token:refresh:whitelist:UUID = memberId
+    public String generateRefreshToken(UUID memberId) {
         String token = makeRandomToken();
-        String key = RedisConstant.REDIS_REFRESH_TOKEN + id.toString();
-        redisUtil.setData(key, token, Constant.REFRESH_EXPIRED);
+        String key = RedisConstant.REFRESH_TOKEN_WHITELIST + token;
 
+        redisUtil.setData(key, memberId.toString(), Constant.REFRESH_EXPIRED);
         return token;
     }
 
-    public String getRefreshToken(UUID id) {
-        String key = RedisConstant.REDIS_REFRESH_TOKEN + id.toString();
-        return redisUtil.getData(key).orElse(null);
+    public boolean isRefreshTokenValid(String token) {
+        String key = RedisConstant.REFRESH_TOKEN_WHITELIST + token;
+        return redisUtil.exists(key);
     }
 
-    public void deleteRefreshToken(UUID id) {
-        String key = RedisConstant.REDIS_REFRESH_TOKEN + id.toString();
+    public UUID getMemberFromRefreshToken(String token) {
+        String key = RedisConstant.REFRESH_TOKEN_WHITELIST + token;
+        return redisUtil.getData(key).map(UUID::fromString).orElse(null);
+    }
+
+    public void deleteRefreshToken(String token) {
+        String key = RedisConstant.REFRESH_TOKEN_WHITELIST + token;
         redisUtil.deleteData(key);
     }
 
-    public void addBlacklist(String token) {
-        String key = RedisConstant.REDIS_TOKEN_EXPIRED + token;
-        redisUtil.setData(key, token, Constant.ACCESS_EXPIRED);
+    // token:access:blacklist::JWT = true
+    public void addAccessTokenToBlacklist(String token) {
+        String key = RedisConstant.ACCESS_TOKEN_BLACKLIST + token;
+        redisUtil.setData(key, true, Constant.ACCESS_EXPIRED);
     }
 
-    public boolean isBlacklisted(String token) {
-        String key = RedisConstant.REDIS_TOKEN_EXPIRED + token;
+    public boolean isAccessTokenBlacklisted(String token) {
+        String key = RedisConstant.ACCESS_TOKEN_BLACKLIST + token;
         return redisUtil.exists(key);
     }
 

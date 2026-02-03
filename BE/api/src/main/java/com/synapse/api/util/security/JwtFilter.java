@@ -66,7 +66,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 return;
             }
 
-            if (tokenRedisService.isBlacklisted(token)) {
+            if (tokenRedisService.isAccessTokenBlacklisted(token)) {
                 log.info("Token is blacklisted");
                 setErrorResponse(request, response, ErrorCode.TOKEN_EXPIRED);
                 return;
@@ -111,6 +111,7 @@ public class JwtFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
         return (path.startsWith("/api/") && (
                 path.matches("^/api/v\\d+/login")
+                || path.matches("^/api/v\\d+/refresh")
         )) || path.matches(".*\\.(js|css|png|jpg|ico)$")
             || path.matches("^/test/.*");
     }
