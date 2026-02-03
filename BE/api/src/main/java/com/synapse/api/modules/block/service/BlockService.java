@@ -3,9 +3,11 @@ package com.synapse.api.modules.block.service;
 import com.synapse.api.modules.block.document.BaseBlock;
 import com.synapse.api.modules.block.document.CodeBlock;
 import com.synapse.api.modules.block.dto.response.BlockDetailResponse;
+import com.synapse.api.modules.block.dto.response.BlockPageResponse;
 import com.synapse.api.modules.block.repository.BlockRepository;
 import com.synapse.api.modules.note.dto.request.ExecutionHistoryRequest;
 import com.synapse.api.modules.note.dto.response.ExecutionHistoryResponse;
+import com.synapse.api.modules.note.entity.Note;
 import com.synapse.api.modules.note.repository.NoteMemberRepository;
 import com.synapse.api.modules.note.repository.NoteRepository;
 import com.synapse.api.modules.note.service.NoteValidator;
@@ -23,6 +25,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+
+import static java.util.stream.Collectors.toMap;
 
 @Slf4j
 @Service
@@ -139,4 +143,25 @@ public class BlockService {
                 .toList();
     }
 
+    public BlockPageResponse getAllBookmarkedBlocks(UUID memberId, int page, int size) {
+        List<UUID> noteIds = noteRepository.findAllNoteIdsByMemberId(memberId);
+
+        Pageable pageable = PageRequest.of(page, size);
+        Page<BaseBlock> blockPage = blockRepository.findByNoteIdInAndBookmarkTrueOrderByUpdatedAtDesc(noteIds,
+                pageable);
+
+        List<UUID> blockNoteIds = blockPage.getContent().stream()
+                .map(BaseBlock::getNoteId)
+                .distinct()
+                .toList();
+
+        List<Note> notes = noteRepository
+                .findAllByIdInAndDeletedAtIsNull(blockNoteIds);
+        java.util.Map<UUID, String> notePathMap = notes.stream()
+                .collect(toMap(
+                        Note::getId,
+                        Note::getDirectoryPath));
+
+        return BlockPageResponse.from(blockPage, notePathMap);
+    }
 }
