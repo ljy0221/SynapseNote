@@ -113,7 +113,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
 
       const detail = e.detail;
 
-      // ✅ 제목만 로컬 업데이트
+      // 제목만 로컬 업데이트
       if (detail?.type === 'UPDATE_TITLE') {
         setNotes(prev =>
           prev.map(n =>
