@@ -1,0 +1,282 @@
+/* src/components/common/modal/PermissionModal.css */
+.permission-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(2px);
+}
+
+.permission-modal-container {
+    background-color: var(--color-main, #ffffff);
+    color: var(--font-color, #333333);
+    border-radius: 12px;
+    width: 480px;
+    /* Slightly wider than invite modal */
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
+    overflow: hidden;
+    animation: slideIn 0.3s ease-out;
+}
+
+.permission-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--color-sub, #f0f0f0);
+}
+
+.permission-modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.permission-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border-color, #eee);
+    padding: 0 20px;
+    margin-top: 10px;
+}
+
+.tab-btn {
+    padding: 12px 16px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--font-color-sub, #888);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tab-btn.active {
+    color: var(--color-point);
+    border-bottom-color: var(--color-point);
+    font-weight: 600;
+}
+
+.tab-btn:hover:not(.active) {
+    color: var(--font-color);
+}
+
+.permission-modal-close-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--font-color-sub, #888);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.permission-modal-close-btn:hover {
+    background-color: var(--color-sub, #f5f5f5);
+    color: var(--font-color);
+}
+
+.permission-modal-body {
+    padding: 24px 20px;
+}
+
+.permission-modal-description {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 14px;
+    color: var(--font-color-sub, #666);
+}
+
+.members-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.member-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background-color: var(--bg-secondary, rgba(0, 0, 0, 0.02));
+    /* Fallback added */
+    transition: background-color 0.2s;
+}
+
+.member-item:hover {
+    background-color: var(--color-sub, rgba(0, 0, 0, 0.05));
+}
+
+.member-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.member-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: var(--color-sub, #eee);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--font-color-sub, #666);
+}
+
+.member-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.member-nickname {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--font-color);
+}
+
+.member-email {
+    font-size: 12px;
+    color: var(--font-color-sub, #888);
+}
+
+.member-role-action {
+    min-width: 80px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.role-badge {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background-color: var(--color-sub);
+    color: var(--font-color);
+}
+
+.role-badge.owner {
+    background-color: var(--color-point);
+    color: white;
+}
+
+.role-select-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.role-select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-color: transparent;
+    border: 1px solid var(--color-sub, #ddd);
+    border-radius: 6px;
+    padding: 4px 24px 4px 8px;
+    font-size: 12px;
+    color: var(--font-color);
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+
+.role-select:hover {
+    border-color: var(--color-point);
+}
+
+.role-select:focus {
+    outline: none;
+    border-color: var(--color-point);
+    box-shadow: 0 0 0 2px rgba(var(--color-point-rgb), 0.2);
+    /* Requires point-rgb variable or similar */
+}
+
+.role-select-icon {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: var(--font-color-sub);
+}
+
+/* Requests Tab Styles */
+.requests-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.request-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background-color: var(--bg-secondary, rgba(0, 0, 0, 0.02));
+    transition: background-color 0.2s;
+}
+
+.member-avatar.request {
+    background-color: var(--color-point, #007bff);
+    color: white;
+    opacity: 0.8;
+}
+
+.request-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.role-select-wrapper.small .role-select {
+    padding-top: 2px;
+    padding-bottom: 2px;
+    font-size: 11px;
+}
+
+.action-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.action-btn.accept {
+    background-color: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+}
+
+.action-btn.accept:hover {
+    background-color: #28a745;
+    color: white;
+}
+
+.action-btn.reject {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+}
+
+.action-btn.reject:hover {
+    background-color: #dc3545;
+    color: white;
+}
