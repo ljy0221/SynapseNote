@@ -2,6 +2,7 @@ package com.synapse.api.modules.note.controller;
 
 import com.synapse.api.modules.note.dto.request.InvitationCreateRequest;
 import com.synapse.api.modules.note.dto.response.InvitationAcceptResponse;
+import com.synapse.api.modules.note.dto.response.InvitationListResponse;
 import com.synapse.api.modules.note.dto.response.InvitationResponse;
 import com.synapse.api.modules.note.service.InvitationService;
 import com.synapse.api.util.response.DataResponse;
@@ -49,6 +50,20 @@ public class InvitationController {
         UUID userId = details.id();
         log.info("User: {} accepting invitation with token: {}", userId, token);
         InvitationAcceptResponse response = invitationService.acceptInvitation(token, userId);
+        return DataResponse.of(response);
+    }
+
+    /**
+     * PENDING 초대 목록 조회
+     * GET /api/v1/notes/{noteId}/invitations
+     */
+    @GetMapping("/v1/notes/{noteId}/invitations")
+    public DataResponse<InvitationListResponse> getPendingInvitations(
+            @AuthenticationPrincipal CustomMemberDetails details,
+            @PathVariable UUID noteId) {
+        UUID userId = details.id();
+        log.info("Getting pending invitations for note: {} by user: {}", noteId, userId);
+        InvitationListResponse response = invitationService.getPendingInvitations(noteId, userId);
         return DataResponse.of(response);
     }
 }

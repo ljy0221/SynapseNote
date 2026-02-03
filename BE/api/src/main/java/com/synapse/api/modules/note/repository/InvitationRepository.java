@@ -32,4 +32,10 @@ public interface InvitationRepository extends JpaRepository<Invitation, UUID> {
             @Param("noteId") UUID noteId,
             @Param("email") String email
     );
+
+    @Query("SELECT i FROM Invitation i WHERE i.note.id = :noteId AND i.status = :status AND i.deletedAt IS NULL ORDER BY i.createdAt DESC")
+    List<Invitation> findByNoteIdAndStatus(
+            @Param("noteId") UUID noteId,
+            @Param("status") InvitationStatus status
+    );
 }
