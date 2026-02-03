@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { BookDashed } from 'lucide-react';
 import NoteBookmarkItem from './NoteBookmarkItem';
 
 import type { BookmarkedNote } from '../../../types/bookmark/Bookmark';
@@ -51,7 +52,8 @@ const NoteBookmarkList = () => {
   if (notes.length === 0) {
     return (
       <div className="bookmark-empty">
-        즐겨찾기한 노트가 없습니다.
+        <BookDashed size={48} className="bookmark-empty-icon" />
+        <span className="empty-text">아직 즐겨찾기한 지식이 없습니다!</span>
       </div>
     );
   }

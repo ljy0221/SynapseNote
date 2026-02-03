@@ -1,12 +1,25 @@
 // BlockBookmarkSection.tsx
 import BlockBookmarkList from './BlockBookmarkList';
+import { Blocks } from 'lucide-react';
 import './BlockBookmark.css';
 
 const BlockBookmarkSection = () => {
   return (
-    <section className="bookmark-section">
-      <h2 className="bookmark-section-title">Block</h2>
-      <BlockBookmarkList />
+    <section className="bookmark-section block-bookmark-section">
+      <div className="section-header">
+        <h3 className="section-title">
+          <Blocks size={20} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
+          Block Bookmarks
+        </h3>
+        <div className="window-controls">
+          <div className="control-dot red" />
+          <div className="control-dot yellow" />
+          <div className="control-dot green" />
+        </div>
+      </div>
+      <div className="bookmark-content">
+        <BlockBookmarkList />
+      </div>
     </section>
   );
 };
