@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.kurento.client.HubPort;
@@ -30,6 +31,10 @@ public class WebRtcRoomManager {
 
     // noteId -> Room
     private final Map<UUID, Room> rooms = new ConcurrentHashMap<>();
+
+    // memberId -> Set<noteId> (사용자가 참여 중인 룸 목록)
+    // 성능 최적화: 사용자 제거 시 O(n) -> O(1) 조회
+    private final Map<UUID, Set<UUID>> userRoomMap = new ConcurrentHashMap<>();
 
     /**
      * 사용자가 룸에 참여
@@ -55,6 +60,10 @@ public class WebRtcRoomManager {
         });
 
         room.addParticipant(memberId);
+
+        // 사용자-룸 매핑 추가
+        userRoomMap.computeIfAbsent(memberId, k -> ConcurrentHashMap.newKeySet()).add(noteId);
+
         log.info("User {} joined room {}", memberId, noteId);
     }
 
@@ -67,6 +76,16 @@ public class WebRtcRoomManager {
             room.removeParticipant(memberId);
             log.info("User {} left room {}", memberId, noteId);
 
+            // 사용자-룸 매핑에서 제거
+            Set<UUID> userRooms = userRoomMap.get(memberId);
+            if (userRooms != null) {
+                userRooms.remove(noteId);
+                // 사용자가 더 이상 참여 중인 룸이 없으면 맵에서 제거
+                if (userRooms.isEmpty()) {
+                    userRoomMap.remove(memberId);
+                }
+            }
+
             // 룸이 비어있으면 정리
             if (room.isEmpty()) {
                 room.release();
@@ -78,13 +97,24 @@ public class WebRtcRoomManager {
 
     /**
      * 모든 룸에서 사용자 제거 (연결 해제 시)
+     * 성능 최적화: userRoomMap을 사용하여 O(1) 조회
      */
     public void removeUserFromAllRooms(UUID memberId) {
-        rooms.forEach((noteId, room) -> {
-            if (room.hasParticipant(memberId)) {
-                leaveRoom(noteId, memberId);
-            }
-        });
+        Set<UUID> userRooms = userRoomMap.get(memberId);
+
+        if (userRooms != null) {
+            // 사용자가 참여 중인 룸만 순회 (전체 룸 순회 X)
+            userRooms.forEach(noteId -> {
+                Room room = rooms.get(noteId);
+                if (room != null && room.hasParticipant(memberId)) {
+                    leaveRoom(noteId, memberId);
+                }
+            });
+
+            log.info("Removed user {} from {} rooms", memberId, userRooms.size());
+        } else {
+            log.debug("User {} was not in any rooms", memberId);
+        }
     }
 
     /**
