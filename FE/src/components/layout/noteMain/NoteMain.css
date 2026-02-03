@@ -42,16 +42,33 @@
     font-family: var(--font-family, 'Pretendard', sans-serif);
 }
 
-.note-content-area {
+
+.note-body-wrapper {
+    display: flex;
     width: 100%;
     max-width: 1400px;
-    /* 900px -> 1400px으로 넓힘 */
+    /* Overall max width */
     margin: 0 auto;
+    position: relative;
+    padding-bottom: 20vh;
+}
+
+.note-content-area {
+    flex: 1;
+    /* Takes remaining space */
     padding-left: 40px;
     padding-right: 40px;
+    /* 여백 확보 */
     box-sizing: border-box;
     overflow: visible;
-    padding-bottom: 70vh;
+}
+
+.note-sidenav-area {
+    width: 80px;
+    /* Fixed width for nav area */
+    display: flex;
+    justify-content: center;
+    padding-top: 20px;
 }
 
 .text-block-wrapper,
