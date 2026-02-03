@@ -1,5 +1,5 @@
 // src/components/layout/sidebar/Sidebar.tsx
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import './Sidebar.css';
 import { Plus } from 'lucide-react';
 
@@ -38,14 +38,9 @@ interface SidebarProps {
   onToggle: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({
-  isOpen,
-  onToggle,
-}) => {
+export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
   const navigate = useNavigate();
   const { noteId: routeNoteId } = useParams<{ noteId: string }>();
-
-  /** active 상태의 단일 기준 = URL */
   const activeNoteId = routeNoteId ?? null;
 
   const [notes, setNotes] = useState<NoteListItem[]>([]);
@@ -56,16 +51,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [contextMenu, setContextMenu] =
     useState<ContextMenuState>({ visible: false });
 
-  /** Pagination states */
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [isFetchingMore, setIsFetchingMore] = useState(false);
-  const observerTarget = useRef<HTMLDivElement>(null);
-
-  /** rename 상태 */
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
 
-  /** move modal 상태 */
   const [moveModal, setMoveModal] = useState<{
     open: boolean;
     noteId: string | null;
@@ -76,116 +63,91 @@ export const Sidebar: React.FC<SidebarProps> = ({
     currentPath: '',
   });
 
-  /** 디렉토리 경로 정규화 */
+  /** -------------------------
+   * 디렉토리 경로 정규화
+   -------------------------- */
   const normalizeDirectoryPath = (path: string) => {
     let p = path.trim();
-
-    // 빈 값 방지
     if (!p) return '/';
-
-    // 항상 /로 시작
-    if (!p.startsWith('/')) {
-      p = '/' + p;
-    }
-
-    // 끝의 / 제거 (루트 제외)
-    if (p.length > 1 && p.endsWith('/')) {
-      p = p.slice(0, -1);
-    }
-
+    if (!p.startsWith('/')) p = '/' + p;
+    if (p.length > 1 && p.endsWith('/')) p = p.slice(0, -1);
     return p;
   };
 
-
   const noteTree = buildNoteTree(notes);
 
-  /**
-   * Sidebar 단일 진실 소스
-   */
-  const fetchSidebarData = useCallback(async (targetPage: number = 1) => {
-    if (targetPage === 1) {
-      setIsLoading(true);
-    } else {
-      setIsFetchingMore(true);
-    }
+  /** -------------------------
+   * Sidebar 전체 로딩 (페이지네이션 제거)
+   -------------------------- */
+  const fetchAllNotes = useCallback(async () => {
+    setIsLoading(true);
 
     try {
-      const [notesRes, bookmarksRes] = await Promise.all([
-        getNotesApi({ page: targetPage }),
-        targetPage === 1 ? getBookmarksApi() : Promise.resolve(null),
-      ]);
+      let page = 1;
+      let allNotes: NoteListItem[] = [];
 
-      const newNotes = adaptNotesForSidebar(notesRes);
+      while (true) {
+        const res = await getNotesApi({ page });
+        const pageNotes = adaptNotesForSidebar(res);
+        allNotes.push(...pageNotes);
 
-      setNotes(prev => {
-        if (targetPage === 1) return newNotes;
-
-        // 중복 방지: 기존 노트 ID와 겹치지 않는 것만 추가
-        const existingIds = new Set(prev.map(n => n.noteId));
-        const uniqueNewNotes = newNotes.filter(n => !existingIds.has(n.noteId));
-        return [...prev, ...uniqueNewNotes];
-      });
-
-      if (bookmarksRes) {
-        setFavoriteNoteIds(adaptBookmarkIds(bookmarksRes));
+        if (res.currentPage >= res.totalPages) break;
+        page += 1;
       }
 
-      setHasMore(notesRes.currentPage < notesRes.totalPages);
-      setPage(notesRes.currentPage);
+      setNotes(allNotes);
+
+      const bookmarksRes = await getBookmarksApi();
+      setFavoriteNoteIds(adaptBookmarkIds(bookmarksRes));
     } finally {
       setIsLoading(false);
-      setIsFetchingMore(false);
     }
   }, []);
 
-  /**
-   * 무한 스크롤 관찰기
-   */
+  /** 최초 로딩 + 외부 변경 이벤트 */
   useEffect(() => {
-    if (isLoading || !hasMore || isFetchingMore) return;
+    fetchAllNotes();
 
-    const observer = new IntersectionObserver(
-      entries => {
-        if (entries[0].isIntersecting) {
-          fetchSidebarData(page + 1);
-        }
-      },
-      { threshold: 1.0 }
-    );
-
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current);
-    }
-
-    return () => observer.disconnect();
-  }, [isLoading, hasMore, isFetchingMore, page, fetchSidebarData]);
-
-  /**
-   * 최초 로딩 + 이벤트 구독
-   */
-  useEffect(() => {
-    fetchSidebarData(1);
     const handleNotesChanged = (e: any) => {
-      if (e instanceof CustomEvent && e.detail?.skipRefetch) return;
-      fetchSidebarData(1);
-    };
-    window.addEventListener(NOTES_CHANGED_EVENT, handleNotesChanged);
-    return () => {
-      window.removeEventListener(NOTES_CHANGED_EVENT, handleNotesChanged);
-    };
-  }, [fetchSidebarData]);
+      if (!(e instanceof CustomEvent)) return;
 
-  /**
-   * 노트 선택 → URL 변경
-   */
+      const detail = e.detail;
+
+      // 제목만 로컬 업데이트
+      if (detail?.type === 'UPDATE_TITLE') {
+        setNotes(prev =>
+          prev.map(n =>
+            n.noteId === detail.noteId
+              ? { ...n, title: detail.title }
+              : n
+          )
+        );
+        return;
+      }
+
+      // 기존 동작
+      if (detail?.skipRefetch) return;
+
+      fetchAllNotes();
+    };
+
+    window.addEventListener(NOTES_CHANGED_EVENT, handleNotesChanged);
+    return () =>
+      window.removeEventListener(NOTES_CHANGED_EVENT, handleNotesChanged);
+  }, [fetchAllNotes]);
+
+
+  /** -------------------------
+   * 노트 선택
+   -------------------------- */
   const handleSelectNote = (noteId: string) => {
     if (!noteId || noteId.startsWith('temp-')) return;
     navigate(`/note/${noteId}`);
   };
 
-  /**
-   * 즐겨찾기 토글
-   */
+  /** -------------------------
+   * 즐겨찾기
+   -------------------------- */
   const handleToggleFavorite = async (noteId: string) => {
     if (!noteId || noteId.startsWith('temp-')) return;
 
@@ -202,7 +164,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         ? await removeBookmarkApi(noteId)
         : await addBookmarkApi(noteId);
     } catch {
-      // rollback
       setFavoriteNoteIds(prev => {
         const next = new Set(prev);
         isFavorite ? next.add(noteId) : next.delete(noteId);
@@ -211,27 +172,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
-  /**
-   * 노트 제목 수정
-   */
-  const handleRenameNote = (noteId: string) => {
-    setEditingNoteId(noteId);
-  };
-
+  /** -------------------------
+   * 노트 제목 수정 (즉시 반영)
+   -------------------------- */
   const handleConfirmRename = async (
     noteId: string,
     newTitle: string
   ) => {
-    if (!newTitle.trim()) {
-      setEditingNoteId(null);
-      return;
-    }
+    if (!newTitle.trim()) return;
 
     const target = notes.find(n => n.noteId === noteId);
-    if (!target) {
-      setEditingNoteId(null);
-      return;
-    }
+    if (!target) return;
 
     setNotes(prev =>
       prev.map(n =>
@@ -247,33 +198,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
       });
       emitNotesChanged({ skipRefetch: true });
     } catch {
-      emitNotesChanged(); // Rollback on failure
+      emitNotesChanged();
     }
   };
 
-  const handleCancelRename = () => {
-    setEditingNoteId(null);
-  };
-
-  /**
-   * 노트 이동 (Drag & Drop 또는 Modal)
-   */
+  /** -------------------------
+   * 노트 이동
+   -------------------------- */
   const handleMoveNote = async (noteId: string, newPath: string) => {
     const normalizedPath = normalizeDirectoryPath(newPath);
     const target = notes.find(n => n.noteId === noteId);
+    if (!target) return;
 
-    if (!target) {
-      console.error('[MOVE] target note not found');
-      return;
-    }
-
-    // 현재 경로와 동일하면 무시 (단, '/'와 DEFAULT_DIR_PATH 구분 주의 - 여기서는 API 레벨이므로 normalizedPath 기준)
-    if (target.directoryPath === normalizedPath) return;
-
-    // UI 즉시 반영 (Optimistic UI)
     setNotes(prev =>
       prev.map(n =>
-        n.noteId === noteId ? { ...n, directoryPath: normalizedPath } : n
+        n.noteId === noteId
+          ? { ...n, directoryPath: normalizedPath }
+          : n
       )
     );
 
@@ -284,27 +225,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
       });
       emitNotesChanged({ skipRefetch: true });
     } catch {
-      emitNotesChanged(); // 실패 시 서버 기준 복구 (리셋 유도)
+      emitNotesChanged();
     }
   };
 
-  /**
-   * 노트 생성
-   */
+  /** -------------------------
+   * 노트 생성 (temp → real)
+   -------------------------- */
   const handleCreateNote = async (directoryPath: string) => {
+    const tempId = `temp-${Date.now()}`;
+
     const tempNote: NoteListItem = {
       memberId: 'temp-user',
-      noteId: `temp-${Date.now()}`,
+      noteId: tempId,
       title: '새 노트',
       directoryPath,
       pointX: 0,
       pointY: 0,
       role: 'OWNER',
       createdAt: Date.now(),
-      updatedAt: Date.now()
+      updatedAt: Date.now(),
     };
 
     setNotes(prev => [...prev, tempNote]);
+    navigate(`/note/${tempId}`);
 
     try {
       const res = await createNoteApi({
@@ -313,24 +257,35 @@ export const Sidebar: React.FC<SidebarProps> = ({
         directoryPath,
       });
 
-      // 임시 노트를 실제 데이터로 교체
       setNotes(prev =>
-        prev.map(n => n.noteId === tempNote.noteId ? {
-          ...res,
-          updatedAt: new Date(res.updatedAt).getTime(),
-          createdAt: new Date(res.createdAt).getTime()
-        } as NoteListItem : n)
+        prev.map(n =>
+          n.noteId === tempId
+            ? ({
+                memberId: n.memberId,
+                noteId: res.noteId,
+                title: res.title,
+                directoryPath: res.directoryPath,
+                pointX: res.pointX ?? 0,
+                pointY: res.pointY ?? 0,
+                role: res.role ?? n.role,
+                createdAt: new Date(res.createdAt).getTime(),
+                updatedAt: new Date(res.updatedAt).getTime(),
+              } as NoteListItem)
+            : n
+        )
       );
 
+
+      navigate(`/note/${res.noteId}`, { replace: true });
       emitNotesChanged({ skipRefetch: true });
     } catch {
-      setNotes(prev => prev.filter(n => n.noteId !== tempNote.noteId));
+      setNotes(prev => prev.filter(n => n.noteId !== tempId));
     }
   };
 
-  /**
+  /** -------------------------
    * 노트 삭제
-   */
+   -------------------------- */
   const handleDeleteNote = async (noteId: string) => {
     setNotes(prev => prev.filter(n => n.noteId !== noteId));
     try {
@@ -355,7 +310,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           </div>
 
-
           {isLoading ? (
             <div className="sidebar-loading">Loading...</div>
           ) : (
@@ -369,14 +323,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onToggleFavorite={handleToggleFavorite}
                 onContextMenu={setContextMenu}
                 onConfirmRename={handleConfirmRename}
-                onCancelRename={handleCancelRename}
+                onCancelRename={() => setEditingNoteId(null)}
                 onMoveNote={handleMoveNote}
               />
-
-              {/* 무한 스크롤 트리거 & 로딩 표시 */}
-              <div ref={observerTarget} className="sidebar-load-more">
-                {isFetchingMore && <div className="spinner-small" />}
-              </div>
             </div>
           )}
         </div>
@@ -394,15 +343,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         onClose={() => setContextMenu({ visible: false })}
         onDeleteNote={handleDeleteNote}
         onCreateNote={handleCreateNote}
-        onRenameNote={handleRenameNote}
-        onMoveNote={(noteId, directoryPath) => {
-          if (editingNoteId) return;
+        onRenameNote={setEditingNoteId}
+        onMoveNote={(noteId, directoryPath) =>
           setMoveModal({
             open: true,
             noteId,
             currentPath: directoryPath,
-          });
-        }}
+          })
+        }
       />
 
       {moveModal.open && (
@@ -410,20 +358,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           isOpen
           currentPath={moveModal.currentPath}
           onCancel={() =>
-            setMoveModal({
-              open: false,
-              noteId: null,
-              currentPath: '',
-            })
+            setMoveModal({ open: false, noteId: null, currentPath: '' })
           }
-          onConfirm={async (newPath) => {
+          onConfirm={async path => {
             if (!moveModal.noteId) return;
-            await handleMoveNote(moveModal.noteId, newPath);
-            setMoveModal({
-              open: false,
-              noteId: null,
-              currentPath: '',
-            });
+            await handleMoveNote(moveModal.noteId, path);
+            setMoveModal({ open: false, noteId: null, currentPath: '' });
           }}
         />
       )}
