@@ -10,6 +10,8 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 /**
  * WebSocket STOMP 설정
  * WebRTC 시그널링을 위한 STOMP 엔드포인트 및 메시지 브로커 설정
+ * 
+ * 인증은 JwtChannelInterceptor에서 STOMP CONNECT 프레임 처리 시 수행됨
  */
 @Configuration
 @EnableWebSocketMessageBroker
@@ -32,6 +34,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
+        // WebSocket 엔드포인트 등록
+        // 인증은 STOMP CONNECT 프레임에서 JwtChannelInterceptor가 처리
         registry.addEndpoint("/webrtc")
                 .setAllowedOriginPatterns("*");
         // .withSockJS(); // SockJS 제거
@@ -40,6 +44,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void configureClientInboundChannel(
             org.springframework.messaging.simp.config.ChannelRegistration registration) {
+        // STOMP CONNECT 프레임에서 JWT 인증 수행
         registration.interceptors(jwtChannelInterceptor);
     }
 }
