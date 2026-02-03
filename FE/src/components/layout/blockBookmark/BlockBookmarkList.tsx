@@ -10,7 +10,7 @@ const BlockBookmarkList = () => {
   useEffect(() => {
     const fetchBookmarks = async () => {
       try {
-        const response = await getBlockBookmarksApi();
+        const response = await getBlockBookmarksApi({ page: 1, size: 10 });
         setBlocks(response.content);
       } catch (error) {
         console.error('Failed to fetch block bookmarks:', error);
@@ -21,7 +21,6 @@ const BlockBookmarkList = () => {
 
   const handleRemove = (blockId: string) => {
     setBlocks(prev => prev.filter(b => b.blockId !== blockId));
-    // TODO: API 연결 (optimistic UI)
   };
 
   if (blocks.length === 0) {
