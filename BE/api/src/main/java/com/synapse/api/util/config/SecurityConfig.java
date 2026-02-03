@@ -38,7 +38,7 @@ public class SecurityConfig {
     @Order(1)
     public SecurityFilterChain addFilterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/v*/login").permitAll()
+                .requestMatchers("/api/v*/login", "/api/v*/refresh").permitAll()
                 .anyRequest().authenticated()
         );
 

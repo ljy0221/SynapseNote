@@ -69,12 +69,11 @@ public class MemberService {
             member = saveNewMember(oAuthMemberInfo);
         }
 
-        boolean sessionReplaced = invalidSession(member.getId());
+        OAuthAccount oauth = oAuthRepository.findByMemberId(member.getId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         String access = jwtUtil.generateAccessToken(member.getId());
         String refresh = tokenRedisService.generateRefreshToken(member.getId());
-        OAuthAccount oauth = oAuthRepository.findByMemberId(member.getId())
-                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         LoginResponse response = LoginResponse.builder()
                 .accessToken(access)
@@ -86,22 +85,12 @@ public class MemberService {
                         .theme(member.getTheme())
                         .provider(oauth.getProvider())
                         .build())
-                .sessionReplaced(sessionReplaced)
                 .build();
 
         return LoginResult.builder()
                 .response(response)
                 .refreshToken(refresh)
                 .build();
-    }
-
-    private boolean invalidSession(UUID id) {
-        if (tokenRedisService.getRefreshToken(id) == null) {
-            return false;
-        }
-
-        tokenRedisService.deleteRefreshToken(id);
-        return true;
     }
 
     private OAuthUserInfo getOAuthMemberInfo(LoginRequest request) {
@@ -124,11 +113,11 @@ public class MemberService {
         return member;
     }
 
-    public ProfileResponse getProfile(UUID id) {
-        Member member = memberRepository.findById(id)
+    public ProfileResponse getProfile(UUID memberId) {
+        Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-        OAuthAccount oauth = oAuthRepository.findByMemberId(id)
+        OAuthAccount oauth = oAuthRepository.findByMemberId(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         return ProfileResponse.builder()
@@ -141,16 +130,20 @@ public class MemberService {
                 .build();
     }
 
-    public void logout(UUID id, String accessToken) {
-        invalidSession(id);
-        tokenRedisService.addBlacklist(accessToken);
+    public void logout(String accessToken, String refreshToken) {
+        invalidTokens(accessToken, refreshToken);
+    }
+
+    public void invalidTokens(String accessToken, String refreshToken) {
+        tokenRedisService.addAccessTokenToBlacklist(accessToken);
+        tokenRedisService.deleteRefreshToken(refreshToken);
     }
 
     @Transactional
-    public void withdraw(UUID id, String accessToken) {
-        Member member = memberRepository.findById(id)
+    public void withdraw(UUID memberId, String accessToken, String refreshToken) {
+        Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
-        OAuthAccount oauth = oAuthRepository.findByMemberId(id)
+        OAuthAccount oauth = oAuthRepository.findByMemberId(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         // streak
@@ -160,8 +153,7 @@ public class MemberService {
 
         member.delete();
         oauth.delete();
-        invalidSession(id);
-        tokenRedisService.addBlacklist(accessToken);
+        invalidTokens(accessToken, refreshToken);
     }
 
     @Transactional
