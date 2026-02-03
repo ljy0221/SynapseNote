@@ -31,7 +31,7 @@ import {
   emitNotesChanged,
 } from '../../../events/NotesEvents';
 
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom'; // 🔥 useLocation 추가
 
 interface SidebarProps {
   isOpen: boolean;
@@ -40,8 +40,11 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
   const navigate = useNavigate();
+  const location = useLocation(); // 🔥 location 훅 사용
   const { noteId: routeNoteId } = useParams<{ noteId: string }>();
   const activeNoteId = routeNoteId ?? null;
+
+  const isHome = location.pathname.startsWith('/home'); // 🔥 홈 경로 확인
 
   const [notes, setNotes] = useState<NoteListItem[]>([]);
   const [favoriteNoteIds, setFavoriteNoteIds] =
@@ -261,16 +264,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
         prev.map(n =>
           n.noteId === tempId
             ? ({
-                memberId: n.memberId,
-                noteId: res.noteId,
-                title: res.title,
-                directoryPath: res.directoryPath,
-                pointX: res.pointX ?? 0,
-                pointY: res.pointY ?? 0,
-                role: res.role ?? n.role,
-                createdAt: new Date(res.createdAt).getTime(),
-                updatedAt: new Date(res.updatedAt).getTime(),
-              } as NoteListItem)
+              memberId: n.memberId,
+              noteId: res.noteId,
+              title: res.title,
+              directoryPath: res.directoryPath,
+              pointX: res.pointX ?? 0,
+              pointY: res.pointY ?? 0,
+              role: res.role ?? n.role,
+              createdAt: new Date(res.createdAt).getTime(),
+              updatedAt: new Date(res.updatedAt).getTime(),
+            } as NoteListItem)
             : n
         )
       );
@@ -331,12 +334,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
         </div>
       </aside>
 
-      <button
-        className={`sidebar-toggle-btn ${isOpen ? 'open' : ''}`}
-        onClick={onToggle}
-      >
-        {isOpen ? '⟨' : '⟩'}
-      </button>
+      {!isHome && (
+        <button
+          className={`sidebar-toggle-btn ${isOpen ? 'open' : ''}`}
+          onClick={onToggle}
+        >
+          {isOpen ? '⟨' : '⟩'}
+        </button>
+      )}
 
       <ContextMenu
         state={contextMenu}

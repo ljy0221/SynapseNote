@@ -18,17 +18,44 @@
 }
 
 /* 내부 스타일 */
+.note-paper-container {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    padding: 40px 20px;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    box-sizing: border-box;
+}
+
+.note-paper {
+    flex: 1;
+    max-width: 900px;
+    /* A4-ish width constraint */
+    min-height: 1100px;
+    background-color: var(--color-main);
+    /* 종이 색상 */
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+    /* 종이 그림자 */
+    border-radius: 4px;
+    /* 종이 질감 약간의 R */
+
+    padding: 60px 0;
+    /* 상하 여백 */
+
+    display: flex;
+    flex-direction: column;
+}
+
+/* 내부 스타일 */
 .note-main-header {
     width: 100%;
-    max-width: 1400px;
-    /* 900px -> 1400px으로 넓힘 */
-    margin: 0 auto;
-    padding-left: 40px;
-    padding-right: 40px;
+    padding-left: 88px;
+    /* Title Offset */
+    padding-right: 60px;
     box-sizing: border-box;
-    margin-top: 80px;
-    margin-bottom: 40px;
-    flex-shrink: 0;
+    margin-bottom: 20px;
 }
 
 .note-main-title-input {
@@ -36,39 +63,28 @@
     border: none;
     outline: none;
     background: transparent;
-    font-size: 42px;
+    font-size: 36px;
+    /* A4 비율에 맞춰 폰트 조금 조정 */
     font-weight: 800;
-    color: var(--font-color, #2c2c2c);
-    font-family: var(--font-family, 'Pretendard', sans-serif);
-}
-
-
-.note-body-wrapper {
-    display: flex;
-    width: 100%;
-    max-width: 1400px;
-    /* Overall max width */
-    margin: 0 auto;
-    position: relative;
-    padding-bottom: 20vh;
+    color: var(--font-color);
 }
 
 .note-content-area {
-    flex: 1;
-    /* Takes remaining space */
     padding-left: 40px;
     padding-right: 40px;
-    /* 여백 확보 */
     box-sizing: border-box;
-    overflow: visible;
 }
 
 .note-sidenav-area {
-    width: 80px;
+    width: 60px;
     /* Fixed width for nav area */
     display: flex;
     justify-content: center;
     padding-top: 20px;
+    /* Sticky positioning for side nav */
+    position: sticky;
+    top: 40px;
+    height: fit-content;
 }
 
 .text-block-wrapper,

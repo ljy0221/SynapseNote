@@ -76,9 +76,9 @@
 
 /* 날짜 셀 */
 .day-cell {
-  width: 24px;
-  /* 🔥 기존 12px → 15px */
-  height: 24px;
+  width: 22px;
+  /* 🔥 기존 12px -> 15px -> 24px -> 20px -> 22px */
+  height: 22px;
   border-radius: 4px;
 
   background-color: rgba(0, 0, 0, 0.12);
