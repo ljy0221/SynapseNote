@@ -174,7 +174,7 @@ public class NoteController {
         return StatusResponse.of();
     }
 
-    @GetMapping("/v1/notes/blocks")
+    @GetMapping("/v1/notes/blocks/bookmarks")
     public DataResponse<BlockPageResponse> getBlockBookmarks(
             @AuthenticationPrincipal CustomMemberDetails details,
             @RequestParam(defaultValue = "1") int page,
