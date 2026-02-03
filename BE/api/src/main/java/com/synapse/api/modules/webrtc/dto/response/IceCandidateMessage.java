@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 /**
  * ICE Candidate 메시지
  */
@@ -11,6 +13,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class IceCandidateMessage {
+    private UUID noteId;
     private String candidate;
     private String sdpMid;
     private Integer sdpMLineIndex;

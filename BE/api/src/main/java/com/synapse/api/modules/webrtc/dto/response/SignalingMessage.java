@@ -20,7 +20,7 @@ public class SignalingMessage {
     /**
      * 노트 ID (룸 식별자)
      */
-    private String noteId;
+    private UUID noteId;
 
     /**
      * 발신자 사용자 ID (Member ID)
@@ -36,4 +36,9 @@ public class SignalingMessage {
      * 메시지 페이로드 (JSON 문자열)
      */
     private String payload;
+
+    /**
+     * 상태 (예: READY)
+     */
+    private String status;
 }

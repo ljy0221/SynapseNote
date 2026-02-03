@@ -26,6 +26,7 @@ public class WebRtcController {
 
     private final WebRtcRoomManager roomManager;
     private final SimpMessagingTemplate messagingTemplate;
+    private final com.synapse.api.modules.note.repository.NoteMemberRepository noteMemberRepository;
 
     /**
      * 룸 참여
@@ -34,9 +35,17 @@ public class WebRtcController {
     @MessageMapping("/webrtc/join")
     public void joinRoom(@Payload JoinRoomRequest request, SimpMessageHeaderAccessor headerAccessor) {
         UUID memberId = (UUID) headerAccessor.getSessionAttributes().get("memberId");
-        String noteId = request.getNoteId();
+        UUID noteId = request.getNoteId();
 
         log.info("Member {} joining room {}", memberId, noteId);
+
+        // 노트 멤버십 확인 (권한 체크)
+        boolean isMember = noteMemberRepository.existsByNoteIdAndMemberId(noteId, memberId);
+        if (!isMember) {
+            log.warn("Access denied: Member {} is not a participant of Note {}", memberId, noteId);
+            sendError(memberId, "Access denied: You are not a member of this note.");
+            return;
+        }
 
         // 룸 생성 및 참여 (Kurento Pipeline 생성)
         roomManager.joinRoom(noteId, memberId);
@@ -46,6 +55,7 @@ public class WebRtcController {
         response.setType("JOINED");
         response.setNoteId(noteId);
         response.setMemberId(memberId);
+        response.setStatus("READY"); // 준비 완료 상태 명시
 
         // 해당 사용자에게만 응답
         messagingTemplate.convertAndSendToUser(memberId.toString(), "/queue/webrtc", response);
@@ -66,9 +76,10 @@ public class WebRtcController {
     @MessageMapping("/webrtc/offer")
     public void handleOffer(@Payload OfferRequest request, SimpMessageHeaderAccessor headerAccessor) {
         UUID memberId = (UUID) headerAccessor.getSessionAttributes().get("memberId");
-        String noteId = request.getNoteId();
+        UUID noteId = request.getNoteId();
+        String callId = request.getCallId(); // 클라이언트가 보낸 요청 ID
 
-        log.info("Received offer from member {} in room {}", memberId, noteId);
+        log.info("Received offer from member {} in room {}, callId: {}", memberId, noteId, callId);
 
         WebRtcRoomManager.Room room = roomManager.getRoom(noteId);
         if (room == null) {
@@ -92,6 +103,7 @@ public class WebRtcController {
         // ICE Candidate 이벤트 리스너 등록
         endpoint.addIceCandidateFoundListener(event -> {
             IceCandidateMessage iceMsg = new IceCandidateMessage(
+                    noteId, // noteId 포함
                     event.getCandidate().getCandidate(),
                     event.getCandidate().getSdpMid(),
                     event.getCandidate().getSdpMLineIndex());
@@ -103,12 +115,12 @@ public class WebRtcController {
         String sdpAnswer = endpoint.processOffer(request.getSdp());
         endpoint.gatherCandidates();
 
-        // Answer 응답
-        AnswerMessage answerMessage = new AnswerMessage(sdpAnswer);
+        // Answer 응답 (noteId, callId 포함)
+        AnswerMessage answerMessage = new AnswerMessage(noteId, callId, sdpAnswer);
         messagingTemplate.convertAndSendToUser(memberId.toString(), "/queue/webrtc/answer", answerMessage);
 
-        log.info("[WebRTC] Sent ANSWER to member {} in room {}", memberId, noteId);
-        log.info("[WebRTC] SDP Answer: {}", sdpAnswer.substring(0, Math.min(sdpAnswer.length(), 50)) + "...");
+        log.info("[WebRTC] Sent ANSWER to member {} in room {}, callId: {}", memberId, noteId, callId);
+        log.info("[WebRTC] SDP Answer length: {}", sdpAnswer.length());
     }
 
     /**
@@ -118,9 +130,10 @@ public class WebRtcController {
     @MessageMapping("/webrtc/ice")
     public void handleIceCandidate(@Payload IceCandidateRequest request, SimpMessageHeaderAccessor headerAccessor) {
         UUID memberId = (UUID) headerAccessor.getSessionAttributes().get("memberId");
-        String noteId = request.getNoteId();
+        UUID noteId = request.getNoteId();
+        String callId = request.getCallId();
 
-        log.debug("Received ICE candidate from member {} in room {}", memberId, noteId);
+        log.debug("Received ICE candidate from member {} in room {}, callId: {}", memberId, noteId, callId);
 
         WebRtcRoomManager.Room room = roomManager.getRoom(noteId);
         if (room == null) {
@@ -156,7 +169,7 @@ public class WebRtcController {
     @MessageMapping("/webrtc/leave")
     public void leaveRoom(@Payload LeaveRoomRequest request, SimpMessageHeaderAccessor headerAccessor) {
         UUID memberId = (UUID) headerAccessor.getSessionAttributes().get("memberId");
-        String noteId = request.getNoteId();
+        UUID noteId = request.getNoteId();
 
         log.info("Member {} leaving room {}", memberId, noteId);
 
