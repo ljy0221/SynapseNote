@@ -1,110 +1,183 @@
-.note-bookmark-list {
-  list-style: none;   /* ❗ 필수 */
-  padding: 0;         /* ❗ 필수 */
-  margin: 0;          /* ❗ 필수 */
-
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 14px;
-}
-
-
-/* 카드 */
-.note-bookmark-card {
-  position: relative;
-
+/* Bookmark Section Styles */
+.note-bookmark-section {
+  background-color: var(--color-sub);
+  border-radius: 16px;
+  padding: 0;
+  border: 2px solid color-mix(in srgb, var(--color-point), transparent 50%);
   display: flex;
-  gap: 12px;
-  padding: 14px;
-
-  background-color: var(--color-main);
-  border: 1px solid var(--color-sub);
-  border-radius: 12px;
-
-  cursor: pointer;
-  transition: background-color 0.15s ease, transform 0.15s ease;
+  flex-direction: column;
+  overflow: hidden;
+  margin-top: 0;
+  /* 상단 여백 제거 (그리드 gap 사용) */
+  height: 100%;
+  /* 부모 flex-1 채우기 */
 }
 
-.note-bookmark-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+/* Browser Header */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background-color: var(--color-hover);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-/* 아이콘 */
-.note-card-icon {
-  opacity: 0.7;
-  margin-top: 2px;
-}
-
-/* 내용 */
-.note-card-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.note-card-title {
-  font-size: 14px;
+.section-title {
+  font-size: 16px;
   font-weight: 600;
-  line-height: 1.4;
-
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  margin: 0;
+  color: var(--font-color);
 }
 
-.note-card-path {
-  font-size: 12px;
-  opacity: 0.6;
-  margin-top: 4px;
 
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+
+.bookmark-content {
+  padding: 20px;
+  flex: 1;
+  /* 남은 높이 차지 */
+  overflow-y: auto;
+  /* 내부 스크롤 */
+  min-height: 0;
 }
 
-/* 즐겨찾기 제거 버튼 */
-.note-bookmark-remove {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-
-  
-  width: 32px;
-  height: 32px;
+.note-bookmark-list {
+  list-style: none;
+  /* ❗ 필수 */
+  padding: 0;
+  /* ❗ 필수 */
+  margin: 0;
+  /* ❗ 필수 */
 
   display: flex;
+  /* Grid -> Flex Column (리스트 형태) */
+  flex-direction: column;
+  gap: 10px;
+
+
+  /* 카드 */
+  .note-bookmark-card {
+    position: relative;
+
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+
+    background-color: var(--color-main);
+    border: 1px solid var(--color-sub);
+    border-radius: 12px;
+
+    cursor: pointer;
+    transition: background-color 0.15s ease, transform 0.15s ease;
+  }
+
+  .note-bookmark-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  }
+
+  /* 아이콘 */
+  .note-card-icon {
+    opacity: 0.7;
+    margin-top: 2px;
+  }
+
+  /* 내용 */
+  .note-card-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .note-card-title {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .note-card-path {
+    font-size: 12px;
+    opacity: 0.6;
+    margin-top: 4px;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* 즐겨찾기 제거 버튼 */
+  .note-bookmark-remove {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+
+
+    width: 32px;
+    height: 32px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: none;
+    background: none;
+    /* ✅ 배경 완전 제거 */
+    padding: 0;
+
+    color: var(--font-color);
+    /* 기본은 폰트색 */
+    opacity: 0;
+    /* 기본 숨김 */
+    z-index: 3;
+
+    cursor: pointer;
+    transition:
+      opacity 0.15s ease,
+      color 0.15s ease;
+  }
+
+
+
+  /* 카드 hover 시에만 버튼 등장 */
+  .note-bookmark-card:hover .note-bookmark-remove {
+    opacity: 1;
+  }
+
+  /* 버튼 hover */
+  .note-bookmark-remove:hover {
+    background-color: var(--color-point);
+    color: var(--color-main);
+  }
+
+  /* 클릭 중 */
+  .note-bookmark-remove:active {
+    background-color: rgba(245, 158, 11, 0.2);
+  }
+}
+
+/* 🔥 Missing brace added */
+
+/* Empty State */
+.bookmark-empty {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  /* 🔥 Stack icon and text */
   align-items: center;
   justify-content: center;
-
-  border: none;
-  background: none;          /* ✅ 배경 완전 제거 */
-  padding: 0;
-
-  color: var(--font-color);  /* 기본은 폰트색 */
-  opacity: 0;                /* 기본 숨김 */
-  z-index: 3;
-
-  cursor: pointer;
-  transition:
-    opacity 0.15s ease,
-    color 0.15s ease;
+  gap: 16px;
+  color: var(--color-point);
+  opacity: 0.5;
+  /* Slightly increased opacity for visibility */
 }
 
-
-
-/* 카드 hover 시에만 버튼 등장 */
-.note-bookmark-card:hover .note-bookmark-remove {
-  opacity: 1;
+.empty-text {
+  font-size: 15px;
+  font-weight: 700;
+  /* 🔥 Bold text */
+  opacity: 0.8;
 }
-
-/* 버튼 hover */
-.note-bookmark-remove:hover {
-  background-color: var(--color-point);
-  color: var(--color-main);
-}
-
-/* 클릭 중 */
-.note-bookmark-remove:active {
-  background-color: rgba(245, 158, 11, 0.2);
-}
-

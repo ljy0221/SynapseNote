@@ -1,9 +1,16 @@
 /* src/pages/note/Note.css */
 
 .page-content-container {
-    padding-top: 60px;
-    height: 100vh;
-    width: 100%;
+    /* Unified Panel Style */
+    width: calc(100% - 40px);
+    height: calc(100% - 100px);
+    margin: 80px 20px 20px 20px;
+
+    border: 3px solid color-mix(in srgb, var(--color-point), transparent 50%);
+    border-radius: 20px;
+    background-color: var(--color-bg);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
@@ -16,7 +23,7 @@
     flex-direction: row;
     /* 좌우 배치 핵심 */
     width: 100%;
-    height: calc(100vh - 60px);
+    height: 100%;
     overflow: hidden;
 }
 
