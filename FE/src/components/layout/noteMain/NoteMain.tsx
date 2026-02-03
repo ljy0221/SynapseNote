@@ -2,7 +2,9 @@
 import React from 'react';
 import CodeBlock from '../codeBlock/CodeBlock';
 import TextBlock from '../textBlock/TextBlock';
-import { NoteToolBar } from '../noteToolbar/NoteToolbar';
+import { NoteSideNav } from './NoteSideNav';
+import { InviteLinkModal } from '../../common/modal/InviteLinkModal';
+import { PermissionModal } from '../../common/modal/PermissionModal'; // [New]
 import { BlockData, BlockType } from '../../../pages/note/Note';
 import './NoteMain.css';
 interface NoteMainProps {
@@ -31,8 +33,16 @@ const NoteMain: React.FC<NoteMainProps> = ({
     focusedBlockId,
     onMoveBlock,
     titleInputRef,
-    noteId // [추가]
+    noteId
 }) => {
+    // [New] 초대 모달 상태
+    const [isInviteModalOpen, setIsInviteModalOpen] = React.useState(false);
+    // [New] 권한 모달 상태
+    const [isPermissionModalOpen, setIsPermissionModalOpen] = React.useState(false);
+
+    // [New] 초대 링크 (현재 페이지 URL 사용)
+    const inviteUrl = window.location.href;
+
     // DnD 상태 관리
     const [dragIndex, setDragIndex] = React.useState<number | null>(null);
     const onDragStart = (e: React.DragEvent, index: number) => {
@@ -98,12 +108,34 @@ const NoteMain: React.FC<NoteMainProps> = ({
                     placeholder="제목 없음"
                 />
             </header>
-            <div className="note-content-area">
-                {blocks.map((block, index) => renderBlock(block, index))}
-                {/* 마지막 블록 아래에 가로 툴바 */}
-                <NoteToolBar onAddBlock={onAddBlockAtEnd} />
+            <div className="note-body-wrapper">
+                <div className="note-content-area">
+                    {blocks.map((block, index) => renderBlock(block, index))}
+                    <div className="note-bottom-spacer" style={{ height: '30vh' }} />
+                </div>
+
+                <div className="note-sidenav-area">
+                    <NoteSideNav
+                        onAddBlock={onAddBlockAtEnd}
+                        onInvite={() => setIsInviteModalOpen(true)}
+                        onPermission={() => setIsPermissionModalOpen(true)}
+                    />
+                </div>
             </div>
-        </div>
+
+            {/* 초대 링크 모달 */}
+            <InviteLinkModal
+                isOpen={isInviteModalOpen}
+                onClose={() => setIsInviteModalOpen(false)}
+                noteId={noteId}
+            />
+            {/* 권한 관리 모달 */}
+            <PermissionModal
+                isOpen={isPermissionModalOpen}
+                onClose={() => setIsPermissionModalOpen(false)}
+                noteId={noteId} // [New] Pass noteId
+            />
+        </div >
     );
 };
 export default NoteMain;
