@@ -1,86 +1,9 @@
 /* AlertModal.css */
-/* ConfirmModal.css의 스타일을 재사용하거나 비슷하게 구성 */
+@import './CommonModal.css';
 
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 2000;
-    /* 다른 요소보다 위에 표시 */
-    backdrop-filter: blur(2px);
-}
-
-.modal-container {
-    background-color: var(--bg-color);
-    /* 테마 배경색 사용 */
-    padding: 2rem;
-    border-radius: 16px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-    width: 320px;
-    text-align: center;
-    border: 1px solid var(--border-color);
-    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-@keyframes popIn {
-    from {
-        opacity: 0;
-        transform: scale(0.8);
-    }
-
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
-}
-
-.modal-message {
-    margin-bottom: 2rem;
-    font-size: 1.1rem;
-    line-height: 1.6;
-    color: var(--font-color);
-    white-space: pre-wrap;
-    /* 줄바꿈 허용 */
-}
-
-.modal-actions {
-    display: flex;
-    justify-content: center;
-    gap: 1rem;
-}
-
-.modal-btn {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 50px;
-    height: 50px;
-    border: none;
-    border-radius: 50%;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    background-color: var(--bg-secondary);
-    color: var(--font-color);
-}
-
-.modal-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.btn-confirm {
-    color: var(--color-point);
-    /* 포인트 컬러 사용 (초록/파랑 등) */
-    background-color: rgba(var(--color-point-rgb), 0.1);
-}
-
+/* CommonModal.css 사용 */
 .btn-confirm:hover {
+    /* AlertModal 특유의 hover 오버라이드 (필요 시 유지) */
     background-color: var(--color-point);
     color: white;
 }
