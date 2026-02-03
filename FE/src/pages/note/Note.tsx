@@ -3,13 +3,10 @@ import { useParams } from 'react-router-dom';
 import NoteButton from "../../components/common/noteButton/NoteButton";
 import NoteMain from "../../components/layout/noteMain/NoteMain";
 import { createNoteApi } from '../../api/notes/CreateNote.api';
-import { getNoteDetailApi } from '../../api/notes/GetNoteDetail.api';
-import { updateNoteApi } from '../../api/notes/UpdateNote.api'; // ADDED
-import { emitNotesChanged } from '../../events/NotesEvents'; // ADDED
 import type { CreateNoteRequest } from '../../types/note/CreateNote';
 import { useYjsStore } from '../../hooks/useYjsStore';
-import { useAuthStore } from '../../store/useAuthStore'; // [New]
-import { NoteMemberRole } from '../../types/note/GetNoteMembers'; // [New]
+import { useAuthStore } from '../../store/useAuthStore';
+import { useNote } from '../../hooks/useNote'; // [New]
 import './Note.css';
 
 // 블록 타입 정의 (이원화: text / code)
@@ -26,58 +23,22 @@ export interface BlockData {
 const Note: React.FC = () => {
     const { noteId } = useParams<{ noteId: string }>();
     const [isEditing, setIsEditing] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const [title, setTitle] = useState("제목 없는 노트");
-    const [currentUserRole, setCurrentUserRole] = useState<NoteMemberRole | null>(null); // [New]
-    const [focusedBlockId, setFocusedBlockId] = useState<number | string | null>(null);
-
     // Auth Store for User ID
     const { user } = useAuthStore();
 
-    // 제목 input ref
-    const titleInputRef = useRef<HTMLInputElement>(null);
+    // Custom Hook for Note Logic
+    const { note, role: currentUserRole, isLoading: isNoteLoading } = useNote(noteId);
 
-    // Yjs Store 사용
-    const { blocks, isSynced, addBlock, updateBlock, deleteBlock, moveBlock } = useYjsStore(noteId);
-
-    const fetchNoteDetail = useCallback(async (id: string) => {
-        // setIsLoading(true); // Yjs 로딩과는 별개로 타이틀만 로딩하므로 전체 로딩을 걸면 깜빡일 수 있음
-        try {
-            const noteRes = await getNoteDetailApi(id);
-            console.log("[Note] Fetched Note Detail:", noteRes);
-
-            if (noteRes) {
-                setTitle(noteRes.title || "제목 없는 노트");
-
-                // Calculate Role
-                if (user && noteRes.owner && user.memberId === noteRes.owner.memberId) {
-                    setCurrentUserRole('OWNER');
-                } else if (user && noteRes.members) {
-                    const member = noteRes.members.find(m => m.memberId === user.memberId);
-                    if (member && member.role) {
-                        setCurrentUserRole(member.role);
-                    } else {
-                        setCurrentUserRole(null); // Not a member or guest
-                    }
-                }
-            }
-            setIsEditing(true);
-        } catch (error) {
-            console.error("노트 상세 정보 로딩 실패:", error);
-            // alert("노트 데이터를 불러오지 못했습니다.");
-        } finally {
-            // setIsLoading(false);
-        }
-    }, [user]); // Add user to dependency
-
+    // Sync Title and Editing Mode when note loads
     useEffect(() => {
-        if (noteId) {
-            fetchNoteDetail(noteId);
-        } else {
+        if (note) {
+            setTitle(note.title || "제목 없는 노트");
+            setIsEditing(true);
+        } else if (!noteId) {
             setIsEditing(false);
             setTitle("제목 없는 노트");
         }
-    }, [noteId, fetchNoteDetail]);
+    }, [note, noteId]);
 
     // Title Auto-save Debounce (ADDED)
     useEffect(() => {
@@ -185,7 +146,7 @@ const Note: React.FC = () => {
         }
     };
 
-    if (isLoading) {
+    if (isNoteLoading) {
         return <div className="page-content-container">Loading...</div>;
     }
 
