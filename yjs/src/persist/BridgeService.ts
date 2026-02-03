@@ -97,10 +97,14 @@ class BridgeService {
 
       const yblocks = yDoc.getArray<Y.Map<any>>('blocks');
 
-      yDoc.transact(() => {
-        // 기존 배열 초기화 (중복 방지)
-        if (yblocks.length > 0) yblocks.delete(0, yblocks.length);
+      // 이미 데이터가 있다면 (다른 유저에 의해 이미 생성되었거나, 동기화가 진행된 경우)
+      // DB 로딩을 생략하여 실시간 편집 중인 데이터를 보호함
+      if (yblocks.length > 0) {
+        console.log(`[Bridge] Doc ${noteId} already has ${yblocks.length} blocks. Skipping DB population.`);
+        return;
+      }
 
+      yDoc.transact(() => {
         blocks.forEach((dbBlock: any) => {
           const blockMap = new Y.Map();
 
