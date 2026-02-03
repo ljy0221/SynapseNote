@@ -20,4 +20,7 @@ public interface BlockRepository extends MongoRepository<BaseBlock, String> {
 
     // 문서 삭제 시 관련 블록 일괄 삭제 (필요 시)
     void deleteByNoteId(UUID noteId);
+
+    // 여러 노트의 북마크된 블록 조회 (최신순, 페이지네이션)
+    Page<BaseBlock> findByNoteIdInAndBookmarkTrueOrderByUpdatedAtDesc(List<UUID> noteIds, Pageable pageable);
 }
