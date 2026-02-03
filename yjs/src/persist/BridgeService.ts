@@ -3,12 +3,68 @@ import { Block, BlockHistory, BlockProperties } from '../models/Block';
 import { loadEnv } from '../config/env';
 import _ from 'lodash';
 import connectionManager, { UserContext } from '../ws/connectionManager';
+import { generateUuidV7 } from '../utils/uuid';
+import { Binary } from 'mongodb';
+
+/**
+ * ID(Buffer 혹은 String)를 일관된 소문자 Hex 문자열로 변환
+ */
+function normalizeToHex(id: any): string {
+  if (!id) return '';
+  if (Buffer.isBuffer(id)) return id.toString('hex').toLowerCase();
+
+  // mongodb Binary 객체 대응
+  if (id._bsontype === 'Binary') {
+    return id.value(true).toString('hex').toLowerCase();
+  }
+
+  if (typeof id === 'string') return id.replace(/-/g, '').toLowerCase();
+
+  // 기타 객체 (Mongoose 가공 객체 등) 대응
+  if (id.buffer && Buffer.isBuffer(id.buffer)) return id.buffer.toString('hex').toLowerCase();
+
+  return id.toString().replace(/-/g, '').toLowerCase();
+}
+
+/**
+ * UUID 문자열을 MongoDB Binary(subtype 04 - Standard UUID) 호환 객체로 변환
+ * - Java(Spring Boot)의 "standard" UUID representation과 호환
+ */
+function uuidToBuffer(uuid: string): Binary | string {
+  if (!uuid || typeof uuid !== 'string') return uuid;
+  const hex = uuid.replace(/-/g, '');
+  if (hex.length !== 32) return uuid;
+  try {
+    const buffer = Buffer.from(hex, 'hex');
+    return new Binary(buffer, 4); // Subtype 4 (Standard UUID) 강제
+  } catch (e) {
+    return uuid;
+  }
+}
+
+/**
+ * ID(Buffer 혹은 String)를 하이픈이 포함된 UUID 형식문자열로 변환
+ */
+function toUuidString(val: any): string {
+  if (!val) return '';
+  const hex = normalizeToHex(val);
+
+  // 손상된 데이터(32자 미만 혹은 깨진 데이터) 발견 시 UUID v7으로 "치유(Heal)"
+  if (hex.length !== 32 || hex.includes('efbfbd')) {
+    const healedId = generateUuidV7();
+    console.warn(`[Bridge] Invalid/Corrupted ID detected (${hex}). Healed to: ${healedId}`);
+    return healedId;
+  }
+
+  return hex.replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
+}
 
 // Yjs에서 넘어오는 블록 데이터 구조 인터페이스
 interface YjsBlockData {
-  id: string;
-  type: string;
+  blockId: string;
+  _class: string;
   properties: BlockProperties;
+  bookmark?: boolean;
   outputHistory?: Array<any>;
   lastOutput?: string;
   lastExecutedAt?: string;
@@ -22,6 +78,65 @@ class BridgeService {
     this.debounceTimers = new Map();
     const env = loadEnv();
     this.DEBOUNCE_TIME = env.MONGO_SYNC_DEBOUNCE_MS;
+  }
+
+  /**
+   * DB에서 데이터를 불러와 Yjs 문서를 초기화 (서버 시작 시 1회)
+   */
+  public async initDocFromDB(noteId: string, yDoc: Y.Doc): Promise<void> {
+    try {
+      console.log(`[Bridge] initDocFromDB started for ${noteId}`);
+
+      const queryId = uuidToBuffer(noteId); // Standard UUID (Subtype 04)로 조회
+      const blocks = await Block.find({ noteId: queryId }).sort({ order: 1 }).lean();
+
+      if (!blocks || blocks.length === 0) {
+        console.log(`[Bridge] No existing blocks found for ${noteId}. Starting fresh.`);
+        return;
+      }
+
+      const yblocks = yDoc.getArray<Y.Map<any>>('blocks');
+
+      yDoc.transact(() => {
+        // 기존 배열 초기화 (중복 방지)
+        if (yblocks.length > 0) yblocks.delete(0, yblocks.length);
+
+        blocks.forEach((dbBlock: any) => {
+          const blockMap = new Y.Map();
+
+          // ID 정규화 (UUID String으로 변환)
+          const bIdStr = toUuidString(dbBlock.blockId);
+          const nIdStr = toUuidString(dbBlock.noteId);
+
+          blockMap.set("blockId", bIdStr);
+          blockMap.set("noteId", nIdStr);
+          blockMap.set("_class", dbBlock._class);
+          blockMap.set("bookmark", dbBlock.bookmark ?? false);
+          blockMap.set("outputHistory", dbBlock.outputHistory || []);
+          blockMap.set("order", dbBlock.order ?? 0);
+
+          const propertiesMap = new Y.Map();
+          if (dbBlock.properties) {
+            Object.entries(dbBlock.properties).forEach(([key, value]) => {
+              if (key === 'content' || key === 'code') {
+                const yText = new Y.Text();
+                yText.insert(0, value as string);
+                propertiesMap.set(key, yText);
+              } else {
+                propertiesMap.set(key, value);
+              }
+            });
+          }
+          blockMap.set("properties", propertiesMap);
+
+          yblocks.push([blockMap]);
+        });
+      });
+
+      console.log(`[Bridge] initDocFromDB success. Blocks loaded: ${blocks.length}`);
+    } catch (error) {
+      console.error(`[Bridge Error] initDocFromDB failed for ${noteId}:`, error);
+    }
   }
 
   public handleUpdate(noteId: string, yDoc: Y.Doc): void {
@@ -40,104 +155,103 @@ class BridgeService {
 
   private async syncToDB(noteId: string, yDoc: Y.Doc, userContext?: UserContext): Promise<void> {
     try {
-      console.log(`[Bridge] syncToDB started for ${noteId}`);
-      // 1. Yjs 데이터 추출
-      const yArray = yDoc.getArray<YjsBlockData>('blocks');
-      const currentBlocks: YjsBlockData[] = yArray.toJSON();
+      const yArray = yDoc.getArray<any>('blocks');
+      const currentBlocks = yArray.toJSON();
 
       if (!currentBlocks || currentBlocks.length === 0) {
-        console.log(`[Bridge] No blocks found for ${noteId}, skipping sync`);
+        console.log(`[Bridge] No blocks to sync for ${noteId}.`);
         return;
       }
 
-      console.log(`[Bridge] Syncing Doc ${noteId}, Count: ${currentBlocks.length}`);
+      const queryNoteId = uuidToBuffer(noteId); // Standard UUID (Subtype 04) 사용
+      const dbBlocks = await Block.find({ noteId: queryNoteId }).lean();
 
-      // 2. DB 데이터 조회 (성능 최적화를 위해 매핑)
-      const dbBlocks = await Block.find({ noteId }).lean();
-      const dbBlocksMap = new Map(dbBlocks.map(b => [b.blockId, b]));
-
+      // DB 데이터 맵 생성 시 blockId를 Hex로 정규화하여 매칭률 향상
+      const dbBlocksMap = new Map(dbBlocks.map((b: any) => [normalizeToHex(b.blockId), b]));
       const bulkOps: any[] = [];
       const currentBlockIds = new Set<string>();
+      const processedBlockIds = new Set<string>(); // 배치 내 중복 처리 방지
 
-      // 3. 루프 돌며 비교 (Diff Logic)
       for (let i = 0; i < currentBlocks.length; i++) {
         const yBlock = currentBlocks[i];
 
-        // ID 없으면 스킵
-        if (!yBlock.id) continue;
-        currentBlockIds.add(yBlock.id);
+        // blockId가 없으면 UUID v7 생성 (방어 코드)
+        if (!yBlock.blockId) {
+          const newId = generateUuidV7();
+          console.log(`[Bridge] Assigning new UUID v7 to block at index ${i}: ${newId}`);
 
-        let cleanProps = { ...yBlock.properties };
+          // Yjs Map에 직접 주입 (이후 재귀적으로 syncToDB가 다시 호출됨)
+          const yBlockMap = yArray.get(i);
+          if (yBlockMap instanceof Y.Map) {
+            yBlockMap.set('blockId', newId);
+            yBlock.blockId = newId; // 현재 loop 처리를 위해 할당
+          } else {
+            console.warn(`[Bridge] Failed to set blockId on non-Map block at index ${i}`);
+            continue;
+          }
+        }
 
-        // Spring용 _class 결정
-        const springClass = yBlock.type;
+        const validBlockId = toUuidString(yBlock.blockId);
+        const blockIdHex = normalizeToHex(validBlockId);
+        currentBlockIds.add(blockIdHex);
 
-        const existingBlock = dbBlocksMap.get(yBlock.id);
+        // 이미 이번 배치에서 처리한 ID면 스킵 (Yjs 문서 내 중복 방어)
+        if (processedBlockIds.has(blockIdHex)) {
+          console.warn(`[Bridge] Duplicate blockId detected in sync batch: ${validBlockId}`);
+          continue;
+        }
+        processedBlockIds.add(blockIdHex);
 
-        // CodeBlock용 Root Field 추출
-        const rootFields: any = {};
+        const springClass = yBlock._class;
+        const existingBlock = dbBlocksMap.get(blockIdHex);
+
+        const cleanProps: any = {};
+        if (yBlock.properties) {
+          Object.entries(yBlock.properties).forEach(([key, val]) => {
+            cleanProps[key] = val;
+          });
+        }
+
+        const rootFields: any = {
+          outputHistory: yBlock.outputHistory || (springClass === 'code' ? [] : undefined)
+        };
+
         if (springClass === 'code') {
-          if (yBlock.outputHistory) rootFields.outputHistory = yBlock.outputHistory;
           if (yBlock.lastOutput) rootFields.lastOutput = yBlock.lastOutput;
-          if (yBlock.lastExecutedAt) rootFields.lastExecutedAt = new Date(yBlock.lastExecutedAt);
+          if (yBlock.lastExecutedAt) rootFields.lastExecutedAt = yBlock.lastExecutedAt;
         }
 
         if (existingBlock) {
-
-          // 1. Properties 비교
           const isPropsChanged = !_.isEqual(existingBlock.properties, cleanProps);
+          const isMetadataChanged = existingBlock._class !== springClass ||
+            (existingBlock as any).bookmark !== (yBlock.bookmark ?? false);
 
-          // 2. Type 비교
-          const isTypeChanged = existingBlock.type !== yBlock.type;
-
-          // 3. Class 비교
-          const isClassChanged = existingBlock._class !== springClass;
-
-          // 4. Root Field 비교 (CodeBlock의 경우)
-          let isRootChanged = false;
-          if (springClass === 'code') {
-            const dbHistory = existingBlock.toObject ? existingBlock.toObject().outputHistory || [] : (existingBlock as any).outputHistory || [];
-            const yHistory = rootFields.outputHistory || [];
-            if (!_.isEqual(dbHistory, yHistory)) isRootChanged = true;
-            if ((existingBlock as any).lastOutput !== rootFields.lastOutput) isRootChanged = true;
-          }
-
-          if (isPropsChanged || isTypeChanged || isRootChanged || isClassChanged) {
-            // 블록 업데이트
+          if (isPropsChanged || isMetadataChanged || existingBlock.order !== i) {
             bulkOps.push({
               updateOne: {
-                filter: { blockId: yBlock.id },
+                filter: { _id: existingBlock._id },
                 update: {
                   $set: {
+                    blockId: uuidToBuffer(validBlockId), // Subtype 04 저장
                     _class: springClass,
-                    type: yBlock.type,
                     properties: cleanProps,
+                    bookmark: yBlock.bookmark ?? false,
                     order: i,
                     ...rootFields
                   }
                 }
               }
             });
-          } else if (existingBlock.order !== i) {
-            // 순서만 변경
-            bulkOps.push({
-              updateOne: {
-                filter: { blockId: yBlock.id },
-                update: { $set: { order: i } }
-              }
-            });
           }
-
         } else {
-          // --- 생성 (Create) ---
           bulkOps.push({
             insertOne: {
               document: {
                 _class: springClass,
-                noteId: noteId,
-                blockId: yBlock.id,
-                type: yBlock.type,
+                noteId: queryNoteId, // Subtype 04 저장
+                blockId: uuidToBuffer(validBlockId), // Subtype 04 저장
                 properties: cleanProps,
+                bookmark: yBlock.bookmark ?? false,
                 order: i,
                 ...rootFields
               }
@@ -147,27 +261,24 @@ class BridgeService {
       }
 
       // 4. 삭제 (Delete)
-      const toDeleteIds = dbBlocks
-        .filter(b => !currentBlockIds.has(b.blockId))
-        .map(b => b.blockId);
-
-      if (toDeleteIds.length > 0) {
-        bulkOps.push({
-          deleteMany: {
-            filter: { blockId: { $in: toDeleteIds } }
+      const toDeleteOps = dbBlocks
+        .filter((b: any) => !currentBlockIds.has(normalizeToHex(b.blockId)))
+        .map((b: any) => ({
+          deleteOne: {
+            filter: { _id: b._id }
           }
-        });
+        }));
+
+      if (toDeleteOps.length > 0) {
+        bulkOps.push(...toDeleteOps);
       }
 
-      // 5. 블록 업데이트 실행
       if (bulkOps.length > 0) {
         await Block.bulkWrite(bulkOps);
         console.log(`[Bridge] Sync Success for ${noteId}. Updates: ${bulkOps.length}`);
-        console.log(`[Bridge] Sample of synced block IDs: ${currentBlocks.slice(0, 3).map(b => b.id).join(", ")}`);
       }
-
     } catch (error) {
-      console.error(`[Bridge Error] Failed to sync ${noteId}:`, error);
+      console.error(`[Bridge Error] syncToDB failed for ${noteId}:`, error);
     }
   }
 

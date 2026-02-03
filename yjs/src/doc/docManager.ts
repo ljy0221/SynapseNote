@@ -35,6 +35,12 @@ export function registerDoc(noteId: string, ydoc: Y.Doc): DocEntry {
   };
 
   console.log(`[DOC] Registering update listener for ${noteId}`);
+
+  // DB에서 데이터 불러와서 Yjs 문서 초기화
+  BridgeService.initDocFromDB(noteId, ydoc).then(() => {
+    console.log(`[DOC] Bridge initialization completed for ${noteId}`);
+  });
+
   ydoc.on("update", (update: Uint8Array) => {
     console.log(`[DOC] update fired for ${noteId}, size: ${update.length}`);
 
