@@ -2,9 +2,10 @@ package com.synapse.api.modules.ai.dto.response;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 public record CodeReviewResponse(
-        String blockId,
+        UUID blockId,
         String language,
         String originalCode,
         List<ReviewItem> reviews,
