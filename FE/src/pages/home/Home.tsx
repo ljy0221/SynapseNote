@@ -12,6 +12,9 @@ import { adaptStreakDates } from '../../api/streak/Streak.adapter';
 import type { NoteListItem } from '../../types/note/GetNotes';
 import { useAuthStore } from '../../store/useAuthStore';
 
+import NoteBookmarkSection from '../../components/layout/noteBookmark/NoteBookmarkSection';
+import BlockBookmarkSection from '../../components/layout/blockBookmark/BlockBookmarkSection';
+
 const Home: React.FC = () => {
   const { userInfo, isLoading: userLoading } = useAuthStore();
   const memberId = userInfo?.memberId;
@@ -64,6 +67,14 @@ const Home: React.FC = () => {
 
         <div className="home-card section-card">
           <NoteStreak streak={{ dates: streakDates }} />
+        </div>
+
+        <div className="home-card section-card">
+          <NoteBookmarkSection />
+        </div>
+
+        <div className="home-card section-card">
+          <BlockBookmarkSection />
         </div>
       </section>
     </div>
