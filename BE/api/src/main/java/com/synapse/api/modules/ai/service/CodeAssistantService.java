@@ -91,7 +91,7 @@ public class CodeAssistantService {
         log.info("Code review completed: noteId={}, blockId={}, provider={}, contextBlocks={}",
                 noteId, blockId, provider, contextBlocks != null ? contextBlocks.size() : 0);
 
-        return parseCodeReviewResponse(blockId.toString(), language, code, aiResponse);
+        return parseCodeReviewResponse(blockId, language, code, aiResponse);
     }
 
     private String buildCodeReviewSystemPrompt(String language) {
@@ -161,7 +161,7 @@ public class CodeAssistantService {
         return prompt.toString();
     }
 
-    private CodeReviewResponse parseCodeReviewResponse(String blockId,
+    private CodeReviewResponse parseCodeReviewResponse(UUID blockId,
                                                          String language,
                                                          String code,
                                                          String aiResponse) {
