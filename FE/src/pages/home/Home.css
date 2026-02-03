@@ -1,14 +1,21 @@
 /* src/pages/Home.css */
 
+:root {
+  --header-height: 60px;
+  --layout-margin: 20px;
+  --layout-top-offset: calc(var(--header-height) + var(--layout-margin));
+  /* 80px */
+}
+
 .home-container {
   /* padding: 24px; -> 내부 스크롤 영역으로 이동 */
   box-sizing: border-box;
 
   /* 🔥 Home은 전체 폭 사용 (패널 디자인 적용) */
   /* 헤더(60px) + 여백(20px) = 상단 80px */
-  width: calc(100% - 40px);
-  height: calc(100% - 100px);
-  margin: 80px 20px 20px 20px;
+  width: calc(100% - (var(--layout-margin) * 2));
+  height: calc(100% - (var(--layout-top-offset) + var(--layout-margin)));
+  margin: var(--layout-top-offset) var(--layout-margin) var(--layout-margin) var(--layout-margin);
 
   border: 3px solid color-mix(in srgb, var(--color-point), transparent 50%);
   border-radius: 20px;
@@ -30,13 +37,12 @@
 .home-content {
   flex: 1;
   /* 남은 높이 채움 */
-  overflow-y: auto;
-  /* 🔥 실제 스크롤 */
+  overflow-y: hidden;
+  /* 🔥 스크롤 제거 (요청사항) */
   width: 100%;
 
-  /* 🔥 상단 패딩: 라벨(절대위치)과 겹치지 않도록 공간 확보 (24px -> 100px) */
-  /* 🔥 하단 패딩: 콘텐츠를 시각적으로 위로 올리기 위해 유지 (100px) */
-  padding: 100px 24px 100px 24px;
+  /* 패딩 원복 (100px -> 24px) */
+  padding: 24px;
 
   /* 패딩 이동 */
   box-sizing: border-box;
@@ -44,6 +50,8 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: center;
+  /* 🔥 가로 중앙 정렬 추가 */
 }
 
 /* 대시보드 라벨 (좌측 상단 위) */
@@ -126,11 +134,14 @@
 /* 카드 그리드 - 높이 자동 (콘텐츠에 맞춤) */
 .home-grid {
   display: grid;
-  /* 좌측은 콘텐츠(스트릭) 너비에 딱 맞춤, 우측은 나머지 채움 */
-  grid-template-columns: max-content 1fr;
+  /* 🔥 좌우 고정 너비로 변경 (창이 커져도 늘어나지 않고 중앙 유지) */
+  grid-template-columns: 740px 340px;
   gap: 16px;
   height: auto;
-  width: 100%;
+  width: auto;
+  /* 꽉 채우지 않음 */
+  justify-content: center;
+  /* 중앙 정렬 */
 }
 
 /* 컬럼 스타일 */
@@ -138,8 +149,8 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  /* width: max-content; -> 콘텐츠 너비에 딱 맞춤 */
-  width: max-content;
+  /* width: max-content; -> Grid Track 따름 */
+  width: 100%;
   /* max-width 제거 (필요하면 복구) */
 }
 

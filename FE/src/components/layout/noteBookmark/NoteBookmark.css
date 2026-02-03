@@ -30,28 +30,7 @@
   color: var(--font-color);
 }
 
-.window-controls {
-  display: flex;
-  gap: 8px;
-}
 
-.control-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-}
-
-.control-dot.red {
-  background-color: #FF5F56;
-}
-
-.control-dot.yellow {
-  background-color: #FFBD2E;
-}
-
-.control-dot.green {
-  background-color: #27C93F;
-}
 
 .bookmark-content {
   padding: 20px;
@@ -70,19 +49,10 @@
   margin: 0;
   /* ❗ 필수 */
 
-  .note-bookmark-list {
-    list-style: none;
-    /* ❗ 필수 */
-    padding: 0;
-    /* ❗ 필수 */
-    margin: 0;
-    /* ❗ 필수 */
-
-    display: flex;
-    /* Grid -> Flex Column (리스트 형태) */
-    flex-direction: column;
-    gap: 10px;
-  }
+  display: flex;
+  /* Grid -> Flex Column (리스트 형태) */
+  flex-direction: column;
+  gap: 10px;
 
 
   /* 카드 */

@@ -30,28 +30,7 @@
   color: var(--font-color);
 }
 
-.window-controls {
-  display: flex;
-  gap: 8px;
-}
 
-.control-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-}
-
-.control-dot.red {
-  background-color: #FF5F56;
-}
-
-.control-dot.yellow {
-  background-color: #FFBD2E;
-}
-
-.control-dot.green {
-  background-color: #27C93F;
-}
 
 .bookmark-content {
   padding: 20px;
@@ -67,16 +46,10 @@
   padding: 0;
   margin: 0;
 
-  .block-bookmark-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-
-    display: flex;
-    /* Grid -> Flex Column (리스트 형태) */
-    flex-direction: column;
-    gap: 14px;
-  }
+  display: flex;
+  /* Grid -> Flex Column (리스트 형태) */
+  flex-direction: column;
+  gap: 14px;
 
   /* 카드 */
   .block-bookmark-card {
