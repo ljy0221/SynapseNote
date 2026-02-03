@@ -1,5 +1,6 @@
 // BlockBookmarkList.tsx
 import { useState, useEffect } from 'react';
+import { BookDashed } from 'lucide-react';
 import BlockBookmarkItem from './BlockBookmarkItem';
 import type { GetBookmarkBlocksResponse } from '../../../types/bookmark/BookmarkBlockResponse';
 import { getBlockBookmarksApi } from '../../../api/bookmark/Bookmarks.api';
@@ -26,7 +27,8 @@ const BlockBookmarkList = () => {
   if (blocks.length === 0) {
     return (
       <div className="bookmark-empty">
-        즐겨찾기한 블럭이 없습니다.
+        <BookDashed size={48} className="bookmark-empty-icon" />
+        <span className="empty-text">아직 즐겨찾기한 지식이 없습니다!</span>
       </div>
     );
   }

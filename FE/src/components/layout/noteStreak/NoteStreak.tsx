@@ -1,5 +1,5 @@
-// src/components/home/NoteStreak.tsx
 import React, { useMemo } from 'react';
+import { Combine } from 'lucide-react';
 import './NoteStreak.css';
 import { calculateStreakCount } from '../../features/streakCount/streakcount';
 
@@ -93,50 +93,60 @@ const NoteStreak: React.FC<NoteStreakProps> = ({ streak }) => {
 
   return (
     <section className="note-streak">
-      <div className="streak-header">
-        <h3>Streak</h3>
-
-        {streakCount >= 0 && (
-          <span className="streak-count">
-            🔥 {streakCount}일 연속
-          </span>
-        )}
+      <div className="section-header">
+        <div className="header-left-group">
+          <h3 className="section-title">
+            <Combine size={20} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
+            스트릭
+          </h3>
+          {streakCount >= 0 && (
+            <span className="streak-count">
+              🔥 {streakCount}일 연속
+            </span>
+          )}
+        </div>
+        <div className="window-controls">
+          <div className="control-dot red" />
+          <div className="control-dot yellow" />
+          <div className="control-dot green" />
+        </div>
       </div>
 
+      <div className="note-streak-content">
+        {/* 월 라벨 */}
+        <div className="streak-months">
+          {monthLabels.map(m => (
+            <span
+              key={`${m.index}-${m.label}`}
+              className="month-label"
+              style={{
+                left: `${m.index * (24 + 3)}px` // cellWidth + gap
+              }}
+            >
+              {m.label}
+            </span>
+          ))}
+        </div>
 
-      {/* 월 라벨 */}
-      <div className="streak-months">
-        {monthLabels.map(m => (
-          <span
-            key={`${m.index}-${m.label}`}
-            className="month-label"
-            style={{
-              left: `${m.index * (24 + 3)}px` // cellWidth + gap
-            }}
-          >
-            {m.label}
-          </span>
-        ))}
-      </div>
+        {/* GitHub 스타일 스트릭 */}
+        <div className="streak-grid">
+          {weeks.map((week, wIdx) => (
+            <div key={wIdx} className="week-column">
+              {week.map(date => {
+                const key = formatDate(date);
+                const active = activitySet.has(key);
 
-      {/* GitHub 스타일 스트릭 */}
-      <div className="streak-grid">
-        {weeks.map((week, wIdx) => (
-          <div key={wIdx} className="week-column">
-            {week.map(date => {
-              const key = formatDate(date);
-              const active = activitySet.has(key);
-
-              return (
-                <div
-                  key={key}
-                  className={`day-cell ${active ? 'active' : ''}`}
-                  title={key}
-                />
-              );
-            })}
-          </div>
-        ))}
+                return (
+                  <div
+                    key={key}
+                    className={`day-cell ${active ? 'active' : ''}`}
+                    title={key}
+                  />
+                );
+              })}
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );
