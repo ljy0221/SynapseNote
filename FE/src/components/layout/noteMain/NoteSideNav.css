@@ -1,0 +1,107 @@
+/* src/components/layout/noteMain/NoteSideNav.css */
+.note-side-nav {
+    position: sticky;
+    top: 100px;
+    /* 헤더 높이 등을 고려한 상단 여백 */
+    right: 0;
+    width: 60px;
+    height: fit-content;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 0;
+    z-index: 100;
+}
+
+.nav-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background-color: var(--color-main);
+    padding: 12px 8px;
+    border-radius: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    /* Slightly stronger shadow */
+    border: 1px solid var(--color-point);
+    /* Use point color for border */
+    transition: all 0.3s ease;
+}
+
+.nav-group:hover {
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 12px;
+    background: transparent;
+    cursor: pointer;
+    color: var(--font-color-sub, #888);
+    /* Use theme secondary font color */
+    /* Use theme secondary font color */
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    /* For divider positioning */
+}
+
+.nav-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    bottom: -7px;
+    /* Position in the middle of the gap (12px gap) */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    /* Not full width for subtle look */
+    height: 1px;
+    background-color: var(--color-point);
+    /* Match border color */
+    opacity: 0.3;
+    /* Lower opacity for subtlety since point color is strong */
+}
+
+.nav-item:hover {
+    background-color: var(--color-sub);
+    color: var(--color-point);
+    /* Accent color on hover */
+    transform: scale(1.1);
+}
+
+.nav-item:active {
+    transform: scale(0.95);
+}
+
+.nav-label {
+    font-size: 9px;
+    font-weight: 500;
+    opacity: 0;
+    transform: translateY(-5px);
+    transition: all 0.2s ease;
+    position: absolute;
+    bottom: -10px;
+    background-color: var(--color-point);
+    /* Accent background for tooltip */
+    color: white;
+    /* Ensure readability on accent color */
+    padding: 4px 8px;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    pointer-events: none;
+    white-space: nowrap;
+    /* Prevent breaking */
+}
+
+.nav-item:hover .nav-label {
+    opacity: 1;
+    transform: translateY(12px);
+    z-index: 10;
+}
