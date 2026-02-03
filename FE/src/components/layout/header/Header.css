@@ -39,7 +39,13 @@
 }
 
 /* 검색창 구역 설정 */
+/* 검색창 구역 설정 */
 .header-search-zone {
+    position: absolute;
+    /* 🔥 절대 위치로 변경 */
+    left: 50%;
+    transform: translateX(-50%);
+
     display: flex;
     justify-content: center;
     -webkit-app-region: no-drag;
@@ -76,12 +82,15 @@ textarea {
 }
 
 .search-bar-wrapper {
-  position: relative; /* 🔥 기준점 */
-  width: 100%;
+    position: relative;
+    /* 🔥 기준점 */
+    width: 100%;
 }
+
 .search-dropdown {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  width: 100%; /* 이제 SearchBar 기준 */
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    width: 100%;
+    /* 이제 SearchBar 기준 */
 }
