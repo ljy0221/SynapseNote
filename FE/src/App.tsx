@@ -31,7 +31,6 @@ import Login from './pages/login/Login';
 import OAuthCallback from './pages/login/OAuthCallback';
 import Note from './pages/note/Note';
 import MindMap from './pages/mindmap/MindMap';
-import Bookmark from './pages/bookmark/Bookmark';
 
 // 사이드바가 허용되는 경로
 const SIDEBAR_ROUTES = ['/note'];
@@ -212,7 +211,6 @@ function AppContent() {
                     <Route path="/note" element={<Note />} />
                     <Route path="/note/:noteId" element={<Note />} />
                     <Route path="/mindmap" element={<MindMap />} />
-                    <Route path="/recommend" element={<Bookmark />} />
                 </Routes>
             </main>
         </div>
