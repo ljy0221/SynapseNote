@@ -196,25 +196,47 @@ export const useYjsStore = (noteId: string | undefined) => {
         if (fromIndex === toIndex) return;
 
         doc.transact(() => {
-            // Yjs 배열 이동은 delete 후 insert 방식이 일반적이나, 
-            // 협업 충돌 방지를 위해 move 메서드가 있다면 사용하는 것이 좋음.
-            // Y.Array에는 move 메서드가 없을 수 있으므로 (v13 기준), delete & insert 사용
-            // 주의: 이 방식은 id가 바뀌지 않으므로 안전
+            const targetBlock = yBlocks.get(fromIndex);
+            if (!targetBlock) return;
 
-            // 참고: Yjs v13은 array.get(i)로 요소를 가져와서 다른 곳에 insert하면
-            // "Item implementation only allows one parent" 에러 발생 가능
-            // 따라서 clone을 하거나... 하지만 Yjs는 구조체 이동이 까다로움.
-            // 단순히 내용만 옮기는 것이 아니라 객체 자체를 옮겨야 함.
+            // 1. 블록 데이터 복제 (Deep Clone)
+            const newBlockMap = new Y.Map();
 
-            // 안전한 방법: 
-            // 그러나 y-array는 기본적으로 move를 지원하지 않음.
-            // 가장 쉬운 방법: toArray로 데이터 복사 -> 기존 삭제 -> 새 위치 생성 (ID 변경됨)
-            // ID 유지가 중요하다면... 
+            // 기본 필드 복사
+            const blockId = targetBlock.get('blockId');
+            const noteId = targetBlock.get('noteId');
+            const type = targetBlock.get('_class');
 
-            // *데모에는 move 로직이 명시적으로 없었음*
-            // 일단은 간단히 구현하지 않거나, 제한적으로 구현.
-            // 여기서는 일단 로그만 찍고 구현 보류 (복잡도 회피)
-            console.warn('[Yjs] Move block not fully implemented yet');
+            newBlockMap.set('blockId', blockId);
+            newBlockMap.set('noteId', noteId);
+            newBlockMap.set('_class', type);
+
+            // Properties 복사 (Deep Copy for Y.Text)
+            const oldProperties = targetBlock.get('properties') as Y.Map<any>;
+            const newProperties = new Y.Map();
+
+            if (oldProperties) {
+                oldProperties.forEach((value, key) => {
+                    if (value instanceof Y.Text) {
+                        newProperties.set(key, new Y.Text(value.toString()));
+                    } else {
+                        newProperties.set(key, value);
+                    }
+                });
+            }
+            newBlockMap.set('properties', newProperties);
+
+            // 2. 새 위치에 삽입 후 기존 삭제 (순서 중요)
+            if (fromIndex < toIndex) {
+                // 아래로 이동: 기존 위치보다 뒤에 삽입해야 하므로, toIndex 기준 +1 위치(처럼 보이지만, React DnD 인덱스 기준 고려)
+                // 일반적인 배열 이동: insert at toIndex+1, delete at fromIndex.
+                yBlocks.insert(toIndex + 1, [newBlockMap]);
+                yBlocks.delete(fromIndex, 1);
+            } else {
+                // 위로 이동
+                yBlocks.insert(toIndex, [newBlockMap]);
+                yBlocks.delete(fromIndex + 1, 1);
+            }
         });
     };
 
