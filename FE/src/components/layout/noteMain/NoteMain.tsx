@@ -11,6 +11,7 @@ interface NoteMainProps {
     blocks: BlockData[];
     onUpdateBlock: (id: number | string, content: string) => void;
     onAddBlockAtEnd: (type: BlockType) => void;
+    onAddBlockAfter: (id: number | string, type: BlockType) => void; // [추가]
     onDeleteBlock: (id: number | string) => void;
     onFocusBlock: (id: number | string) => void;
     focusedBlockId: number | string | null; // [추가]
@@ -23,6 +24,7 @@ const NoteMain: React.FC<NoteMainProps> = ({
     blocks,
     onUpdateBlock,
     onAddBlockAtEnd,
+    onAddBlockAfter, // [추가]
     onDeleteBlock,
     onFocusBlock,
     focusedBlockId,
@@ -63,6 +65,7 @@ const NoteMain: React.FC<NoteMainProps> = ({
                         onUpdate={onUpdateBlock as any}
                         onDelete={onDeleteBlock as any}
                         onFocus={() => onFocusBlock(block.id)}
+                    // onAddBlockAfter={(type) => onAddBlockAfter(block.id, type)} // TextBlock에 prop이 있다면 전달 필요
                     />
                 );
             case 'code':
@@ -76,6 +79,7 @@ const NoteMain: React.FC<NoteMainProps> = ({
                         onDelete={onDeleteBlock as any}
                         onChange={onUpdateBlock as any}
                         onFocus={() => onFocusBlock(block.id)}
+                    // onAddBlockAfter={(type) => onAddBlockAfter(block.id, type)} // CodeBlock에 prop이 있다면 전달 필요
                     />
                 );
             default:
