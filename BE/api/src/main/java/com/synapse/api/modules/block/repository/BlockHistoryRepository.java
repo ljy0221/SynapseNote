@@ -8,14 +8,15 @@ import org.springframework.data.mongodb.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface BlockHistoryRepository extends MongoRepository<BlockHistory, String> {
 
-    Page<BlockHistory> findByBlockIdOrderByChangedAtDesc(String blockId, Pageable pageable);
+    Page<BlockHistory> findByBlockIdOrderByChangedAtDesc(UUID blockId, Pageable pageable);
 
-    long countByBlockId(String blockId);
+    long countByBlockId(UUID blockId);
 
-    Optional<BlockHistory> findByBlockIdAndSlotNumber(String blockId, int slotNumber);
+    Optional<BlockHistory> findByBlockIdAndSlotNumber(UUID blockId, int slotNumber);
 
-    List<BlockHistory> findByBlockIdOrderBySlotNumberAsc(String blockId);
+    List<BlockHistory> findByBlockIdOrderBySlotNumberAsc(UUID blockId);
 }

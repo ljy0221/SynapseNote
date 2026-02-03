@@ -6,11 +6,12 @@ import lombok.Getter;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.UUID;
 
 @Getter
 @Builder
 public class BlockHistoryDetailResponse {
-    private String blockId;
+    private UUID blockId;
     private int slotNumber;
     private Map<String, Object> properties;
     private String blockType;

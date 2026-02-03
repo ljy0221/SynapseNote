@@ -39,8 +39,8 @@ public class BlockHistoryService {
          * 블록 히스토리 목록 조회
          */
         public Page<BlockHistoryResponse> getBlockHistory(
-                        String noteId,
-                        String blockId,
+                        UUID noteId,
+                        UUID blockId,
                         UUID memberId,
                         Pageable pageable) {
                 verifyNoteAccess(noteId, memberId);
@@ -55,24 +55,16 @@ public class BlockHistoryService {
         /**
          * 노트 접근 권한 확인
          */
-        private void verifyNoteAccess(String noteId, UUID memberId) {
-                noteMemberRepository.findByNoteIdAndMemberId(
-                                UUID.fromString(noteId), memberId)
+        private void verifyNoteAccess(UUID noteId, UUID memberId) {
+                noteMemberRepository.findByNoteIdAndMemberId(noteId, memberId)
                                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_ACCESS_DENIED));
         }
 
         /**
          * 블록 소유권 확인 (블록 반환)
          */
-        private BaseBlock verifyBlockOwnership(String blockId, String noteId) {
-                UUID blockUuid;
-                try {
-                        blockUuid = UUID.fromString(blockId);
-                } catch (IllegalArgumentException e) {
-                        throw new BusinessException(ErrorCode.CODE_BLOCK_NOT_FOUND);
-                }
-
-                BaseBlock block = blockRepository.findByBlockId(blockUuid)
+        private BaseBlock verifyBlockOwnership(UUID blockId, UUID noteId) {
+                BaseBlock block = blockRepository.findByBlockId(blockId)
                                 .orElseThrow(() -> new BusinessException(ErrorCode.CODE_BLOCK_NOT_FOUND));
 
                 if (!block.getNoteId().equals(noteId)) {
@@ -95,8 +87,8 @@ public class BlockHistoryService {
          * 슬롯에 저장
          */
         public BlockHistoryResponse saveToSlot(
-                        String noteId,
-                        String blockId,
+                        UUID noteId,
+                        UUID blockId,
                         int slotNumber,
                         UUID memberId) {
                 verifyNoteAccess(noteId, memberId);
@@ -138,8 +130,8 @@ public class BlockHistoryService {
          * 슬롯 조회
          */
         public BlockHistoryDetailResponse getSlot(
-                        String noteId,
-                        String blockId,
+                        UUID noteId,
+                        UUID blockId,
                         int slotNumber,
                         UUID memberId) {
                 verifyNoteAccess(noteId, memberId);
@@ -157,8 +149,8 @@ public class BlockHistoryService {
          * 모든 슬롯 조회
          */
         public List<BlockHistoryResponse> getAllSlots(
-                        String noteId,
-                        String blockId,
+                        UUID noteId,
+                        UUID blockId,
                         UUID memberId) {
                 verifyNoteAccess(noteId, memberId);
                 BaseBlock block = verifyBlockOwnership(blockId, noteId);
