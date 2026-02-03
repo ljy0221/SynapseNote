@@ -48,28 +48,7 @@
   color: var(--font-color);
 }
 
-.window-controls {
-  display: flex;
-  gap: 8px;
-}
 
-.control-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-}
-
-.control-dot.red {
-  background-color: #FF5F56;
-}
-
-.control-dot.yellow {
-  background-color: #FFBD2E;
-}
-
-.control-dot.green {
-  background-color: #27C93F;
-}
 
 .recent-notes-content {
   padding: 20px;

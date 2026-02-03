@@ -105,11 +105,7 @@ const NoteStreak: React.FC<NoteStreakProps> = ({ streak }) => {
             </span>
           )}
         </div>
-        <div className="window-controls">
-          <div className="control-dot red" />
-          <div className="control-dot yellow" />
-          <div className="control-dot green" />
-        </div>
+
       </div>
 
       <div className="note-streak-content">

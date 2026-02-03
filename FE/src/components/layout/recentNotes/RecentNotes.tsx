@@ -17,11 +17,7 @@ const RecentNotes: React.FC<RecentNotesProps> = ({ notes }) => {
     navigate(`/note/${noteId}`);
   };
 
-  // 6개 슬롯 고정 (채우기)
-  const displayNotes = [...notes.slice(0, 6)];
-  while (displayNotes.length < 6) {
-    displayNotes.push(null as any);
-  }
+  // 6개 슬롯 렌더링 (Array.from 사용)
 
   return (
     <section className="recent-notes">
@@ -30,17 +26,14 @@ const RecentNotes: React.FC<RecentNotesProps> = ({ notes }) => {
           <Clock size={20} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
           최근 작업한 노트
         </h3>
-        <div className="window-controls">
-          <div className="control-dot red" />
-          <div className="control-dot yellow" />
-          <div className="control-dot green" />
-        </div>
+
       </div>
 
       <div className="recent-notes-content">
         <div className="note-list">
-          {displayNotes.map((note, index) => (
-            note ? (
+          {Array.from({ length: 6 }).map((_, index) => {
+            const note = notes[index];
+            return note ? (
               <div
                 key={note.noteId}
                 className="note-card populated"
@@ -67,8 +60,8 @@ const RecentNotes: React.FC<RecentNotesProps> = ({ notes }) => {
               <div key={`placeholder-${index}`} className="note-card placeholder">
                 <StickyNote className="placeholder-icon" size={24} />
               </div>
-            )
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>
