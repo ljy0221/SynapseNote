@@ -36,6 +36,7 @@ public enum ErrorCode {
     NOTE_CONTENT_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTE_005", "노트 콘텐츠를 찾을 수 없습니다"),
     NOTE_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTE_006", "노트 멤버를 찾을 수 없습니다"),
     CODE_BLOCK_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTE_007", "코드 블록을 찾을 수 없습니다"),
+    NOTE_ID_DUPLICATE(HttpStatus.CONFLICT, "NOTE_008", "이미 존재하는 노트 ID입니다"),
 
     // Invitation (NOTE_010 ~ NOTE_019)
     INVITATION_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTE_010", "초대를 찾을 수 없습니다"),
