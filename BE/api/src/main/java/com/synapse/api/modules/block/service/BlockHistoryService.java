@@ -64,7 +64,7 @@ public class BlockHistoryService {
          * 블록 소유권 확인 (블록 반환)
          */
         private BaseBlock verifyBlockOwnership(UUID blockId, UUID noteId) {
-                BaseBlock block = blockRepository.findByBlockId(blockId)
+                BaseBlock block = blockRepository.findByBlockIdAndDeletedAtIsNull(blockId)
                                 .orElseThrow(() -> new BusinessException(ErrorCode.CODE_BLOCK_NOT_FOUND));
 
                 if (!block.getNoteId().equals(noteId)) {
@@ -177,7 +177,8 @@ public class BlockHistoryService {
                         properties.put("language", java.util.Objects.requireNonNullElse(props.getLanguage(), ""));
                         properties.put("code", java.util.Objects.requireNonNullElse(props.getCode(), ""));
                         properties.put("version", java.util.Objects.requireNonNullElse(props.getVersion(), ""));
-                        properties.put("executionMode", java.util.Objects.requireNonNullElse(props.getExecutionMode(), ""));
+                        properties.put("executionMode",
+                                        java.util.Objects.requireNonNullElse(props.getExecutionMode(), ""));
                 }
 
                 return properties;

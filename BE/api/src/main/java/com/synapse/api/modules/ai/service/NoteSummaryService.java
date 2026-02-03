@@ -32,12 +32,12 @@ public class NoteSummaryService {
 
     @Transactional(readOnly = true)
     public NoteSummaryResponse summarizeNote(UUID noteId, UUID userId,
-                                              NoteSummaryRequest request) {
+            NoteSummaryRequest request) {
         // 접근 권한 검증
         noteValidator.validateReadPermission(userId, noteId);
 
-        // 노트의 모든 블록 조회
-        List<BaseBlock> blocks = blockRepository.findByNoteIdOrderByOrderAsc(noteId);
+        // 노트의 모든 블록 조회 (삭제 안 된 것만)
+        List<BaseBlock> blocks = blockRepository.findByNoteIdAndDeletedAtIsNullOrderByOrderAsc(noteId);
 
         String style = request.style() != null ? request.style() : "concise";
         String systemPrompt = buildSummarySystemPrompt(style);
@@ -70,8 +70,7 @@ public class NoteSummaryService {
                 style,
                 codeBlockCount,
                 languages,
-                LocalDateTime.now()
-        );
+                LocalDateTime.now());
     }
 
     private String buildSummarySystemPrompt(String style) {
@@ -107,7 +106,7 @@ public class NoteSummaryService {
             prompt.append("## 텍스트 내용\n");
             for (TextBlock textBlock : textBlocks) {
                 if (textBlock.getProperties() != null &&
-                    textBlock.getProperties().getContent() != null) {
+                        textBlock.getProperties().getContent() != null) {
                     prompt.append(textBlock.getProperties().getContent()).append("\n\n");
                 }
             }
