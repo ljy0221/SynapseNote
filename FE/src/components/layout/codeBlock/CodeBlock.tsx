@@ -96,6 +96,21 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
         }
     }, [noteId, language]);
 
+    // 언어 사용 추적 및 다중 언어 감지
+    useEffect(() => {
+        if (noteId) {
+            // 블럭 ID와 함께 언어 추적
+            trackBlockLanguage(noteId, id.toString(), language);
+
+            // 다중 언어 사용 시 세션 모드 자동 비활성화
+            const hasMultipleLangs = hasMultipleLanguages(noteId);
+            if (hasMultipleLangs && executionMode === 'session') {
+                setExecutionMode('single');
+                alert('이 노트는 여러 언어를 사용하고 있어 세션 모드가 비활성화되었습니다.');
+            }
+        }
+    }, [noteId, id, language, trackBlockLanguage, hasMultipleLanguages, executionMode]);
+
     const handleCopy = () => {
         if (typeof editedCode === "string") {
             navigator.clipboard.writeText(editedCode);
@@ -120,6 +135,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                     language,
                     version: getDefaultVersion(language),
                     code: editedCode,
+                    timeout: settings.executionTimeout, // 설정된 타임아웃 사용
                 })
                 : await window.dockerAPI.execute({
                     blockId: id.toString(),
@@ -128,6 +144,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                     code: editedCode,
                     mode: executionMode,
                     noteId: noteId,
+                    timeout: settings.executionTimeout, // 설정된 타임아웃 사용
                 });
 
             setResult(executionResult);
@@ -176,6 +193,37 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 
     // Tab 키는 CodeMirror 내장 기능으로 처리됨
 
+    // 언어 변경 핸들러
+    const handleLanguageChange = (newLanguage: Language) => {
+        // 코드가 비어있으면 템플릿 자동 적용
+        if (isCodeEmpty(editedCode)) {
+            const template = getLanguageTemplate(newLanguage);
+            setEditedCode(template);
+            onChange(id, template);
+            setLanguage(newLanguage);
+            if (noteId) {
+                setNoteLanguage(noteId, newLanguage);
+            }
+            return;
+        }
+
+        // 코드가 있으면 사용자에게 확인
+        const shouldApplyTemplate = window.confirm(
+            '언어를 변경하면 기본 템플릿이 적용됩니다. 계속하시겠습니까?\n\n취소를 누르면 현재 코드를 유지하고 언어만 변경됩니다.'
+        );
+
+        if (shouldApplyTemplate) {
+            const template = getLanguageTemplate(newLanguage);
+            setEditedCode(template);
+            onChange(id, template);
+        }
+
+        setLanguage(newLanguage);
+        if (noteId) {
+            setNoteLanguage(noteId, newLanguage);
+        }
+    };
+
     // 버전 복구 핸들러
     const handleRestore = (code: string) => {
         setEditedCode(code);
@@ -204,12 +252,12 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                 {/* [중앙] 언어 선택기 */}
                 <LanguageSelector
                     value={language}
-                    onChange={setLanguage}
+                    onChange={handleLanguageChange}
                     disabled={loading}
                 />
 
-                {/* 모드 선택 버튼 (feat/#63 추가 - Java 제외) */}
-                {language !== 'java' && (
+                {/* 모드 선택 버튼 (feat/#63 추가 - Java 제외, 다중 언어 시 비활성화) */}
+                {language !== 'java' && !hasMultipleLanguages(noteId || '') && (
                     <div className="mode-selector" style={{ marginLeft: '10px', display: 'flex', gap: '5px' }}>
                         <button
                             className={`mode-button ${executionMode === 'single' ? 'active' : ''}`}
