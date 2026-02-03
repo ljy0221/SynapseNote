@@ -5,6 +5,7 @@ import type {
   RemoveBookmarkResponse,
   GetBookmarksResponse,
 } from '../../types/bookmark/BookmarkResponse';
+import type { GetBookmarkBlocksResponse } from '../../types/bookmark/BookmarkBlockResponse';
 
 /** 즐겨찾기 추가 */
 export const addBookmarkApi = (noteId: string) => {
@@ -27,5 +28,13 @@ export const getBookmarksApi = () => {
   return request<GetBookmarksResponse>(
     'get',
     '/v1/notes/bookmarks'
+  );
+};
+
+/** 블록 즐겨찾기 목록 조회 */
+export const getBlockBookmarksApi = () => {
+  return request<GetBookmarkBlocksResponse>(
+    'get',
+    '/v1/notes/blocks/bookmarks'
   );
 };

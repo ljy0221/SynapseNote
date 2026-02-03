@@ -6,7 +6,7 @@ public class Constant {
 
     private Constant() {}
 
-    // JWT Header
+    // JWT
     public static final String AUTHORIZATION_HEADER = "Authorization";
     public static final String BEARER_PREFIX = "Bearer ";
     public static final long ACCESS_EXPIRED = 60 * 60L; // (초 단위) 1시간
@@ -14,5 +14,9 @@ public class Constant {
 
     // Refresh Header
     public static final Duration TICKET_TTL = Duration.ofSeconds(60);
+
+    // Cookie
+    public static final String REFRESH_COOKIE_NAME = "refreshToken";
+    public static final Duration REFRESH_COOKIE_DURATION = Duration.ofDays(14);
 
 }

@@ -1,10 +1,23 @@
 // BlockBookmarkList.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import BlockBookmarkItem from './BlockBookmarkItem';
 import type { GetBookmarkBlocksResponse } from '../../../types/bookmark/BookmarkBlockResponse';
+import { getBlockBookmarksApi } from '../../../api/bookmark/Bookmarks.api';
 
 const BlockBookmarkList = () => {
   const [blocks, setBlocks] = useState<GetBookmarkBlocksResponse['content']>([]);
+
+  useEffect(() => {
+    const fetchBookmarks = async () => {
+      try {
+        const response = await getBlockBookmarksApi();
+        setBlocks(response.content);
+      } catch (error) {
+        console.error('Failed to fetch block bookmarks:', error);
+      }
+    };
+    fetchBookmarks();
+  }, []);
 
   const handleRemove = (blockId: string) => {
     setBlocks(prev => prev.filter(b => b.blockId !== blockId));

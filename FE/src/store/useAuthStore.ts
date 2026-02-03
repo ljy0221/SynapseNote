@@ -20,6 +20,7 @@ interface AuthState {
     refreshUserInfo: () => Promise<void>;
     initializeAuth: () => Promise<void>; // To be called on app mount
     updateUserNickname: (newNickname: string) => Promise<void>;
+    login: (token: string) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -57,6 +58,7 @@ export const useAuthStore = create<AuthState>()(
                 try {
                     const info = await getUserInfo(token);
                     set({ userInfo: info, isAuthenticated: true, isLoading: false });
+
                 } catch (error) {
                     // Token might be expired
                     console.error('Refresh user info failed:', error);

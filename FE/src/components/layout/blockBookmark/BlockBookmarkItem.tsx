@@ -1,10 +1,10 @@
 // BlockBookmarkItem.tsx
 import { Trash2, FileText, Code } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import type { BookmarkBlockItem } from '../../../types/bookmark/GetBookmarkBlocks';
+import type { BookmarkBlock } from '../../../types/bookmark/BookmarkBlockResponse';
 
 interface Props {
-  block: BookmarkBlockItem;
+  block: BookmarkBlock;
   onRemove?: (blockId: string) => void;
 }
 
@@ -20,13 +20,13 @@ const BlockBookmarkItem = ({ block, onRemove }: Props) => {
     <li className="block-bookmark-card" onClick={handleClick}>
       {/* 아이콘 */}
       <div className="block-card-icon">
-        {block.blockType === 'CODE' ? <Code size={16} /> : <FileText size={16} />}
+        {block.type === 'code' ? <Code size={16} /> : <FileText size={16} />}
       </div>
 
       {/* 내용 */}
       <div className="block-card-content">
-        <div className="block-card-preview">{block.preview}</div>
-        <div className="block-card-note">📄 {block.noteTitle}</div>
+        <div className="block-card-preview">{block.content}</div>
+        <div className="block-card-note">📄 {block.notePath}</div>
       </div>
 
       {/* 제거 */}

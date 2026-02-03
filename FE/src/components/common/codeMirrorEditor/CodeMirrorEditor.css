@@ -1,0 +1,47 @@
+/* CodeMirror Editor Container */
+.codemirror-container {
+  width: 100%;
+  font-family: 'Fira Code', 'Courier New', monospace;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* CodeMirror 에디터 커스터마이징 */
+.codemirror-container .cm-editor {
+  width: 100%;
+  outline: none;
+  border-radius: 0;
+}
+
+.codemirror-container .cm-scroller {
+  overflow: auto;
+  font-family: 'Fira Code', 'Courier New', monospace;
+}
+
+.codemirror-container .cm-focused {
+  outline: none;
+}
+
+/* 줄 번호 스타일 */
+.codemirror-container .cm-gutters {
+  user-select: none;
+}
+
+/* 스크롤바 커스터마이징 (선택적) */
+.codemirror-container .cm-scroller::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.codemirror-container .cm-scroller::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.codemirror-container .cm-scroller::-webkit-scrollbar-thumb {
+  background: rgba(128, 128, 128, 0.3);
+  border-radius: 5px;
+}
+
+.codemirror-container .cm-scroller::-webkit-scrollbar-thumb:hover {
+  background: rgba(128, 128, 128, 0.5);
+}

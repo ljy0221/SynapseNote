@@ -66,7 +66,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 return;
             }
 
-            if (tokenRedisService.isBlacklisted(token)) {
+            if (tokenRedisService.isAccessTokenBlacklisted(token)) {
                 log.info("Token is blacklisted");
                 setErrorResponse(request, response, ErrorCode.TOKEN_EXPIRED);
                 return;
@@ -109,10 +109,12 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private boolean shouldSkip(HttpServletRequest request) {
         String path = request.getRequestURI();
-        return (path.startsWith("/api/") && (path.matches("^/api/v\\d+/login")))
-                || path.matches(".*\\.(js|css|png|jpg|ico)$")
-                || path.startsWith("/webrtc") // WebSocket Handshake 허용 (STOMP에서 인증)
-                || path.matches("^/test/.*");
+        return (path.startsWith("/api/") && (
+                path.matches("^/api/v\\d+/login")
+                || path.matches("^/api/v\\d+/refresh")
+        )) || path.matches(".*\\.(js|css|png|jpg|ico)$")
+            || path.startsWith("/webrtc")
+            || path.matches("^/test/.*");
     }
 
 }

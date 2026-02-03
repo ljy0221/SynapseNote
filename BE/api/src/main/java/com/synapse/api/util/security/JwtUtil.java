@@ -35,11 +35,13 @@ public class JwtUtil {
                 .compact();
     }
 
-    public String generateTicket(UUID userId, UUID noteId, Instant expiresAt) {
+    // web socket ticket 발급
+    public String generateTicket(UUID userId, String userName, UUID noteId, Instant expiresAt) {
         return Jwts.builder()
                 .issuer("synapse")
                 .subject(userId.toString())
                 .claim("noteId", noteId.toString())
+                .claim("userName", userName)
                 .claim("type", "WS_TICKET")
                 .expiration(Date.from(expiresAt))
                 .signWith(secretKey)

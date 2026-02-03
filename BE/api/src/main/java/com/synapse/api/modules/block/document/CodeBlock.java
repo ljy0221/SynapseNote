@@ -26,8 +26,8 @@ public class CodeBlock extends BaseBlock {
     private LocalDateTime lastExecutedAt;
 
     @Override
-    public String getType() {
-        return "code";
+    public BlockType getType() {
+        return BlockType.CODE;
     }
 
     // --- 비즈니스 로직 ---
