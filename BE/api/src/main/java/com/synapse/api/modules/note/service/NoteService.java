@@ -1,7 +1,6 @@
 package com.synapse.api.modules.note.service;
 
 import com.synapse.api.modules.block.document.BaseBlock;
-import com.synapse.api.modules.block.dto.response.BlockPageResponse;
 import com.synapse.api.modules.block.service.BlockService;
 import com.synapse.api.modules.member.entity.Member;
 import com.synapse.api.modules.member.repository.MemberRepository;
@@ -160,12 +159,10 @@ public class NoteService {
         // RDB Soft Delete (deletedAt 설정)
         note.delete();
 
-        // (선택) MongoDB 블록 처리는?
-        // 방법 A: 놔둔다. (RDB에서 조회가 안 되니 접근 불가. 나중에 복구 가능)
-        // 방법 B: BlockService를 호출해 같이 Soft Delete 처리한다.
-        // 여기선 RDB가 진입점이므로 RDB만 처리해도 충분합니다.
+        // MongoDB 블록도 Soft Delete
+        blockService.softDeleteBlocksByNoteId(noteId);
 
-        log.info("Soft deleted note: {} by member: {}", noteId, memberId);
+        log.info("Soft deleted note and blocks: {}", noteId);
     }
 
     // =========================================================================
@@ -249,18 +246,6 @@ public class NoteService {
 
         // BlockService에 위임
         blockService.unbookmarkBlock(blockId, noteId);
-    }
-
-    public BlockPageResponse getBlockBookmarks(UUID memberId, UUID noteId, int page, int size) {
-        // 노트 조회 및 접근 권한 검증
-        Note note = noteRepository.findById(noteId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
-        noteValidator.validateAccess(note, memberId);
-
-        // BlockService에서 블록 목록 조회
-        Page<BaseBlock> blockPage = blockService.getBookmarkedBlocks(noteId, page, size);
-
-        return BlockPageResponse.from(blockPage, note.getDirectoryPath());
     }
 
 }

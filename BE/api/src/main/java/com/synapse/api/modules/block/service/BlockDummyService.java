@@ -39,6 +39,7 @@ public class BlockDummyService {
                 .noteId(noteId)
                 .blockId(UUID.randomUUID())
                 .bookmark(false)
+                .ownerId(memberId)
                 .order(1.0)
                 .properties(TextBlock.TextProperties.builder()
                         .content("""
@@ -62,6 +63,7 @@ public class BlockDummyService {
         blocks.add(TextBlock.builder()
                 .noteId(noteId)
                 .blockId(UUID.randomUUID())
+                .ownerId(memberId)
                 .bookmark(false)
                 .order(2.0)
                 .properties(TextBlock.TextProperties.builder()
@@ -83,6 +85,7 @@ public class BlockDummyService {
         blocks.add(TextBlock.builder()
                 .noteId(noteId)
                 .blockId(UUID.randomUUID())
+                .ownerId(memberId)
                 .bookmark(true) // 북마크 케이스도 하나 넣기
                 .order(3.0)
                 .properties(TextBlock.TextProperties.builder()
@@ -113,6 +116,7 @@ public class BlockDummyService {
         blocks.add(CodeBlock.builder()
                 .noteId(noteId)
                 .blockId(UUID.randomUUID())
+                .ownerId(memberId)
                 .bookmark(false)
                 .order(4.0)
                 .properties(CodeBlock.CodeProperties.builder()
@@ -147,6 +151,7 @@ public class BlockDummyService {
                 .noteId(noteId)
                 .blockId(UUID.randomUUID())
                 .bookmark(false)
+                .ownerId(memberId)
                 .order(5.0)
                 .properties(CodeBlock.CodeProperties.builder()
                         .language(null)          // null 케이스
@@ -169,6 +174,7 @@ public class BlockDummyService {
                 .noteId(noteId)
                 .blockId(UUID.randomUUID())
                 .bookmark(false)
+                .ownerId(memberId)
                 .order(6.0)
                 .properties(TextBlock.TextProperties.builder()
                         .content("""
