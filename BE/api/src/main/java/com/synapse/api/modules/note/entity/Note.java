@@ -10,6 +10,8 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import org.springframework.data.domain.Persistable;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,7 +25,7 @@ import java.util.UUID;
 @Builder
 @EntityListeners(AuditingEntityListener.class)
 @SQLRestriction("deleted_at IS NULL")
-public class Note {
+public class Note implements Persistable<UUID> {
 
     @Id
     @GeneratedValue
@@ -108,5 +110,11 @@ public class Note {
 
     public void unBookmark() {
         bookmark = false;
+    }
+
+    // Persistable 구현: 클라이언트 전송 ID 사용 시 JPA가 새 엔티티로 인식하도록 함
+    @Override
+    public boolean isNew() {
+        return createdAt == null;
     }
 }

@@ -44,11 +44,13 @@ class NoteServiceStreakTest {
         void shouldDelegateStreakUpdateToMemberService() {
                 // given
                 UUID memberId = UUID.randomUUID();
+                UUID noteId = UUID.randomUUID();
                 Member member = Member.builder().id(memberId).build();
-                NoteCreateRequest request = new NoteCreateRequest("Title", "/", 0.0, 0.0, "");
-                Note note = Note.builder().id(UUID.randomUUID()).createdBy(member).build();
+                NoteCreateRequest request = new NoteCreateRequest(noteId, "Title", "/", 0.0, 0.0, "");
+                Note note = Note.builder().id(noteId).createdBy(member).build();
 
                 given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+                given(noteRepository.existsById(noteId)).willReturn(false);
                 given(noteRepository.save(any(Note.class))).willReturn(note);
 
                 // when
