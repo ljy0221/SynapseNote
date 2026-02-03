@@ -5,10 +5,16 @@ import com.synapse.api.modules.block.document.CodeBlock;
 import com.synapse.api.modules.block.dto.response.BlockPageResponse;
 import com.synapse.api.modules.block.service.BlockService;
 import com.synapse.api.modules.member.entity.Member;
+import com.synapse.api.modules.member.repository.MemberRepository;
+import com.synapse.api.modules.member.service.MemberService;
+import com.synapse.api.modules.note.dto.request.NoteCreateRequest;
 import com.synapse.api.modules.note.dto.response.NotePageResponse;
+import com.synapse.api.modules.note.dto.response.NoteResponse;
 import com.synapse.api.modules.note.entity.Note;
+import com.synapse.api.modules.note.entity.NoteMember;
 import com.synapse.api.modules.note.repository.NoteMemberRepository;
 import com.synapse.api.modules.note.repository.NoteRepository;
+import com.synapse.api.util.exception.BusinessException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,9 +33,11 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -46,6 +54,12 @@ class NoteServiceTest {
 
         @Mock
         private BlockService blockService;
+
+        @Mock
+        private MemberRepository memberRepository;
+
+        @Mock
+        private MemberService memberService;
 
         @Spy
         private NoteValidator noteValidator = new NoteValidator(noteRepository, noteMemberRepository);
@@ -235,5 +249,60 @@ class NoteServiceTest {
                 assertThat(response.content().get(0).bookmark()).isTrue();
 
                 verify(blockService).getBookmarkedBlocks(noteId, page, size);
+        }
+
+        // =========================================================================
+        // 노트 생성 테스트
+        // =========================================================================
+
+        @Test
+        @DisplayName("클라이언트 전송 ID로 노트를 정상 생성한다")
+        void createNote() {
+                // given
+                UUID memberId = UUID.randomUUID();
+                UUID noteId = UUID.randomUUID();
+                Member member = Member.builder().id(memberId).build();
+                NoteCreateRequest request = new NoteCreateRequest(noteId, "Test Note", "/work", 1.0, 2.0, "");
+                Note savedNote = Note.builder()
+                                .id(noteId)
+                                .title("Test Note")
+                                .createdBy(member)
+                                .createdAt(LocalDateTime.now())
+                                .updatedAt(LocalDateTime.now())
+                                .build();
+
+                given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+                given(noteRepository.existsById(noteId)).willReturn(false);
+                given(noteRepository.save(any(Note.class))).willReturn(savedNote);
+
+                // when
+                NoteResponse response = noteService.createNote(memberId, request);
+
+                // then
+                assertThat(response.noteId()).isEqualTo(noteId);
+                verify(noteRepository).existsById(noteId);
+                verify(noteRepository).save(any(Note.class));
+                verify(noteMemberRepository).save(any(NoteMember.class));
+                verify(memberService).updateStreak(memberId);
+        }
+
+        @Test
+        @DisplayName("중복 ID가 전송되면 NOTE_ID_DUPLICATE 에러를 발생시킨다")
+        void createNote_duplicateId() {
+                // given
+                UUID memberId = UUID.randomUUID();
+                UUID noteId = UUID.randomUUID();
+                Member member = Member.builder().id(memberId).build();
+                NoteCreateRequest request = new NoteCreateRequest(noteId, "Test Note", "/work", 1.0, 2.0, "");
+
+                given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+                given(noteRepository.existsById(noteId)).willReturn(true);
+
+                // when & then
+                assertThrows(BusinessException.class, () ->
+                                noteService.createNote(memberId, request)
+                );
+                verify(noteRepository).existsById(noteId);
+                verify(noteRepository, never()).save(any(Note.class));
         }
 }
