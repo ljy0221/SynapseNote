@@ -1,5 +1,6 @@
 package com.synapse.api.modules.ai.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.synapse.api.modules.ai.dto.request.CodeReviewRequest;
@@ -182,9 +183,24 @@ public class CodeAssistantService {
                     LocalDateTime.now()
             );
 
+        } catch (JsonProcessingException e) {
+            log.error("JSON parsing failed: response={}", aiResponse, e);
+            throw new BusinessException(
+                    ErrorCode.AI_INVALID_RESPONSE,
+                    "AI 응답을 JSON으로 파싱할 수 없습니다."
+            );
+        } catch (NullPointerException e) {
+            log.error("Required field missing in AI response: response={}", aiResponse, e);
+            throw new BusinessException(
+                    ErrorCode.AI_INVALID_RESPONSE,
+                    "AI 응답에 필수 필드가 없습니다."
+            );
         } catch (Exception e) {
-            log.error("Failed to parse AI response", e);
-            throw new BusinessException(ErrorCode.AI_INVALID_RESPONSE);
+            log.error("Unexpected error parsing AI response: response={}", aiResponse, e);
+            throw new BusinessException(
+                    ErrorCode.AI_INVALID_RESPONSE,
+                    "AI 응답 처리 중 예상치 못한 오류가 발생했습니다."
+            );
         }
     }
 

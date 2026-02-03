@@ -1,24 +1,32 @@
 package com.synapse.api.modules.ai.service;
 
 import com.synapse.api.modules.ai.enums.AiProvider;
-import com.synapse.api.util.exception.BusinessException;
-import com.synapse.api.util.response.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.util.Map;
-
 @Component
-@RequiredArgsConstructor
 public class AiServiceFactory {
 
-    private final Map<String, AiService> services;
+    private final AiService openAiService;
+    private final AiService geminiService;
+    private final AiService claudeService;
+
+    public AiServiceFactory(
+            @Qualifier("openAiService") AiService openAiService,
+            @Qualifier("geminiService") AiService geminiService,
+            @Qualifier("claudeService") AiService claudeService
+    ) {
+        this.openAiService = openAiService;
+        this.geminiService = geminiService;
+        this.claudeService = claudeService;
+    }
 
     public AiService getService(AiProvider provider) {
         return switch (provider) {
-            case OPENAI -> services.get("openAiService");
-            case GEMINI -> services.get("geminiService");
-            case ANTHROPIC -> services.get("claudeService");
+            case OPENAI -> openAiService;
+            case GEMINI -> geminiService;
+            case ANTHROPIC -> claudeService;
         };
     }
 }
