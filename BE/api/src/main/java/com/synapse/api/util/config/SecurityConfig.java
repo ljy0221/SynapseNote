@@ -41,7 +41,6 @@ public class SecurityConfig {
                 .requestMatchers("/api/v*/login", "/api/v*/refresh").permitAll()
                 .requestMatchers("/webrtc/**").permitAll() // WebSocket 경로 허용
                 .anyRequest().authenticated());
-        );
 
         http
                 .csrf(AbstractHttpConfigurer::disable)
