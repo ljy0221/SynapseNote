@@ -16,6 +16,8 @@ interface Props {
 }
 
 const CheckpointSidebar: React.FC<Props> = ({ noteId, blockId, currentCode, onClose, onRestore }) => {
+    console.log('CheckpointSidebar rendered with currentCode:', currentCode); // Debugging
+
     const [slots, setSlots] = useState<SlotHistory[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [actionSlot, setActionSlot] = useState<number | null>(null);

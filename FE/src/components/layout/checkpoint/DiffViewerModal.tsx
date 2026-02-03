@@ -14,6 +14,8 @@ interface Props {
 }
 
 const DiffViewerModal: React.FC<Props> = ({ slot, currentCode, savedCode, onClose, onRestore }) => {
+    console.log('DiffViewerModal Props:', { currentCode, savedCode }); // Debugging
+
     const formatDate = (dateString: string) => {
         if (!dateString) return '';
         const date = new Date(dateString);
