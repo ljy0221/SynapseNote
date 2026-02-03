@@ -6,8 +6,9 @@ import './PermissionModal.css';
 
 import { getNoteMembersApi } from '../../../api/notes/GetNoteMembers.api';
 import { updateMemberRoleApi } from '../../../api/notes/UpdateMemberRole.api';
-import { deleteMemberApi } from '../../../api/notes/DeleteMember.api'; // [New]
+import { deleteMemberApi } from '../../../api/notes/DeleteMember.api';
 import { NoteMemberItem, NoteMemberRole } from '../../../types/note/GetNoteMembers';
+import { RequestItem } from './RequestItem'; // [New]
 
 interface PermissionModalProps {
     isOpen: boolean;
@@ -201,49 +202,12 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
                                     <div className="empty-state">대기 중인 요청이 없습니다.</div>
                                 ) : (
                                     requests.map((req) => (
-                                        <div key={req.id} className="request-item">
-                                            <div className="member-info">
-                                                <div className="member-avatar request">
-                                                    <User size={20} />
-                                                </div>
-                                                <div className="member-details">
-                                                    <span className="member-nickname">{req.nickname}</span>
-                                                    <span className="member-email">{req.email}</span>
-                                                </div>
-                                            </div>
-
-                                            <div className="request-actions">
-                                                <div className="role-select-wrapper small">
-                                                    <select
-                                                        className="role-select"
-                                                        id={`role-${req.id}`}
-                                                        defaultValue="VIEWER"
-                                                    >
-                                                        <option value="EDITOR">편집자</option>
-                                                        <option value="VIEWER">뷰어</option>
-                                                    </select>
-                                                    <ChevronDown size={14} className="role-select-icon" />
-                                                </div>
-
-                                                <button
-                                                    className="action-btn accept"
-                                                    onClick={() => {
-                                                        const select = document.getElementById(`role-${req.id}`) as HTMLSelectElement;
-                                                        handleAcceptRequest(req.id, select.value as NoteMemberRole);
-                                                    }}
-                                                    title="수락"
-                                                >
-                                                    <Check size={16} />
-                                                </button>
-                                                <button
-                                                    className="action-btn reject"
-                                                    onClick={() => handleRejectRequest(req.id)}
-                                                    title="거절"
-                                                >
-                                                    <Ban size={16} />
-                                                </button>
-                                            </div>
-                                        </div>
+                                        <RequestItem
+                                            key={req.id}
+                                            req={req}
+                                            onAccept={handleAcceptRequest}
+                                            onReject={handleRejectRequest}
+                                        />
                                     ))
                                 )}
                             </div>

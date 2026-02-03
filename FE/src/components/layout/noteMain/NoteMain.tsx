@@ -4,8 +4,9 @@ import CodeBlock from '../codeBlock/CodeBlock';
 import TextBlock from '../textBlock/TextBlock';
 import { NoteSideNav } from './NoteSideNav';
 import { InviteLinkModal } from '../../common/modal/InviteLinkModal';
-import { PermissionModal } from '../../common/modal/PermissionModal'; // [New]
+import { PermissionModal } from '../../common/modal/PermissionModal';
 import { BlockData, BlockType } from '../../../pages/note/Note';
+import { NoteMemberRole } from '../../../types/note/GetNoteMembers'; // [New]
 import './NoteMain.css';
 interface NoteMainProps {
     title: string;
@@ -19,7 +20,8 @@ interface NoteMainProps {
     focusedBlockId: number | string | null; // [추가]
     onMoveBlock: (dragIndex: number, hoverIndex: number) => void;
     titleInputRef?: React.RefObject<HTMLInputElement>;
-    noteId?: string; // [추가]
+    noteId?: string;
+    currentUserRole: NoteMemberRole | null; // [New]
 }
 const NoteMain: React.FC<NoteMainProps> = ({
     title,
@@ -33,15 +35,13 @@ const NoteMain: React.FC<NoteMainProps> = ({
     focusedBlockId,
     onMoveBlock,
     titleInputRef,
-    noteId
+    noteId,
+    currentUserRole // [New]
 }) => {
     // [New] 초대 모달 상태
     const [isInviteModalOpen, setIsInviteModalOpen] = React.useState(false);
     // [New] 권한 모달 상태
     const [isPermissionModalOpen, setIsPermissionModalOpen] = React.useState(false);
-
-    // [New] 초대 링크 (현재 페이지 URL 사용)
-    const inviteUrl = window.location.href;
 
     // DnD 상태 관리
     const [dragIndex, setDragIndex] = React.useState<number | null>(null);
@@ -119,6 +119,7 @@ const NoteMain: React.FC<NoteMainProps> = ({
                         onAddBlock={onAddBlockAtEnd}
                         onInvite={() => setIsInviteModalOpen(true)}
                         onPermission={() => setIsPermissionModalOpen(true)}
+                        currentUserRole={currentUserRole} // [New]
                     />
                 </div>
             </div>

@@ -8,6 +8,8 @@ import { updateNoteApi } from '../../api/notes/UpdateNote.api'; // ADDED
 import { emitNotesChanged } from '../../events/NotesEvents'; // ADDED
 import type { CreateNoteRequest } from '../../types/note/CreateNote';
 import { useYjsStore } from '../../hooks/useYjsStore';
+import { useAuthStore } from '../../store/useAuthStore'; // [New]
+import { NoteMemberRole } from '../../types/note/GetNoteMembers'; // [New]
 import './Note.css';
 
 // 블록 타입 정의 (이원화: text / code)
@@ -26,7 +28,11 @@ const Note: React.FC = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [title, setTitle] = useState("제목 없는 노트");
+    const [currentUserRole, setCurrentUserRole] = useState<NoteMemberRole | null>(null); // [New]
     const [focusedBlockId, setFocusedBlockId] = useState<number | string | null>(null);
+
+    // Auth Store for User ID
+    const { user } = useAuthStore();
 
     // 제목 input ref
     const titleInputRef = useRef<HTMLInputElement>(null);
@@ -42,6 +48,18 @@ const Note: React.FC = () => {
 
             if (noteRes) {
                 setTitle(noteRes.title || "제목 없는 노트");
+
+                // Calculate Role
+                if (user && noteRes.owner && user.memberId === noteRes.owner.memberId) {
+                    setCurrentUserRole('OWNER');
+                } else if (user && noteRes.members) {
+                    const member = noteRes.members.find(m => m.memberId === user.memberId);
+                    if (member && member.role) {
+                        setCurrentUserRole(member.role);
+                    } else {
+                        setCurrentUserRole(null); // Not a member or guest
+                    }
+                }
             }
             setIsEditing(true);
         } catch (error) {
@@ -50,7 +68,7 @@ const Note: React.FC = () => {
         } finally {
             // setIsLoading(false);
         }
-    }, []);
+    }, [user]); // Add user to dependency
 
     useEffect(() => {
         if (noteId) {
@@ -203,6 +221,7 @@ const Note: React.FC = () => {
                         onMoveBlock={handleMoveBlock}
                         titleInputRef={titleInputRef}
                         onAddBlockAfter={(id, type) => addBlock(id, type)}
+                        currentUserRole={currentUserRole} // [New]
                     />
                 </div>
             )}
