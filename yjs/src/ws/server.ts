@@ -45,7 +45,10 @@ async function authenticate(req: IncomingMessage): Promise<UserContext | null> {
   const bearerToken = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
 
   // 2. Extract Document ID (noteId) from URL path
-  const noteId = url.split("?")[0].replace(/^\//, ""); // Remove leading slash
+  // If URL is /yjs/noteId, we want just noteId.
+  const path = url.split("?")[0];
+  const parts = path.split("/").filter(p => p && p !== "yjs");
+  const noteId = parts[parts.length - 1];
 
   if (!noteId) {
     console.log("[AUTH] No noteId found in URL");
@@ -54,7 +57,10 @@ async function authenticate(req: IncomingMessage): Promise<UserContext | null> {
 
   try {
     // 3. Call Spring API to validate (Issue Ticket = Verify Access)
-    const response = await fetch(`${env.SPRING_BASE_URL}/api/v1/ws/auth`, {
+    const authUrl = `${env.SPRING_BASE_URL}/api/v1/ws/auth`;
+    console.log(`[AUTH] Fetching: ${authUrl} for noteId: ${noteId}`);
+
+    const response = await fetch(authUrl, {
       method: "POST",
       headers: {
         "Authorization": bearerToken,
