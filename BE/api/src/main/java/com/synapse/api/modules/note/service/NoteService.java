@@ -54,8 +54,13 @@ public class NoteService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
+        if (noteRepository.existsById(request.id())) {
+            throw new BusinessException(ErrorCode.NOTE_ID_DUPLICATE);
+        }
+
         // RDB: 노트 메타데이터 저장
         Note note = Note.builder()
+                .id(request.id())
                 .title(request.title())
                 .directoryPath(request.directoryPath())
                 .pointX(request.pointX())
