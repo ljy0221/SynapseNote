@@ -35,7 +35,7 @@ public class MemberController {
     public DataResponse<LoginResponse> login(@RequestBody LoginRequest request, HttpServletResponse response) {
         LoginResult result = memberService.login(request);
 
-        tokenService.addRefreshToekenToCookie(response, result.refreshToken());
+        tokenService.addRefreshTokenToCookie(response, result.refreshToken());
 
         return DataResponse.of(result.response());
     }

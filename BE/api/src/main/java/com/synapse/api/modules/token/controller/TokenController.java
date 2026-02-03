@@ -23,7 +23,7 @@ public class TokenController {
         String refresh = tokenService.extractRefreshToken(request);
         TokenResult result = tokenService.refreshToken(refresh);
 
-        tokenService.addRefreshToekenToCookie(response, refresh);
+        tokenService.addRefreshTokenToCookie(response, refresh);
 
         AccessTokenResponse responseDto = AccessTokenResponse.builder()
                 .accessToken(result.access())

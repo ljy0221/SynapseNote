@@ -15,12 +15,10 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.time.Duration;
 import java.util.Arrays;
 import java.util.UUID;
 
-import static com.synapse.api.util.Constant.AUTHORIZATION_HEADER;
-import static com.synapse.api.util.Constant.BEARER_PREFIX;
+import static com.synapse.api.util.Constant.*;
 
 @Service
 @RequiredArgsConstructor
@@ -65,19 +63,19 @@ public class TokenService {
         }
 
         return Arrays.stream(request.getCookies())
-                .filter(cookie -> "refreshToken".equals(cookie.getName()))
+                .filter(cookie -> REFRESH_COOKIE_NAME.equals(cookie.getName()))
                 .findFirst()
                 .map(Cookie::getValue)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_REFRESH));
     }
 
-    public void addRefreshToekenToCookie(HttpServletResponse response, String refreshToken) {
-        ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
+    public void addRefreshTokenToCookie(HttpServletResponse response, String refreshToken) {
+        ResponseCookie cookie = ResponseCookie.from(REFRESH_COOKIE_NAME, refreshToken)
                 .httpOnly(true)
                 .secure(false)
                 .sameSite("Lax")
                 .path("/")
-                .maxAge(Duration.ofDays(14))
+                .maxAge(REFRESH_COOKIE_DURATION)
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());

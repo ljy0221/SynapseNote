@@ -15,4 +15,8 @@ public class Constant {
     // Refresh Header
     public static final Duration TICKET_TTL = Duration.ofSeconds(60);
 
+    // Cookie
+    public static final String REFRESH_COOKIE_NAME = "refreshToken";
+    public static final Duration REFRESH_COOKIE_DURATION = Duration.ofDays(14);
+
 }
