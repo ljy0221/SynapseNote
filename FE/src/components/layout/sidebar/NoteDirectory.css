@@ -70,8 +70,8 @@
 
 .side-note-title {
   flex: 1;
-  min-width: 0;            /* ⭐ flex ellipsis 핵심 */
-  max-width: 120px;        /* 👉 8글자 내외에 해당 (폰트 13~14px 기준) */
+  min-width: 0;            /* flex ellipsis 핵심 */
+  max-width: 120px;        /* 8글자 내외에 해당 (폰트 13~14px 기준) */
 
   white-space: nowrap;
   overflow: hidden;

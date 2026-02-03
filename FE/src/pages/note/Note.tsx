@@ -69,7 +69,7 @@ const Note: React.FC = () => {
         try {
           await updateNoteApi(noteId, { title });
 
-          // 🔥 Sidebar 즉시 반영 트리거
+          // Sidebar 즉시 반영 트리거
           emitNotesChanged({
             type: 'UPDATE_TITLE',
             noteId,
