@@ -65,7 +65,7 @@ public class NoteSummaryService {
                 .count();
 
         return new NoteSummaryResponse(
-                noteId.toString(),
+                noteId,
                 summary,
                 style,
                 codeBlockCount,
