@@ -56,27 +56,31 @@ const Home: React.FC = () => {
 
   return (
     <div className="home-container">
-      <header className="home-header">
-        <h2>Dashboard</h2>
-      </header>
+      <div className="home-content">
+        <section className="home-grid">
+          {/* 좌측 메인 컬럼 */}
+          <div className="left-column">
+            <div className="home-card section-card">
+              <RecentNotes notes={recentNotes} />
+            </div>
 
-      <section className="home-grid">
-        <div className="home-card section-card">
-          <RecentNotes notes={recentNotes} />
-        </div>
+            <div className="home-card section-card">
+              <NoteStreak streak={{ dates: streakDates }} />
+            </div>
+          </div>
 
-        <div className="home-card section-card">
-          <NoteStreak streak={{ dates: streakDates }} />
-        </div>
+          {/* 우측 사이드 컬럼 (북마크) */}
+          <div className="right-column">
+            <div className="home-card section-card">
+              <NoteBookmarkSection />
+            </div>
 
-        <div className="home-card section-card">
-          <NoteBookmarkSection />
-        </div>
-
-        <div className="home-card section-card">
-          <BlockBookmarkSection />
-        </div>
-      </section>
+            <div className="home-card section-card">
+              <BlockBookmarkSection />
+            </div>
+          </div>
+        </section>
+      </div>
     </div>
   );
 };
