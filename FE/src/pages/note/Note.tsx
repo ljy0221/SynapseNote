@@ -4,8 +4,10 @@ import NoteButton from "../../components/common/noteButton/NoteButton";
 import NoteMain from "../../components/layout/noteMain/NoteMain";
 import { createNoteApi } from '../../api/notes/CreateNote.api';
 import { getNoteDetailApi } from '../../api/notes/GetNoteDetail.api';
-import { getBlocksApi } from '../../api/notes/GetBlocks.api';
+import { updateNoteApi } from '../../api/notes/UpdateNote.api'; // ADDED
+import { emitNotesChanged } from '../../events/NotesEvents'; // ADDED
 import type { CreateNoteRequest } from '../../types/note/CreateNote';
+import { useYjsStore } from '../../hooks/useYjsStore';
 import './Note.css';
 
 // 블록 타입 정의 (이원화: text / code)
@@ -29,108 +31,63 @@ const Note: React.FC = () => {
     // 제목 input ref
     const titleInputRef = useRef<HTMLInputElement>(null);
 
-    // 블록 배열 상태 관리
-    const [blocks, setBlocks] = useState<BlockData[]>([]);
+    // Yjs Store 사용
+    const { blocks, isSynced, addBlock, updateBlock, deleteBlock, moveBlock } = useYjsStore(noteId);
 
-    const fetchNoteData = useCallback(async (id: string) => {
-        setIsLoading(true);
+    const fetchNoteDetail = useCallback(async (id: string) => {
+        // setIsLoading(true); // Yjs 로딩과는 별개로 타이틀만 로딩하므로 전체 로딩을 걸면 깜빡일 수 있음
         try {
-            const [noteRes, blocksRes] = await Promise.all([
-                getNoteDetailApi(id),
-                getBlocksApi(id)
-            ]);
-
+            const noteRes = await getNoteDetailApi(id);
             console.log("[Note] Fetched Note Detail:", noteRes);
-            console.log("[Note] Fetched Blocks:", blocksRes);
 
             if (noteRes) {
                 setTitle(noteRes.title || "제목 없는 노트");
             }
-
-            if (blocksRes) {
-                const adaptedBlocks: BlockData[] = blocksRes.map((b: any) => {
-                    const lowType = b.type?.toLowerCase();
-                    const type: BlockType = lowType === 'code' ? 'code' : 'text';
-                    let content = '';
-                    let language = b.language;
-
-                    if (type === 'text') {
-                        content = b.properties?.content || '';
-                    } else if (type === 'code') {
-                        content = b.properties?.code || '';
-                        language = b.properties?.language || 'javascript';
-                    }
-
-                    return {
-                        id: b.blockId,
-                        type,
-                        content,
-                        language
-                    };
-                });
-
-                if (adaptedBlocks.length === 0) {
-                    setBlocks([{ id: Date.now(), type: 'text', content: '' }]);
-                } else {
-                    setBlocks(adaptedBlocks);
-                }
-            }
             setIsEditing(true);
         } catch (error) {
-            console.error("노트 데이터 로딩 실패:", error);
-            alert("노트 데이터를 불러오지 못했습니다.");
+            console.error("노트 상세 정보 로딩 실패:", error);
+            // alert("노트 데이터를 불러오지 못했습니다.");
         } finally {
-            setIsLoading(false);
+            // setIsLoading(false);
         }
     }, []);
 
     useEffect(() => {
         if (noteId) {
-            fetchNoteData(noteId);
+            fetchNoteDetail(noteId);
         } else {
             setIsEditing(false);
-            setBlocks([{ id: Date.now(), type: 'text', content: '' }]);
             setTitle("제목 없는 노트");
         }
-    }, [noteId, fetchNoteData]);
+    }, [noteId, fetchNoteDetail]);
 
-    // 특정 블록 뒤에 새 블록 추가 (+ 버튼용)
-    const addBlockAfter = (afterId: number | string, type: BlockType) => {
-        const defaultContent = type === 'code' ? '// 코드를 작성하세요.' : '';
-        const newBlock: BlockData = {
-            id: Date.now(), // 클라이언트 사이드에서는 여전히 Number로 임시 ID 생성 (DB 저장 전)
-            type: type,
-            content: defaultContent,
-            language: type === 'code' ? 'javascript' : undefined,
-        };
-        const index = blocks.findIndex(b => b.id === afterId);
-        const newBlocks = [...blocks];
-        newBlocks.splice(index + 1, 0, newBlock);
+    // Title Auto-save Debounce (ADDED)
+    useEffect(() => {
+        if (!noteId) return;
 
-        setBlocks(newBlocks);
-    };
+        const timer = setTimeout(async () => {
+            // 변경된 제목 저장
+            try {
+                await updateNoteApi(noteId, { title });
+                console.log("[Note] Title saved:", title);
+            } catch (err) {
+                console.error("[Note] Failed to save title:", err);
+            }
+        }, 1000); // 1초 디바운스
 
-    // 마지막에 블록 추가하는 함수 (하단 툴바용)
+        return () => clearTimeout(timer);
+    }, [title, noteId]);
+
+    // 마지막에 블록 추가 (툴바용)
     const handleAddBlockAtEnd = (type: BlockType) => {
-        const lastBlock = blocks[blocks.length - 1];
-        if (lastBlock) {
-            addBlockAfter(lastBlock.id, type);
-        } else {
-            const newBlock: BlockData = {
-                id: Date.now(),
-                type: type,
-                content: type === 'code' ? '// 코드를 작성하세요.' : '',
-                language: type === 'code' ? 'javascript' : undefined,
-            };
-            setBlocks([newBlock]);
-        }
+        addBlock(null, type);
     };
 
     const handleShortcutCreate = (type: BlockType) => {
         if (focusedBlockId !== null) {
-            addBlockAfter(focusedBlockId, type);
+            addBlock(focusedBlockId, type);
         } else {
-            handleAddBlockAtEnd(type);
+            addBlock(null, type);
         }
     };
 
@@ -146,7 +103,7 @@ const Note: React.FC = () => {
         }
 
         if (e.shiftKey && (e.key === 'Delete' || e.key === 'Backspace')) {
-            if (focusedBlockId !== null && blocks.length > 1) {
+            if (focusedBlockId !== null && blocks.length > 0) {
                 const selection = window.getSelection();
                 if (selection && selection.anchorOffset !== 0) {
                     return;
@@ -165,7 +122,7 @@ const Note: React.FC = () => {
                     nextFocusId = blocks[currentIndex + 1].id;
                 }
 
-                setBlocks(prevBlocks => prevBlocks.filter(b => b.id !== focusedBlockId));
+                deleteBlock(focusedBlockId);
 
                 if (nextFocusId) {
                     setFocusedBlockId(nextFocusId);
@@ -174,24 +131,8 @@ const Note: React.FC = () => {
         }
     };
 
-    const updateBlock = (id: number | string, content: string) => {
-        setBlocks(blocks.map(block =>
-            block.id === id ? { ...block, content } : block
-        ));
-    };
-
-    const deleteBlock = (id: number | string) => {
-        if (blocks.length > 1) {
-            setBlocks(blocks.filter(block => block.id !== id));
-        }
-    };
-
     const handleMoveBlock = (dragIndex: number, hoverIndex: number) => {
-        const dragBlock = blocks[dragIndex];
-        const newBlocks = [...blocks];
-        newBlocks.splice(dragIndex, 1);
-        newBlocks.splice(hoverIndex, 0, dragBlock);
-        setBlocks(newBlocks);
+        moveBlock(dragIndex, hoverIndex);
     };
 
     const handleCreateNote = async () => {
@@ -203,7 +144,17 @@ const Note: React.FC = () => {
             };
             const result = await createNoteApi(newNoteReq);
             console.log("노트 생성 성공:", result);
-            setIsEditing(true);
+
+            // 사이드바 업데이트 트리거
+            emitNotesChanged();
+
+            if (result && result.noteId) {
+                // 임시: 페이지 이동 (리로드 혹은 라우터 사용)
+                window.location.href = `/notes/${result.noteId}`;
+            } else {
+                setIsEditing(true); // Fallback
+            }
+
             setTimeout(() => {
                 if (titleInputRef.current) {
                     titleInputRef.current.focus();
@@ -244,13 +195,13 @@ const Note: React.FC = () => {
                         onUpdateTitle={setTitle}
                         blocks={blocks}
                         onUpdateBlock={updateBlock}
-                        onAddBlockAfter={addBlockAfter}
                         onAddBlockAtEnd={handleAddBlockAtEnd}
                         onDeleteBlock={deleteBlock}
                         onFocusBlock={setFocusedBlockId}
                         focusedBlockId={focusedBlockId}
                         onMoveBlock={handleMoveBlock}
                         titleInputRef={titleInputRef}
+                        onAddBlockAfter={(id, type) => addBlock(id, type)}
                     />
                 </div>
             )}
