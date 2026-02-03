@@ -9,6 +9,8 @@ export interface DocEntry {
   dirty: boolean;
   pendingUpdates: Uint8Array[];
   updatedAt: number;
+  isInitialized: boolean;
+  isInitializing: boolean;
 }
 
 const docs = new Map<string, DocEntry>();
@@ -32,14 +34,26 @@ export function registerDoc(noteId: string, ydoc: Y.Doc): DocEntry {
     dirty: false,
     pendingUpdates: [],
     updatedAt: Date.now(),
+    isInitialized: false,
+    isInitializing: false,
   };
 
   console.log(`[DOC] Registering update listener for ${noteId}`);
 
-  // DB에서 데이터 불러와서 Yjs 문서 초기화
-  BridgeService.initDocFromDB(noteId, ydoc).then(() => {
-    console.log(`[DOC] Bridge initialization completed for ${noteId}`);
-  });
+  // DB에서 데이터 불러와서 Yjs 문서 초기화 (최초 1회만 실행되도록 보장)
+  if (!entry.isInitialized && !entry.isInitializing) {
+    entry.isInitializing = true;
+    BridgeService.initDocFromDB(noteId, ydoc).then(() => {
+      if (entry) {
+        entry.isInitialized = true;
+        entry.isInitializing = false;
+        console.log(`[DOC] Bridge initialization completed for ${noteId}`);
+      }
+    }).catch(err => {
+      console.error(`[DOC] Initialization failed for ${noteId}:`, err);
+      if (entry) entry.isInitializing = false;
+    });
+  }
 
   ydoc.on("update", (update: Uint8Array) => {
     console.log(`[DOC] update fired for ${noteId}, size: ${update.length}`);
