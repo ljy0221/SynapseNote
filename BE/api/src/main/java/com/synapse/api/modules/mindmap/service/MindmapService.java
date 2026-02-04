@@ -1,5 +1,7 @@
 package com.synapse.api.modules.mindmap.service;
 
+import com.synapse.api.modules.member.entity.Member;
+import com.synapse.api.modules.member.repository.MemberRepository;
 import com.synapse.api.modules.mindmap.dto.MindmapEdgeDto;
 import com.synapse.api.modules.mindmap.dto.MindmapNodeDto;
 import com.synapse.api.modules.mindmap.dto.NodePositionDto;
@@ -10,6 +12,7 @@ import com.synapse.api.modules.mindmap.entity.MindmapEdge;
 import com.synapse.api.modules.mindmap.repository.MindmapEdgeRepository;
 import com.synapse.api.modules.note.entity.Note;
 import com.synapse.api.modules.note.repository.NoteRepository;
+import com.synapse.api.modules.note.service.NoteValidator;
 import com.synapse.api.util.exception.BusinessException;
 import com.synapse.api.util.response.ErrorCode;
 import jakarta.validation.Valid;
@@ -30,6 +33,8 @@ import java.util.stream.Collectors;
 public class MindmapService {
     private final MindmapEdgeRepository mindmapEdgeRepository;
     private final NoteRepository noteRepository;
+    private final MemberRepository memberRepository;
+    private final NoteValidator noteValidator;
 
     public MindmapResponse getMindmap(UUID memberId) {
         List<Note> notes = noteRepository.findMindMapNodesByMember(memberId);
@@ -59,12 +64,6 @@ public class MindmapService {
         return new MindmapResponse(nodeDtos, edgeDtos);
     }
 
-    private static void validNoteOwner(UUID memberId, Note note) {
-        if (!note.getCreatedBy().getId().equals(memberId)) {
-            throw new BusinessException(ErrorCode.NOTE_ACCESS_DENIED);
-        }
-    }
-
     @Transactional
     public void syncMindmap(UUID memberId, SyncMindmapRequest request) {
         if (request.nodes() != null) {
@@ -88,7 +87,8 @@ public class MindmapService {
                 }
 
                 for (Note note : requestedNotes) {
-                    validNoteOwner(memberId, note);
+                    // [Modified] 소유자뿐만 아니라 공유받은 사용자도 마인드맵 편집 가능
+                    noteValidator.validateAccess(note, memberId);
                     NodePositionDto dto = requestNodeMap.get(note.getId());
                     note.updatePosition(dto.x(), dto.y());
 
@@ -107,6 +107,9 @@ public class MindmapService {
     }
 
     private void syncEdges(UUID memberId, List<MindmapEdgeDto> requestedEdges) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
         List<MindmapEdge> existingEdges = mindmapEdgeRepository.findAllByMember(memberId);
 
         Map<String, MindmapEdge> existingEdgeMap = existingEdges.stream()
@@ -150,13 +153,26 @@ public class MindmapService {
                 Note child = relatedNotes.get(req.fromId());
                 Note parent = relatedNotes.get(req.toId());
 
-                validNoteOwner(memberId, child);
-                validNoteOwner(memberId, parent);
+                // [Modified] 소유자뿐만 아니라 공유받은 사용자도 엣지 생성 가능
+                noteValidator.validateAccess(child, memberId);
+                noteValidator.validateAccess(parent, memberId);
 
-                newEdges.add(MindmapEdge.of(child, parent));
+                newEdges.add(MindmapEdge.of(child, parent, member));
             }
 
             mindmapEdgeRepository.saveAll(newEdges);
         }
+    }
+
+    /**
+     * 노트 삭제 시 연결된 모든 엣지 삭제
+     * 
+     * @param noteId 삭제할 노트 ID
+     */
+    @Transactional
+    public void deleteEdgesByNoteId(UUID noteId) {
+        mindmapEdgeRepository.deleteByFrom_Id(noteId);
+        mindmapEdgeRepository.deleteByTo_Id(noteId);
+        log.debug("Deleted all mindmap edges connected to note: {}", noteId);
     }
 }
