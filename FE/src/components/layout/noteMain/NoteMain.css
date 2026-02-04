@@ -20,13 +20,13 @@
 /* 내부 스타일 */
 .note-main-header {
     width: 100%;
-    max-width: 1400px;
-    /* 900px -> 1400px으로 넓힘 */
-    margin: 0 auto;
-    padding-left: 40px;
-    padding-right: 40px;
+    /* max-width 제거 (부모인 paper를 따름) */
+    margin: 0;
+    padding-left: 108px;
+    padding-right: 108px;
     box-sizing: border-box;
-    margin-top: 80px;
+    margin-top: 60px;
+    /* paper 내부 상단 여백 */
     margin-bottom: 40px;
     flex-shrink: 0;
 }
@@ -46,19 +46,33 @@
 .note-body-wrapper {
     display: flex;
     width: 100%;
-    max-width: 1400px;
-    /* Overall max width */
+    max-width: 1600px;
+    /* 전체 레이아웃 너비 확장 */
     margin: 0 auto;
     position: relative;
     padding-bottom: 20vh;
 }
 
+/* 새로운 노트 용지 컨테이너 */
+.note-paper {
+    flex: 1;
+    background-color: var(--color-main);
+    border-radius: 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    margin-left: 20px;
+    /* 사이드바와의 간격 */
+    margin-top: 20px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 80vh;
+}
+
 .note-content-area {
     flex: 1;
-    /* Takes remaining space */
     padding-left: 40px;
     padding-right: 40px;
-    /* 여백 확보 */
     box-sizing: border-box;
     overflow: visible;
 }

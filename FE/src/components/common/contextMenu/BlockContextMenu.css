@@ -1,0 +1,48 @@
+/* src/components/common/contextMenu/BlockContextMenu.css */
+.block-context-menu {
+    position: fixed;
+    background-color: var(--color-main, #ffffff);
+    border: 1px solid var(--border-color, #e0e0e0);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+    padding: 6px;
+    z-index: 9999;
+    min-width: 150px;
+    animation: fadeIn 0.1s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--font-color, #333);
+    transition: background-color 0.2s;
+}
+
+.menu-item:hover {
+    background-color: var(--color-sub, #f5f5f5);
+}
+
+.menu-item.delete {
+    color: #ff4d4f;
+}
+
+.menu-item.delete:hover {
+    background-color: #fff1f0;
+}

@@ -32,8 +32,8 @@ import {
     Image as ImageIcon,
     Palette,
 } from 'lucide-react';
-import BlockDeleteButton from '../../common/blockDeleteButton/BlockDeleteButton';
 import './TextBlock.css';
+
 interface TextBlockProps {
     id: number | string;
     content: string;
@@ -45,6 +45,7 @@ interface TextBlockProps {
     onDragOver?: (e: React.DragEvent) => void;
     onDrop?: (e: React.DragEvent) => void;
     isFocused?: boolean; // [추가]
+    onContextMenu?: (e: React.MouseEvent) => void; // [New]
 }
 
 // 색상 팔레트
@@ -80,6 +81,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
     onDragOver,
     onDrop,
     isFocused: shouldFocus, // [추가] prop 이름 충돌 방지를 위해 별칭 사용
+    onContextMenu, // [New]
 }) => {
     const [isFocused, setIsFocused] = React.useState(false);
     const [showColorPicker, setShowColorPicker] = React.useState(false);
@@ -238,9 +240,9 @@ const TextBlock: React.FC<TextBlockProps> = ({
             className={`text-block-wrapper ${isFocused ? 'is-focused' : ''}`}
             onDragOver={onDragOver}
             onDrop={onDrop}
+            onContextMenu={onContextMenu} // [New]
         >
             <div className="block-controls">
-                <BlockDeleteButton onDelete={() => onDelete(id)} />
                 <div
                     className="drag-handle-icon"
                     draggable={draggable}
@@ -254,6 +256,8 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 {/* 포커스 시에만 툴바 표시 */}
                 {isFocused && (
                     <div className="editor-toolbar">
+
+
                         <div className="toolbar-group">
                             <button
                                 onMouseDown={(e) => e.preventDefault()}

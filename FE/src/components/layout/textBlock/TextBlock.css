@@ -3,8 +3,9 @@
     display: flex;
     align-items: flex-start;
     gap: 8px;
-    width: 100%;
-    margin-bottom: 12px;
+    width: 90%;
+    max-width: 800px;
+    margin: 12px auto;
 }
 
 .block-controls {
@@ -45,15 +46,19 @@
 .drag-handle-icon {
     color: var(--font-color-sub, #78716c);
     font-size: 18px;
-    /* 12px → 18px 또는 20px */
     cursor: grab;
-    width: 40px;
-    /* 추가: 클릭 영역 확보 */
-    height: 40px;
-    /* 추가: 클릭 영역 확보 */
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
+    border-radius: 6px;
+    transition: all 0.15s;
+}
+
+.drag-handle-icon:hover {
+    background: var(--color-hover, #fae8d0);
+    color: var(--font-color, #45372e);
 }
 
 /* 에디터 컨테이너 - 비활성 상태 (배경과 조화) */

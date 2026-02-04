@@ -4,24 +4,27 @@ import CodeBlock from '../codeBlock/CodeBlock';
 import TextBlock from '../textBlock/TextBlock';
 import { NoteSideNav } from './NoteSideNav';
 import { InviteLinkModal } from '../../common/modal/InviteLinkModal';
-import { PermissionModal } from '../../common/modal/PermissionModal'; // [New]
+import { PermissionModal } from '../../common/modal/PermissionModal';
+import { SummaryConfigModal } from '../../common/modal/SummaryConfigModal';
 import { NoteSummary } from '../../common/noteSummary/NoteSummary';
 import { BlockData, BlockType } from '../../../pages/note/Note';
 import type { SummaryStyle } from '../../../types/ai/NoteSummary';
+import BlockContextMenu from '../../common/contextMenu/BlockContextMenu';
 import './NoteMain.css';
+
 interface NoteMainProps {
     title: string;
     onUpdateTitle: (newTitle: string) => void;
     blocks: BlockData[];
     onUpdateBlock: (id: number | string, content: string) => void;
-    onAddBlockAfter: (afterId: number | string, type: BlockType) => void; // [추가]
+    onAddBlockAfter: (afterId: number | string, type: BlockType) => void;
     onAddBlockAtEnd: (type: BlockType) => void;
     onDeleteBlock: (id: number | string) => void;
     onFocusBlock: (id: number | string) => void;
-    focusedBlockId: number | string | null; // [추가]
+    focusedBlockId: number | string | null;
     onMoveBlock: (dragIndex: number, hoverIndex: number) => void;
     titleInputRef?: React.RefObject<HTMLInputElement>;
-    noteId?: string; // [추가]
+    noteId?: string;
     // AI 요약 관련 props
     summary?: string;
     summaryStyle?: string;
@@ -29,12 +32,13 @@ interface NoteMainProps {
     isSummaryLoading: boolean;
     onGenerateSummary: (style: SummaryStyle) => void;
 }
+
 const NoteMain: React.FC<NoteMainProps> = ({
     title,
     onUpdateTitle,
     blocks,
     onUpdateBlock,
-    onAddBlockAfter, // [추가]
+    onAddBlockAfter,
     onAddBlockAtEnd,
     onDeleteBlock,
     onFocusBlock,
@@ -53,6 +57,11 @@ const NoteMain: React.FC<NoteMainProps> = ({
     const [isInviteModalOpen, setIsInviteModalOpen] = React.useState(false);
     // [New] 권한 모달 상태
     const [isPermissionModalOpen, setIsPermissionModalOpen] = React.useState(false);
+    // [New] AI 요약 모달 상태
+    const [isSummaryModalOpen, setIsSummaryModalOpen] = React.useState(false);
+
+    // [New] Context Menu State
+    const [contextMenu, setContextMenu] = React.useState<{ x: number; y: number; blockId: string | number } | null>(null);
 
     // DnD 상태 관리
     const [dragIndex, setDragIndex] = React.useState<number | null>(null);
@@ -69,6 +78,23 @@ const NoteMain: React.FC<NoteMainProps> = ({
         onMoveBlock(dragIndex, dropIndex);
         setDragIndex(null);
     };
+
+    const handleContextMenu = (e: React.MouseEvent, blockId: string | number) => {
+        e.preventDefault();
+        setContextMenu({
+            x: e.clientX,
+            y: e.clientY,
+            blockId,
+        });
+    };
+
+    const handleDeleteFromMenu = () => {
+        if (contextMenu) {
+            onDeleteBlock(contextMenu.blockId);
+            setContextMenu(null);
+        }
+    };
+
     const renderBlock = (block: BlockData, index: number) => {
         const commonProps = {
             draggable: true,
@@ -76,6 +102,7 @@ const NoteMain: React.FC<NoteMainProps> = ({
             onDragOver: onDragOver,
             onDrop: () => onDrop(index),
             isFocused: block.id === focusedBlockId, // [추가] 포커스 여부 전달
+            onContextMenu: (e: React.MouseEvent) => handleContextMenu(e, block.id),
         };
         switch (block.type) {
             case 'text':
@@ -86,7 +113,7 @@ const NoteMain: React.FC<NoteMainProps> = ({
                         id={block.id as any}
                         content={block.content}
                         onUpdate={onUpdateBlock as any}
-                        onDelete={onDeleteBlock as any}
+                        onDelete={onDeleteBlock as any} // Still keeping it for safety, though UI removed
                         onFocus={() => onFocusBlock(block.id)}
                     />
                 );
@@ -110,15 +137,6 @@ const NoteMain: React.FC<NoteMainProps> = ({
     };
     return (
         <div className="note-main-layout">
-            <header className="note-main-header">
-                <input
-                    ref={titleInputRef}
-                    className="note-main-title-input"
-                    value={title}
-                    onChange={(e) => onUpdateTitle(e.target.value)}
-                    placeholder="제목 없음"
-                />
-            </header>
             <NoteSummary
                 summary={summary}
                 summaryStyle={summaryStyle}
@@ -127,19 +145,38 @@ const NoteMain: React.FC<NoteMainProps> = ({
                 onGenerateSummary={onGenerateSummary}
             />
             <div className="note-body-wrapper">
-                <div className="note-content-area">
-                    {blocks.map((block, index) => renderBlock(block, index))}
-                    <div className="note-bottom-spacer" style={{ height: '30vh' }} />
-                </div>
-
                 <div className="note-sidenav-area">
                     <NoteSideNav
                         onAddBlock={onAddBlockAtEnd}
                         onInvite={() => setIsInviteModalOpen(true)}
                         onPermission={() => setIsPermissionModalOpen(true)}
+                        onSummary={() => setIsSummaryModalOpen(true)}
                     />
                 </div>
+
+                <div className="note-paper">
+                    <header className="note-main-header">
+                        <input
+                            ref={titleInputRef}
+                            className="note-main-title-input"
+                            value={title}
+                            onChange={(e) => onUpdateTitle(e.target.value)}
+                            placeholder="제목 없음"
+                        />
+                    </header>
+                    <div className="note-content-area">
+                        {blocks.map((block, index) => renderBlock(block, index))}
+                        <div className="note-bottom-spacer" style={{ height: '30vh' }} />
+                    </div>
+                </div>
             </div>
+
+            {/* Context Menu */}
+            <BlockContextMenu
+                position={contextMenu}
+                onClose={() => setContextMenu(null)}
+                onDelete={handleDeleteFromMenu}
+            />
 
             {/* 초대 링크 모달 */}
             <InviteLinkModal
@@ -151,7 +188,14 @@ const NoteMain: React.FC<NoteMainProps> = ({
             <PermissionModal
                 isOpen={isPermissionModalOpen}
                 onClose={() => setIsPermissionModalOpen(false)}
-                noteId={noteId} // [New] Pass noteId
+                noteId={noteId}
+            />
+            {/* AI 요약 설정 모달 */}
+            <SummaryConfigModal
+                isOpen={isSummaryModalOpen}
+                onClose={() => setIsSummaryModalOpen(false)}
+                onGenerate={onGenerateSummary}
+                isLoading={isSummaryLoading}
             />
         </div >
     );
