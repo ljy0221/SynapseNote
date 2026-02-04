@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import VersionButton from '../../common/versionButton/VersionButton';
 import BlockRunButton from '../../common/blockRunButton/BlockRunButton';
 import BlockCopyButton from '../../common/blockCopyButton/BlockCopyButton';
-import BlockDeleteButton from '../../common/blockDeleteButton/BlockDeleteButton';
+
 import CodeMirrorEditor from '../../common/codeMirrorEditor/CodeMirrorEditor';
 import type { Language, ExecutionResult, ExecutionMode, SessionInfo } from '../../../types/execution/ExecutionTypes';
 import './CodeBlock.css';
@@ -30,6 +30,7 @@ interface CodeBlockProps {
     onDragOver?: (e: React.DragEvent) => void;
     onDrop?: (e: React.DragEvent) => void;
     isFocused?: boolean; // [추가]
+    onContextMenu?: (e: React.MouseEvent) => void; // [New]
 }
 
 function getDefaultVersion(language: Language): string {
@@ -53,6 +54,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     onDragStart,
     onDragOver,
     onDrop,
+    onContextMenu, // [New]
 }) => {
     const [result, setResult] = useState<ExecutionResult | null>(null);
     const [loading, setLoading] = useState(false);
@@ -295,184 +297,190 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
             className="code-block-wrapper"
             onDragOver={onDragOver}
             onDrop={onDrop}
+            onContextMenu={onContextMenu} // [New]
         >
-            <div className="code-block-header">
-                {/* [좌측] 삭제 버튼 + 드래그 핸들 (호버 시 보임) */}
-                <div className="code-left-controls">
-                    <BlockDeleteButton onDelete={() => onDelete(id)} />
-                    <div
-                        className="code-drag-handle"
-                        draggable={draggable}
-                        onDragStart={onDragStart}
-                        title="드래그하여 이동"
-                    >
-                        ⋮⋮
+            <div className="block-controls">
+                <div
+                    className="code-drag-handle"
+                    draggable={draggable}
+                    onDragStart={onDragStart}
+                    title="드래그하여 이동"
+                >
+                    ⋮⋮
+                </div>
+            </div>
+
+            <div className="code-block-main">
+                <div className="code-block-header">
+                    {/* [좌측] 삭제 버튼 제거됨 + 드래그 핸들 이동됨 */}
+                    <div className="code-left-controls">
+                        {/* Empty now, preserving for spacing or future use if needed */}
+                    </div>
+                    {/* [중앙] 언어 선택기 */}
+                    <LanguageSelector
+                        value={language}
+                        onChange={handleLanguageChange}
+                        disabled={loading}
+                    />
+
+                    {/* 모드 선택 버튼 (feat/#63 추가 - Java 제외, 다중 언어 시 비활성화) */}
+                    {(() => {
+                        const isJava = language === 'java';
+                        const hasMultiple = hasMultipleLanguages(noteId || '');
+                        const shouldShow = !isJava && !hasMultiple;
+                        console.log(`[Session Button] lang:${language}, isJava:${isJava}, hasMultiple:${hasMultiple}, noteId:${noteId}, shouldShow:${shouldShow}`);
+                        return shouldShow;
+                    })() && (
+                            <div className="mode-selector" style={{ marginLeft: '10px', display: 'flex', gap: '5px' }}>
+                                <button
+                                    className={`mode-button ${executionMode === 'single' ? 'active' : ''}`}
+                                    onClick={() => setExecutionMode('single')}
+                                    disabled={loading}
+                                    style={{
+                                        padding: '4px 10px',
+                                        fontSize: '12px',
+                                        cursor: loading ? 'not-allowed' : 'pointer',
+                                        backgroundColor: executionMode === 'single' ? '#4A90E2' : '#555',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '4px',
+                                    }}
+                                >
+                                    Single
+                                </button>
+                                <button
+                                    className={`mode-button ${executionMode === 'session' ? 'active' : ''}`}
+                                    onClick={() => {
+                                        if (noteId) {
+                                            setExecutionMode('session');
+                                        }
+                                    }}
+                                    disabled={loading || !noteId}
+                                    style={{
+                                        padding: '4px 10px',
+                                        fontSize: '12px',
+                                        cursor: (loading || !noteId) ? 'not-allowed' : 'pointer',
+                                        backgroundColor: executionMode === 'session' ? '#4A90E2' : '#555',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '4px',
+                                        opacity: !noteId ? 0.5 : 1,
+                                    }}
+                                    title={!noteId ? '노트를 저장해야 세션 모드를 사용할 수 있습니다' : '세션 모드 활성화'}
+                                >
+                                    Session
+                                </button>
+                            </div>
+                        )}
+
+                    {/* [우측] 액션 버튼들 (삭제 버튼 제거됨) */}
+                    <div className="code-actions">
+                        {/* 세션 인디케이터 (feat/#63 추가) */}
+                        {sessionInfo && executionMode === 'session' && (
+                            <button
+                                className="session-indicator"
+                                onClick={handleTerminateSession}
+                                title="세션 종료"
+                                style={{
+                                    padding: '4px 10px',
+                                    fontSize: '12px',
+                                    cursor: 'pointer',
+                                    backgroundColor: '#28a745',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    marginRight: '5px',
+                                }}
+                            >
+                                🟢 Session: {sessionInfo.sessionId.substring(0, 8)}
+                            </button>
+                        )}
+
+                        <BlockRunButton onClick={handleRun} disabled={loading} />
+                        <BlockCopyButton onCopy={handleCopy} />
+                        <VersionButton
+                            onClick={() => {
+                                if (!noteId) {
+                                    alert('노트가 저장되어야 버전 관리를 사용할 수 있습니다.');
+                                    return;
+                                }
+                                setShowCheckpoints(true);
+                            }}
+                        />
+                        <AiReviewButton
+                            onClick={() => {
+                                setShowAiReview(true);
+                                // 캐시된 결과가 없을 때만 API 호출
+                                if (!aiReviewResult) {
+                                    handleAiReview();
+                                }
+                            }}
+                            disabled={loading}
+                            loading={aiReviewLoading}
+                            disabledReason={!noteId ? '노트를 저장해야 사용할 수 있습니다' : undefined}
+                        />
                     </div>
                 </div>
-                {/* [중앙] 언어 선택기 */}
-                <LanguageSelector
-                    value={language}
-                    onChange={handleLanguageChange}
-                    disabled={loading}
-                />
-
-                {/* 모드 선택 버튼 (feat/#63 추가 - Java 제외, 다중 언어 시 비활성화) */}
-                {(() => {
-                    const isJava = language === 'java';
-                    const hasMultiple = hasMultipleLanguages(noteId || '');
-                    const shouldShow = !isJava && !hasMultiple;
-                    console.log(`[Session Button] lang:${language}, isJava:${isJava}, hasMultiple:${hasMultiple}, noteId:${noteId}, shouldShow:${shouldShow}`);
-                    return shouldShow;
-                })() && (
-                        <div className="mode-selector" style={{ marginLeft: '10px', display: 'flex', gap: '5px' }}>
-                            <button
-                                className={`mode-button ${executionMode === 'single' ? 'active' : ''}`}
-                                onClick={() => setExecutionMode('single')}
-                                disabled={loading}
-                                style={{
-                                    padding: '4px 10px',
-                                    fontSize: '12px',
-                                    cursor: loading ? 'not-allowed' : 'pointer',
-                                    backgroundColor: executionMode === 'single' ? '#4A90E2' : '#555',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                }}
-                            >
-                                Single
-                            </button>
-                            <button
-                                className={`mode-button ${executionMode === 'session' ? 'active' : ''}`}
-                                onClick={() => {
-                                    if (noteId) {
-                                        setExecutionMode('session');
-                                    }
-                                }}
-                                disabled={loading || !noteId}
-                                style={{
-                                    padding: '4px 10px',
-                                    fontSize: '12px',
-                                    cursor: (loading || !noteId) ? 'not-allowed' : 'pointer',
-                                    backgroundColor: executionMode === 'session' ? '#4A90E2' : '#555',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                    opacity: !noteId ? 0.5 : 1,
-                                }}
-                                title={!noteId ? '노트를 저장해야 세션 모드를 사용할 수 있습니다' : '세션 모드 활성화'}
-                            >
-                                Session
-                            </button>
-                        </div>
-                    )}
-
-                {/* [우측] 액션 버튼들 (삭제 버튼 제거됨) */}
-                <div className="code-actions">
-                    {/* 세션 인디케이터 (feat/#63 추가) */}
-                    {sessionInfo && executionMode === 'session' && (
-                        <button
-                            className="session-indicator"
-                            onClick={handleTerminateSession}
-                            title="세션 종료"
-                            style={{
-                                padding: '4px 10px',
-                                fontSize: '12px',
-                                cursor: 'pointer',
-                                backgroundColor: '#28a745',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '4px',
-                                marginRight: '5px',
-                            }}
-                        >
-                            🟢 Session: {sessionInfo.sessionId.substring(0, 8)}
-                        </button>
-                    )}
-
-                    <BlockRunButton onClick={handleRun} disabled={loading} />
-                    <BlockCopyButton onCopy={handleCopy} />
-                    <VersionButton
-                        onClick={() => {
-                            if (!noteId) {
-                                alert('노트가 저장되어야 버전 관리를 사용할 수 있습니다.');
-                                return;
-                            }
-                            setShowCheckpoints(true);
+                {/* 메인 코드 영역 */}
+                <div className="code-content-container">
+                    <CodeMirrorEditor
+                        value={editedCode}
+                        language={language}
+                        onChange={(value) => {
+                            setEditedCode(value);
+                            onChange(id, value);
                         }}
-                    />
-                    <AiReviewButton
-                        onClick={() => {
-                            setShowAiReview(true);
-                            // 캐시된 결과가 없을 때만 API 호출
-                            if (!aiReviewResult) {
-                                handleAiReview();
-                            }
-                        }}
-                        disabled={loading}
-                        loading={aiReviewLoading}
-                        disabledReason={!noteId ? '노트를 저장해야 사용할 수 있습니다' : undefined}
+                        onFocus={onFocus}
+                        readOnly={loading}
+                        minHeight="150px"
+                        maxHeight="800px"
                     />
                 </div>
-            </div>
-            {/* 메인 코드 영역 */}
-            <div className="code-content-container">
-                <CodeMirrorEditor
-                    value={editedCode}
-                    language={language}
-                    onChange={(value) => {
-                        setEditedCode(value);
-                        onChange(id, value);
-                    }}
-                    onFocus={onFocus}
-                    readOnly={loading}
-                    minHeight="150px"
-                    maxHeight="800px"
-                />
-            </div>
-            {/* 결과 출력 영역 */}
-            {result && (
-                <div className="code-output-zone">
-                    <div className="output-divider"></div>
-                    <p className="output-label">
-                        OUTPUT ({result.status.toUpperCase()}) - {result.executionTime}ms
-                        {executionMode === 'session' && ' [SESSION]'}
-                    </p>
-                    <pre className="output-content">
-                        {result.status === 'success' ? result.output : result.error}
-                    </pre>
-                </div>
-            )}
-            {/* 로딩 표시 */}
-            {loading && (
-                <div className="code-output-zone">
-                    <p className="output-label">실행 중...</p>
-                </div>
-            )}
+                {/* 결과 출력 영역 */}
+                {result && (
+                    <div className="code-output-zone">
+                        <div className="output-divider"></div>
+                        <p className="output-label">
+                            OUTPUT ({result.status.toUpperCase()}) - {result.executionTime}ms
+                            {executionMode === 'session' && ' [SESSION]'}
+                        </p>
+                        <pre className="output-content">
+                            {result.status === 'success' ? result.output : result.error}
+                        </pre>
+                    </div>
+                )}
+                {/* 로딩 표시 */}
+                {loading && (
+                    <div className="code-output-zone">
+                        <p className="output-label">실행 중...</p>
+                    </div>
+                )}
 
-            {/* 버전 관리 사이드바 */}
-            {showCheckpoints && noteId && (
-                <CheckpointSidebar
-                    noteId={noteId}
-                    blockId={id.toString()}
-                    currentCode={editedCode}
-                    onClose={() => setShowCheckpoints(false)}
-                    onRestore={handleRestore}
-                />
-            )}
+                {/* 버전 관리 사이드바 */}
+                {showCheckpoints && noteId && (
+                    <CheckpointSidebar
+                        noteId={noteId}
+                        blockId={id.toString()}
+                        currentCode={editedCode}
+                        onClose={() => setShowCheckpoints(false)}
+                        onRestore={handleRestore}
+                    />
+                )}
 
-            {/* AI 리뷰 섹션 (코드 블록 하단) */}
-            {showAiReview && noteId && (
-                <AiReviewSection
-                    result={aiReviewResult}
-                    isLoading={aiReviewLoading}
-                    error={aiReviewError}
-                    onRefresh={handleAiReview}
-                    onClose={() => {
-                        setShowAiReview(false);
-                        setAiReviewResult(null); // 닫을 때 결과 초기화
-                    }}
-                />
-            )}
+                {/* AI 리뷰 섹션 (코드 블록 하단) */}
+                {showAiReview && noteId && (
+                    <AiReviewSection
+                        result={aiReviewResult}
+                        isLoading={aiReviewLoading}
+                        error={aiReviewError}
+                        onRefresh={handleAiReview}
+                        onClose={() => {
+                            setShowAiReview(false);
+                            setAiReviewResult(null); // 닫을 때 결과 초기화
+                        }}
+                    />
+                )}
+            </div>
         </div>
     );
 };

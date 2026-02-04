@@ -1,5 +1,5 @@
 import React from 'react';
-import { Type, Code, Link, Users } from 'lucide-react';
+import { Type, Code, Link, Users, Sparkles } from 'lucide-react';
 import './NoteSideNav.css';
 
 export type BlockType = 'text' | 'code';
@@ -7,10 +7,11 @@ export type BlockType = 'text' | 'code';
 interface NoteSideNavProps {
     onAddBlock: (type: BlockType) => void;
     onInvite: () => void;
-    onPermission: () => void; // [New]
+    onPermission: () => void;
+    onSummary: () => void; // [New]
 }
 
-export const NoteSideNav: React.FC<NoteSideNavProps> = ({ onAddBlock, onInvite, onPermission }) => {
+export const NoteSideNav: React.FC<NoteSideNavProps> = ({ onAddBlock, onInvite, onPermission, onSummary }) => {
     return (
         <aside className="note-side-nav">
             <div className="nav-group">
@@ -30,9 +31,16 @@ export const NoteSideNav: React.FC<NoteSideNavProps> = ({ onAddBlock, onInvite, 
                     <Code size={20} />
                     <span className="nav-label">코드</span>
                 </button>
+                <button
+                    className="nav-item"
+                    onClick={onSummary}
+                    title="AI 요약 생성"
+                >
+                    <Sparkles size={20} />
+                    <span className="nav-label">AI 요약</span>
+                </button>
             </div>
 
-            {/* Separator or new group could be added here, but user asked to add it to the bar */}
             <div className="nav-group">
                 <button
                     className="nav-item"
@@ -54,3 +62,4 @@ export const NoteSideNav: React.FC<NoteSideNavProps> = ({ onAddBlock, onInvite, 
         </aside>
     );
 };
+
