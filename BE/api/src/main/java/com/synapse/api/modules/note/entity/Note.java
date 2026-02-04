@@ -45,6 +45,14 @@ public class Note implements Persistable<UUID> {
     @Column
     private boolean bookmark;
 
+    // AI 요약 필드
+    @Column(columnDefinition = "TEXT")
+    private String summary;
+
+    private String summaryStyle;
+
+    private LocalDateTime summaryUpdatedAt;
+
     // [핵심] 낙관적 락 (Optimistic Locking)
     // 메타데이터(제목, 위치 등)가 동시에 수정될 때 충돌 방지
     // JPA가 save 할 때 자동으로 +1 해줍니다.
@@ -107,6 +115,12 @@ public class Note implements Persistable<UUID> {
 
     public void unBookmark() {
         bookmark = false;
+    }
+
+    public void updateSummary(String summary, String style) {
+        this.summary = summary;
+        this.summaryStyle = style;
+        this.summaryUpdatedAt = LocalDateTime.now();
     }
 
     // Persistable 구현: 클라이언트 전송 ID 사용 시 JPA가 새 엔티티로 인식하도록 함

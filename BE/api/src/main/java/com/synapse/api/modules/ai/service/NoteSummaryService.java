@@ -7,7 +7,11 @@ import com.synapse.api.modules.block.document.BaseBlock;
 import com.synapse.api.modules.block.document.CodeBlock;
 import com.synapse.api.modules.block.document.TextBlock;
 import com.synapse.api.modules.block.repository.BlockRepository;
+import com.synapse.api.modules.note.entity.Note;
+import com.synapse.api.modules.note.repository.NoteRepository;
 import com.synapse.api.modules.note.service.NoteValidator;
+import com.synapse.api.modules.util.exception.BusinessException;
+import com.synapse.api.modules.util.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,15 +30,20 @@ public class NoteSummaryService {
     private final AiServiceFactory aiServiceFactory;
     private final NoteValidator noteValidator;
     private final BlockRepository blockRepository;
+    private final NoteRepository noteRepository;
 
     @Value("${ai.summary.provider}")
     private String summaryProvider;
 
-    @Transactional(readOnly = true)
+    @Transactional
     public NoteSummaryResponse summarizeNote(UUID noteId, UUID userId,
             NoteSummaryRequest request) {
         // 접근 권한 검증
         noteValidator.validateReadPermission(userId, noteId);
+
+        // 노트 조회
+        Note note = noteRepository.findById(noteId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
 
         // 노트의 모든 블록 조회 (삭제 안 된 것만)
         List<BaseBlock> blocks = blockRepository.findByNoteIdAndDeletedAtIsNullOrderByOrderAsc(noteId);
@@ -50,7 +59,10 @@ public class NoteSummaryService {
         AiService aiService = aiServiceFactory.getService(provider);
         String summary = aiService.complete(systemPrompt, userPrompt);
 
-        log.info("Note summary created: noteId={}, provider={}, blockCount={}",
+        // 요약 결과를 노트에 저장
+        note.updateSummary(summary, style);
+
+        log.info("Note summary created and saved: noteId={}, provider={}, blockCount={}",
                 noteId, provider, blocks.size());
 
         // 코드 블록 통계
