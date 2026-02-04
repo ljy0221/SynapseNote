@@ -1,6 +1,7 @@
 // src/utils/aiReviewFormatter.ts
 
 import type { CodeReviewResponse, ReviewItem } from '../types/ai/CodeReview';
+import DOMPurify from 'dompurify';
 
 /**
  * 심각도에 따른 이모지 반환
@@ -65,5 +66,6 @@ export function formatReviewAsHtml(response: CodeReviewResponse): string {
         parts.push(`</ul>`);
     }
 
-    return parts.join('');
+    const rawHtml = parts.join('');
+    return DOMPurify.sanitize(rawHtml);
 }

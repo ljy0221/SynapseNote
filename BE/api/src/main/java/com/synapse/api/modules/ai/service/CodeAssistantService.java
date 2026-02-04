@@ -59,7 +59,7 @@ public class CodeAssistantService {
         }
 
         // 코드 길이 검증
-        String code = codeBlock.getProperties().getCode();
+        String code = (request.codeContent() != null) ? request.codeContent() : codeBlock.getProperties().getCode();
         if (code.length() > MAX_CODE_LENGTH) {
             throw new BusinessException(ErrorCode.AI_INVALID_REQUEST,
                     "Code too large for review (max 5000 characters)");

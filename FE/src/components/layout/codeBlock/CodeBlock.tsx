@@ -30,6 +30,7 @@ interface CodeBlockProps {
     onDrop?: (e: React.DragEvent) => void;
     isFocused?: boolean; // [추가]
     onContextMenu?: (e: React.MouseEvent) => void; // [New]
+    onAiReviewResult?: (htmlContent: string) => void;
 }
 
 function getDefaultVersion(language: Language): string {
@@ -55,6 +56,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     onDragOver,
     onDrop,
     onContextMenu, // [New]
+    onAiReviewResult, // [New]
 }) => {
     const [result, setResult] = useState<ExecutionResult | null>(null);
     const [loading, setLoading] = useState(false);
@@ -207,12 +209,15 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
             const response = await requestCodeReview(
                 noteId,
                 id.toString(),
-                createReviewRequest(language),
+                createReviewRequest(language, editedCode as string),
                 aiReviewAbortRef.current.signal
             );
 
-            // 3. 리뷰 결과를 HTML로 변환하여 새 블록으로 추가
-            if (onAddBlockAfter) {
+            // 3. 리뷰 결과를 HTML로 변환하여 새 블록으로 추가 또는 기존 블록 업데이트
+            if (onAiReviewResult) {
+                const htmlContent = formatReviewAsHtml(response);
+                onAiReviewResult(htmlContent);
+            } else if (onAddBlockAfter) {
                 const htmlContent = formatReviewAsHtml(response);
                 onAddBlockAfter(htmlContent);
             }
