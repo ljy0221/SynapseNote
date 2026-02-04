@@ -107,6 +107,17 @@ const NoteMain: React.FC<NoteMainProps> = ({
             onContextMenu: (e: React.MouseEvent) => handleContextMenu(e, block.id),
         };
 
+        const handleAiReviewResult = (htmlContent: string) => {
+            const nextBlock = blocks[index + 1];
+            // 다음 블록이 텍스트 블록이고 AI 리뷰 헤더로 시작하면 업데이트
+            if (nextBlock && nextBlock.type === 'text' && nextBlock.content.startsWith('<h1>🤖 AI 코드 리뷰</h1>')) {
+                onUpdateBlock(nextBlock.id, htmlContent);
+            } else {
+                // 아니면 새 블록 추가
+                onAddBlockAfter(block.id, 'text', htmlContent);
+            }
+        };
+
         switch (block.type) {
             case 'text':
                 return (
@@ -133,6 +144,7 @@ const NoteMain: React.FC<NoteMainProps> = ({
                         onChange={onUpdateBlock as any}
                         onFocus={() => onFocusBlock(block.id)}
                         onAddBlockAfter={(content: string) => onAddBlockAfter(block.id, 'text', content)}
+                        onAiReviewResult={handleAiReviewResult}
                     />
                 );
             default:
