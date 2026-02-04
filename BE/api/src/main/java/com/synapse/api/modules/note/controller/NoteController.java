@@ -5,6 +5,7 @@ import com.synapse.api.modules.block.dto.response.BlockPageResponse;
 import com.synapse.api.modules.block.service.BlockService;
 import com.synapse.api.modules.note.dto.request.ExecutionHistoryRequest;
 import com.synapse.api.modules.note.dto.request.NoteCreateRequest;
+import com.synapse.api.modules.note.dto.request.NoteFilter;
 import com.synapse.api.modules.note.dto.request.NoteUpdateRequest;
 import com.synapse.api.modules.note.dto.response.ExecutionHistoryResponse;
 import com.synapse.api.modules.note.dto.response.NoteDetailResponse;
@@ -46,19 +47,19 @@ public class NoteController {
     @GetMapping("/v1/notes")
     public DataResponse<NotePageResponse> getAllNotes(
             @AuthenticationPrincipal CustomMemberDetails details,
-            @RequestParam(required = false) String filter,
+            @RequestParam(required = false) NoteFilter filter,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
         UUID memberId = details.id();
         log.info("Getting notes for member: {} with filter: {} (page: {}, size: {})", memberId, filter, page, size);
 
         NotePageResponse response;
-        if ("owned".equalsIgnoreCase(filter)) {
+        if (filter == NoteFilter.OWNED) {
             response = noteService.getOwnedNotes(memberId, page - 1, size);
-        } else if ("shared".equalsIgnoreCase(filter)) {
+        } else if (filter == NoteFilter.SHARED) {
             response = noteService.getSharedNotes(memberId, page - 1, size);
         } else {
-            // filter가 없거나 다른 값이면 전체 조회 (기존 동작)
+            // filter가 null이거나 ALL이면 전체 조회
             response = noteService.getAllNotes(memberId, page - 1, size);
         }
 
