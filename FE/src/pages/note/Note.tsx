@@ -5,8 +5,10 @@ import NoteMain from "../../components/layout/noteMain/NoteMain";
 import { createNoteApi } from '../../api/notes/CreateNote.api';
 import { getNoteDetailApi } from '../../api/notes/GetNoteDetail.api';
 import { updateNoteApi } from '../../api/notes/UpdateNote.api'; // ADDED
+import { summarizeNoteApi } from '../../api/ai/NoteSummary.api';
 import { emitNotesChanged } from '../../events/NotesEvents'; // ADDED
 import type { CreateNoteRequest } from '../../types/note/CreateNote';
+import type { SummaryStyle } from '../../types/ai/NoteSummary';
 import { useYjsStore } from '../../hooks/useYjsStore';
 import './Note.css';
 
@@ -28,6 +30,12 @@ const Note: React.FC = () => {
     const [title, setTitle] = useState("제목 없는 노트");
     const [focusedBlockId, setFocusedBlockId] = useState<number | string | null>(null);
 
+    // AI 요약 관련 state
+    const [summary, setSummary] = useState<string | undefined>(undefined);
+    const [summaryStyle, setSummaryStyle] = useState<string | undefined>(undefined);
+    const [summaryUpdatedAt, setSummaryUpdatedAt] = useState<string | undefined>(undefined);
+    const [isSummaryLoading, setIsSummaryLoading] = useState(false);
+
     // 제목 input ref
     const titleInputRef = useRef<HTMLInputElement>(null);
 
@@ -42,6 +50,10 @@ const Note: React.FC = () => {
 
             if (noteRes) {
                 setTitle(noteRes.title || "제목 없는 노트");
+                // AI 요약 상태 설정
+                setSummary(noteRes.summary);
+                setSummaryStyle(noteRes.summaryStyle);
+                setSummaryUpdatedAt(noteRes.summaryUpdatedAt);
             }
             setIsEditing(true);
         } catch (error) {
@@ -142,6 +154,23 @@ const Note: React.FC = () => {
         moveBlock(dragIndex, hoverIndex);
     };
 
+    // AI 요약 생성 핸들러
+    const handleGenerateSummary = async (style: SummaryStyle) => {
+        if (!noteId) return;
+        setIsSummaryLoading(true);
+        try {
+            const response = await summarizeNoteApi(noteId, { style });
+            setSummary(response.summary);
+            setSummaryStyle(response.style);
+            setSummaryUpdatedAt(response.createdAt);
+        } catch (error) {
+            console.error("AI 요약 생성 실패:", error);
+            alert("요약 생성에 실패했습니다. 다시 시도해주세요.");
+        } finally {
+            setIsSummaryLoading(false);
+        }
+    };
+
     const handleCreateNote = async () => {
         try {
             const newNoteReq: CreateNoteRequest = {
@@ -210,6 +239,12 @@ const Note: React.FC = () => {
                         onMoveBlock={handleMoveBlock}
                         titleInputRef={titleInputRef}
                         onAddBlockAfter={(id, type) => addBlock(id, type)}
+                        // AI 요약 관련 props
+                        summary={summary}
+                        summaryStyle={summaryStyle}
+                        summaryUpdatedAt={summaryUpdatedAt}
+                        isSummaryLoading={isSummaryLoading}
+                        onGenerateSummary={handleGenerateSummary}
                     />
                 </div>
             )}
