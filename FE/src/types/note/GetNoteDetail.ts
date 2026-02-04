@@ -23,5 +23,10 @@ export interface GetNoteDetailResponse {
   createdAt: string;
   updatedAt: string;
 
+  // AI 요약 필드
+  summary?: string;
+  summaryStyle?: string;
+  summaryUpdatedAt?: string;
+
   blocks: any[]; // [추가] NoteDetail 에 이미 블록이 포함되어 있음
 }
