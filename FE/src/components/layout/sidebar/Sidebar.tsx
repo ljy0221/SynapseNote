@@ -65,6 +65,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, showToggle =
     currentPath: '',
   });
 
+  const [activeTab, setActiveTab] = useState<'personal' | 'shared'>('personal');
+
   /** -------------------------
    * 디렉토리 경로 정규화
    -------------------------- */
@@ -87,9 +89,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, showToggle =
     try {
       let page = 1;
       let allNotes: NoteListItem[] = [];
+      const filter = activeTab === 'personal' ? 'OWNED' : 'SHARED';
 
       while (true) {
-        const res = await getNotesApi({ page });
+        const res = await getNotesApi({ page, filter });
         const pageNotes = adaptNotesForSidebar(res);
         allNotes.push(...pageNotes);
 
@@ -104,7 +107,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, showToggle =
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [activeTab]);
 
   /** 최초 로딩 + 외부 변경 이벤트 */
   useEffect(() => {
@@ -272,7 +275,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, showToggle =
     }
   };
 
-  const [activeTab, setActiveTab] = useState<'personal' | 'shared'>('personal');
 
   return (
     <div className="sidebar-wrapper">
@@ -307,27 +309,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, showToggle =
             <div className="sidebar-loading">Loading...</div>
           ) : (
             <div className="sidebar-content">
-              {activeTab === 'personal' ? (
-                <NoteDirectory
-                  node={noteTree}
-                  activeNoteId={activeNoteId}
-                  favoriteNoteIds={favoriteNoteIds}
-                  editingNoteId={editingNoteId}
-                  onSelectNote={handleSelectNote}
-                  onToggleFavorite={handleToggleFavorite}
-                  onContextMenu={setContextMenu}
-                  onConfirmRename={handleConfirmRename}
-                  onCancelRename={() => setEditingNoteId(null)}
-                  onMoveNote={handleMoveNote}
-                />
-              ) : (
-                <div className="sidebar-placeholder">
-                  <div className="sidebar-placeholder-icon">
-                    <Plus size={32} style={{ transform: 'rotate(45deg)' }} />
-                  </div>
-                  <p>공유받은 노트가 없습니다.<br />아직 기능 준비 중입니다.</p>
-                </div>
-              )}
+              <NoteDirectory
+                node={noteTree}
+                activeNoteId={activeNoteId}
+                favoriteNoteIds={favoriteNoteIds}
+                editingNoteId={editingNoteId}
+                onSelectNote={handleSelectNote}
+                onToggleFavorite={handleToggleFavorite}
+                onContextMenu={setContextMenu}
+                onConfirmRename={handleConfirmRename}
+                onCancelRename={() => setEditingNoteId(null)}
+                onMoveNote={handleMoveNote}
+              />
             </div>
           )}
         </div>
