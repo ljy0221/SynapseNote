@@ -5,6 +5,7 @@ import OAuthCallback from './pages/login/OAuthCallback';
 import Home from './pages/home/Home';
 import Note from './pages/note/Note';
 import MindMap from './pages/mindmap/MindMap';
+import AcceptInvitation from './pages/invitation/AcceptInvitation';
 
 const router = createBrowserRouter([
     {
@@ -17,6 +18,7 @@ const router = createBrowserRouter([
             { path: 'home', element: <Home /> },
             { path: 'note', element: <Note /> },
             { path: 'note/:noteId', element: <Note /> },
+            { path: 'notes/invitation/:token', element: <AcceptInvitation /> },
             { path: 'mindmap', element: <MindMap /> },
         ],
     },
