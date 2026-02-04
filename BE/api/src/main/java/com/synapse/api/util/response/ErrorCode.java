@@ -84,6 +84,7 @@ public enum ErrorCode {
     BLOCK_VERSION_CONFLICT(HttpStatus.CONFLICT, "BLOCK_008", "블록 버전 충돌이 발생했습니다."),
     INVALID_SLOT_NUMBER(HttpStatus.BAD_REQUEST, "BLOCK_009", "슬롯 번호는 1-5 범위여야 합니다."),
     INVALID_BLOCK_TYPE_FOR_HISTORY(HttpStatus.BAD_REQUEST, "BLOCK_010", "히스토리 기능은 코드 블록에서만 사용할 수 있습니다."),
+    BOOKMARK_NOT_FOUND(HttpStatus.NOT_FOUND, "BLOCK_011", "북마크를 찾을 수 없습니다."),
 
     // AI
     AI_INVALID_REQUEST(HttpStatus.BAD_REQUEST, "AI_001", "코드 길이가 너무 깁니다.(500자)"),

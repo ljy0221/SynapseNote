@@ -21,7 +21,7 @@ public record BlockResponse(
         LocalDateTime createdAt,
         LocalDateTime updatedAt) {
 
-    public static BlockResponse from(BaseBlock block, String notePath) {
+    public static BlockResponse from(BaseBlock block, String notePath, boolean isBookmarked) {
         Object content = null;
         if (block instanceof CodeBlock codeBlock) {
             content = codeBlock.getProperties().getCode();
@@ -35,7 +35,7 @@ public record BlockResponse(
                 .notePath(notePath)
                 .type(block.getType())
                 .content(content)
-                .bookmark(block.isBookmark())
+                .bookmark(isBookmarked)
                 .order(block.getOrder())
                 .createdAt(block.getCreatedAt())
                 .updatedAt(block.getUpdatedAt())
