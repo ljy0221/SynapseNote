@@ -14,11 +14,7 @@ import com.synapse.api.modules.member.entity.StreakId;
 import com.synapse.api.modules.member.repository.MemberRepository;
 import com.synapse.api.modules.member.repository.OAuthRepository;
 import com.synapse.api.modules.member.repository.StreakRepository;
-import com.synapse.api.modules.mindmap.entity.MindmapEdge;
 import com.synapse.api.modules.mindmap.repository.MindmapEdgeRepository;
-import com.synapse.api.modules.note.entity.Note;
-import com.synapse.api.modules.note.entity.NoteMember;
-import com.synapse.api.modules.note.entity.NoteRole;
 import com.synapse.api.modules.note.repository.NoteMemberRepository;
 import com.synapse.api.modules.note.repository.NoteRepository;
 import com.synapse.api.util.exception.BusinessException;
@@ -30,7 +26,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -149,46 +148,27 @@ public class MemberService {
 
     @Transactional
     public void withdraw(UUID memberId, String accessToken, String refreshToken) {
-        // member
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-        // OAuth
-        OAuthAccount oauth = oAuthRepository.findByMemberId(memberId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+        // (선택) 존재 검증은 가볍게 exists로
+        if (!memberRepository.existsById(memberId)) {
+            throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
+        }
 
         // streak
-        List<Streak> streaks = streakRepository.findAllByMemberId(memberId);
+        streakRepository.softDeleteAllByMemberId(memberId);
 
-        // note members
-        List<NoteMember> noteMembers = noteMemberRepository.findAllByMemberId(memberId);
+        noteMemberRepository.softDeleteAllByMemberId(memberId);
 
-        // notes
-        List<Note> notes = noteRepository.findNotesByNoteAndRole(memberId, NoteRole.OWNER);
+        // OWNER note
+        noteRepository.softDeleteOwnedNotesByMemberId(memberId);
 
-        // mindmap_edges
-        List<MindmapEdge> mindmapEdges = new ArrayList<>();
+        // OAuth / Member
+        oAuthRepository.softDeleteByMemberId(memberId);
+        memberRepository.softDeleteById(memberId);
 
-        // delete
-        for (Streak streak : streaks) {
-            streak.delete();
-        }
+        // mindmap 추후 구현 예정
 
-        for (NoteMember noteMember : noteMembers) {
-            noteMember.delete();
-        }
-
-        for (Note note : notes) {
-            note.delete();
-        }
-
-        for (MindmapEdge edge : mindmapEdges) {
-            edge.delete();
-        }
-
-        oauth.delete();
-        member.delete();
-
+        // 토큰 무효화
         invalidTokens(accessToken, refreshToken);
     }
 
