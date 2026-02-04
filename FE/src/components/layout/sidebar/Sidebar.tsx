@@ -233,12 +233,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
   /** -------------------------
    * 노트 생성 (temp → real)
    -------------------------- */
-  /* -------------------------
-   * 노트 생성 (temp → real)
-   * -------------------------- */
-  /* -------------------------
-   * 노트 생성 (temp → real)
-   * -------------------------- */
   const { handleCreateNote: createNote } = useCreateNote();
 
   const handleCreateNote = async (directoryPath: string) => {

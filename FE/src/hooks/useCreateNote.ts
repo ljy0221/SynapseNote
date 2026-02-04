@@ -57,7 +57,7 @@ export const useCreateNote = () => {
 
             // 4. 이벤트 방출 및 네비게이션
             emitNotesChanged({ skipRefetch: true });
-            navigate(`/notes/${noteId}`);
+            navigate(`/note/${noteId}`);
 
             if (options?.onSuccess) {
                 options.onSuccess(noteId);
