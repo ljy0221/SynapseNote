@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { X, Search, FileText, ChevronRight } from 'lucide-react';
+import { X, Search, FileText, SortDesc } from 'lucide-react';
 import './NodeSelectorModal.css';
 
 import { getNotesApi } from '../../../api/notes/Notes.api';
@@ -29,8 +29,7 @@ export const NodeSelectorModal: React.FC<NodeSelectorModalProps> = ({
 }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [notes, setNotes] = useState<NoteItem[]>([]);
-
-    // ... (useEffect, filteredNotes 로직 유지) ...
+    const [sortByUnplaced, setSortByUnplaced] = useState(false); // [New] 미배치 우선 정렬 상태
 
     useEffect(() => {
         const fetchNotes = async () => {
@@ -54,15 +53,32 @@ export const NodeSelectorModal: React.FC<NodeSelectorModalProps> = ({
         }
     }, [isOpen]);
 
-    // 검색 로직
-    const filteredNotes = useMemo(() => {
-        if (!searchTerm) return notes;
-        const term = searchTerm.toLowerCase();
-        return notes.filter(note =>
-            note.title.toLowerCase().includes(term) ||
-            note.path.toLowerCase().includes(term)
-        );
-    }, [searchTerm, notes]);
+    // 검색 및 정렬 로직
+    const processedNotes = useMemo(() => {
+        let result = [...notes];
+
+        // 1. 검색 필터링
+        if (searchTerm) {
+            const term = searchTerm.toLowerCase();
+            result = result.filter(note =>
+                note.title.toLowerCase().includes(term) ||
+                note.path.toLowerCase().includes(term)
+            );
+        }
+
+        // 2. [New] 미배치 우선 정렬
+        if (sortByUnplaced) {
+            result.sort((a, b) => {
+                const aPlaced = existingNodeIds.includes(a.id);
+                const bPlaced = existingNodeIds.includes(b.id);
+                if (!aPlaced && bPlaced) return -1; // 미배치를 위로
+                if (aPlaced && !bPlaced) return 1;  // 배치를 아래로
+                return 0;
+            });
+        }
+
+        return result;
+    }, [searchTerm, notes, sortByUnplaced, existingNodeIds]);
 
 
     if (!isOpen) return null;
@@ -81,22 +97,32 @@ export const NodeSelectorModal: React.FC<NodeSelectorModalProps> = ({
                     </button>
                 </div>
 
-                {/* 검색창 */}
+                {/* 검색창 및 정렬 도구 */}
                 <div className="selector-search-area">
-                    <input
-                        type="text"
-                        className="selector-search-input"
-                        placeholder="노트 제목 또는 경로 검색..."
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                        autoFocus
-                    />
+                    <div className="search-input-wrapper">
+                        <input
+                            type="text"
+                            className="selector-search-input"
+                            placeholder="노트 제목 또는 경로 검색..."
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            autoFocus
+                        />
+                        <button
+                            className={`selector-sort-btn ${sortByUnplaced ? 'active' : ''}`}
+                            onClick={() => setSortByUnplaced(!sortByUnplaced)}
+                            title={sortByUnplaced ? "정렬 해제" : "미배치 노드 우선 정렬"}
+                        >
+                            <SortDesc size={18} />
+                            <span className="sort-btn-label">미배치 우선</span>
+                        </button>
+                    </div>
                 </div>
 
                 {/* 노트 리스트 */}
                 <div className="selector-list-area">
-                    {filteredNotes.length > 0 ? (
-                        filteredNotes.map(note => {
+                    {processedNotes.length > 0 ? (
+                        processedNotes.map(note => {
                             const isPlaced = existingNodeIds.includes(note.id);
                             return (
                                 <div
@@ -131,3 +157,5 @@ export const NodeSelectorModal: React.FC<NodeSelectorModalProps> = ({
     );
 
 };
+
+export default NodeSelectorModal;
