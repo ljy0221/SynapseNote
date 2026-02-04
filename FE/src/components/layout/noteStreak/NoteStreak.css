@@ -76,9 +76,9 @@
 
 /* 날짜 셀 */
 .day-cell {
-  width: 24px;
-  /* 🔥 기존 12px → 15px */
-  height: 24px;
+  width: 20px;
+  /* 🔥 기존 24px → 20px */
+  height: 20px;
   border-radius: 4px;
 
   background-color: rgba(0, 0, 0, 0.12);
@@ -89,7 +89,7 @@
 .week-column {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   /* 🔥 기존 4px → 3px */
 }
 
