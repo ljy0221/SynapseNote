@@ -1,14 +1,8 @@
 import { request } from '../request';
-import type { UpdateMemberRoleResponse, NoteMemberRole } from '../../types/note/UpdateMemberRole';
+import type { NoteMemberRole, UpdateMemberRoleResponse } from '../../types/note/GetNoteMembers';
 
-export const updateMemberRoleApi = (
-    noteId: string,
-    targetMemberId: string,
-    newRole: NoteMemberRole
-): Promise<UpdateMemberRoleResponse> => {
-    return request<UpdateMemberRoleResponse>('patch', `/v1/notes/${noteId}/members/${targetMemberId}`, {
-        body: {
-            role: newRole
-        }
+export const updateMemberRoleApi = (noteId: string, memberId: string, role: NoteMemberRole): Promise<UpdateMemberRoleResponse> => {
+    return request<UpdateMemberRoleResponse>('patch', `/v1/notes/${noteId}/members/${memberId}/role`, {
+        body: { role }
     });
 };
