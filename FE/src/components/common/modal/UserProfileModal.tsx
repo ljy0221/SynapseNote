@@ -3,8 +3,6 @@ import { X, User as UserIcon, Edit2, Check, UserX, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { WithdrawalModal } from './WithdrawalModal';
 import { ModalHeader } from './ModalHeader';
-import { getStreakApi } from '../../../api/streak/Streak.api';
-import { calculateStreakCount } from '../../features/streakCount/streakcount';
 import { useToastStore } from '../../../store/useToastStore';
 import { useAuthStore } from '../../../store/useAuthStore';
 import './UserProfileModal.css';
@@ -47,25 +45,10 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
     const [isEditing, setIsEditing] = useState(false);
     const [tempName, setTempName] = useState('');
     const [isWithdrawalOpen, setIsWithdrawalOpen] = useState(false);
-    const [streakCount, setStreakCount] = useState(0);
 
     useEffect(() => {
         if (isOpen && user) {
             setTempName(user.name);
-
-            // 스트릭 조회
-            const fetchStreak = async () => {
-                try {
-                    const res = await getStreakApi();
-                    if (res && res.dates) {
-                        const count = calculateStreakCount(res.dates);
-                        setStreakCount(count);
-                    }
-                } catch (e) {
-                    console.error("Failed to fetch streak", e);
-                }
-            };
-            fetchStreak();
         }
     }, [isOpen, user]);
 
@@ -125,11 +108,6 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
                         <img src={user.imageUrl} alt="Profile" className="profile-image" />
                     ) : (
                         <UserIcon size={40} className="profile-placeholder-icon" />
-                    )}
-                    {streakCount > 0 && (
-                        <div className="streak-badge" title={`${streakCount}일 연속 학습 중!`}>
-                            🔥 {streakCount}
-                        </div>
                     )}
                 </div>
 
