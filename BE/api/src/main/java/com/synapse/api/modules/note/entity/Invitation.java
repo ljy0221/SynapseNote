@@ -43,7 +43,7 @@ public class Invitation extends BaseEntity {
     @JoinColumn(name = "invited_by_id", nullable = false)
     private Member invitedBy;
 
-    @Column(name = "invited_email", nullable = false)
+    @Column(name = "invited_email")
     private String invitedEmail;
 
     @ManyToOne(fetch = FetchType.LAZY)
