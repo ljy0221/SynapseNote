@@ -87,8 +87,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, showToggle =
   /** -------------------------
    * Sidebar 전체 로딩 (페이지네이션 제거)
    -------------------------- */
-  const loadNotes = useCallback(async (pageNum: number, isInitial: boolean = false, signal?: AbortSignal) => {
-    if (isInitial) setIsLoading(true);
+  const loadNotes = useCallback(async (pageNum: number, isInitial: boolean = false, signal?: AbortSignal, isSilent: boolean = false) => {
+    if (isInitial && !isSilent) setIsLoading(true);
 
     try {
       const filter = activeTab === 'personal' ? 'OWNED' : 'SHARED';
@@ -110,7 +110,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, showToggle =
         console.error('Failed to load notes', err);
       }
     } finally {
-      if (isInitial) setIsLoading(false);
+      if (isInitial && !isSilent) setIsLoading(false);
     }
   }, [activeTab]);
 
@@ -170,7 +170,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, showToggle =
 
       if (detail?.skipRefetch) return;
 
-      loadNotes(1, true);
+      loadNotes(1, true, undefined, true); // Silent refresh
     };
 
     window.addEventListener(NOTES_CHANGED_EVENT, handleNotesChanged);
