@@ -46,11 +46,22 @@ public class NoteController {
     @GetMapping("/v1/notes")
     public DataResponse<NotePageResponse> getAllNotes(
             @AuthenticationPrincipal CustomMemberDetails details,
+            @RequestParam(required = false) String filter,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
         UUID memberId = details.id();
-        log.info("Getting all notes for member: {} (page: {}, size: {})", memberId, page, size);
-        NotePageResponse response = noteService.getAllNotes(memberId, page - 1, size);
+        log.info("Getting notes for member: {} with filter: {} (page: {}, size: {})", memberId, filter, page, size);
+
+        NotePageResponse response;
+        if ("owned".equalsIgnoreCase(filter)) {
+            response = noteService.getOwnedNotes(memberId, page - 1, size);
+        } else if ("shared".equalsIgnoreCase(filter)) {
+            response = noteService.getSharedNotes(memberId, page - 1, size);
+        } else {
+            // filter가 없거나 다른 값이면 전체 조회 (기존 동작)
+            response = noteService.getAllNotes(memberId, page - 1, size);
+        }
+
         return DataResponse.of(response);
     }
 
@@ -186,7 +197,7 @@ public class NoteController {
 
     @GetMapping("/v1/notes/{noteId}/blocks")
     public DataResponse<List<BlockDetailResponse>> getBlocks(@AuthenticationPrincipal CustomMemberDetails details,
-                                                             @PathVariable UUID noteId) {
+            @PathVariable UUID noteId) {
         List<BlockDetailResponse> response = blockService.getBlocks(details.id(), noteId);
         return DataResponse.of(response);
     }
