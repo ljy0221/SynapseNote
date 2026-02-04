@@ -74,4 +74,20 @@ public interface NoteRepository extends JpaRepository<Note, UUID> {
 
     // 여러 ID로 노트 조회 (DeletedAt IS NULL)
     List<Note> findAllByIdInAndDeletedAtIsNull(List<UUID> ids);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+        UPDATE Note n
+        SET n.deletedAt = CURRENT_TIMESTAMP
+        WHERE n.id IN (
+            SELECT nm.note.id
+            FROM NoteMember nm
+            WHERE nm.member.id = :memberId
+              AND nm.role = com.synapse.api.modules.note.entity.NoteRole.OWNER
+              AND nm.deletedAt IS NULL
+        )
+          AND n.deletedAt IS NULL
+    """)
+    void softDeleteOwnedNotesByMemberId(@Param("memberId") UUID memberId);
+
 }
