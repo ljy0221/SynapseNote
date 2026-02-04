@@ -58,7 +58,10 @@ public class WebRtcController {
         response.setStatus("READY"); // 준비 완료 상태 명시
 
         // 해당 사용자에게만 응답
-        messagingTemplate.convertAndSendToUser(memberId.toString(), "/queue/webrtc", response);
+        String destination = "/queue/webrtc";
+        log.debug("[WebRTC] Sending JOINED message to user: {}, destination: /user/{}{}",
+                memberId, memberId, destination);
+        messagingTemplate.convertAndSendToUser(memberId.toString(), destination, response);
 
         // 같은 룸의 다른 사용자들에게 알림
         SignalingMessage notification = new SignalingMessage();
@@ -117,10 +120,13 @@ public class WebRtcController {
 
         // Answer 응답 (noteId, callId 포함)
         AnswerMessage answerMessage = new AnswerMessage(noteId, callId, sdpAnswer);
-        messagingTemplate.convertAndSendToUser(memberId.toString(), "/queue/webrtc/answer", answerMessage);
+        String answerDest = "/queue/webrtc/answer";
+        log.debug("[WebRTC] Sending ANSWER to user: {}, destination: /user/{}{}, callId: {}",
+                memberId, memberId, answerDest, callId);
+        messagingTemplate.convertAndSendToUser(memberId.toString(), answerDest, answerMessage);
 
         log.info("[WebRTC] Sent ANSWER to member {} in room {}, callId: {}", memberId, noteId, callId);
-        log.info("[WebRTC] SDP Answer length: {}", sdpAnswer.length());
+        log.debug("[WebRTC] SDP Answer length: {}", sdpAnswer.length());
     }
 
     /**
