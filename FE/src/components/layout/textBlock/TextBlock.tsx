@@ -243,7 +243,6 @@ const TextBlock: React.FC<TextBlockProps> = ({
             onContextMenu={onContextMenu} // [New]
         >
             <div className="block-controls">
-                {/* BlockDeleteButton Removed */}
                 <div
                     className="drag-handle-icon"
                     draggable={draggable}
@@ -257,6 +256,8 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 {/* 포커스 시에만 툴바 표시 */}
                 {isFocused && (
                     <div className="editor-toolbar">
+
+
                         <div className="toolbar-group">
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
