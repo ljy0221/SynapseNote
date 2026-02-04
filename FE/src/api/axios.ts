@@ -31,7 +31,7 @@ export const api = axios.create({
   },
 });
 
-// [요청 인터셉터] Store에서 최신 Access Token 주입
+// 요청 인터셉터: 모든 요청에 액세스 토큰 첨부
 api.interceptors.request.use(
   (config) => {
     // Zustand Store의 상태를 직접 조회 (LocalStorage 직접 접근 X)
