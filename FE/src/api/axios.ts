@@ -1,5 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '../store/useAuthStore';
+import { isTokenExpiringSoon } from '../utils/tokenUtils';
 
 // 갱신 중 대기할 요청의 타입 정의
 interface FailedRequest {
@@ -23,6 +24,22 @@ const processQueue = (error: any, token: string | null = null) => {
   failedQueue = [];
 };
 
+// 토큰 갱신 함수 (재사용을 위해 분리)
+const refreshAccessToken = async (): Promise<string> => {
+  const response = await axios.post('/v1/refresh', {}, {
+    baseURL: '/api',
+    withCredentials: true,
+  });
+
+  const newToken = response.data?.data?.accessToken;
+
+  if (!newToken) {
+    throw new Error('토큰 갱신 응답에 accessToken이 없습니다');
+  }
+
+  return newToken;
+};
+
 export const api = axios.create({
   baseURL: '/api', // Vite Proxy 설정에 따름
   withCredentials: true, // 쿠키(RefreshToken) 전송 허용
@@ -31,14 +48,30 @@ export const api = axios.create({
   },
 });
 
-// 요청 인터셉터: 모든 요청에 액세스 토큰 첨부
+// 요청 인터셉터: 모든 요청에 액세스 토큰 첨부 + Proactive 리프레시
 api.interceptors.request.use(
-  (config) => {
-    // Zustand Store의 상태를 직접 조회 (LocalStorage 직접 접근 X)
+  async (config) => {
     const token = useAuthStore.getState().accessToken;
+
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      // Proactive refresh: 만료 1분 전 사전 갱신 시도
+      if (isTokenExpiringSoon(token, 60000) && !isRefreshing) {
+        isRefreshing = true;
+        try {
+          const newToken = await refreshAccessToken();
+          useAuthStore.getState().setAccessToken(newToken);
+          config.headers.Authorization = `Bearer ${newToken}`;
+        } catch {
+          // 사전 갱신 실패 시 기존 토큰 사용 (응답 인터셉터에서 재시도)
+          config.headers.Authorization = `Bearer ${token}`;
+        } finally {
+          isRefreshing = false;
+        }
+      } else {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
+
     return config;
   },
   (error) => Promise.reject(error)
@@ -71,17 +104,7 @@ api.interceptors.response.use(
 
       try {
         // 1. 리프레시 토큰으로 액세스 토큰 갱신 요청 (쿠키 사용)
-        // 주의: api 인스턴스 대신 axios 직접 사용 (인터셉터 순환 방지)
-        const response = await axios.post('/api/v1/tokens/refresh', {}, {
-          baseURL: '/api',
-          withCredentials: true,
-        });
-
-        const newAccessToken = response.data?.data?.accessToken;
-
-        if (!newAccessToken) {
-           throw new Error("Failed to retrieve access token");
-        }
+        const newAccessToken = await refreshAccessToken();
 
         // 2. 성공 시: 스토어 업데이트 (persist 미들웨어가 LocalStorage 동기화 수행)
         useAuthStore.getState().setAccessToken(newAccessToken);
