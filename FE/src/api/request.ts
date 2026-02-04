@@ -2,7 +2,7 @@
 import { api } from './axios';
 import type { ApiResponse } from '../types/common/apiResponse';
 
-type HttpMethod = 'get' | 'post' | 'put' | 'delete';
+type HttpMethod = 'get' | 'post' | 'put' | 'delete' | 'patch';
 
 export const request = async <T>(
   method: HttpMethod,
