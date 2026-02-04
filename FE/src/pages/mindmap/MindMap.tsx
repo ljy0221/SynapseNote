@@ -348,6 +348,7 @@ const MindMapContent: React.FC = () => {
             openModal('CONFIRM', {
                 message: `이미 연결된 관계입니다.\n방향을 반대로 변경하시겠습니까?`,
                 onConfirm: () => handleConfirmSwap(reverseEdge.id, params as Connection),
+                onCancel: closeAll,
             });
             return;
         }
@@ -388,10 +389,8 @@ const MindMapContent: React.FC = () => {
 
         // 3. 알림 표시
         showToast("연결 방향이 반대로 변경되었습니다.");
-        // setIsSwapModalOpen(false); // Global Modal은 내부에서 닫힘 (onConfirm 실행 후 자동 닫힘 처리 필요? 아니면 여기서 명시적 닫기? ConfirmModal 구현 확인 필요)
-        // ConfirmModal의 onConfirm 호출 후 닫는 로직은 ConfirmModal 내부에 있을 것임.
-        // 확인: ConfirmModal.tsx: onConfirm(); onClose(); -> OK.
-    }, [setEdges, showToast]);
+        closeAll();
+    }, [setEdges, showToast, closeAll]);
 
     // handleCancelSwap 삭제 (Modal onClose에서 처리)
 
@@ -511,8 +510,8 @@ const MindMapContent: React.FC = () => {
 
         setNodes((nds) => nds.filter((node) => !node.selected));
         setEdges((eds) => eds.filter((edge) => !edge.selected));
-        // setIsDeleteModalOpen(false); // Modal handles close
-    }, [setNodes, setEdges, nodes, showToast]);
+        closeAll();
+    }, [setNodes, setEdges, nodes, showToast, closeAll]);
 
     /**
      * 기능 2: 선택된 노드 및 연결선 삭제 (모달 호출)
@@ -527,12 +526,13 @@ const MindMapContent: React.FC = () => {
             openModal('CONFIRM', {
                 message: `정말 '${selectedNodes[0].data.title}' 노드를\n삭제하시겠습니까?`,
                 onConfirm: () => executeDelete(),
+                onCancel: closeAll,
             });
         } else {
-            // setDeleteMessage(`정말 ${selectedNodes.length}개의 노드를\n삭제하시겠습니까?`);
             openModal('CONFIRM', {
                 message: `정말 ${selectedNodes.length}개의 노드를\n삭제하시겠습니까?`,
                 onConfirm: () => executeDelete(),
+                onCancel: closeAll,
             });
         }
 
@@ -585,6 +585,7 @@ const MindMapContent: React.FC = () => {
                     openModal('CONFIRM', {
                         message: `이미 연결된 관계입니다.\n방향을 반대로 변경하시겠습니까?`,
                         onConfirm: () => handleConfirmSwap(reverseEdge.id, newConnection),
+                        onCancel: closeAll,
                     });
 
                     setConnectSource(null);
