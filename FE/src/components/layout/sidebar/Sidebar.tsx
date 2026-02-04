@@ -22,7 +22,7 @@ import {
 } from '../../../api/bookmark/Bookmarks.api';
 import { adaptBookmarkIds } from '../../../api/bookmark/Bookmarks.adapter';
 
-import { createNoteApi } from '../../../api/notes/CreateNote.api';
+
 import { deleteNoteApi } from '../../../api/notes/DeleteNote.api';
 import { updateNoteApi } from '../../../api/notes/UpdateNote.api';
 
@@ -32,7 +32,7 @@ import {
 } from '../../../events/NotesEvents';
 
 import { useNavigate, useParams } from 'react-router-dom';
-import { generateUuidV7 } from '../../../utils/UUIDV7'
+import { useCreateNote } from '../../../hooks/useCreateNote';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -233,40 +233,28 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
   /** -------------------------
    * 노트 생성 (temp → real)
    -------------------------- */
+  const { handleCreateNote: createNote } = useCreateNote();
+
   const handleCreateNote = async (directoryPath: string) => {
-    const noteId = generateUuidV7();
-
-    const memberId = localStorage.getItem('memberId')
-    if (!memberId) return;
-
-    const tempNote: NoteListItem = {
-      memberId,
-      noteId,
-      title: '새 노트',
-      directoryPath,
-      pointX: 0,
-      pointY: 0,
-      role: 'OWNER',
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    };
-
-    setNotes(prev => [...prev, tempNote]);
-
-    navigate(`/note/${noteId}`);
-
-    try {
-      await createNoteApi({
-        id: noteId,
-        title: '새 노트',
-        invitationUrl: '',
-        directoryPath,
-      });
-
-    } catch {
-
-      setNotes(prev => prev.filter(n => n.noteId !== noteId));
-    }
+    await createNote(directoryPath, {
+      onOptimisticUpdate: (noteId, memberId) => {
+        const tempNote: NoteListItem = {
+          memberId,
+          noteId,
+          title: '새 노트',
+          directoryPath,
+          pointX: 0,
+          pointY: 0,
+          role: 'OWNER',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        };
+        setNotes(prev => [...prev, tempNote]);
+      },
+      onError: (noteId) => {
+        setNotes(prev => prev.filter(n => n.noteId !== noteId));
+      }
+    });
   };
 
   /** -------------------------
