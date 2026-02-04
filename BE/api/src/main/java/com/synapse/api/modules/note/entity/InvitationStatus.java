@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum InvitationStatus {
     PENDING("대기 중"),
+    REQUESTED("요청됨"),
     ACCEPTED("수락됨"),
     EXPIRED("만료됨"),
     REVOKED("철회됨");
