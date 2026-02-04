@@ -20,9 +20,10 @@ export const requestCodeReview = async (
   return res.data.data;
 };
 
-// 기본 요청 옵션 (고정값)
-export const DEFAULT_REVIEW_REQUEST: CodeReviewRequest = {
+// 언어를 포함한 리뷰 요청 생성 함수
+export const createReviewRequest = (language: string): CodeReviewRequest => ({
   provider: 'OPENAI',
   focusAreas: ['performance', 'security', 'readability', 'bestPractices'],
   includeContext: false,
-};
+  language,
+});

@@ -1,4 +1,3 @@
-/* src/components/layout/codeBlock/CodeBlock.tsx */
 import React, { useState, useEffect, useRef } from 'react';
 import VersionButton from '../../common/versionButton/VersionButton';
 import BlockRunButton from '../../common/blockRunButton/BlockRunButton';
@@ -11,9 +10,8 @@ import { saveExecutionToBackend } from "../../../utils/executionAPI.ts";
 import { LanguageSelector } from "./LanguageSelector.tsx";
 import CheckpointSidebar from '../checkpoint/CheckpointSidebar';
 import AiReviewButton from '../../common/aiReviewButton/AiReviewButton';
-import AiReviewSection from '../aiReview/AiReviewSection';
-import type { CodeReviewResponse } from '../../../types/ai/CodeReview';
-import { requestCodeReview, DEFAULT_REVIEW_REQUEST } from '../../../api/ai/AiCodeReview.api';
+import { requestCodeReview, createReviewRequest } from '../../../api/ai/AiCodeReview.api';
+import { formatReviewAsHtml } from '../../../utils/aiReviewFormatter';
 import { getLanguageTemplate, isCodeEmpty } from '../../../utils/languageTemplates';
 import { useCodeEditorStore } from '../../../store/useCodeEditorStore';
 
@@ -25,6 +23,7 @@ interface CodeBlockProps {
     onDelete: (id: number | string) => void;
     onChange: (id: number | string, newCode: string) => void;
     onFocus: () => void;
+    onAddBlockAfter?: (content: string) => void; // AI 리뷰 결과를 새 블록으로 추가
     draggable?: boolean;
     onDragStart?: (e: React.DragEvent) => void;
     onDragOver?: (e: React.DragEvent) => void;
@@ -50,6 +49,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     onDelete,
     onChange,
     onFocus,
+    onAddBlockAfter,
     draggable,
     onDragStart,
     onDragOver,
@@ -59,54 +59,29 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     const [result, setResult] = useState<ExecutionResult | null>(null);
     const [loading, setLoading] = useState(false);
     const [editedCode, setEditedCode] = useState(code);
-
-    // Zustand store에서 언어 설정 가져오기
     const { settings, getNoteLanguage, setNoteLanguage, trackBlockLanguage, hasMultipleLanguages } = useCodeEditorStore();
-
-    // 저장된 언어 설정 로드 (noteId가 있을 때만)
     const savedLanguage = noteId ? getNoteLanguage(noteId) : undefined;
     const [language, setLanguage] = useState<Language>(savedLanguage || initialLanguage);
-
-    // 세션 모드 상태 (feat/#63 추가)
     const [executionMode, setExecutionMode] = useState<ExecutionMode>('single');
     const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
-
-    // 버전 관리(체크포인트) 상태
     const [showCheckpoints, setShowCheckpoints] = useState(false);
 
-    // AI 리뷰 섹션 상태 (부모에서 캐싱 관리)
-    const [showAiReview, setShowAiReview] = useState(false);
-    const [aiReviewResult, setAiReviewResult] = useState<CodeReviewResponse | null>(null);
+    // AI 리뷰 관련 상태
     const [aiReviewLoading, setAiReviewLoading] = useState(false);
-    const [aiReviewError, setAiReviewError] = useState<string | null>(null);
-
-    // AbortController ref (요청 취소용)
     const aiReviewAbortRef = useRef<AbortController | null>(null);
 
-    // props code 변경 시 editedCode 동기화
     useEffect(() => {
-        if (code !== undefined) {
-            setEditedCode(code);
-        }
+        if (code !== undefined) setEditedCode(code);
     }, [code]);
 
-    // Debugging logs
-    useEffect(() => {
-        console.log('CodeBlock editedCode updated:', editedCode);
-    }, [editedCode]);
-
-    // 초기 로드 시 비어있으면 템플릿 적용
     useEffect(() => {
         if (isCodeEmpty(code) && isCodeEmpty(editedCode)) {
             const template = getLanguageTemplate(language);
             setEditedCode(template);
             onChange(id, template);
         }
-    }, []); // 빈 배열로 마운트 시 한 번만 실행
+    }, []);
 
-    // CodeMirror가 자체적으로 포커스 및 높이를 관리하므로 ref와 useEffect 제거
-
-    // 세션 상태 로드 (feat/#63 추가)
     useEffect(() => {
         if (noteId && language !== 'java') {
             window.dockerAPI.getSessionStatus(noteId, language)
@@ -115,51 +90,31 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                         setSessionInfo(info);
                         setExecutionMode('session');
                     }
-                })
-                .catch(console.error);
+                }).catch(console.error);
         }
     }, [noteId, language]);
 
-    // 언어 사용 추적 및 다중 언어 감지
     useEffect(() => {
-        if (noteId) {
-            // 블럭 ID와 함께 언어 추적
-            trackBlockLanguage(noteId, id.toString(), language);
+        if (noteId) trackBlockLanguage(noteId, id.toString(), language);
+    }, [noteId, id, language]);
 
-            // 다중 언어 사용 시 세션 모드 자동 비활성화
-            const hasMultipleLangs = hasMultipleLanguages(noteId);
-            if (hasMultipleLangs && executionMode === 'session') {
-                setExecutionMode('single');
-                alert('이 노트는 여러 언어를 사용하고 있어 세션 모드가 비활성화되었습니다.');
-            }
-        }
-    }, [noteId, id, language, trackBlockLanguage, hasMultipleLanguages, executionMode]);
-
-    // 컴포넌트 언마운트 시 AI 리뷰 요청 취소
     useEffect(() => {
-        return () => {
-            aiReviewAbortRef.current?.abort();
-        };
+        return () => aiReviewAbortRef.current?.abort();
     }, []);
 
     const handleCopy = () => {
-        if (typeof editedCode === "string") {
-            navigator.clipboard.writeText(editedCode);
-        }
+        if (typeof editedCode === "string") navigator.clipboard.writeText(editedCode);
         alert('코드가 클립보드에 복사되었습니다.');
     };
 
     const handleRun = async () => {
-        // 세션 모드 검증 (feat/#63 추가)
         if (executionMode === 'session' && !noteId) {
             alert('세션 모드는 노트를 저장한 후에만 사용할 수 있습니다.');
             setExecutionMode('single');
             return;
         }
-
         setLoading(true);
         try {
-            // 세션 모드 지원으로 변경 (feat/#63 수정)
             const executionResult = executionMode === 'single'
                 ? await window.dockerAPI.executeSingle({
                     blockId: id.toString(),
@@ -177,115 +132,93 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                     noteId: noteId,
                     timeout: settings.executionTimeout,
                 });
-
             setResult(executionResult);
-
-            // 세션 정보 업데이트 (feat/#63 추가)
             if (executionMode === 'session' && noteId) {
                 const info = await window.dockerAPI.getSessionStatus(noteId, language);
                 setSessionInfo(info);
             }
-
-            if (noteId) {
-                saveExecutionToBackend(noteId, id.toString(), executionResult).catch(console.error);
-            }
+            if (noteId) saveExecutionToBackend(noteId, id.toString(), executionResult).catch(console.error);
         } catch (error: any) {
             const errorResult: ExecutionResult = {
-                blockId: id.toString(),
-                output: '',
+                blockId: id.toString(), output: '',
                 error: error.message || '알 수 없는 오류가 발생했습니다.',
-                executionTime: 0,
-                exitCode: -1,
-                status: 'error',
+                executionTime: 0, exitCode: -1, status: 'error',
             };
             setResult(errorResult);
-            if (noteId) {
-                saveExecutionToBackend(noteId, id.toString(), errorResult).catch(console.error);
-            }
         } finally {
             setLoading(false);
         }
     };
 
-    // 세션 종료 (feat/#63 추가)
     const handleTerminateSession = async () => {
         if (!noteId) return;
-
         try {
             await window.dockerAPI.destroySession(noteId, language);
             setSessionInfo(null);
             setExecutionMode('single');
             alert('세션이 종료되었습니다.');
         } catch (error: any) {
-            console.error('Failed to terminate session:', error);
             alert('세션 종료 실패: ' + error.message);
         }
     };
 
-    // 언어 변경 핸들러
     const handleLanguageChange = (newLanguage: Language) => {
-        // 코드가 비어있으면 템플릿 자동 적용
         if (isCodeEmpty(editedCode)) {
             const template = getLanguageTemplate(newLanguage);
             setEditedCode(template);
             onChange(id, template);
             setLanguage(newLanguage);
-            if (noteId) {
-                setNoteLanguage(noteId, newLanguage);
-            }
+            if (noteId) setNoteLanguage(noteId, newLanguage);
             return;
         }
-
-        // 코드가 있으면 사용자에게 확인
-        const shouldApplyTemplate = window.confirm(
-            '언어를 변경하면 기본 템플릿이 적용됩니다. 계속하시겠습니까?\n\n취소를 누르면 현재 코드를 유지하고 언어만 변경됩니다.'
-        );
-
-        if (shouldApplyTemplate) {
+        if (window.confirm('언어를 변경하면 기본 템플릿이 적용됩니다. 계속하시겠습니까?')) {
             const template = getLanguageTemplate(newLanguage);
             setEditedCode(template);
             onChange(id, template);
         }
-
         setLanguage(newLanguage);
-        if (noteId) {
-            setNoteLanguage(noteId, newLanguage);
-        }
+        if (noteId) setNoteLanguage(noteId, newLanguage);
     };
 
-    // Tab 키는 CodeMirror 내장 기능으로 처리됨
-
-    // 버전 복구 핸들러
     const handleRestore = (code: string) => {
         setEditedCode(code);
         onChange(id, code);
     };
 
-    // AI 코드 리뷰 핸들러
+    // [핵심 수정] AI 리뷰 핸들러: 저장 후 요청, 결과 부모 전달
     const handleAiReview = async () => {
         if (!noteId) return;
 
-        // 이전 요청 취소
         aiReviewAbortRef.current?.abort();
         aiReviewAbortRef.current = new AbortController();
-
         setAiReviewLoading(true);
-        setAiReviewError(null);
 
         try {
+            // 1. 현재 편집된 코드와 언어를 백엔드에 즉시 동기화 (언어 미반영 문제 해결)
+            await saveExecutionToBackend(noteId, id.toString(), {
+                blockId: id.toString(),
+                status: 'success',
+                output: editedCode,
+                executionTime: 0,
+                exitCode: 0
+            } as any);
+
+            // 2. AI 리뷰 API 호출 (현재 선택된 언어 전달)
             const response = await requestCodeReview(
                 noteId,
                 id.toString(),
-                DEFAULT_REVIEW_REQUEST,
+                createReviewRequest(language),
                 aiReviewAbortRef.current.signal
             );
-            setAiReviewResult(response);
+
+            // 3. 리뷰 결과를 HTML로 변환하여 새 블록으로 추가
+            if (onAddBlockAfter) {
+                const htmlContent = formatReviewAsHtml(response);
+                onAddBlockAfter(htmlContent);
+            }
         } catch (error: any) {
-            // AbortError는 무시 (정상적인 취소)
             if (error.name !== 'AbortError') {
-                setAiReviewError(
-                    error.response?.data?.message || error.message || 'AI 리뷰 요청에 실패했습니다.'
-                );
+                alert(error.message || 'AI 리뷰 요청에 실패했습니다.');
             }
         } finally {
             setAiReviewLoading(false);
@@ -408,13 +341,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                             }}
                         />
                         <AiReviewButton
-                            onClick={() => {
-                                setShowAiReview(true);
-                                // 캐시된 결과가 없을 때만 API 호출
-                                if (!aiReviewResult) {
-                                    handleAiReview();
-                                }
-                            }}
+                            onClick={handleAiReview}
                             disabled={loading}
                             loading={aiReviewLoading}
                             disabledReason={!noteId ? '노트를 저장해야 사용할 수 있습니다' : undefined}
@@ -468,18 +395,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                 )}
 
                 {/* AI 리뷰 섹션 (코드 블록 하단) */}
-                {showAiReview && noteId && (
-                    <AiReviewSection
-                        result={aiReviewResult}
-                        isLoading={aiReviewLoading}
-                        error={aiReviewError}
-                        onRefresh={handleAiReview}
-                        onClose={() => {
-                            setShowAiReview(false);
-                            setAiReviewResult(null); // 닫을 때 결과 초기화
-                        }}
-                    />
-                )}
+
             </div>
         </div>
     );

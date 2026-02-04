@@ -41,26 +41,31 @@ const Note: React.FC = () => {
     const { blocks, isSynced, addBlock, updateBlock, deleteBlock, moveBlock } = useYjsStore(noteId);
 
     const fetchNoteDetail = useCallback(async (id: string) => {
-        // setIsLoading(true); // Yjs 로딩과는 별개로 타이틀만 로딩하므로 전체 로딩을 걸면 깜빡일 수 있음
-        try {
-            const noteRes = await getNoteDetailApi(id);
-            console.log("[Note] Fetched Note Detail:", noteRes);
+    try {
+        const noteRes = await getNoteDetailApi(id);
+        console.log("[Note] Fetched Note Detail:", noteRes);
 
-            if (noteRes) {
-                setTitle(noteRes.title || "제목 없는 노트");
-                // AI 요약 상태 설정
-                setSummary(noteRes.summary);
-                setSummaryStyle(noteRes.summaryStyle);
-                setSummaryUpdatedAt(noteRes.summaryUpdatedAt);
+        if (noteRes) {
+            setTitle(noteRes.title || "제목 없는 노트");
+            setSummary(noteRes.summary);
+            setSummaryStyle(noteRes.summaryStyle);
+            setSummaryUpdatedAt(noteRes.summaryUpdatedAt);
+
+            // 중요: Yjs 스토어가 비어있고 API 결과에 블록이 있다면 초기화 시도
+            // 단, 이미 동기화된 데이터가 있다면 덮어쓰지 않도록 주의가 필요합니다.
+            if (isSynced && blocks.length === 0 && noteRes.blocks && noteRes.blocks.length > 0) {
+                noteRes.blocks.forEach((block: any) => {
+                    // 기존 addBlock을 활용하여 Yjs에 초기 데이터 주입
+                    // block.type과 content가 API 응답 구조에 맞는지 확인 필요
+                    addBlock(null, block.type, block.content);
+                });
             }
-            setIsEditing(true);
+        }
+        setIsEditing(true);
         } catch (error) {
             console.error("노트 상세 정보 로딩 실패:", error);
-            // alert("노트 데이터를 불러오지 못했습니다.");
-        } finally {
-            // setIsLoading(false);
         }
-    }, []);
+    }, [isSynced, blocks.length, addBlock]);
 
     useEffect(() => {
         if (noteId) {
@@ -97,14 +102,14 @@ const Note: React.FC = () => {
 
     // 마지막에 블록 추가 (툴바용)
     const handleAddBlockAtEnd = (type: BlockType) => {
-        addBlock(null, type);
+        addBlock(null, type, '');
     };
 
     const handleShortcutCreate = (type: BlockType) => {
         if (focusedBlockId !== null) {
-            addBlock(focusedBlockId, type);
+            addBlock(focusedBlockId, type, '');
         } else {
-            addBlock(null, type);
+            addBlock(null, type, '');
         }
     };
 
@@ -201,7 +206,7 @@ const Note: React.FC = () => {
                         focusedBlockId={focusedBlockId}
                         onMoveBlock={handleMoveBlock}
                         titleInputRef={titleInputRef}
-                        onAddBlockAfter={(id, type) => addBlock(id, type)}
+                        onAddBlockAfter={(id, type, initialContent) => addBlock(id, type, initialContent)}
                         // AI 요약 관련 props
                         summary={summary}
                         summaryStyle={summaryStyle}
