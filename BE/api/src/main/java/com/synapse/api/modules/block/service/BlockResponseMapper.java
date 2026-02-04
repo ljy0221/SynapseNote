@@ -18,11 +18,13 @@ import java.util.Map;
 @Service
 public class BlockResponseMapper {
 
-    public static BlockDetailResponse from(BaseBlock b) {
+    public static BlockDetailResponse from(BaseBlock b, boolean isBookmarked) {
 
         if (b instanceof TextBlock tb) {
-            Map<String, Object> raw = tb.getProperties() == null ? null : tb.getProperties().getAttributes();
-            if (raw == null) raw = Map.of();
+            Map<String, Object> raw = tb.getProperties() == null ? null
+                    : tb.getProperties().getAttributes();
+            if (raw == null)
+                raw = Map.of();
 
             // known
             String align = (String) raw.get("align");
@@ -53,7 +55,7 @@ public class BlockResponseMapper {
                     .noteId(tb.getNoteId())
                     .blockId(tb.getBlockId())
                     .order(tb.getOrder())
-                    .bookmark(tb.isBookmark())
+                    .bookmark(isBookmarked)
                     .createdAt(tb.getCreatedAt())
                     .updatedAt(tb.getUpdatedAt())
                     .properties(props)
@@ -66,20 +68,19 @@ public class BlockResponseMapper {
                     .language(cb.getProperties() == null ? null : cb.getProperties().getLanguage())
                     .code(cb.getProperties() == null ? null : cb.getProperties().getCode())
                     .version(cb.getProperties() == null ? null : cb.getProperties().getVersion())
-                    .executionMode(cb.getProperties() == null ? null : cb.getProperties().getExecutionMode())
+                    .executionMode(cb.getProperties() == null ? null
+                            : cb.getProperties().getExecutionMode())
                     .build();
 
-            List<CodeBlockResponse.OutputHistoryItem> history =
-                    cb.getOutputHistory() == null ? List.of() :
-                            cb.getOutputHistory().stream()
-                                    .map(h -> CodeBlockResponse.OutputHistoryItem.builder()
-                                            .output(h.getOutput())
-                                            .executedAt(h.getExecutedAt())
-                                            .executionTimeMs(h.getExecutionTimeMs())
-                                            .status(h.getStatus())
-                                            .build()
-                                    )
-                                    .toList();
+            List<CodeBlockResponse.OutputHistoryItem> history = cb.getOutputHistory() == null ? List.of()
+                    : cb.getOutputHistory().stream()
+                    .map(h -> CodeBlockResponse.OutputHistoryItem.builder()
+                            .output(h.getOutput())
+                            .executedAt(h.getExecutedAt())
+                            .executionTimeMs(h.getExecutionTimeMs())
+                            .status(h.getStatus())
+                            .build())
+                    .toList();
 
             return CodeBlockResponse.builder()
                     .id(cb.getId())
@@ -87,7 +88,7 @@ public class BlockResponseMapper {
                     .noteId(cb.getNoteId())
                     .blockId(cb.getBlockId())
                     .order(cb.getOrder())
-                    .bookmark(cb.isBookmark())
+                    .bookmark(isBookmarked)
                     .createdAt(cb.getCreatedAt())
                     .updatedAt(cb.getUpdatedAt())
                     .properties(props)
