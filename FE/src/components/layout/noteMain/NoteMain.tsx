@@ -3,7 +3,7 @@ import CodeBlock from '../codeBlock/CodeBlock';
 import TextBlock from '../textBlock/TextBlock';
 import { NoteSideNav } from './NoteSideNav';
 import { DraggableBlock } from './DraggableBlock'; // [New]
-import { Reorder } from 'framer-motion'; // [New]
+import { Reorder, useDragControls } from 'framer-motion'; // [New]
 import { InviteLinkModal } from '../../common/modal/InviteLinkModal';
 import { PermissionModal } from '../../common/modal/PermissionModal';
 import { SummaryConfigModal } from '../../common/modal/SummaryConfigModal';
@@ -63,17 +63,16 @@ const NoteMain: React.FC<NoteMainProps> = ({
 
     // [New] Framer Motion Local State
     const [localBlocks, setLocalBlocks] = React.useState<BlockData[]>(blocks);
+    const isDraggingRef = React.useRef(false); // [New] Track dragging state to prevent conflict with external updates
 
-    // Sync props.blocks to localBlocks when props change (and not actively dragging ideally, or just sync)
-    // Note: Reorder.Group updates localBlocks. If props.blocks changes (e.g. from Yjs), we should sync.
-    // Ideally we skip sync if we are the ones who triggered it, but Yjs might be async.
-    // For now simple sync:
+    // Sync props.blocks to localBlocks when props change (and not actively dragging)
     React.useEffect(() => {
-        setLocalBlocks(blocks);
+        if (!isDraggingRef.current) {
+            setLocalBlocks(blocks);
+        }
     }, [blocks]);
 
     // DnD logic moved to Reorder.Group
-    // const [dragIndex, setDragIndex] = React.useState<number | null>(null); (Removed)
 
     const handleDragEnd = (draggedBlockId: number | string) => {
         // Find old index in original props
@@ -89,22 +88,6 @@ const NoteMain: React.FC<NoteMainProps> = ({
 
     // 디버깅: 실제 렌더링되는 블록 데이터 확인
     console.log("[NoteMain] Current blocks for rendering:", blocks);
-
-    const onDragStart = (e: React.DragEvent, index: number) => {
-        e.dataTransfer.effectAllowed = "move";
-        e.dataTransfer.setData("text/plain", index.toString());
-        setDragIndex(index);
-    };
-
-    const onDragOver = (e: React.DragEvent) => {
-        e.preventDefault();
-    };
-
-    const onDrop = (dropIndex: number) => {
-        if (dragIndex === null || dragIndex === dropIndex) return;
-        onMoveBlock(dragIndex, dropIndex);
-        setDragIndex(null);
-    };
 
     const handleContextMenu = (e: React.MouseEvent, blockId: string | number) => {
         e.preventDefault();
@@ -122,14 +105,10 @@ const NoteMain: React.FC<NoteMainProps> = ({
         }
     };
 
-    // Removed native handlers: onDragStart, onDragOver, onDrop
+    // Removed legacy native DnD handlers
 
     const renderBlock = (block: BlockData, index: number, dragControls: any) => {
         const commonProps = {
-            // draggable: true,         // Removed
-            // onDragStart: ...,        // Removed
-            // onDragOver: ...,         // Removed
-            // onDrop: ...,             // Removed
             dragControls: dragControls, // Passed from DraggableBlock
             isFocused: block.id === focusedBlockId,
             onContextMenu: (e: React.MouseEvent) => handleContextMenu(e, block.id),
@@ -228,7 +207,13 @@ const NoteMain: React.FC<NoteMainProps> = ({
                                         <DraggableBlock
                                             key={block.id}
                                             block={block}
-                                            onDragEnd={() => handleDragEnd(block.id)}
+                                            onDragStart={() => {
+                                                isDraggingRef.current = true;
+                                            }}
+                                            onDragEnd={() => {
+                                                isDraggingRef.current = false;
+                                                handleDragEnd(block.id);
+                                            }}
                                         >
                                             {(dragControls) => renderBlock(block, index, dragControls)}
                                         </DraggableBlock>
