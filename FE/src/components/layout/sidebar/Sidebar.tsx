@@ -32,6 +32,7 @@ import {
 } from '../../../events/NotesEvents';
 
 import { useNavigate, useParams } from 'react-router-dom';
+import { generateUuidV7 } from '../../../utils/UUIDV7'
 
 interface SidebarProps {
   isOpen: boolean;
@@ -233,11 +234,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
    * 노트 생성 (temp → real)
    -------------------------- */
   const handleCreateNote = async (directoryPath: string) => {
-    const tempId = `temp-${Date.now()}`;
+    const noteId = generateUuidV7();
+
+    const memberId = localStorage.getItem('memberId')
+    if (!memberId) return;
 
     const tempNote: NoteListItem = {
-      memberId: 'temp-user',
-      noteId: tempId,
+      memberId,
+      noteId,
       title: '새 노트',
       directoryPath,
       pointX: 0,
@@ -248,38 +252,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
     };
 
     setNotes(prev => [...prev, tempNote]);
-    navigate(`/note/${tempId}`);
+
+    navigate(`/note/${noteId}`);
 
     try {
-      const res = await createNoteApi({
+      await createNoteApi({
+        id: noteId,
         title: '새 노트',
         invitationUrl: '',
         directoryPath,
       });
 
-      setNotes(prev =>
-        prev.map(n =>
-          n.noteId === tempId
-            ? ({
-                memberId: n.memberId,
-                noteId: res.noteId,
-                title: res.title,
-                directoryPath: res.directoryPath,
-                pointX: res.pointX ?? 0,
-                pointY: res.pointY ?? 0,
-                role: res.role ?? n.role,
-                createdAt: new Date(res.createdAt).getTime(),
-                updatedAt: new Date(res.updatedAt).getTime(),
-              } as NoteListItem)
-            : n
-        )
-      );
-
-
-      navigate(`/note/${res.noteId}`, { replace: true });
-      emitNotesChanged({ skipRefetch: true });
     } catch {
-      setNotes(prev => prev.filter(n => n.noteId !== tempId));
+
+      setNotes(prev => prev.filter(n => n.noteId !== noteId));
     }
   };
 
