@@ -1,5 +1,6 @@
 // src/components/common/blockRunButton/BlockRunButton.tsx
 import React from 'react';
+import { Play } from 'lucide-react';
 import './BlockRunButton.css';
 
 interface Props {
@@ -9,8 +10,13 @@ interface Props {
 
 const BlockRunButton: React.FC<Props> = ({ onClick, disabled }) => {
   return (
-    <button className="block-run-btn" onClick={onClick} disabled={disabled}>
-      <span className="run-icon">▶</span> {disabled ? 'Running...' : 'Run'}
+    <button
+      className="block-run-btn"
+      onClick={onClick}
+      disabled={disabled}
+      title={disabled ? 'Running...' : 'Run Code'}
+    >
+      <Play size={16} fill="currentColor" />
     </button>
   );
 };

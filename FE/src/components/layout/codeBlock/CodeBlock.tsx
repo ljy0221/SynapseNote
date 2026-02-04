@@ -5,6 +5,7 @@ import BlockCopyButton from '../../common/blockCopyButton/BlockCopyButton';
 
 import CodeMirrorEditor from '../../common/codeMirrorEditor/CodeMirrorEditor';
 import type { Language, ExecutionResult, ExecutionMode, SessionInfo } from '../../../types/execution/ExecutionTypes';
+import { Server, Cpu } from 'lucide-react';
 import './CodeBlock.css';
 import { saveExecutionToBackend } from "../../../utils/executionAPI.ts";
 import { LanguageSelector } from "./LanguageSelector.tsx";
@@ -266,42 +267,24 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                     })() && (
                             <div className="mode-selector" style={{ marginLeft: '10px', display: 'flex', gap: '5px' }}>
                                 <button
-                                    className={`mode-button ${executionMode === 'single' ? 'active' : ''}`}
+                                    className={`code-action-btn mode-button ${executionMode === 'single' ? 'active' : ''}`}
                                     onClick={() => setExecutionMode('single')}
                                     disabled={loading}
-                                    style={{
-                                        padding: '4px 10px',
-                                        fontSize: '12px',
-                                        cursor: loading ? 'not-allowed' : 'pointer',
-                                        backgroundColor: executionMode === 'single' ? '#4A90E2' : '#555',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '4px',
-                                    }}
+                                    title="Single Execution Mode"
                                 >
-                                    Single
+                                    <Cpu size={16} />
                                 </button>
                                 <button
-                                    className={`mode-button ${executionMode === 'session' ? 'active' : ''}`}
+                                    className={`code-action-btn mode-button ${executionMode === 'session' ? 'active' : ''}`}
                                     onClick={() => {
                                         if (noteId) {
                                             setExecutionMode('session');
                                         }
                                     }}
                                     disabled={loading || !noteId}
-                                    style={{
-                                        padding: '4px 10px',
-                                        fontSize: '12px',
-                                        cursor: (loading || !noteId) ? 'not-allowed' : 'pointer',
-                                        backgroundColor: executionMode === 'session' ? '#4A90E2' : '#555',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '4px',
-                                        opacity: !noteId ? 0.5 : 1,
-                                    }}
-                                    title={!noteId ? '노트를 저장해야 세션 모드를 사용할 수 있습니다' : '세션 모드 활성화'}
+                                    title={!noteId ? 'Note must be saved to use Session Mode' : 'Session Execution Mode'}
                                 >
-                                    Session
+                                    <Server size={16} />
                                 </button>
                             </div>
                         )}
@@ -313,9 +296,9 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                             <button
                                 className="session-indicator"
                                 onClick={handleTerminateSession}
-                                title="세션 종료"
+                                title="Terminate Session"
                                 style={{
-                                    padding: '4px 10px',
+                                    padding: '4px 8px',
                                     fontSize: '12px',
                                     cursor: 'pointer',
                                     backgroundColor: '#28a745',
@@ -323,9 +306,13 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                                     border: 'none',
                                     borderRadius: '4px',
                                     marginRight: '5px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px'
                                 }}
                             >
-                                🟢 Session: {sessionInfo.sessionId.substring(0, 8)}
+                                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#fff' }}></span>
+                                {sessionInfo.sessionId.substring(0, 8)}
                             </button>
                         )}
 
