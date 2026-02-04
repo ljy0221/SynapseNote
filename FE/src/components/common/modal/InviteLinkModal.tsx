@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Copy, Check, RefreshCw } from 'lucide-react';
+import { X, Copy, Check } from 'lucide-react';
 import { createInvitationApi } from '../../../api/notes/CreateInvitation.api';
 import './InviteLinkModal.css';
 
@@ -15,18 +15,20 @@ export const InviteLinkModal: React.FC<InviteLinkModalProps> = ({ isOpen, onClos
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
 
+    const [expiration, setExpiration] = useState(604800);
+
     useEffect(() => {
         if (isOpen && noteId) {
             fetchInivitation();
         }
-    }, [isOpen, noteId]);
+    }, [isOpen, noteId, expiration]); // expiration 변경 시 다시 호출
 
     const fetchInivitation = async () => {
         if (!noteId) return;
         setIsLoading(true);
         setError('');
         try {
-            const res = await createInvitationApi(noteId);
+            const res = await createInvitationApi(noteId, 'EDITOR', expiration);
             setInviteUrl(res.invitationUrl);
         } catch (err) {
             console.error(err);
@@ -65,6 +67,17 @@ export const InviteLinkModal: React.FC<InviteLinkModalProps> = ({ isOpen, onClos
                     </p>
 
                     <div className="invite-link-box">
+                        <select
+                            className="invite-expiration-select"
+                            value={expiration}
+                            onChange={(e) => setExpiration(Number(e.target.value))}
+                            disabled={isLoading}
+                        >
+                            <option value={1800}>30분</option>
+                            <option value={3600}>1시간</option>
+                            <option value={86400}>1일</option>
+                            <option value={604800}>7일</option>
+                        </select>
                         <input
                             type="text"
                             readOnly
