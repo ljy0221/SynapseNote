@@ -1,5 +1,3 @@
-// src/utils/aiReviewFormatter.ts
-
 import type { CodeReviewResponse, ReviewItem } from '../types/ai/CodeReview';
 import DOMPurify from 'dompurify';
 
