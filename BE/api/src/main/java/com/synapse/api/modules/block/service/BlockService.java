@@ -130,16 +130,13 @@ public class BlockService {
 
     @Transactional
     public void unbookmarkBlock(UUID blockId, UUID noteId, UUID memberId) {
-        // 1. 블록 존재 여부 확인
         BaseBlock block = blockRepository.findByBlockIdAndDeletedAtIsNull(blockId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CODE_BLOCK_NOT_FOUND));
 
-        // 2. 블록이 해당 노트에 속하는지 검증
         if (!block.getNoteId().equals(noteId)) {
             throw new BusinessException(ErrorCode.NOTE_ACCESS_DENIED);
         }
 
-        // 3. 노트 조회 및 소유자 검증
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
 
@@ -147,12 +144,10 @@ public class BlockService {
             throw new BusinessException(ErrorCode.NOTE_ACCESS_DENIED);
         }
 
-        // 4. 북마크 조회 및 삭제 (Soft Delete)
         BlockBookmark bookmark = blockBookmarkRepository.findByBlockIdAndDeletedAtIsNull(blockId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.BOOKMARK_NOT_FOUND));
 
-        bookmark.delete();
-        blockBookmarkRepository.save(bookmark);
+        blockBookmarkRepository.delete(bookmark);
         log.info("Unbookmarked block: {} by member: {}", blockId, memberId);
     }
 
@@ -217,5 +212,15 @@ public class BlockService {
         blockBookmarkRepository.softDeleteByNoteId(noteId);
 
         log.info("Soft deleted blocks and bookmarks for note: {}", noteId);
+    }
+
+    /**
+     * Yjs에서 블록이 하드 딜리트될 때 호출
+     * PostgreSQL의 북마크 데이터만 물리적으로 삭제함
+     */
+    @Transactional
+    public void hardDeleteBookmark(UUID blockId) {
+        blockBookmarkRepository.hardDeleteByBlockId(blockId);
+        log.info("Hard deleted bookmark for block: {}", blockId);
     }
 }

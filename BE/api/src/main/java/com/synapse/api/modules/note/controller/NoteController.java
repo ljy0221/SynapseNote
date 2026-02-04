@@ -202,4 +202,16 @@ public class NoteController {
         List<BlockDetailResponse> response = blockService.getBlocks(details.id(), noteId);
         return DataResponse.of(response);
     }
+
+    /**
+     * Yjs 블록 하드 딜리트용 북마크 물리 삭제 API
+     * (BlockService.hardDeleteBookmark 호출)
+     */
+    @DeleteMapping("/v1/blocks/{blockId}/bookmarks/hard")
+    public StatusResponse hardDeleteBlockBookmark(
+            @PathVariable UUID blockId) {
+        log.info("Request to hard delete bookmark for block: {}", blockId);
+        blockService.hardDeleteBookmark(blockId);
+        return StatusResponse.of();
+    }
 }

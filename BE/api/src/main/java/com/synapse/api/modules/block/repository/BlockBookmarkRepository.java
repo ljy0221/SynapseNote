@@ -44,4 +44,9 @@ public interface BlockBookmarkRepository extends JpaRepository<BlockBookmark, UU
     @Modifying(clearAutomatically = true)
     @Query("UPDATE BlockBookmark bb SET bb.deletedAt = CURRENT_TIMESTAMP WHERE bb.note.id = :noteId AND bb.deletedAt IS NULL")
     void softDeleteByNoteId(@Param("noteId") UUID noteId);
+
+    // Yjs 블록 하드 딜리트 시 북마크도 하드 딜리트
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM BlockBookmark bb WHERE bb.blockId = :blockId")
+    void hardDeleteByBlockId(@Param("blockId") UUID blockId);
 }
