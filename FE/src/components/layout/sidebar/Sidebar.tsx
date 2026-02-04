@@ -37,9 +37,10 @@ import { useCreateNote } from '../../../hooks/useCreateNote';
 interface SidebarProps {
   isOpen: boolean;
   onToggle: () => void;
+  showToggle?: boolean; // [New] 토글 버튼 노출 여부 (기본값 true)
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, showToggle = true }) => {
   const navigate = useNavigate();
   const { noteId: routeNoteId } = useParams<{ noteId: string }>();
   const activeNoteId = routeNoteId ?? null;
@@ -331,12 +332,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
         </div>
       </aside>
 
-      <button
-        className={`sidebar-toggle-btn ${isOpen ? 'open' : ''}`}
-        onClick={onToggle}
-      >
-        {isOpen ? '⟨' : '⟩'}
-      </button>
+      {showToggle && (
+        <button
+          className={`sidebar-toggle-btn ${isOpen ? 'open' : ''}`}
+          onClick={onToggle}
+        >
+          {isOpen ? '⟨' : '⟩'}
+        </button>
+      )}
 
       <ContextMenu
         state={contextMenu}

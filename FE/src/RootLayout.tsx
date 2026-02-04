@@ -21,10 +21,11 @@ import { DockerErrorModal } from './components/common/modal/DockerErrorModal';
 import { ToastNotification } from './components/common/toast/ToastNotification';
 import GlobalModal from './components/common/modal/GlobalModal';
 
-// Electron 확인
+// 전자 확인
 const isElectron = typeof window !== 'undefined' && (window as any).electronAPI !== undefined;
 
-const SIDEBAR_ROUTES = ['/note'];
+const SIDEBAR_ROUTES = ['/note', '/home'];
+const FIXED_SIDEBAR_ROUTES = ['/home']; // [New] 항상 열림 처리할 경로
 const TOOLBAR_ROUTES = ['/note'];
 
 export default function RootLayout() {
@@ -115,11 +116,17 @@ export default function RootLayout() {
 
     // Sidebar & Toolbar Visibility Logic
     const isSidebarAllowed = SIDEBAR_ROUTES.some((path) => location.pathname.startsWith(path));
+    const isFixedSidebar = FIXED_SIDEBAR_ROUTES.some((path) => location.pathname.startsWith(path)); // [New]
     const isToolbarAllowed = TOOLBAR_ROUTES.some((path) => location.pathname.startsWith(path));
 
     useEffect(() => {
-        setIsSidebarActive(isSidebarAllowed);
-    }, [isSidebarAllowed]);
+        // 고정 사이드바인 경우 무조건 열림
+        if (isFixedSidebar) {
+            setIsSidebarActive(true);
+        } else {
+            setIsSidebarActive(isSidebarAllowed);
+        }
+    }, [isSidebarAllowed, isFixedSidebar]);
 
     return (
         <div className="app-container">
@@ -153,8 +160,12 @@ export default function RootLayout() {
             {!isLoginPage && (
                 <>
                     <SideMenuBar />
-                    {isSidebarAllowed && (
-                        <Sidebar isOpen={isSidebarActive} onToggle={toggleSidebar} />
+                    {(isSidebarAllowed || isFixedSidebar) && (
+                        <Sidebar
+                            isOpen={isSidebarActive}
+                            onToggle={toggleSidebar}
+                            showToggle={!isFixedSidebar} // 고정이면 토글 버튼 숨김
+                        />
                     )}
                 </>
             )}
