@@ -30,11 +30,12 @@ public class MindmapEdge extends BaseEntity {
     @MapsId("memberId")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)
-    private Member memberId;
+    private Member member;
 
     private MindmapEdge(Note from, Note to, Member member) {
         this.from = from;
         this.to = to;
+        this.member = member;
         this.id = new MindmapEdgeId(from.getId(), to.getId(), member.getId());
     }
 

@@ -15,30 +15,30 @@ public interface MindmapEdgeRepository extends JpaRepository<MindmapEdge, Mindma
 
     void deleteByTo_Id(UUID nodeId);
 
-    @Modifying
-    @Query("""
-                DELETE FROM MindmapEdge e
-                WHERE e.memberId.id = :memberId
-            """)
-    int deleteAllByMemberId(@Param("memberId") UUID memberId);
+        @Modifying
+        @Query("""
+                            DELETE FROM MindmapEdge e
+                            WHERE e.member.id = :memberId
+                        """)
+        int deleteAllByMemberId(@Param("memberId") UUID memberId);
 
-    @Modifying
-    @Query("""
-            DELETE FROM MindmapEdge e
-            WHERE e.from.id = :parentId
-              AND e.to.id = :childId
-              AND e.memberId.id = :memberId
-            """)
-    int deleteByMemberAndEdge(
-            @Param("memberId") UUID memberId,
-            @Param("parentId") UUID parentId,
-            @Param("childId") UUID childId);
+        @Modifying
+        @Query("""
+                        DELETE FROM MindmapEdge e
+                        WHERE e.from.id = :parentId
+                          AND e.to.id = :childId
+                          AND e.member.id = :memberId
+                        """)
+        int deleteByMemberAndEdge(
+                        @Param("memberId") UUID memberId,
+                        @Param("parentId") UUID parentId,
+                        @Param("childId") UUID childId);
 
-    @Query("""
-            SELECT e FROM MindmapEdge e
-            WHERE e.memberId.id = :memberId
-            """)
-    List<MindmapEdge> findAllByMember(UUID memberId);
+        @Query("""
+                SELECT e FROM MindmapEdge e
+                WHERE e.member.id = :memberId
+                """)
+        List<MindmapEdge> findAllByMember(UUID memberId);
 
     @Modifying
     @Query("UPDATE Note n SET n.pointX = NULL, n.pointY = NULL " +
