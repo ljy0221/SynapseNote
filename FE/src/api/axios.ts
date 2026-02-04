@@ -26,6 +26,7 @@ export const api = axios.create({
   withCredentials: true,
 });
 
+// 요청 인터셉터: 모든 요청에 액세스 토큰 첨부
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('authToken');
