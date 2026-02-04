@@ -259,8 +259,8 @@ public class NoteService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
         noteValidator.validateAccess(note, memberId);
 
-        // BlockService에 위임
-        blockService.bookmarkBlock(blockId, noteId);
+        // BlockService에 위임 (memberId 전달)
+        blockService.bookmarkBlock(blockId, noteId, memberId);
     }
 
     @Transactional
@@ -270,8 +270,8 @@ public class NoteService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
         noteValidator.validateAccess(note, memberId);
 
-        // BlockService에 위임
-        blockService.unbookmarkBlock(blockId, noteId);
+        // BlockService에 위임 (memberId 전달)
+        blockService.unbookmarkBlock(blockId, noteId, memberId);
     }
 
 }
