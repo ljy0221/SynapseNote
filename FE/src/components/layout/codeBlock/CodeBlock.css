@@ -163,3 +163,34 @@
 }
 
 /* .code-block-wrapper > :last-child radius removed as handled by .code-block-main */
+
+.mode-button {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    border: 1px solid rgba(128, 128, 128, 0.2);
+    background-color: transparent;
+    color: var(--font-color);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.mode-button:hover:not(:disabled) {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: var(--color-point);
+}
+
+.mode-button.active {
+    background-color: var(--color-point);
+    color: white;
+    border-color: var(--color-point);
+}
+
+.mode-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

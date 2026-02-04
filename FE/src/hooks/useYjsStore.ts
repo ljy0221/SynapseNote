@@ -192,10 +192,15 @@ export const useYjsStore = (noteId: string | undefined) => {
     const doc = docRef.current;
     const yBlocks = doc.getArray<YBlockMap>('blocks');
 
-    const index = blocks.findIndex((b) => b.id === blockId);
-    if (index === -1) return;
+    // Find the YBlock directly
+    let targetBlock: YBlockMap | undefined;
+    for (const block of yBlocks) {
+      if (block.get('blockId') === blockId) {
+        targetBlock = block;
+        break;
+      }
+    }
 
-    const targetBlock = yBlocks.get(index);
     if (!targetBlock) return;
 
     const properties = targetBlock.get('properties') as Y.Map<any>;
@@ -221,8 +226,23 @@ export const useYjsStore = (noteId: string | undefined) => {
     const doc = docRef.current;
     const yBlocks = doc.getArray<YBlockMap>('blocks');
 
-    const index = blocks.findIndex((b) => b.id === blockId);
-    if (index !== -1) yBlocks.delete(index, 1);
+    // Remove reliance on 'blocks' state index
+    let targetIndex = -1;
+    let i = 0;
+    for (const block of yBlocks) {
+      if (block.get('blockId') === blockId) {
+        targetIndex = i;
+        break;
+      }
+      i++;
+    }
+
+    if (targetIndex !== -1) {
+      yBlocks.delete(targetIndex, 1);
+    } else {
+      // Fallback or log if needed
+      console.warn('[Yjs] Block to delete not found in YDoc:', blockId);
+    }
   };
 
   // 블록 이동

@@ -150,28 +150,39 @@ const NoteMain: React.FC<NoteMainProps> = ({
                 onGenerateSummary={onGenerateSummary ?? (() => { })}
             />
             <div className="note-body-wrapper">
-                <div className="note-sidenav-area">
-                    <NoteSideNav
-                        onAddBlock={onAddBlockAtEnd}
-                        onInvite={() => setIsInviteModalOpen(true)}
-                        onPermission={() => setIsPermissionModalOpen(true)}
-                        onSummary={() => setIsSummaryModalOpen(true)}
-                    />
-                </div>
+                {/* External sidebar area removed */}
 
                 <div className="note-paper">
-                    <header className="note-main-header">
-                        <input
-                            ref={titleInputRef}
-                            className="note-main-title-input"
-                            value={title}
-                            onChange={(e) => onUpdateTitle(e.target.value)}
-                            placeholder="제목 없음"
-                        />
-                    </header>
-                    <div className="note-content-area">
-                        {blocks.map((block, index) => renderBlock(block, index))}
-                        <div className="note-bottom-spacer" style={{ height: '30vh' }} />
+                    <div className="note-inner-layout">
+                        {/* Left Gutter with Side Nav */}
+                        <aside className="note-gutter left">
+                            <NoteSideNav
+                                onAddBlock={onAddBlockAtEnd}
+                                onInvite={() => setIsInviteModalOpen(true)}
+                                onPermission={() => setIsPermissionModalOpen(true)}
+                                onSummary={() => setIsSummaryModalOpen(true)}
+                            />
+                        </aside>
+
+                        {/* Center Content */}
+                        <div className="note-center-column">
+                            <header className="note-main-header">
+                                <input
+                                    ref={titleInputRef}
+                                    className="note-main-title-input"
+                                    value={title}
+                                    onChange={(e) => onUpdateTitle(e.target.value)}
+                                    placeholder="제목 없음"
+                                />
+                            </header>
+                            <div className="note-content-area">
+                                {blocks.map((block, index) => renderBlock(block, index))}
+                                <div className="note-bottom-spacer" style={{ height: '50px' }} />
+                            </div>
+                        </div>
+
+                        {/* Right Gutter for Symmetry */}
+                        <aside className="note-gutter right" />
                     </div>
                 </div>
             </div>
