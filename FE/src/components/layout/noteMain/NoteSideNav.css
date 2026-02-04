@@ -3,7 +3,10 @@
     position: sticky;
     top: 100px;
     /* 헤더 높이 등을 고려한 상단 여백 */
-    right: 0;
+    left: 20px;
+    /* [Mod] right: 0 -> left: 20px (왼쪽으로 이동) */
+    order: -1;
+    /* [New] Flex container 내에서 첫 번째 순서로 변경 (좌측 배치) */
     width: 60px;
     height: fit-content;
     display: flex;

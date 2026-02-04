@@ -44,7 +44,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
   const { noteId: routeNoteId } = useParams<{ noteId: string }>();
   const activeNoteId = routeNoteId ?? null;
 
-  const isHome = location.pathname.startsWith('/home'); // 🔥 홈 경로 확인
+  /* [Mod] 홈 뿐만 아니라 노트 페이지에서도 사이드바 고정 (토글 버튼 숨김) */
+  const isFixedOpen = location.pathname.startsWith('/home') || location.pathname.startsWith('/note');
 
   const [notes, setNotes] = useState<NoteListItem[]>([]);
   const [favoriteNoteIds, setFavoriteNoteIds] =
@@ -334,7 +335,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
         </div>
       </aside>
 
-      {!isHome && (
+      {!isFixedOpen && (
         <button
           className={`sidebar-toggle-btn ${isOpen ? 'open' : ''}`}
           onClick={onToggle}
