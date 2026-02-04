@@ -61,20 +61,22 @@ public class InvitationService {
             throw new BusinessException(ErrorCode.INVITATION_OWNER_NOT_ALLOWED);
         }
 
-        // 4. 이미 멤버인지 확인 (이메일로 조회)
-        Member existingMember = memberRepository.findByEmail(request.invitedEmail()).orElse(null);
-        if (existingMember != null) {
-            boolean isMember = noteMemberRepository.existsByNoteIdAndMemberId(noteId, existingMember.getId());
-            if (isMember) {
-                throw new BusinessException(ErrorCode.ALREADY_NOTE_MEMBER);
+        // 4. 이미 멤버인지 확인 (이메일로 조회) - 이메일이 있는 경우만
+        if (request.invitedEmail() != null) {
+            Member existingMember = memberRepository.findByEmail(request.invitedEmail()).orElse(null);
+            if (existingMember != null) {
+                boolean isMember = noteMemberRepository.existsByNoteIdAndMemberId(noteId, existingMember.getId());
+                if (isMember) {
+                    throw new BusinessException(ErrorCode.ALREADY_NOTE_MEMBER);
+                }
             }
-        }
 
-        // 5. 동일 이메일로 PENDING 상태 초대가 있는지 확인
-        boolean hasPendingInvitation = invitationRepository.existsPendingInvitationByNoteIdAndEmail(
-                noteId, request.invitedEmail());
-        if (hasPendingInvitation) {
-            throw new BusinessException(ErrorCode.INVITATION_ALREADY_EXISTS);
+            // 5. 동일 이메일로 PENDING 상태 초대가 있는지 확인
+            boolean hasPendingInvitation = invitationRepository.existsPendingInvitationByNoteIdAndEmail(
+                    noteId, request.invitedEmail());
+            if (hasPendingInvitation) {
+                throw new BusinessException(ErrorCode.INVITATION_ALREADY_EXISTS);
+            }
         }
 
         // 6. 초대 생성
@@ -82,7 +84,13 @@ public class InvitationService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         UUID invitationToken = UuidCreator.getTimeOrderedEpoch();
-        LocalDateTime expiresAt = LocalDateTime.now().plusDays(expirationDays);
+        LocalDateTime expiresAt;
+
+        if (request.expirationSeconds() != null && request.expirationSeconds() > 0) {
+            expiresAt = LocalDateTime.now().plusSeconds(request.expirationSeconds());
+        } else {
+            expiresAt = LocalDateTime.now().plusDays(expirationDays);
+        }
 
         Invitation invitation = Invitation.builder()
                 .invitationToken(invitationToken)
@@ -128,8 +136,8 @@ public class InvitationService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-        // 5. 이메일 일치 확인 (대소문자 무시)
-        if (!member.getEmail().equalsIgnoreCase(invitation.getInvitedEmail())) {
+        // 5. 이메일 일치 확인 (대소문자 무시) - 초대된 이메일이 있는 경우만
+        if (invitation.getInvitedEmail() != null && !member.getEmail().equalsIgnoreCase(invitation.getInvitedEmail())) {
             throw new BusinessException(ErrorCode.INVITATION_EMAIL_MISMATCH);
         }
 
@@ -157,6 +165,108 @@ public class InvitationService {
                 memberId, invitation.getId(), invitation.getNote().getId());
 
         return InvitationAcceptResponse.from(invitation);
+    }
+
+    /**
+     * 초대 링크를 통한 가입 요청
+     * - 공개 링크(이메일 없는 초대)를 통해 사용자가 가입 요청을 보냄
+     * - REQUESTED 상태의 새로운 Invitation 생성
+     */
+    @Transactional
+    public void requestJoin(UUID token, UUID memberId) {
+        // 1. 원본 초대(링크) 확인
+        Invitation linkInvitation = invitationRepository.findByInvitationToken(token)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVITATION_NOT_FOUND));
+
+        // 2. 만료 확인
+        if (linkInvitation.isExpired()) {
+            throw new BusinessException(ErrorCode.INVITATION_EXPIRED);
+        }
+
+        // 3. 사용자 조회
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        // 4. 이미 멤버인지 확인
+        if (noteMemberRepository.existsByNoteIdAndMemberId(linkInvitation.getNote().getId(), memberId)) {
+            throw new BusinessException(ErrorCode.ALREADY_NOTE_MEMBER);
+        }
+
+        // 5. 이미 대기중인 요청이 있는지 확인 (REQUESTED 상태)
+        // 같은 노트, 같은 멤버로 REQUESTED 상태인 초대가 있는지 확인해야 함
+        // Invitation 엔티티에 invitedMember가 있으므로 이를 활용
+        boolean alreadyRequested = invitationRepository
+                .findByNoteIdAndStatus(linkInvitation.getNote().getId(), InvitationStatus.REQUESTED).stream()
+                .anyMatch(inv -> inv.getInvitedMember() != null && inv.getInvitedMember().getId().equals(memberId));
+
+        if (alreadyRequested) {
+            throw new BusinessException(ErrorCode.INVITATION_ALREADY_EXISTS);
+        }
+
+        // 6. 가입 요청 생성 (REQUESTED)
+        Invitation requestInvitation = Invitation.builder()
+                .invitationToken(UuidCreator.getTimeOrderedEpoch()) // 별도 토큰 생성 (필요시)
+                .note(linkInvitation.getNote())
+                .invitedBy(linkInvitation.getInvitedBy()) // 원본 링크 생성자가 초대한 것으로 간주? 아니면 시스템? 원본 링크 생성자로 유지
+                .invitedMember(member) // 요청한 사람
+                .invitedEmail(member.getEmail())
+                .role(linkInvitation.getRole()) // 기본 역할은 링크의 역할 따름 (보통 EDITOR)
+                .status(InvitationStatus.REQUESTED)
+                .expiresAt(LocalDateTime.now().plusDays(expirationDays))
+                .build();
+
+        invitationRepository.save(requestInvitation);
+    }
+
+    /**
+     * 가입 요청 승인
+     * - OWNER만 가능
+     */
+    @Transactional
+    public void approveJoin(UUID invitationId, UUID ownerId) {
+        // 1. 요청 조회
+        Invitation invitation = invitationRepository.findById(invitationId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVITATION_NOT_FOUND));
+
+        // 2. REQUESTED 상태 확인
+        if (invitation.getStatus() != InvitationStatus.REQUESTED) {
+            throw new BusinessException(ErrorCode.INVITATION_NOT_ACCEPTABLE);
+        }
+
+        // 3. OWNER 권한 확인
+        validateOwnership(invitation.getNote(), ownerId);
+
+        // 4. 멤버 추가
+        Member member = invitation.getInvitedMember();
+        if (member == null) {
+            // 방어 로직: 멤버가 없으면 이메일로 찾아야 하나, REQUESTED는 멤버가 있어야 함
+            throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
+        }
+
+        // 4.5. 이미 멤버인지 확인 (중복 가입 방지 - 최종 안전장치)
+        if (noteMemberRepository.existsByNoteIdAndMemberId(invitation.getNote().getId(), member.getId())) {
+            // 이미 멤버라면 요청만 Accept 처리하고 종료, 혹은 에러 반환
+            // 这里 우리는 에러보다는, 이미 멤버이므로 초대를 '완료' 처리해주는 것이 사용자 경험상 나을 수 있음
+            // 하지만 명시적으로 알리기 위해 에러를 던지거나, 아니면 로그 남기고 accept 처리만 할 수도 있음.
+            // 사용자의 요청대로 "검증 로직"을 추가함.
+            log.warn("User {} is already a member of note {}. Skipping creation.", member.getId(),
+                    invitation.getNote().getId());
+            // 이미 멤버여도 초대는 수락 처리(완료) 해주는 게 깔끔함 (계속 REQUESTED로 남지 않게)
+            invitation.accept(member);
+            return;
+        }
+
+        NoteMemberId noteMemberId = new NoteMemberId(invitation.getNote().getId(), member.getId());
+        NoteMember noteMember = NoteMember.builder()
+                .id(noteMemberId)
+                .note(invitation.getNote())
+                .member(member)
+                .role(invitation.getRole())
+                .build();
+        noteMemberRepository.save(noteMember);
+
+        // 5. 승인 처리
+        invitation.accept(member);
     }
 
     /**
