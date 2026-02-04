@@ -18,17 +18,13 @@ const AcceptInvitation: React.FC = () => {
 
         const processInvitation = async () => {
             try {
-                const response = await acceptInvitationApi(token);
-                // InvitationAcceptResponse typically contains the note or noteId
-                // Based on backend: InvitationAcceptResponse.from(invitation)
-                // Assuming response has noteId or similar. If not, we might need to check the type.
-                // But for now, let's assume successful acceptance means we can go to the note.
-                // Wait, response type check needed.
-
+                await acceptInvitationApi(token);
+                // 요청 완료 후 홈으로 이동하거나 안내 메시지 표시
                 setStatus('success');
+                // navigate to home or stay
                 setTimeout(() => {
-                    navigate(`/note/${response.noteId}`);
-                }, 1500);
+                    navigate('/home');
+                }, 2000);
             } catch (err: any) {
                 console.error(err);
                 setStatus('error');
@@ -52,7 +48,8 @@ const AcceptInvitation: React.FC = () => {
                 {status === 'success' && (
                     <>
                         <div className="success-icon">✓</div>
-                        <p>초대 수락 완료! 노트로 이동합니다.</p>
+                        <p>가입 요청이 전송되었습니다. 관리자가 승인하면 알림을 받게 됩니다.</p>
+                        <p className="sub-text">잠시 후 홈으로 이동합니다.</p>
                     </>
                 )}
                 {status === 'error' && (
