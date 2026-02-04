@@ -6,7 +6,8 @@ import lombok.Builder;
 
 @Builder
 public record InvitationCreateRequest(
-                String invitedEmail,
+        String invitedEmail,
+        Long expirationSeconds,
 
-                @NotNull(message = "권한은 필수입니다") NoteRole role) {
+        @NotNull(message = "권한은 필수입니다") NoteRole role) {
 }

@@ -84,7 +84,13 @@ public class InvitationService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         UUID invitationToken = UuidCreator.getTimeOrderedEpoch();
-        LocalDateTime expiresAt = LocalDateTime.now().plusDays(expirationDays);
+        LocalDateTime expiresAt;
+
+        if (request.expirationSeconds() != null && request.expirationSeconds() > 0) {
+            expiresAt = LocalDateTime.now().plusSeconds(request.expirationSeconds());
+        } else {
+            expiresAt = LocalDateTime.now().plusDays(expirationDays);
+        }
 
         Invitation invitation = Invitation.builder()
                 .invitationToken(invitationToken)
@@ -235,6 +241,19 @@ public class InvitationService {
         if (member == null) {
             // 방어 로직: 멤버가 없으면 이메일로 찾아야 하나, REQUESTED는 멤버가 있어야 함
             throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
+        }
+
+        // 4.5. 이미 멤버인지 확인 (중복 가입 방지 - 최종 안전장치)
+        if (noteMemberRepository.existsByNoteIdAndMemberId(invitation.getNote().getId(), member.getId())) {
+            // 이미 멤버라면 요청만 Accept 처리하고 종료, 혹은 에러 반환
+            // 这里 우리는 에러보다는, 이미 멤버이므로 초대를 '완료' 처리해주는 것이 사용자 경험상 나을 수 있음
+            // 하지만 명시적으로 알리기 위해 에러를 던지거나, 아니면 로그 남기고 accept 처리만 할 수도 있음.
+            // 사용자의 요청대로 "검증 로직"을 추가함.
+            log.warn("User {} is already a member of note {}. Skipping creation.", member.getId(),
+                    invitation.getNote().getId());
+            // 이미 멤버여도 초대는 수락 처리(완료) 해주는 게 깔끔함 (계속 REQUESTED로 남지 않게)
+            invitation.accept(member);
+            return;
         }
 
         NoteMemberId noteMemberId = new NoteMemberId(invitation.getNote().getId(), member.getId());
