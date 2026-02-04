@@ -104,6 +104,7 @@ class BlockServiceTest {
                 blockService.unbookmarkBlock(blockId, noteId, memberId);
 
                 // then
-                verify(blockBookmarkRepository).save(any(BlockBookmark.class));
+                // then
+                verify(blockBookmarkRepository).delete(any(BlockBookmark.class));
         }
 }
