@@ -10,6 +10,7 @@ export const request = async <T>(
   options?: {
     params?: Record<string, unknown>;
     body?: unknown;
+    signal?: AbortSignal;
   }
 ): Promise<T> => {
   const res = await api.request<ApiResponse<T>>({
@@ -17,6 +18,7 @@ export const request = async <T>(
     url,
     params: options?.params,
     data: options?.body,
+    signal: options?.signal,
   });
 
   return res.data.data; // ⭐ 핵심
