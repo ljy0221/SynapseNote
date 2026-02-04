@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { acceptInvitationApi } from '../../api/notes/AcceptInvitation.api';
+import { useAuthStore } from '../../store/useAuthStore';
 import './AcceptInvitation.css';
 
 const AcceptInvitation: React.FC = () => {
@@ -9,6 +10,8 @@ const AcceptInvitation: React.FC = () => {
     const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
     const [errorMessage, setErrorMessage] = useState('');
 
+    const { isAuthenticated, isLoading } = useAuthStore(); // Add auth check
+
     useEffect(() => {
         if (!token) {
             setStatus('error');
@@ -16,25 +19,35 @@ const AcceptInvitation: React.FC = () => {
             return;
         }
 
+        // Wait for auth initialization
+        if (isLoading) return;
+
+        if (!isAuthenticated) {
+            // Save current URL to redirect back after login
+            localStorage.setItem('loginRedirectUrl', `/invitation/${token}`);
+            // Force navigate to login
+            navigate('/login');
+            return;
+        }
+
         const processInvitation = async () => {
+            // ... existing logic ...
             try {
                 await acceptInvitationApi(token);
-                // 요청 완료 후 홈으로 이동하거나 안내 메시지 표시
+                // ...
                 setStatus('success');
-                // navigate to home or stay
                 setTimeout(() => {
                     navigate('/home');
                 }, 2000);
             } catch (err: any) {
-                console.error(err);
+                // ...
                 setStatus('error');
-                // Display specific error if available
                 setErrorMessage(err.response?.data?.message || '초대 수락 중 오류가 발생했습니다.');
             }
         };
 
         processInvitation();
-    }, [token, navigate]);
+    }, [token, navigate, isAuthenticated, isLoading]);
 
     return (
         <div className="accept-invitation-container">

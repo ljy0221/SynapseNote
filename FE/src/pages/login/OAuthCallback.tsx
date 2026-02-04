@@ -49,7 +49,14 @@ const OAuthCallback: React.FC = () => {
         await login(result.accessToken);
 
         console.log('[OAuth] Login success');
-        navigate('/home', { replace: true });
+
+        const redirectUrl = localStorage.getItem('loginRedirectUrl');
+        if (redirectUrl) {
+          localStorage.removeItem('loginRedirectUrl');
+          navigate(redirectUrl, { replace: true });
+        } else {
+          navigate('/home', { replace: true });
+        }
       } catch (error: any) {
         console.error('[OAuth] Login failed:', error);
 
