@@ -29,7 +29,7 @@ export const useAuthStore = create<AuthState>()(
                 set({ isLoading: true });
                 try {
                     // localStorage.setItem 호출 제거 (persist가 처리)
-                    const info = await getUserInfo(token);
+                    const info = await getUserInfo();
                     set({ 
                         accessToken: token, // 상태에 저장
                         userInfo: info, 
@@ -60,7 +60,7 @@ export const useAuthStore = create<AuthState>()(
 
                 set({ isLoading: true });
                 try {
-                    const info = await getUserInfo(token);
+                    const info = await getUserInfo();
                     set({ userInfo: info, isAuthenticated: true, isLoading: false });
                 } catch (error) {
                     console.error('Refresh user info failed:', error);
@@ -78,7 +78,7 @@ export const useAuthStore = create<AuthState>()(
                 
                 // 유효성 검증을 위해 유저 정보 재요청
                 try {
-                    const info = await getUserInfo(token);
+                    const info = await getUserInfo();
                     set({ userInfo: info, isAuthenticated: true, isLoading: false });
                 } catch (error) {
                     get().logout();
