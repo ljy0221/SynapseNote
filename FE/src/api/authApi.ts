@@ -2,91 +2,76 @@
 import { api } from './axios';
 
 export interface LoginResult {
-    accessToken: string;
-    memberId: string;
+  accessToken: string;
+  memberId: string;
 }
 
 interface LoginResponse {
-    accessToken: string;
-    member: {
-        id: string;
-        email: string;
-        name: string;
-    };
-}
-
-interface ApiResponse<T> {
-    data: T;
-}
-
-export const socialLogin = async (provider: string, code: string): Promise<LoginResult> => {
-    const response = await api.post<ApiResponse<LoginResponse>>('/v1/login', {
-        provider: provider.toUpperCase(),
-        authorizationCode: code,
-    });
-
-    const data = response.data.data;
-
-    return {
-        accessToken: data.accessToken,
-        memberId: data.member.id,
-    };
-};
-
-export interface UserInfo {
-    memberId: string;
-    email: string;
-    name: string;
-    provider: string;
-    createdAt: string;
-}
-
-interface MemberResponse {
+  accessToken: string;
+  member: {
     id: string;
     email: string;
     name: string;
-    provider: string;
-    createdAt: string;
+  };
 }
 
-export const getUserInfo = async (token: string): Promise<UserInfo> => {
-    if (!token) {
-        throw new Error('No access token provided');
-    }
+interface ApiResponse<T> {
+  data: T;
+}
 
-    const response = await api.get<ApiResponse<MemberResponse>>('/v1/members/me', {
-        headers: {
-            Authorization: `Bearer ${token}`,
-        },
-    });
+export const socialLogin = async (provider: string, code: string): Promise<LoginResult> => {
+  const response = await api.post<ApiResponse<LoginResponse>>('/v1/login', {
+    provider: provider.toUpperCase(),
+    authorizationCode: code,
+  });
 
-    const data = response.data.data;
+  const data = response.data.data;
 
-    return {
-        ...data,
-        memberId: data.id,
-    };
+  return {
+    accessToken: data.accessToken,
+    memberId: data.member.id,
+  };
 };
 
-export const updateNickname = async (token: string, newNickname: string): Promise<UserInfo> => {
-    if (!token) {
-        throw new Error('No access token provided');
-    }
+export interface UserInfo {
+  memberId: string;
+  email: string;
+  name: string;
+  provider: string;
+  createdAt: string;
+}
 
-    const response = await api.patch<ApiResponse<MemberResponse>>(
-        '/v1/members/me',
-        { name: newNickname },
-        {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        }
-    );
+interface MemberResponse {
+  id: string;
+  email: string;
+  name: string;
+  provider: string;
+  createdAt: string;
+}
 
-    const data = response.data.data;
+/**
+ * 토큰은 api(axios) 인터셉터가 자동으로 Authorization 헤더에 넣어줌
+ * => token 파라미터 제거
+ */
+export const getUserInfo = async (): Promise<UserInfo> => {
+  const response = await api.get<ApiResponse<MemberResponse>>('/v1/members/me');
+  const data = response.data.data;
 
-    return {
-        ...data,
-        memberId: data.id,
-    };
+  return {
+    ...data,
+    memberId: data.id,
+  };
+};
+
+export const updateNickname = async (newNickname: string): Promise<UserInfo> => {
+  const response = await api.patch<ApiResponse<MemberResponse>>('/v1/members/me', {
+    name: newNickname,
+  });
+
+  const data = response.data.data;
+
+  return {
+    ...data,
+    memberId: data.id,
+  };
 };
