@@ -95,6 +95,44 @@
     box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
 }
 
+.search-input-wrapper {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.selector-sort-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--color-border);
+    background-color: var(--color-main);
+    color: var(--font-color);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    font-size: 0.85rem;
+    font-family: inherit;
+}
+
+.selector-sort-btn:hover {
+    background-color: var(--color-sub);
+    border-color: var(--color-point);
+}
+
+.selector-sort-btn.active {
+    background-color: var(--color-point);
+    border-color: var(--color-point);
+    color: var(--color-main);
+    font-weight: 600;
+}
+
+.sort-btn-label {
+    display: inline-block;
+}
+
 .selector-list-area {
     flex: 1;
     overflow-y: auto;
