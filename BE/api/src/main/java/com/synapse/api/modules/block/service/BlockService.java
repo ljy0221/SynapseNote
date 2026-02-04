@@ -4,11 +4,12 @@ import com.synapse.api.modules.block.document.BaseBlock;
 import com.synapse.api.modules.block.document.CodeBlock;
 import com.synapse.api.modules.block.dto.response.BlockDetailResponse;
 import com.synapse.api.modules.block.dto.response.BlockPageResponse;
+import com.synapse.api.modules.block.entity.BlockBookmark;
+import com.synapse.api.modules.block.repository.BlockBookmarkRepository;
 import com.synapse.api.modules.block.repository.BlockRepository;
 import com.synapse.api.modules.note.dto.request.ExecutionHistoryRequest;
 import com.synapse.api.modules.note.dto.response.ExecutionHistoryResponse;
 import com.synapse.api.modules.note.entity.Note;
-import com.synapse.api.modules.note.repository.NoteMemberRepository;
 import com.synapse.api.modules.note.repository.NoteRepository;
 import com.synapse.api.modules.note.service.NoteValidator;
 import com.synapse.api.util.exception.BusinessException;
@@ -22,11 +23,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toMap;
 
@@ -36,8 +34,8 @@ import static java.util.stream.Collectors.toMap;
 public class BlockService {
 
     private final BlockRepository blockRepository;
+    private final BlockBookmarkRepository blockBookmarkRepository;
     private final NoteRepository noteRepository;
-    private final NoteMemberRepository noteMemberRepository;
     private final NoteValidator noteValidator;
 
     // 노트 ID로 블록 목록 조회 (순서 보장, 삭제 안 된 것만)
@@ -100,72 +98,129 @@ public class BlockService {
     }
 
     @Transactional
-    public void bookmarkBlock(UUID blockId, UUID noteId) {
+    public void bookmarkBlock(UUID blockId, UUID noteId, UUID memberId) {
+        // 1. 블록 존재 여부 확인
         BaseBlock block = blockRepository.findByBlockIdAndDeletedAtIsNull(blockId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CODE_BLOCK_NOT_FOUND));
 
-        // 블록이 해당 노트에 속하는지 검증
+        // 2. 블록이 해당 노트에 속하는지 검증
         if (!block.getNoteId().equals(noteId)) {
             throw new BusinessException(ErrorCode.NOTE_ACCESS_DENIED);
         }
 
-        block.setBookmark();
-        blockRepository.save(block);
-        log.info("Bookmarked block: {}", blockId);
+        // 3. 노트 조회 및 소유자 검증
+        Note note = noteRepository.findById(noteId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
+
+        if (!note.getCreatedBy().getId().equals(memberId)) {
+            throw new BusinessException(ErrorCode.NOTE_ACCESS_DENIED);
+        }
+
+        // 4. 이미 북마크되어 있는지 확인
+        if (blockBookmarkRepository.existsByBlockIdAndDeletedAtIsNull(blockId)) {
+            log.warn("Block already bookmarked: {}", blockId);
+            return;
+        }
+
+        // 5. 북마크 생성
+        BlockBookmark bookmark = BlockBookmark.create(blockId, note);
+        blockBookmarkRepository.save(bookmark);
+        log.info("Bookmarked block: {} by member: {}", blockId, memberId);
     }
 
     @Transactional
-    public void unbookmarkBlock(UUID blockId, UUID noteId) {
+    public void unbookmarkBlock(UUID blockId, UUID noteId, UUID memberId) {
         BaseBlock block = blockRepository.findByBlockIdAndDeletedAtIsNull(blockId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CODE_BLOCK_NOT_FOUND));
 
-        // 블록이 해당 노트에 속하는지 검증
         if (!block.getNoteId().equals(noteId)) {
             throw new BusinessException(ErrorCode.NOTE_ACCESS_DENIED);
         }
 
-        block.unBookmark();
-        blockRepository.save(block);
-        log.info("Unbookmarked block: {}", blockId);
+        Note note = noteRepository.findById(noteId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
+
+        if (!note.getCreatedBy().getId().equals(memberId)) {
+            throw new BusinessException(ErrorCode.NOTE_ACCESS_DENIED);
+        }
+
+        BlockBookmark bookmark = blockBookmarkRepository.findByBlockIdAndDeletedAtIsNull(blockId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.BOOKMARK_NOT_FOUND));
+
+        blockBookmarkRepository.delete(bookmark);
+        log.info("Unbookmarked block: {} by member: {}", blockId, memberId);
     }
 
     public List<BlockDetailResponse> getBlocks(UUID memberId, UUID noteId) {
         // 노트 접근 권한
         noteValidator.validateReadPermission(memberId, noteId);
 
+        // 1. 블록 목록 조회
         List<BaseBlock> blocks = blockRepository.findByNoteIdAndDeletedAtIsNullOrderByOrderAsc(noteId);
 
+        // 2. 해당 노트의 북마크 목록 조회 및 Set 변환 (O(1) 조회를 위해)
+        Set<UUID> bookmarkedBlockIds = blockBookmarkRepository.findByNoteIdAndDeletedAtIsNull(noteId)
+                .stream()
+                .map(BlockBookmark::getBlockId)
+                .collect(Collectors.toSet());
+
+        // 3. 응답 생성 (북마크 여부 포함)
         return blocks.stream()
-                .map(BlockResponseMapper::from)
+                .map(block -> BlockResponseMapper.from(block, bookmarkedBlockIds.contains(block.getBlockId())))
                 .toList();
     }
 
     public BlockPageResponse getAllBookmarkedBlocks(UUID memberId, int page, int size) {
-        // 1. ownerId로 북마크된 블록 직접 조회 (단일 쿼리)
+        // 1. PostgreSQL에서 북마크 엔티티 조회 (노트 소유자 기준)
         Pageable pageable = PageRequest.of(page, size);
-        Page<BaseBlock> bookmarkedBlocks = blockRepository.findByOwnerIdAndBookmarkTrueAndDeletedAtIsNull(memberId,
+        Page<BlockBookmark> bookmarks = blockBookmarkRepository.findByNoteCreatedByIdAndDeletedAtIsNull(memberId,
                 pageable);
 
         // 2. 빈 결과 처리
-        if (bookmarkedBlocks.isEmpty()) {
-            return BlockPageResponse.from(bookmarkedBlocks, Map.of());
+        if (bookmarks.isEmpty()) {
+            return BlockPageResponse.empty();
         }
 
-        // 3. 블록들의 노트 경로 조회
-        List<UUID> noteIdsInPage = bookmarkedBlocks.getContent().stream()
-                .map(BaseBlock::getNoteId)
-                .distinct()
+        // 3. blockId 목록 추출
+        List<UUID> blockIds = bookmarks.getContent().stream()
+                .map(BlockBookmark::getBlockId)
                 .toList();
 
-        Map<UUID, String> notePathMap = noteRepository.findAllByIdInAndDeletedAtIsNull(noteIdsInPage).stream()
-                .collect(toMap(Note::getId, note -> note.getDirectoryPath() != null ? note.getDirectoryPath() : ""));
+        // 4. MongoDB에서 블록 상세 정보 조회
+        List<BaseBlock> blocks = blockRepository.findByBlockIdInAndDeletedAtIsNull(blockIds);
 
-        return BlockPageResponse.from(bookmarkedBlocks, notePathMap);
+        // 5. blockId를 키로 하는 Map 생성 (빠른 조회)
+        Map<UUID, BaseBlock> blockMap = blocks.stream()
+                .collect(toMap(BaseBlock::getBlockId, block -> block));
+
+        // 6. 노트 경로 Map 생성
+        Map<UUID, String> notePathMap = bookmarks.getContent().stream()
+                .collect(toMap(
+                        BlockBookmark::getBlockId,
+                        bookmark -> bookmark.getNote().getDirectoryPath() != null
+                                ? bookmark.getNote().getDirectoryPath()
+                                : "",
+                        (existing, replacement) -> existing));
+
+        return BlockPageResponse.from(bookmarks, blockMap, notePathMap);
     }
 
     @Transactional
     public void softDeleteBlocksByNoteId(UUID noteId) {
         blockRepository.softDeleteByNoteId(noteId, LocalDateTime.now());
-        log.info("Soft deleted blocks for note: {}", noteId);
+
+        blockBookmarkRepository.softDeleteByNoteId(noteId);
+
+        log.info("Soft deleted blocks and bookmarks for note: {}", noteId);
+    }
+
+    /**
+     * Yjs에서 블록이 하드 딜리트될 때 호출
+     * PostgreSQL의 북마크 데이터만 물리적으로 삭제함
+     */
+    @Transactional
+    public void hardDeleteBookmark(UUID blockId) {
+        blockBookmarkRepository.hardDeleteByBlockId(blockId);
+        log.info("Hard deleted bookmark for block: {}", blockId);
     }
 }

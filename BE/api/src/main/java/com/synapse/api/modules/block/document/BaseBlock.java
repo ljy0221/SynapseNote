@@ -41,8 +41,6 @@ public abstract class BaseBlock {
         @Indexed(unique = true)
         private UUID blockId; // Yjs/Frontend UUID
 
-        private boolean bookmark;
-
         private Double order; // 정렬 순서
 
         @CreatedDate
@@ -55,16 +53,6 @@ public abstract class BaseBlock {
 
         // DB에는 저장하지 않고, JSON 응답에만 포함 (하위 클래스에서 구현)
         public abstract BlockType getType();
-
-        // 북마크 설정
-        public void setBookmark() {
-                this.bookmark = true;
-        }
-
-        // 북마크 해제
-        public void unBookmark() {
-                this.bookmark = false;
-        }
 
         // Soft Delete
         public void delete() {
