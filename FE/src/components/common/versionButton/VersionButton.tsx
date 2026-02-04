@@ -1,3 +1,4 @@
+import { History } from 'lucide-react';
 import React from 'react';
 import './VersionButton.css';
 
@@ -7,8 +8,12 @@ interface VersionButtonProps {
 
 const VersionButton: React.FC<VersionButtonProps> = ({ onClick }) => {
     return (
-        <button className="code-action-btn version-btn" onClick={onClick}>
-            버전관리
+        <button
+            className="code-action-btn version-btn"
+            onClick={onClick}
+            title="버전 기록 / 체크포인트"
+        >
+            <History size={18} />
         </button>
     );
 };

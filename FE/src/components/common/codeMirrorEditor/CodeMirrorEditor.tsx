@@ -20,6 +20,7 @@ interface CodeMirrorEditorProps {
     readOnly?: boolean;
     minHeight?: string;
     maxHeight?: string;
+    autoFocus?: boolean;
 }
 
 const getLanguageExtension = (language: string) => {
@@ -270,6 +271,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
     readOnly = false,
     minHeight = '150px',
     maxHeight = '800px',
+    autoFocus,
 }) => {
     const editorRef = useRef<HTMLDivElement>(null);
     const viewRef = useRef<EditorView | null>(null);
@@ -355,6 +357,13 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
             }
         }
     }, [value]);
+
+    // [New] 외부에서 Focus 요청 시 처리
+    useEffect(() => {
+        if (autoFocus && viewRef.current) {
+            viewRef.current.focus();
+        }
+    }, [autoFocus]);
 
     // 언어, 테마, 설정 변경 시 재구성
     useEffect(() => {

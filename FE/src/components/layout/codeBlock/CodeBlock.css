@@ -1,8 +1,7 @@
 /* src/components/layout/codeBlock/CodeBlock.css */
 .code-block-wrapper {
-    width: 90%;
-    max-width: 800px;
-    margin: 20px auto;
+    width: 100%;
+    margin-bottom: 20px;
     background-color: var(--color-sub);
     border-radius: 12px;
     border: 1px solid rgba(128, 128, 128, 0.2);
@@ -15,7 +14,8 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 16px;
+    padding: 8px 4px;
+    /* [Mod] 좌측 패딩 축소 (16px -> 4px) */
     background-color: var(--color-sub);
     border-bottom: 1px solid rgba(128, 128, 128, 0.1);
     border-top-left-radius: 12px;
@@ -65,7 +65,7 @@
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: 12px;
+    gap: 6px;
     flex-shrink: 0;
 }
 
@@ -96,6 +96,16 @@
 
 .code-content-container .cm-focused {
     outline: none;
+}
+
+/* [New] 기본 커서: 화살표 (클릭 전) */
+.code-content-container .cm-content {
+    cursor: default;
+}
+
+/* [New] 포커스 시: I-beam 커서 (편집 중) */
+.code-content-container .cm-focused .cm-content {
+    cursor: text;
 }
 
 .code-output-zone {

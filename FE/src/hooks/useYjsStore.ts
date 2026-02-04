@@ -152,10 +152,10 @@ export const useYjsStore = (noteId: string | undefined) => {
     const addBlock = (prevBlockId: number | string | null, type: BlockType) => {
         const doc = docRef.current;
         const yBlocks = doc.getArray<YBlockMap>('blocks');
+        const newBlockId = crypto.randomUUID();
 
         doc.transact(() => {
             const newBlockMap = new Y.Map();
-            const newBlockId = crypto.randomUUID();
 
             newBlockMap.set('blockId', newBlockId);
             newBlockMap.set('noteId', noteId);
@@ -184,6 +184,8 @@ export const useYjsStore = (noteId: string | undefined) => {
 
             yBlocks.insert(insertIndex, [newBlockMap]);
         });
+
+        return newBlockId;
     };
 
     // 블록 업데이트 (내용 변경)

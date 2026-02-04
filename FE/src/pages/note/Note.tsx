@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
+import { Notebook } from 'lucide-react'; // 🔥 Import Notebook icon
 import NoteButton from "../../components/common/noteButton/NoteButton";
 import NoteMain from "../../components/layout/noteMain/NoteMain";
 import { getNoteDetailApi } from '../../api/notes/GetNoteDetail.api';
@@ -98,14 +99,19 @@ const Note: React.FC = () => {
 
     // 마지막에 블록 추가 (툴바용)
     const handleAddBlockAtEnd = (type: BlockType) => {
-        addBlock(null, type);
+        const newId = addBlock(null, type);
+        setFocusedBlockId(newId);
     };
 
     const handleShortcutCreate = (type: BlockType) => {
+        let newId;
         if (focusedBlockId !== null) {
-            addBlock(focusedBlockId, type);
+            newId = addBlock(focusedBlockId, type);
         } else {
-            addBlock(null, type);
+            newId = addBlock(null, type);
+        }
+        if (newId) {
+            setFocusedBlockId(newId);
         }
     };
 
@@ -193,12 +199,9 @@ const Note: React.FC = () => {
         <div className="page-content-container">
             {!isEditing ? (
                 <>
-                    <div className="note-intro-wrapper">
-                        <h2>노트 편집 페이지</h2>
-                        <div className="create-note-section">
-                            <NoteButton onClick={handleCreateNote} />
-                            <span className="create-note-label">새 노트 작성하기</span>
-                        </div>
+                    <div className="note-intro-wrapper" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', opacity: 0.5 }}>
+                        <Notebook size={64} color="var(--font-color)" style={{ marginBottom: '16px' }} />
+                        <h2 style={{ fontSize: '18px', fontWeight: 500, color: 'var(--font-color)' }}>노트를 선택해주세요</h2>
                     </div>
                 </>
             ) : (
