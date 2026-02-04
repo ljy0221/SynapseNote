@@ -2,6 +2,7 @@ package com.synapse.api.modules.member.repository;
 
 import com.synapse.api.modules.member.entity.Member;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -20,5 +21,14 @@ public interface MemberRepository extends JpaRepository<Member, UUID> {
 
     @Query("SELECT u FROM Member u WHERE u.id = :id AND u.deletedAt IS NULL")
     Optional<Member> findById(@Param("id") UUID id);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+        UPDATE Member m
+        SET m.deletedAt = CURRENT_TIMESTAMP
+        WHERE m.id = :memberId
+          AND m.deletedAt IS NULL
+    """)
+    void softDeleteById(@Param("memberId") UUID memberId);
 
 }
