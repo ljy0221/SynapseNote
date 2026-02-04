@@ -1,18 +1,15 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import NoteButton from "../../components/common/noteButton/NoteButton";
 import NoteMain from "../../components/layout/noteMain/NoteMain";
-import { createNoteApi } from '../../api/notes/CreateNote.api';
 import { getNoteDetailApi } from '../../api/notes/GetNoteDetail.api';
 import { updateNoteApi } from '../../api/notes/UpdateNote.api'; // ADDED
 import { summarizeNoteApi } from '../../api/ai/NoteSummary.api';
 import { emitNotesChanged } from '../../events/NotesEvents'; // ADDED
-import type { CreateNoteRequest } from '../../types/note/CreateNote';
 import type { SummaryStyle } from '../../types/ai/NoteSummary';
 import { useYjsStore } from '../../hooks/useYjsStore';
 import './Note.css';
-import { generateUuidV7 } from '../../utils/UUIDV7';
-import { useNoteStore } from '../../store/useNoteStore';
+import { useCreateNote } from '../../hooks/useCreateNote';
 
 // 블록 타입 정의 (이원화: text / code)
 export type BlockType = 'text' | 'code';
@@ -173,49 +170,19 @@ const Note: React.FC = () => {
         }
     };
 
-    const navigate = useNavigate();
-    const { canCreateNote, updateLastCreatedTime } = useNoteStore();
+    const { handleCreateNote: createNote } = useCreateNote();
 
     const handleCreateNote = async () => {
-        if (!canCreateNote()) {
-            alert('노트 생성은 30초에 한 번만 가능합니다.');
-            return;
-        }
-
-        try {
-            const newNoteReq: CreateNoteRequest = {
-                id: generateUuidV7(),
-                title: "제목 없는 노트",
-                invitationUrl: "",
-                directoryPath: "/",
-            };
-            const result = await createNoteApi(newNoteReq);
-            console.log("노트 생성 성공:", result);
-
-            updateLastCreatedTime();
-
-            // 페이지 이동 전 딜레이 (DB 반영 대기) - 700ms
-            await new Promise(resolve => setTimeout(resolve, 700));
-
-            // 사이드바 업데이트 트리거
-            emitNotesChanged();
-
-            if (result && result.noteId) {
-                navigate(`/notes/${result.noteId}`);
-            } else {
-                setIsEditing(true); // Fallback
+        await createNote('/', {
+            onSuccess: (noteId) => {
+                setTimeout(() => {
+                    if (titleInputRef.current) {
+                        titleInputRef.current.focus();
+                        titleInputRef.current.select();
+                    }
+                }, 100);
             }
-
-            setTimeout(() => {
-                if (titleInputRef.current) {
-                    titleInputRef.current.focus();
-                    titleInputRef.current.select();
-                }
-            }, 100);
-        } catch (error) {
-            console.error("노트 생성 중 에러 발생:", error);
-            alert("노트를 생성하지 못했습니다.");
-        }
+        });
     };
 
     if (isLoading) {
