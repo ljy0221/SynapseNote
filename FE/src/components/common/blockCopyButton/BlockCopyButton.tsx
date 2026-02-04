@@ -1,6 +1,7 @@
 // src/components/common/blockCopyButton/BlockCopyButton.tsx
 import React from 'react';
 import { Copy, Check } from 'lucide-react';
+import { Tooltip } from '../tooltip/Tooltip';
 import './BlockCopyButton.css';
 
 interface Props {
@@ -17,9 +18,11 @@ const BlockCopyButton: React.FC<Props> = ({ onCopy }) => {
   };
 
   return (
-    <button className="block-copy-btn" onClick={handleCopy} title="Copy Code">
-      {copied ? <Check size={16} /> : <Copy size={16} />}
-    </button>
+    <Tooltip title="코드 복사" placement="bottom">
+      <button className="block-copy-btn" onClick={handleCopy}>
+        {copied ? <Check size={16} /> : <Copy size={16} />}
+      </button>
+    </Tooltip>
   );
 };
 

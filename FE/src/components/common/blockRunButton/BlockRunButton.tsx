@@ -1,6 +1,7 @@
 // src/components/common/blockRunButton/BlockRunButton.tsx
 import React from 'react';
 import { Play } from 'lucide-react';
+import { Tooltip } from '../tooltip/Tooltip';
 import './BlockRunButton.css';
 
 interface Props {
@@ -10,14 +11,15 @@ interface Props {
 
 const BlockRunButton: React.FC<Props> = ({ onClick, disabled }) => {
   return (
-    <button
-      className="block-run-btn"
-      onClick={onClick}
-      disabled={disabled}
-      title={disabled ? 'Running...' : 'Run Code'}
-    >
-      <Play size={16} fill="currentColor" />
-    </button>
+    <Tooltip title={disabled ? '실행 중...' : '코드 실행'} placement="bottom">
+      <button
+        className="block-run-btn"
+        onClick={onClick}
+        disabled={disabled}
+      >
+        <Play size={16} />
+      </button>
+    </Tooltip>
   );
 };
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import { History as HistoryIcon } from 'lucide-react';
+import { Tooltip } from '../tooltip/Tooltip';
 import './VersionButton.css';
 
 interface VersionButtonProps {
@@ -8,9 +9,11 @@ interface VersionButtonProps {
 
 const VersionButton: React.FC<VersionButtonProps> = ({ onClick }) => {
     return (
-        <button className="code-action-btn version-btn" onClick={onClick} title="버전 관리">
-            <HistoryIcon size={16} />
-        </button>
+        <Tooltip title="버전 관리" placement="bottom">
+            <button className="code-action-btn version-btn" onClick={onClick}>
+                <HistoryIcon size={16} />
+            </button>
+        </Tooltip>
     );
 };
 
