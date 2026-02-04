@@ -1,5 +1,5 @@
 /* src/components/layout/codeBlock/CodeBlock.tsx */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import VersionButton from '../../common/versionButton/VersionButton';
 import BlockRunButton from '../../common/blockRunButton/BlockRunButton';
 import BlockCopyButton from '../../common/blockCopyButton/BlockCopyButton';
@@ -10,6 +10,10 @@ import './CodeBlock.css';
 import { saveExecutionToBackend } from "../../../utils/executionAPI.ts";
 import { LanguageSelector } from "./LanguageSelector.tsx";
 import CheckpointSidebar from '../checkpoint/CheckpointSidebar';
+import AiReviewButton from '../../common/aiReviewButton/AiReviewButton';
+import AiReviewSection from '../aiReview/AiReviewSection';
+import type { CodeReviewResponse } from '../../../types/ai/CodeReview';
+import { requestCodeReview, DEFAULT_REVIEW_REQUEST } from '../../../api/ai/AiCodeReview.api';
 import { getLanguageTemplate, isCodeEmpty } from '../../../utils/languageTemplates';
 import { useCodeEditorStore } from '../../../store/useCodeEditorStore';
 
@@ -68,6 +72,15 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     // 버전 관리(체크포인트) 상태
     const [showCheckpoints, setShowCheckpoints] = useState(false);
 
+    // AI 리뷰 섹션 상태 (부모에서 캐싱 관리)
+    const [showAiReview, setShowAiReview] = useState(false);
+    const [aiReviewResult, setAiReviewResult] = useState<CodeReviewResponse | null>(null);
+    const [aiReviewLoading, setAiReviewLoading] = useState(false);
+    const [aiReviewError, setAiReviewError] = useState<string | null>(null);
+
+    // AbortController ref (요청 취소용)
+    const aiReviewAbortRef = useRef<AbortController | null>(null);
+
     // props code 변경 시 editedCode 동기화
     useEffect(() => {
         if (code !== undefined) {
@@ -119,6 +132,13 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
             }
         }
     }, [noteId, id, language, trackBlockLanguage, hasMultipleLanguages, executionMode]);
+
+    // 컴포넌트 언마운트 시 AI 리뷰 요청 취소
+    useEffect(() => {
+        return () => {
+            aiReviewAbortRef.current?.abort();
+        };
+    }, []);
 
     const handleCopy = () => {
         if (typeof editedCode === "string") {
@@ -239,6 +259,37 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
         onChange(id, code);
     };
 
+    // AI 코드 리뷰 핸들러
+    const handleAiReview = async () => {
+        if (!noteId) return;
+
+        // 이전 요청 취소
+        aiReviewAbortRef.current?.abort();
+        aiReviewAbortRef.current = new AbortController();
+
+        setAiReviewLoading(true);
+        setAiReviewError(null);
+
+        try {
+            const response = await requestCodeReview(
+                noteId,
+                id.toString(),
+                DEFAULT_REVIEW_REQUEST,
+                aiReviewAbortRef.current.signal
+            );
+            setAiReviewResult(response);
+        } catch (error: any) {
+            // AbortError는 무시 (정상적인 취소)
+            if (error.name !== 'AbortError') {
+                setAiReviewError(
+                    error.response?.data?.message || error.message || 'AI 리뷰 요청에 실패했습니다.'
+                );
+            }
+        } finally {
+            setAiReviewLoading(false);
+        }
+    };
+
     return (
         <div
             className="code-block-wrapper"
@@ -349,6 +400,18 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                             setShowCheckpoints(true);
                         }}
                     />
+                    <AiReviewButton
+                        onClick={() => {
+                            setShowAiReview(true);
+                            // 캐시된 결과가 없을 때만 API 호출
+                            if (!aiReviewResult) {
+                                handleAiReview();
+                            }
+                        }}
+                        disabled={loading}
+                        loading={aiReviewLoading}
+                        disabledReason={!noteId ? '노트를 저장해야 사용할 수 있습니다' : undefined}
+                    />
                 </div>
             </div>
             {/* 메인 코드 영역 */}
@@ -394,6 +457,20 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                     currentCode={editedCode}
                     onClose={() => setShowCheckpoints(false)}
                     onRestore={handleRestore}
+                />
+            )}
+
+            {/* AI 리뷰 섹션 (코드 블록 하단) */}
+            {showAiReview && noteId && (
+                <AiReviewSection
+                    result={aiReviewResult}
+                    isLoading={aiReviewLoading}
+                    error={aiReviewError}
+                    onRefresh={handleAiReview}
+                    onClose={() => {
+                        setShowAiReview(false);
+                        setAiReviewResult(null); // 닫을 때 결과 초기화
+                    }}
                 />
             )}
         </div>
