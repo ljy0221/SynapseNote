@@ -9,8 +9,9 @@
 
     background-color: var(--color-sub);
     /* 노션/Jupyter 느낌의 연한 회색 */
-    overflow-y: scroll;
-    /* 스크롤바 강제 */
+    overflow-y: auto;
+    /* Changed to auto so scrollbar only appears when needed */
+    /* 스크롤바 강제 -> 필요 시에만 */
     overflow-x: hidden;
 
     box-sizing: border-box;
@@ -22,12 +23,16 @@
     width: 100%;
     /* max-width 제거 (부모인 paper를 따름) */
     margin: 0;
-    padding-left: 108px;
-    padding-right: 108px;
+    padding-left: 20px;
+    padding-right: 20px;
     box-sizing: border-box;
     margin-top: 60px;
     /* paper 내부 상단 여백 */
     margin-bottom: 40px;
+    padding-bottom: 20px;
+    /* Added padding for spacing above the line */
+    border-bottom: 2px solid var(--color-sub);
+    /* Added divider line */
     flex-shrink: 0;
 }
 
@@ -46,11 +51,13 @@
 .note-body-wrapper {
     display: flex;
     width: 100%;
-    max-width: 1600px;
+    max-width: 1800px;
+    /* Increased from 1600px to wider layout */
     /* 전체 레이아웃 너비 확장 */
     margin: 0 auto;
     position: relative;
-    padding-bottom: 20vh;
+    padding-bottom: 0;
+    /* Removed 20vh padding to preventing unnecessary scroll */
 }
 
 /* 새로운 노트 용지 컨테이너 */
@@ -59,34 +66,79 @@
     background-color: var(--color-main);
     border-radius: 24px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    /* Margins modified for wider layout */
     margin-left: 20px;
-    /* 사이드바와의 간격 */
+    margin-right: 20px;
     margin-top: 20px;
     margin-bottom: 20px;
+
     display: flex;
     flex-direction: column;
-    overflow: hidden;
-    min-height: 80vh;
+    /* Keep as column, inner layout handles row */
+    overflow: visible;
+    /* Changed from hidden to visible for sticky sidebar */
+    min-height: calc(100vh - 40px);
+    /* Fit to screen height minus margins */
+}
+
+/* New Inner Layout */
+.note-inner-layout {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    position: relative;
+    /* Ensure height stretches */
+    min-height: 100%;
+}
+
+.note-gutter {
+    width: 100px;
+    /* Increased to 100px to clearly push buttons inward */
+    flex-shrink: 0;
+    display: flex;
+    /* 
+       Calculate top padding to align with the first content block.
+       Header top margin (60px) + Header height (approx 60px) + Header bottom margin (40px) + Header bottom padding (20px) = 180px
+       Using a variable for maintainability.
+    */
+    --note-header-offset: 180px;
+    padding-top: var(--note-header-offset);
+}
+
+/* Left gutter content (buttons) pushed to the right -> closer to content */
+.note-gutter.left {
+    justify-content: flex-end;
+    padding-right: 0px;
+    /* Reduced from 10px to 0px to move buttons 'inward' */
+}
+
+/* Right gutter is just for spacing symmetry */
+.note-gutter.right {
+    pointer-events: none;
+}
+
+.note-center-column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    /* Prevent flex overflow */
 }
 
 .note-content-area {
     flex: 1;
-    padding-left: 40px;
-    padding-right: 40px;
+    padding-left: 20px;
+    /* Adjusted padding since we have gutters */
+    padding-right: 20px;
     box-sizing: border-box;
     overflow: visible;
 }
 
-.note-sidenav-area {
-    width: 80px;
-    /* Fixed width for nav area */
-    display: flex;
-    justify-content: center;
-    padding-top: 20px;
-}
+/* Removed note-sidenav-area as it is no longer used */
 
 .text-block-wrapper,
-.heading-block-wrapper {
+.heading-block-wrapper,
+.code-block-wrapper {
     width: 100%;
     position: relative;
     display: flex;

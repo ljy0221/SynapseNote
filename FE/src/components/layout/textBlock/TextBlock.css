@@ -67,7 +67,8 @@
     border: 1px solid transparent;
     border-radius: 12px;
     overflow: hidden;
-    background: var(--color-sub, #f7f2e8);
+    background: transparent;
+    /* Changed from var(--color-sub) to transparent */
     transition: all 0.2s ease;
 }
 
@@ -260,7 +261,8 @@
 
 /* ===== 다크모드 (data-theme 속성 기반) ===== */
 [data-theme='dark'] .text-block-editor-container {
-    background: var(--color-sub, #292524);
+    background: transparent;
+    /* Changed from var(--color-sub) to transparent */
 }
 
 [data-theme='dark'] .text-block-wrapper.is-focused .text-block-editor-container {
