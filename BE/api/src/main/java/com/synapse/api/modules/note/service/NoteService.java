@@ -5,6 +5,7 @@ import com.synapse.api.modules.block.service.BlockService;
 import com.synapse.api.modules.member.entity.Member;
 import com.synapse.api.modules.member.repository.MemberRepository;
 import com.synapse.api.modules.member.service.MemberService;
+import com.synapse.api.modules.mindmap.service.MindmapService;
 import com.synapse.api.modules.note.dto.request.ExecutionHistoryRequest;
 import com.synapse.api.modules.note.dto.request.NoteCreateRequest;
 import com.synapse.api.modules.note.dto.request.NotePositionUpdateRequest;
@@ -42,6 +43,7 @@ public class NoteService {
     private final MemberRepository memberRepository;
     private final MemberService memberService;
     private final NoteValidator noteValidator;
+    private final MindmapService mindmapService;
 
     // [위임] 블록 데이터 및 실행 로직 담당
     private final BlockService blockService;
@@ -164,10 +166,13 @@ public class NoteService {
         // RDB Soft Delete (deletedAt 설정)
         note.delete();
 
+        // [Delegation] 마인드맵 엣지 삭제 (MindmapService에 위임)
+        mindmapService.deleteEdgesByNoteId(noteId);
+
         // MongoDB 블록도 Soft Delete
         blockService.softDeleteBlocksByNoteId(noteId);
 
-        log.info("Soft deleted note and blocks: {}", noteId);
+        log.info("Soft deleted note and blocks: {}, deleted mindmap edges", noteId);
     }
 
     // =========================================================================
