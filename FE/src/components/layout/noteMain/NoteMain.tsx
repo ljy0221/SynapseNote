@@ -1,4 +1,3 @@
-// FE/src/components/layout/noteMain/NoteMain.tsx
 import React from 'react';
 import CodeBlock from '../codeBlock/CodeBlock';
 import TextBlock from '../textBlock/TextBlock';
@@ -17,7 +16,7 @@ interface NoteMainProps {
     onUpdateTitle: (newTitle: string) => void;
     blocks: BlockData[];
     onUpdateBlock: (id: number | string, content: string) => void;
-    onAddBlockAfter: (afterId: number | string, type: BlockType) => void;
+    onAddBlockAfter: (afterId: number | string, type: BlockType, content?: string) => void;
     onAddBlockAtEnd: (type: BlockType) => void;
     onDeleteBlock: (id: number | string) => void;
     onFocusBlock: (id: number | string) => void;
@@ -29,8 +28,8 @@ interface NoteMainProps {
     summary?: string;
     summaryStyle?: string;
     summaryUpdatedAt?: string;
-    isSummaryLoading: boolean;
-    onGenerateSummary: (style: SummaryStyle) => void;
+    isSummaryLoading?: boolean;
+    onGenerateSummary?: (style: SummaryStyle) => void;
 }
 
 const NoteMain: React.FC<NoteMainProps> = ({
@@ -46,16 +45,13 @@ const NoteMain: React.FC<NoteMainProps> = ({
     onMoveBlock,
     titleInputRef,
     noteId,
-    // AI 요약 관련 props
     summary,
     summaryStyle,
     summaryUpdatedAt,
     isSummaryLoading,
     onGenerateSummary
 }) => {
-    // [New] 초대 모달 상태
     const [isInviteModalOpen, setIsInviteModalOpen] = React.useState(false);
-    // [New] 권한 모달 상태
     const [isPermissionModalOpen, setIsPermissionModalOpen] = React.useState(false);
     // [New] AI 요약 모달 상태
     const [isSummaryModalOpen, setIsSummaryModalOpen] = React.useState(false);
@@ -65,14 +61,20 @@ const NoteMain: React.FC<NoteMainProps> = ({
 
     // DnD 상태 관리
     const [dragIndex, setDragIndex] = React.useState<number | null>(null);
+
+    // 디버깅: 실제 렌더링되는 블록 데이터 확인
+    console.log("[NoteMain] Current blocks for rendering:", blocks);
+
     const onDragStart = (e: React.DragEvent, index: number) => {
         e.dataTransfer.effectAllowed = "move";
         e.dataTransfer.setData("text/plain", index.toString());
         setDragIndex(index);
     };
+
     const onDragOver = (e: React.DragEvent) => {
         e.preventDefault();
     };
+
     const onDrop = (dropIndex: number) => {
         if (dragIndex === null || dragIndex === dropIndex) return;
         onMoveBlock(dragIndex, dropIndex);
@@ -104,6 +106,7 @@ const NoteMain: React.FC<NoteMainProps> = ({
             isFocused: block.id === focusedBlockId, // [추가] 포커스 여부 전달
             onContextMenu: (e: React.MouseEvent) => handleContextMenu(e, block.id),
         };
+
         switch (block.type) {
             case 'text':
                 return (
@@ -123,26 +126,28 @@ const NoteMain: React.FC<NoteMainProps> = ({
                         key={block.id}
                         {...commonProps}
                         id={block.id as any}
-                        noteId={noteId} // [추가]
+                        noteId={noteId}
                         language={(block.language as any) || 'javascript'}
                         code={block.content}
                         onDelete={onDeleteBlock as any}
                         onChange={onUpdateBlock as any}
                         onFocus={() => onFocusBlock(block.id)}
+                        onAddBlockAfter={(content: string) => onAddBlockAfter(block.id, 'text', content)}
                     />
                 );
             default:
                 return null;
         }
     };
+
     return (
         <div className="note-main-layout">
             <NoteSummary
                 summary={summary}
                 summaryStyle={summaryStyle}
                 summaryUpdatedAt={summaryUpdatedAt}
-                isLoading={isSummaryLoading}
-                onGenerateSummary={onGenerateSummary}
+                isLoading={isSummaryLoading ?? false}
+                onGenerateSummary={onGenerateSummary ?? (() => { })}
             />
             <div className="note-body-wrapper">
                 <div className="note-sidenav-area">
@@ -184,7 +189,6 @@ const NoteMain: React.FC<NoteMainProps> = ({
                 onClose={() => setIsInviteModalOpen(false)}
                 noteId={noteId}
             />
-            {/* 권한 관리 모달 */}
             <PermissionModal
                 isOpen={isPermissionModalOpen}
                 onClose={() => setIsPermissionModalOpen(false)}
@@ -194,10 +198,11 @@ const NoteMain: React.FC<NoteMainProps> = ({
             <SummaryConfigModal
                 isOpen={isSummaryModalOpen}
                 onClose={() => setIsSummaryModalOpen(false)}
-                onGenerate={onGenerateSummary}
-                isLoading={isSummaryLoading}
+                onGenerate={onGenerateSummary ?? (() => { })}
+                isLoading={isSummaryLoading ?? false}
             />
-        </div >
+        </div>
     );
 };
+
 export default NoteMain;

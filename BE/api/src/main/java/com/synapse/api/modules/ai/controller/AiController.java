@@ -34,11 +34,11 @@ public class AiController {
             @Valid @RequestBody CodeReviewRequest request) {
 
         UUID userId = details.id();
-        log.info("Code review requested: noteId={}, blockId={}, user={}", noteId, blockId, userId);
+        log.info("Code review requested: noteId={}, blockId={}, user={}, language={}",
+                noteId, blockId, userId, request.language());
 
         CodeReviewResponse response = codeAssistantService.reviewCode(
-                noteId, blockId, userId, request
-        );
+                noteId, blockId, userId, request);
 
         return DataResponse.of(response);
     }
@@ -53,8 +53,7 @@ public class AiController {
         log.info("Note summary requested: noteId={}, user={}", noteId, userId);
 
         NoteSummaryResponse response = noteSummaryService.summarizeNote(
-                noteId, userId, request
-        );
+                noteId, userId, request);
 
         return DataResponse.of(response);
     }
