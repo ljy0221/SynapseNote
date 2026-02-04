@@ -10,18 +10,35 @@ interface SearchBarProps {
 const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  const isFirstRender = useRef(true);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Live search with debouncing
   useEffect(() => {
-    const timer = setTimeout(() => {
-      onSearch(searchTerm.trim());
-    }, 300); // 300ms debounce
+    // 1. 초기 마운트 시점 실행 방지
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
 
-    return () => clearTimeout(timer);
+    // 2. 검색어가 비어있을 때 처리 (Header에서 이미 처리 중이지만 여기서도 방어)
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+
+    debounceTimerRef.current = setTimeout(() => {
+      onSearch(searchTerm.trim());
+    }, 400); // 400ms로 약간 더 여유 있게 조정
+
+    return () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    };
   }, [searchTerm, onSearch]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    // 3. 엔터를 눌렀을 때 기존 타이머 제거하여 중복 요청 방지
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
     onSearch(searchTerm.trim());
   };
 
