@@ -1,30 +1,31 @@
 // src/api/authApi.ts
+import { api } from './axios';
 
 export interface LoginResult {
     accessToken: string;
     memberId: string;
 }
 
+interface LoginResponse {
+    accessToken: string;
+    member: {
+        id: string;
+        email: string;
+        name: string;
+    };
+}
+
+interface ApiResponse<T> {
+    data: T;
+}
+
 export const socialLogin = async (provider: string, code: string): Promise<LoginResult> => {
-    const response = await fetch('/api/v1/login', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        credentials: 'include', // 쿠키(RefreshToken) 처리를 위해 필수
-        body: JSON.stringify({
-            provider: provider.toUpperCase(),
-            authorizationCode: code,
-        }),
+    const response = await api.post<ApiResponse<LoginResponse>>('/v1/login', {
+        provider: provider.toUpperCase(),
+        authorizationCode: code,
     });
 
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || '로그인 처리에 실패했습니다.');
-    }
-
-    const json = await response.json();
-    const data = json.data;
+    const data = response.data.data;
 
     return {
         accessToken: data.accessToken,
@@ -37,7 +38,15 @@ export interface UserInfo {
     email: string;
     name: string;
     provider: string;
-    createdAt: string; // LocalDateTime
+    createdAt: string;
+}
+
+interface MemberResponse {
+    id: string;
+    email: string;
+    name: string;
+    provider: string;
+    createdAt: string;
 }
 
 export const getUserInfo = async (token: string): Promise<UserInfo> => {
@@ -45,21 +54,13 @@ export const getUserInfo = async (token: string): Promise<UserInfo> => {
         throw new Error('No access token provided');
     }
 
-    const response = await fetch('/api/v1/members/me', {
-        method: 'GET',
+    const response = await api.get<ApiResponse<MemberResponse>>('/v1/members/me', {
         headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
         },
-        credentials: 'include',
     });
 
-    if (!response.ok) {
-        throw new Error('Failed to fetch user info');
-    }
-
-    const json = await response.json();
-    const data = json.data;
+    const data = response.data.data;
 
     return {
         ...data,
@@ -72,25 +73,17 @@ export const updateNickname = async (token: string, newNickname: string): Promis
         throw new Error('No access token provided');
     }
 
-    const response = await fetch('/api/v1/members/me', {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-            name: newNickname,
-        }),
-    });
+    const response = await api.patch<ApiResponse<MemberResponse>>(
+        '/v1/members/me',
+        { name: newNickname },
+        {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
 
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || '닉네임 변경에 실패했습니다.');
-    }
-
-    const json = await response.json();
-    const data = json.data;
+    const data = response.data.data;
 
     return {
         ...data,
