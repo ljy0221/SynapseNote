@@ -1,9 +1,10 @@
 /* src/components/layout/codeBlock/CodeBlock.tsx */
 import React, { useState, useEffect } from 'react';
+import { FileCode, Server } from 'lucide-react';
 import VersionButton from '../../common/versionButton/VersionButton';
 import BlockRunButton from '../../common/blockRunButton/BlockRunButton';
 import BlockCopyButton from '../../common/blockCopyButton/BlockCopyButton';
-import BlockDeleteButton from '../../common/blockDeleteButton/BlockDeleteButton';
+import BlockActionMenu from '../../common/blockActionMenu/BlockActionMenu';
 import CodeMirrorEditor from '../../common/codeMirrorEditor/CodeMirrorEditor';
 import type { Language, ExecutionResult, ExecutionMode, SessionInfo } from '../../../types/execution/ExecutionTypes';
 import './CodeBlock.css';
@@ -12,6 +13,7 @@ import { LanguageSelector } from "./LanguageSelector.tsx";
 import CheckpointSidebar from '../checkpoint/CheckpointSidebar';
 import { getLanguageTemplate, isCodeEmpty } from '../../../utils/languageTemplates';
 import { useCodeEditorStore } from '../../../store/useCodeEditorStore';
+import { useToastStore } from '../../../store/useToastStore';
 
 interface CodeBlockProps {
     id: number | string;
@@ -25,7 +27,8 @@ interface CodeBlockProps {
     onDragStart?: (e: React.DragEvent) => void;
     onDragOver?: (e: React.DragEvent) => void;
     onDrop?: (e: React.DragEvent) => void;
-    isFocused?: boolean; // [추가]
+    isFocused?: boolean;
+    isDragging?: boolean; // [추가]
 }
 
 function getDefaultVersion(language: Language): string {
@@ -49,6 +52,8 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     onDragStart,
     onDragOver,
     onDrop,
+    isFocused, // [추가] Focus prop Destructuring
+    isDragging,
 }) => {
     const [result, setResult] = useState<ExecutionResult | null>(null);
     const [loading, setLoading] = useState(false);
@@ -67,6 +72,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 
     // 버전 관리(체크포인트) 상태
     const [showCheckpoints, setShowCheckpoints] = useState(false);
+    const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null);
 
     // props code 변경 시 editedCode 동기화
     useEffect(() => {
@@ -79,6 +85,9 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     useEffect(() => {
         console.log('CodeBlock editedCode updated:', editedCode);
     }, [editedCode]);
+
+    // Toast 알림 (feat/#63 추가)
+    const { showToast } = useToastStore();
 
     // 초기 로드 시 비어있으면 템플릿 적용
     useEffect(() => {
@@ -115,7 +124,8 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
             const hasMultipleLangs = hasMultipleLanguages(noteId);
             if (hasMultipleLangs && executionMode === 'session') {
                 setExecutionMode('single');
-                alert('이 노트는 여러 언어를 사용하고 있어 세션 모드가 비활성화되었습니다.');
+                // Toast 사용으로 변경
+                showToast('이 노트는 여러 언어를 사용하고 있어 세션 모드가 비활성화되었습니다.', 'info');
             }
         }
     }, [noteId, id, language, trackBlockLanguage, hasMultipleLanguages, executionMode]);
@@ -124,7 +134,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
         if (typeof editedCode === "string") {
             navigator.clipboard.writeText(editedCode);
         }
-        alert('코드가 클립보드에 복사되었습니다.');
+        showToast('코드가 클립보드에 복사되었습니다.', 'success');
     };
 
     const handleRun = async () => {
@@ -241,23 +251,32 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 
     return (
         <div
+            id={`block-${id}`}
             className="code-block-wrapper"
+            onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setMenuPosition({ x: e.clientX, y: e.clientY });
+            }}
             onDragOver={onDragOver}
             onDrop={onDrop}
+            style={{
+                opacity: isDragging ? 0.4 : 1,
+                transform: isDragging ? 'scale(0.98)' : 'none',
+                transition: 'opacity 0.2s, transform 0.2s'
+            }}
         >
             <div className="code-block-header">
-                {/* [좌측] 삭제 버튼 + 드래그 핸들 (호버 시 보임) */}
-                <div className="code-left-controls">
-                    <BlockDeleteButton onDelete={() => onDelete(id)} />
-                    <div
-                        className="code-drag-handle"
-                        draggable={draggable}
-                        onDragStart={onDragStart}
-                        title="드래그하여 이동"
-                    >
-                        ⋮⋮
-                    </div>
-                </div>
+
+                {/* [좌측] 드래그 및 메뉴 버튼 */}
+                <BlockActionMenu
+                    position={menuPosition}
+                    onClose={() => setMenuPosition(null)}
+                    onDelete={() => onDelete(id)}
+                    draggable={draggable}
+                    onDragStart={onDragStart}
+                />
+
                 {/* [중앙] 언어 선택기 */}
                 <LanguageSelector
                     value={language}
@@ -265,81 +284,32 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                     disabled={loading}
                 />
 
-                {/* 모드 선택 버튼 (feat/#63 추가 - Java 제외, 다중 언어 시 비활성화) */}
-                {(() => {
-                    const isJava = language === 'java';
-                    const hasMultiple = hasMultipleLanguages(noteId || '');
-                    const shouldShow = !isJava && !hasMultiple;
-                    console.log(`[Session Button] lang:${language}, isJava:${isJava}, hasMultiple:${hasMultiple}, noteId:${noteId}, shouldShow:${shouldShow}`);
-                    return shouldShow;
-                })() && (
-                        <div className="mode-selector" style={{ marginLeft: '10px', display: 'flex', gap: '5px' }}>
-                            <button
-                                className={`mode-button ${executionMode === 'single' ? 'active' : ''}`}
-                                onClick={() => setExecutionMode('single')}
-                                disabled={loading}
-                                style={{
-                                    padding: '4px 10px',
-                                    fontSize: '12px',
-                                    cursor: loading ? 'not-allowed' : 'pointer',
-                                    backgroundColor: executionMode === 'single' ? '#4A90E2' : '#555',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                }}
-                            >
-                                Single
-                            </button>
-                            <button
-                                className={`mode-button ${executionMode === 'session' ? 'active' : ''}`}
-                                onClick={() => {
-                                    if (noteId) {
-                                        setExecutionMode('session');
-                                    }
-                                }}
-                                disabled={loading || !noteId}
-                                style={{
-                                    padding: '4px 10px',
-                                    fontSize: '12px',
-                                    cursor: (loading || !noteId) ? 'not-allowed' : 'pointer',
-                                    backgroundColor: executionMode === 'session' ? '#4A90E2' : '#555',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                    opacity: !noteId ? 0.5 : 1,
-                                }}
-                                title={!noteId ? '노트를 저장해야 세션 모드를 사용할 수 있습니다' : '세션 모드 활성화'}
-                            >
-                                Session
-                            </button>
-                        </div>
-                    )}
-
-                {/* [우측] 액션 버튼들 (삭제 버튼 제거됨) */}
+                {/* [우측] 액션 버튼 그룹 (Version -> Copy -> Single -> Session -> Run -> Menu) */}
                 <div className="code-actions">
-                    {/* 세션 인디케이터 (feat/#63 추가) */}
+                    {/* 세션 인디케이터 (맨 앞에 배치) */}
                     {sessionInfo && executionMode === 'session' && (
                         <button
                             className="session-indicator"
                             onClick={handleTerminateSession}
                             title="세션 종료"
                             style={{
-                                padding: '4px 10px',
+                                padding: '0 8px',
+                                height: '32px',
                                 fontSize: '12px',
                                 cursor: 'pointer',
                                 backgroundColor: '#28a745',
                                 color: 'white',
                                 border: 'none',
-                                borderRadius: '4px',
-                                marginRight: '5px',
+                                borderRadius: '6px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                marginRight: '4px'
                             }}
                         >
-                            🟢 Session: {sessionInfo.sessionId.substring(0, 8)}
+                            🟢 {sessionInfo.sessionId.substring(0, 6)}
                         </button>
                     )}
 
-                    <BlockRunButton onClick={handleRun} disabled={loading} />
-                    <BlockCopyButton onCopy={handleCopy} />
                     <VersionButton
                         onClick={() => {
                             if (!noteId) {
@@ -349,6 +319,69 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                             setShowCheckpoints(true);
                         }}
                     />
+
+                    <BlockCopyButton onCopy={handleCopy} />
+
+                    {/* 모드 선택 버튼 (Single / Session) */}
+                    {(() => {
+                        const hasMultiple = hasMultipleLanguages(noteId || '');
+                        const isJava = language === 'java';
+
+                        // 공통 스타일 (VersionButton 스타일 조합)
+                        const getButtonStyle = (isActive: boolean, isDisabled: boolean) => ({
+                            width: '32px',
+                            height: '32px',
+                            padding: 0,
+                            fontSize: '12px',
+                            cursor: isDisabled ? 'not-allowed' : 'pointer',
+                            // 활성 상태일 때 배경색 미세하게, 테두리와 아이콘은 포인트 컬러
+                            backgroundColor: isActive ? 'rgba(245, 158, 11, 0.1)' : 'transparent',
+                            color: isActive ? 'var(--color-point)' : 'var(--font-color-sub)',
+                            border: `1px solid ${isActive ? 'var(--color-point)' : 'var(--color-border, #ccc)'}`,
+                            borderRadius: '6px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'all 0.2s',
+                            opacity: isDisabled ? 0.5 : 1,
+                        });
+
+                        return (
+                            <>
+                                <button
+                                    className={`mode-button ${executionMode === 'single' ? 'active' : ''}`}
+                                    onClick={() => setExecutionMode('single')}
+                                    disabled={loading}
+                                    style={getButtonStyle(executionMode === 'single', loading)}
+                                    title="단일 실행 (Single Mode)"
+                                >
+                                    <FileCode size={18} />
+                                </button>
+                                <button
+                                    className={`mode-button ${executionMode === 'session' ? 'active' : ''}`}
+                                    onClick={() => {
+                                        if (noteId && !hasMultiple && !isJava) {
+                                            setExecutionMode('session');
+                                        }
+                                    }}
+                                    disabled={loading || !noteId || hasMultiple || isJava}
+                                    style={getButtonStyle(executionMode === 'session', loading || !noteId || !!hasMultiple || isJava)}
+                                    title={
+                                        !noteId ? '노트를 저장해야 세션 모드를 사용할 수 있습니다' :
+                                            isJava ? 'Java는 세션 모드를 지원하지 않습니다' :
+                                                hasMultiple ? '다중 언어 포함 노트는 세션 모드를 사용할 수 없습니다' :
+                                                    '세션 모드 (Session Mode)'
+                                    }
+                                >
+                                    <Server size={18} />
+                                </button>
+                            </>
+                        );
+                    })()}
+
+                    <BlockRunButton onClick={handleRun} disabled={loading} />
+
+
                 </div>
             </div>
             {/* 메인 코드 영역 */}
@@ -361,6 +394,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                         onChange(id, value);
                     }}
                     onFocus={onFocus}
+                    autoFocus={isFocused}
                     readOnly={loading}
                     minHeight="150px"
                     maxHeight="800px"

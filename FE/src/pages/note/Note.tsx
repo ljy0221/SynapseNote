@@ -88,14 +88,19 @@ const Note: React.FC = () => {
 
     // 마지막에 블록 추가 (툴바용)
     const handleAddBlockAtEnd = (type: BlockType) => {
-        addBlock(null, type);
+        const newId = addBlock(null, type);
+        setFocusedBlockId(newId);
     };
 
     const handleShortcutCreate = (type: BlockType) => {
+        let newId;
         if (focusedBlockId !== null) {
-            addBlock(focusedBlockId, type);
+            newId = addBlock(focusedBlockId, type);
         } else {
-            addBlock(null, type);
+            newId = addBlock(null, type);
+        }
+        if (newId) {
+            setFocusedBlockId(newId);
         }
     };
 
@@ -207,7 +212,10 @@ const Note: React.FC = () => {
                         focusedBlockId={focusedBlockId}
                         onMoveBlock={handleMoveBlock}
                         titleInputRef={titleInputRef}
-                        onAddBlockAfter={(id, type) => addBlock(id, type)}
+                        onAddBlockAfter={(id, type) => {
+                            const newId = addBlock(id, type);
+                            setFocusedBlockId(newId);
+                        }}
                     />
                 </div>
             )}
