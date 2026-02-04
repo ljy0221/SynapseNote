@@ -1,14 +1,45 @@
-/* src/components/layout/codeBlock/CodeBlock.css */
 .code-block-wrapper {
     width: 90%;
     max-width: 800px;
     margin: 20px auto;
+    display: flex;
+    flex-direction: row;
+    /* changed from column */
+    gap: 8px;
+    /* gap between handle and block */
+    position: relative;
+}
+
+.code-block-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
     background-color: var(--color-sub);
     border-radius: 12px;
     border: 1px solid rgba(128, 128, 128, 0.2);
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    /* ensure children don't overflow corners */
+}
+
+/* Use common name or reuse style from TextBlock if global, but here define locally or reuse if possible. 
+   User likely wants consistency. Let's replicate .block-controls style. */
+.block-controls {
     display: flex;
     flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding-top: 12px;
+    cursor: grab;
+    opacity: 0;
+    transition: opacity 0.2s;
+    width: 32px;
+    /* Fixed width for handle container */
+    flex-shrink: 0;
+}
+
+.code-block-wrapper:hover .block-controls {
+    opacity: 1;
 }
 
 .code-block-header {
@@ -18,8 +49,7 @@
     padding: 8px 16px;
     background-color: var(--color-sub);
     border-bottom: 1px solid rgba(128, 128, 128, 0.1);
-    border-top-left-radius: 12px;
-    border-top-right-radius: 12px;
+    /* Border radius handled by main container overflow */
 }
 
 /* 좌측 컨트롤 (삭제버튼 + 드래그핸들) - 호버 시에만 보임 */
@@ -132,7 +162,4 @@
     margin-right: auto;
 }
 
-.code-block-wrapper> :last-child {
-    border-bottom-left-radius: 12px;
-    border-bottom-right-radius: 12px;
-}
+/* .code-block-wrapper > :last-child radius removed as handled by .code-block-main */
