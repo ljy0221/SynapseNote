@@ -21,20 +21,29 @@ const processQueue = (error: any, token: string | null = null) => {
 };
 
 export const api = axios.create({
-  baseURL: '/api', // Vite Proxy 설정에 따름
+  baseURL: 'https://i14b102.p.ssafy.io/backend/api',
   withCredentials: true, // 쿠키(RefreshToken) 전송 허용
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// 요청 인터셉터: 모든 요청에 액세스 토큰 첨부
+// 요청 인터셉터: 모든 요청에 액세스 토큰 첨부 (공개 엔드포인트 제외)
 api.interceptors.request.use(
   (config) => {
-    const token = useAuthStore.getState().accessToken;
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // 공개 엔드포인트는 토큰 불필요
+    const publicEndpoints = ['/v1/login', '/v1/refresh'];
+    const isPublicEndpoint = publicEndpoints.some(endpoint =>
+      config.url?.includes(endpoint)
+    );
+
+    if (!isPublicEndpoint) {
+      const token = useAuthStore.getState().accessToken;
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
+
     return config;
   },
   (error) => Promise.reject(error)
@@ -68,7 +77,7 @@ api.interceptors.response.use(
           '/v1/refresh',
           {},
           {
-            baseURL: '/api',
+            baseURL: 'https://i14b102.p.ssafy.io/backend',
             withCredentials: true,
           }
         );
