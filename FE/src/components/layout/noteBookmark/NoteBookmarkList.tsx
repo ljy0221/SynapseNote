@@ -9,6 +9,7 @@ import {
   removeBookmarkApi,
 } from '../../../api/bookmark/Bookmarks.api';
 import { adaptBookmarkedNotes } from '../../../api/bookmark/Bookmarks.adapter';
+import { emitNotesChanged } from '../../../events/NotesEvents';
 
 const NoteBookmarkList = () => {
   const [notes, setNotes] = useState<BookmarkedNote[]>([]);
@@ -43,6 +44,7 @@ const NoteBookmarkList = () => {
 
     try {
       await removeBookmarkApi(noteId);
+      emitNotesChanged(); // 사이드바 등 다른 컴포넌트 동기화
     } catch {
       // rollback: 서버 기준 재동기화
       try {
