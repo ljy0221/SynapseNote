@@ -55,7 +55,7 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
                 // Principal 설정 (convertAndSendToUser()가 이 값을 사용함)
                 accessor.setUser(() -> memberId.toString());
 
-                log.info("[WebRTC Auth] STOMP CONNECT authenticated for member: {}, session: {}",
+                log.debug("[WebRTC Auth] STOMP CONNECT authenticated for member: {}, session: {}",
                         memberId, accessor.getSessionId());
 
                 return message;
