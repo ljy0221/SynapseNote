@@ -138,18 +138,9 @@ const TextBlock: React.FC<TextBlockProps> = ({
             TabHandler,
         ],
         content: content,
-        onTransaction: () => {
-            // Force re-render on every transaction to update toolbar state immediately
-            // Tiptap's useEditor hook usually handles this, but sometimes state updates lag
-            // forcing a React state update ensures the toolbar re-renders with correct isActive checks.
-            setIsFocused(true);
-            // Using a dummy state or just ensuring existing state is set could work,
-            // or simply relying on useEditor's internal update.
-            // If useEditor isn't triggering re-render, we might need a forceUpdate.
-            // However, `editor` instance itself doesn't change, but its state does.
-            // useEditor should trigger re-renders on state changes.
-            // If not, we can use a forceUpdate mechanism.
-        },
+        // onTransaction removed for performance optimization.
+        // We now rely on explicit onClick triggers for button state updates
+        // and onSelectionUpdate for cursor updates.
         onSelectionUpdate: ({ editor }) => {
             // 확실하게 상태 업데이트를 트리거하기 위해 forceUpdate 패턴 사용
             // 여기서는 간단히 editor 상태가 변경되었음을 알림

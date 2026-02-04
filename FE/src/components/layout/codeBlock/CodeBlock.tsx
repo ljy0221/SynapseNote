@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import VersionButton from '../../common/versionButton/VersionButton';
+import { DragControls } from 'framer-motion';
 import BlockRunButton from '../../common/blockRunButton/BlockRunButton';
 import BlockCopyButton from '../../common/blockCopyButton/BlockCopyButton';
 
@@ -28,13 +29,8 @@ interface CodeBlockProps {
     onFocus: () => void;
     onAddBlockAfter?: (content: string) => void; // AI 리뷰 결과를 새 블록으로 추가
     // Native DnD removed
-    // draggable?: boolean;
-    // onDragStart?: (e: React.DragEvent) => void;
-    // onDragOver?: (e: React.DragEvent) => void;
-    // onDrop?: (e: React.DragEvent) => void;
-
     // Framer Motion controls
-    dragControls?: any;
+    dragControls?: DragControls;
     isFocused?: boolean; // [추가]
     onContextMenu?: (e: React.MouseEvent) => void; // [New]
     onAiReviewResult?: (htmlContent: string) => void;
@@ -58,10 +54,6 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     onChange,
     onFocus,
     onAddBlockAfter,
-    // draggable,
-    // onDragStart,
-    // onDragOver,
-    // onDrop,
     dragControls,
     onContextMenu, // [New]
     onAiReviewResult, // [New]
