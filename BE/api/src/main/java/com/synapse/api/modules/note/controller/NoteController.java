@@ -5,6 +5,7 @@ import com.synapse.api.modules.block.dto.response.BlockPageResponse;
 import com.synapse.api.modules.block.service.BlockService;
 import com.synapse.api.modules.note.dto.request.ExecutionHistoryRequest;
 import com.synapse.api.modules.note.dto.request.NoteCreateRequest;
+import com.synapse.api.modules.note.dto.request.NoteFilter;
 import com.synapse.api.modules.note.dto.request.NoteUpdateRequest;
 import com.synapse.api.modules.note.dto.response.ExecutionHistoryResponse;
 import com.synapse.api.modules.note.dto.response.NoteDetailResponse;
@@ -46,11 +47,22 @@ public class NoteController {
     @GetMapping("/v1/notes")
     public DataResponse<NotePageResponse> getAllNotes(
             @AuthenticationPrincipal CustomMemberDetails details,
+            @RequestParam(required = false) NoteFilter filter,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
         UUID memberId = details.id();
-        log.info("Getting all notes for member: {} (page: {}, size: {})", memberId, page, size);
-        NotePageResponse response = noteService.getAllNotes(memberId, page - 1, size);
+        log.info("Getting notes for member: {} with filter: {} (page: {}, size: {})", memberId, filter, page, size);
+
+        NotePageResponse response;
+        if (filter == NoteFilter.OWNED) {
+            response = noteService.getOwnedNotes(memberId, page - 1, size);
+        } else if (filter == NoteFilter.SHARED) {
+            response = noteService.getSharedNotes(memberId, page - 1, size);
+        } else {
+            // filter가 null이거나 ALL이면 전체 조회
+            response = noteService.getAllNotes(memberId, page - 1, size);
+        }
+
         return DataResponse.of(response);
     }
 
@@ -186,7 +198,7 @@ public class NoteController {
 
     @GetMapping("/v1/notes/{noteId}/blocks")
     public DataResponse<List<BlockDetailResponse>> getBlocks(@AuthenticationPrincipal CustomMemberDetails details,
-                                                             @PathVariable UUID noteId) {
+            @PathVariable UUID noteId) {
         List<BlockDetailResponse> response = blockService.getBlocks(details.id(), noteId);
         return DataResponse.of(response);
     }

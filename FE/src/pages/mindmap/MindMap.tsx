@@ -299,7 +299,7 @@ const MindMapContent: React.FC = () => {
 
 
     // [New] Global Modal Store
-    const { openModal } = useModalStore();
+    const { openModal, closeAll } = useModalStore();
 
     // [Modified] swapParams 상태 제거 -> 로컬 변수나 클로저로 처리
 
@@ -318,31 +318,7 @@ const MindMapContent: React.FC = () => {
 
     // ... (기존 로직 유지)
 
-    /**
-     * 기능 1: 노드 추가 버튼 클릭 핸들러
-     * [Modified] 바로 생성하지 않고 모달을 오픈함
-     */
-    const handleAddNodeClick = useCallback(() => {
-        openModal('NODE_SELECTOR', {
-            onSelect: (noteData: any) => handleSelectNote(noteData), // handleSelectNote가 최신 상태를 참조하는지 확인 필요... useCallback dependency에 있으니 OK.
-            existingNodeIds: nodes.map(n => n.id)
-        });
-    }, [openModal, nodes]); // handleSelectNote는 아래에 정의되므로 의존성 문제 주의. handleSelectNote를 먼저 정의하거나... hoisting 덕분에 괜찮음. 하지만 useCallback 안에서는...
-    // handleSelectNote가 useCallback으로 정의되어 있으므로, 여기서 호출하려면 handleSelectNote가 의존성에 추가되어야 함.
-    // 하지만 handleSelectNote가 아래에 있음. 순서 변경 필요?
-    // 아니면 openModal 호출 시점에 handleSelectNote는 이미 정의된 상태일 것임 (렌더링 시점에).
-    // useCallback 의존성 배열에 handleSelectNote를 넣어야 함.
-    // -> handleSelectNote를 먼저 정의하고 handleAddNodeClick을 정의하는 것이 안전함. 순서 변경하거나, 
-    // 현재 구조상 handleAddNodeClick이 먼저 나오고 handleSelectNote가 뒤에 나옴. 
-    // Javascript 호이스팅은 변수에는 적용 안됨 (const). 
-    // 순서를 바꾸는 것이 좋음. 하지만 diff가 커짐.
-    // 일단 여기에 쓰고 handleSelectNote를 의존성 배열에 추가. (ESLint가 경고할 것임: useBeforeDefine)
-    // 리팩토링 편의상 일단 진행하고 문제 생기면 순서 조정.
-    // React Hook 순서는 렌더링마다 동일해야 함.
 
-    // --> handleAddNodeClick을 handleSelectNote 아래로 옮기는 것이 Best.
-    // 하지만 여기서는 기존 위치 유지하고, handleSelectNote를 나중에 참조하도록 함.
-    // *주의*: `handleSelectNote` change will trigger `handleAddNodeClick` recreation.
 
 
     /**
@@ -372,6 +348,7 @@ const MindMapContent: React.FC = () => {
             openModal('CONFIRM', {
                 message: `이미 연결된 관계입니다.\n방향을 반대로 변경하시겠습니까?`,
                 onConfirm: () => handleConfirmSwap(reverseEdge.id, params as Connection),
+                onCancel: closeAll,
             });
             return;
         }
@@ -412,10 +389,8 @@ const MindMapContent: React.FC = () => {
 
         // 3. 알림 표시
         showToast("연결 방향이 반대로 변경되었습니다.");
-        // setIsSwapModalOpen(false); // Global Modal은 내부에서 닫힘 (onConfirm 실행 후 자동 닫힘 처리 필요? 아니면 여기서 명시적 닫기? ConfirmModal 구현 확인 필요)
-        // ConfirmModal의 onConfirm 호출 후 닫는 로직은 ConfirmModal 내부에 있을 것임.
-        // 확인: ConfirmModal.tsx: onConfirm(); onClose(); -> OK.
-    }, [setEdges, showToast]);
+        closeAll();
+    }, [setEdges, showToast, closeAll]);
 
     // handleCancelSwap 삭제 (Modal onClose에서 처리)
 
@@ -495,8 +470,20 @@ const MindMapContent: React.FC = () => {
             return nds.map(n => ({ ...n, selected: false })).concat([newNode]);
         });
 
-        // setIsSelectorOpen(false); // Modal onClose handles this
-    }, [setNodes, setCenter, showToast]); // showToast 추가됨
+        closeAll();
+    }, [setNodes, setCenter, showToast, closeAll]); // showToast 추가됨
+
+
+    /**
+     * 기능 1: 노드 추가 버튼 클릭 핸들러
+     * [Modified] 바로 생성하지 않고 모달을 오픈함
+     */
+    const handleAddNodeClick = useCallback(() => {
+        openModal('NODE_SELECTOR', {
+            onSelect: (noteData: any) => handleSelectNote(noteData),
+            existingNodeIds: nodes.map(n => n.id)
+        });
+    }, [openModal, nodes, handleSelectNote]);
 
 
     // handleDuplicateModalClose 삭제됨
@@ -523,8 +510,8 @@ const MindMapContent: React.FC = () => {
 
         setNodes((nds) => nds.filter((node) => !node.selected));
         setEdges((eds) => eds.filter((edge) => !edge.selected));
-        // setIsDeleteModalOpen(false); // Modal handles close
-    }, [setNodes, setEdges, nodes, showToast]);
+        closeAll();
+    }, [setNodes, setEdges, nodes, showToast, closeAll]);
 
     /**
      * 기능 2: 선택된 노드 및 연결선 삭제 (모달 호출)
@@ -539,12 +526,13 @@ const MindMapContent: React.FC = () => {
             openModal('CONFIRM', {
                 message: `정말 '${selectedNodes[0].data.title}' 노드를\n삭제하시겠습니까?`,
                 onConfirm: () => executeDelete(),
+                onCancel: closeAll,
             });
         } else {
-            // setDeleteMessage(`정말 ${selectedNodes.length}개의 노드를\n삭제하시겠습니까?`);
             openModal('CONFIRM', {
                 message: `정말 ${selectedNodes.length}개의 노드를\n삭제하시겠습니까?`,
                 onConfirm: () => executeDelete(),
+                onCancel: closeAll,
             });
         }
 
@@ -597,6 +585,7 @@ const MindMapContent: React.FC = () => {
                     openModal('CONFIRM', {
                         message: `이미 연결된 관계입니다.\n방향을 반대로 변경하시겠습니까?`,
                         onConfirm: () => handleConfirmSwap(reverseEdge.id, newConnection),
+                        onCancel: closeAll,
                     });
 
                     setConnectSource(null);

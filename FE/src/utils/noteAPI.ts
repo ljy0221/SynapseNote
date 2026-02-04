@@ -1,22 +1,19 @@
 // FE/src/utils/noteAPI.ts
 import type { CreateNoteRequest, CreateNoteResponse } from '../types/note/CreateNote';
 import type { SearchedNote } from '../types/note/SearchNotes';
+import { api } from '../api/axios';
+
 export async function createNote(req: CreateNoteRequest): Promise<CreateNoteResponse> {
-    const authToken = localStorage.getItem('authToken');
-    // 토큰이 절대적으로 필요하다면 에러 처리, 선택적이라면 로직 조정
-    // if (!authToken) throw new Error('로그인이 필요합니다.');
-    const response = await fetch('/api/v1/notes', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken || ''}`,
-        },
-        body: JSON.stringify(req),
-    });
-    if (!response.ok) {
-        throw new Error('노트 생성 실패');
-    }
-    return await response.json();
+  try {
+    // baseURL '/api' + path '/v1/notes' => '/api/v1/notes'
+    const res = await api.post('/v1/notes', req);
+
+    // 서버가 DataResponse 래핑이면 res.data.data가 실제 payload
+    // 래핑이 아니면 res.data 자체가 payload
+    return (res.data?.data ?? res.data) as CreateNoteResponse;
+  } catch (e) {
+    throw new Error('노트 생성 실패');
+  }
 }
 
 /**
@@ -24,23 +21,19 @@ export async function createNote(req: CreateNoteRequest): Promise<CreateNoteResp
  * BE: GET /api/v1/notes/search?q={query}
  */
 export async function searchNotes(query: string): Promise<SearchedNote[]> {
-    const authToken = localStorage.getItem('authToken');
-
-    const response = await fetch(`/api/v1/notes/search?q=${encodeURIComponent(query)}`, {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken || ''}`,
-        },
+  try {
+    const res = await api.get('/v1/notes/search', {
+      params: { q: query },
     });
 
-    if (!response.ok) {
-        throw new Error('노트 검색 실패');
-    }
+    const data = (res.data?.data ?? res.data) as SearchedNote[];
 
-    const data = await response.json();
-    return data.data.map((note: SearchedNote) => ({
-        ...note,
-        noteId: note.noteId.toLowerCase(),
+    // 기존 로직 유지
+    return data.map((note: SearchedNote) => ({
+      ...note,
+      noteId: note.noteId.toLowerCase(),
     }));
+  } catch (e) {
+    throw new Error('노트 검색 실패');
+  }
 }
