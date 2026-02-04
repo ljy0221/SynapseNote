@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import RecentNotes from '../../components/layout/recentNotes/RecentNotes';
 import NoteStreak from '../../components/layout/noteStreak/NoteStreak';
 import './Home.css';
@@ -23,31 +23,41 @@ const Home: React.FC = () => {
   const [streakDates, setStreakDates] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    //  memberId 없으면 절대 호출 안 함
+  const fetchDashboardData = useCallback(async (isSilent = false) => {
     if (!memberId) return;
+    if (!isSilent) setLoading(true);
 
-    const fetchDashboardData = async () => {
-      setLoading(true);
+    try {
+      const [notesRes, streakRes] = await Promise.all([
+        getNotesApi(),
+        getStreakApi(memberId),
+      ]);
 
-      try {
-        const [notesRes, streakRes] = await Promise.all([
-          getNotesApi(),
-          getStreakApi(memberId),
-        ]);
+      setRecentNotes(adaptNotesForSidebar(notesRes));
+      setStreakDates(adaptStreakDates(streakRes));
+    } catch (e) {
+      console.error('[Home] Dashboard 로딩 실패', e);
+      setStreakDates([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [memberId]);
 
-        setRecentNotes(adaptNotesForSidebar(notesRes));
-        setStreakDates(adaptStreakDates(streakRes));
-      } catch (e) {
-        console.error('[Home] Dashboard 로딩 실패', e);
-        setStreakDates([]);
-      } finally {
-        setLoading(false);
-      }
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
+
+  // 노트 변경 이벤트 리스너 추가
+  useEffect(() => {
+    const handleNotesChanged = () => {
+      fetchDashboardData(true); // 사이드바 변경 시에는 "조용히" 갱신
     };
 
-    fetchDashboardData();
-  }, [memberId]);
+    window.addEventListener('notes-changed', handleNotesChanged);
+    return () => {
+      window.removeEventListener('notes-changed', handleNotesChanged);
+    };
+  }, [fetchDashboardData]);
 
   //  인증 로딩 + 데이터 로딩 분리
   if (userLoading || loading) {
