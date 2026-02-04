@@ -1,5 +1,6 @@
 package com.synapse.api.modules.mindmap.service;
 
+import com.synapse.api.modules.member.repository.MemberRepository;
 import com.synapse.api.modules.mindmap.dto.MindmapEdgeDto;
 import com.synapse.api.modules.mindmap.dto.MindmapNodeDto;
 import com.synapse.api.modules.mindmap.dto.NodePositionDto;
@@ -11,6 +12,7 @@ import com.synapse.api.modules.mindmap.repository.MindmapEdgeRepository;
 import com.synapse.api.modules.note.entity.Note;
 import com.synapse.api.modules.note.repository.NoteRepository;
 import com.synapse.api.modules.member.entity.Member;
+import com.synapse.api.modules.note.service.NoteValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -38,6 +40,12 @@ class MindmapServiceTest {
 
     @Mock
     private NoteRepository noteRepository;
+
+    @Mock
+    private MemberRepository memberRepository;
+
+    @Mock
+    private NoteValidator noteValidator;
 
     @InjectMocks
     private MindmapService mindmapService;
@@ -91,7 +99,7 @@ class MindmapServiceTest {
 
             List<Note> notes = List.of(note1, note2);
 
-            MindmapEdge edge = MindmapEdge.of(note1, note2);
+            MindmapEdge edge = MindmapEdge.of(note1, note2, member);
             List<MindmapEdge> edges = List.of(edge);
 
             given(noteRepository.findMindMapNodesByMember(memberId)).willReturn(notes);
@@ -162,12 +170,13 @@ class MindmapServiceTest {
             Note note2 = Note.builder().id(node2Id).createdBy(member).build();
             Note note3 = Note.builder().id(node3Id).createdBy(member).build();
 
-            MindmapEdge existingEdge = MindmapEdge.of(note1, note2);
+            MindmapEdge existingEdge = MindmapEdge.of(note1, note2, member);
             given(mindmapEdgeRepository.findAllByMember(memberId)).willReturn(List.of(existingEdge));
 
             MindmapEdgeDto edgeRequest = new MindmapEdgeDto(node1Id, node3Id);
             SyncMindmapRequest request = new SyncMindmapRequest(null, List.of(edgeRequest));
 
+            given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
             given(noteRepository.findAllById(any())).willReturn(List.of(note1, note3));
 
             // when
