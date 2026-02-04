@@ -15,6 +15,7 @@ import { requestCodeReview, createReviewRequest } from '../../../api/ai/AiCodeRe
 import { formatReviewAsHtml } from '../../../utils/aiReviewFormatter';
 import { getLanguageTemplate, isCodeEmpty } from '../../../utils/languageTemplates';
 import { useCodeEditorStore } from '../../../store/useCodeEditorStore';
+import { useToastStore } from '../../../store/useToastStore';
 import { Tooltip } from '../../common/tooltip/Tooltip';
 
 interface CodeBlockProps {
@@ -26,10 +27,14 @@ interface CodeBlockProps {
     onChange: (id: number | string, newCode: string) => void;
     onFocus: () => void;
     onAddBlockAfter?: (content: string) => void; // AI 리뷰 결과를 새 블록으로 추가
-    draggable?: boolean;
-    onDragStart?: (e: React.DragEvent) => void;
-    onDragOver?: (e: React.DragEvent) => void;
-    onDrop?: (e: React.DragEvent) => void;
+    // Native DnD removed
+    // draggable?: boolean;
+    // onDragStart?: (e: React.DragEvent) => void;
+    // onDragOver?: (e: React.DragEvent) => void;
+    // onDrop?: (e: React.DragEvent) => void;
+
+    // Framer Motion controls
+    dragControls?: any;
     isFocused?: boolean; // [추가]
     onContextMenu?: (e: React.MouseEvent) => void; // [New]
     onAiReviewResult?: (htmlContent: string) => void;
@@ -53,10 +58,11 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     onChange,
     onFocus,
     onAddBlockAfter,
-    draggable,
-    onDragStart,
-    onDragOver,
-    onDrop,
+    // draggable,
+    // onDragStart,
+    // onDragOver,
+    // onDrop,
+    dragControls,
     onContextMenu, // [New]
     onAiReviewResult, // [New]
 }) => {
@@ -102,13 +108,15 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
         if (noteId) trackBlockLanguage(noteId, id.toString(), language);
     }, [noteId, id, language]);
 
+    const { showToast } = useToastStore();
+
     useEffect(() => {
         return () => aiReviewAbortRef.current?.abort();
     }, []);
 
     const handleCopy = () => {
         if (typeof editedCode === "string") navigator.clipboard.writeText(editedCode);
-        alert('코드가 클립보드에 복사되었습니다.');
+        showToast('코드가 클립보드에 복사되었습니다.', 'success');
     };
 
     const handleRun = async () => {
@@ -235,15 +243,15 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     return (
         <div
             className="code-block-wrapper"
-            onDragOver={onDragOver}
-            onDrop={onDrop}
+            // onDragOver={onDragOver}
+            // onDrop={onDrop}
             onContextMenu={onContextMenu} // [New]
         >
             <div className="block-controls">
                 <div
                     className="code-drag-handle"
-                    draggable={draggable}
-                    onDragStart={onDragStart}
+                    onPointerDown={(e) => dragControls?.start(e)}
+                    style={{ touchAction: 'none' }}
                     title="드래그하여 이동"
                 >
                     ⋮⋮
@@ -355,7 +363,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                         }}
                         onFocus={onFocus}
                         readOnly={loading}
-                        minHeight="150px"
+                        minHeight="auto"
                         maxHeight="800px"
                     />
                 </div>

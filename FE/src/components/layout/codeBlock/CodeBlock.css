@@ -106,7 +106,7 @@
 
 .code-content-container {
     background-color: transparent;
-    min-height: 150px;
+    min-height: auto;
     display: flex;
     overflow: hidden;
     /* CodeMirror 스크롤 처리 */
