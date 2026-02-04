@@ -12,6 +12,7 @@ import com.synapse.api.modules.mindmap.repository.MindmapEdgeRepository;
 import com.synapse.api.modules.note.entity.Note;
 import com.synapse.api.modules.note.repository.NoteRepository;
 import com.synapse.api.modules.member.entity.Member;
+import com.synapse.api.modules.note.service.NoteValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -42,6 +43,9 @@ class MindmapServiceTest {
 
     @Mock
     private MemberRepository memberRepository;
+
+    @Mock
+    private NoteValidator noteValidator;
 
     @InjectMocks
     private MindmapService mindmapService;
