@@ -3,6 +3,7 @@ package com.synapse.api.modules.member.repository;
 import com.synapse.api.modules.member.entity.Streak;
 import com.synapse.api.modules.member.entity.StreakId;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -15,7 +16,13 @@ public interface StreakRepository extends JpaRepository<Streak, StreakId> {
     List<Streak> findStreaksByMemberAndDateRange(@Param("memberId") UUID memberId,
             @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
-    @Query("SELECT s FROM Streak s WHERE s.id.memberId = :memberId AND s.deletedAt IS NULL")
-    List<Streak> findAllByMemberId(@Param("memberId") UUID memberId);
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+        UPDATE Streak s
+        SET s.deletedAt = CURRENT_TIMESTAMP
+        WHERE s.member.id = :memberId
+          AND s.deletedAt IS NULL
+    """)
+    void softDeleteAllByMemberId(@Param("memberId") UUID memberId);
 
 }
