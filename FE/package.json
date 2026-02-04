@@ -39,6 +39,7 @@
     "@types/d3-force": "^3.0.10",
     "axios": "^1.13.4",
     "codemirror": "^6.0.2",
+    "crypto": "^1.0.1",
     "d3-force": "^3.0.0",
     "dayjs": "^1.11.19",
     "lucide-react": "^0.562.0",
