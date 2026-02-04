@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 import type { SummaryStyle } from '../../../types/ai/NoteSummary';
 import './NoteSummary.css';
 
@@ -99,7 +100,9 @@ export const NoteSummary: React.FC<NoteSummaryProps> = ({
           </div>
         </div>
         {isExpanded && (
-          <div className="summary-text">{summary}</div>
+          <div className="summary-text">
+            <ReactMarkdown>{summary}</ReactMarkdown>
+          </div>
         )}
       </div>
     </div>
