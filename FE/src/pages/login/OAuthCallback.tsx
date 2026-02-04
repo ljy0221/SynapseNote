@@ -9,7 +9,9 @@ const OAuthCallback: React.FC = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const processedRef = useRef(false);
+
     const login = useAuthStore((state) => state.login);
+    const setAccessToken = useAuthStore((state) => state.setAccessToken);
     const showToast = useToastStore((state) => state.showToast);
 
     useEffect(() => {
@@ -42,9 +44,13 @@ const OAuthCallback: React.FC = () => {
         const handleLogin = async () => {
             try {
                 console.log(`[OAuth] Processing login for ${provider} with code...`);
+
                 const result = await socialLogin(provider, code);
 
-                // Store를 통해 로그인 처리 (토큰 저장 및 유저 정보 갱신)
+                if (setAccessToken) {
+                    setAccessToken(result.accessToken);
+                }
+
                 await login(result.accessToken);
 
                 console.log('[OAuth] Login success');
@@ -52,22 +58,31 @@ const OAuthCallback: React.FC = () => {
             } catch (error: any) {
                 console.error('[OAuth] Login failed:', error);
 
-                showToast(`로그인 실패: ${error.message}`, 'error');
+                showToast(`로그인 실패: ${error?.message ?? '알 수 없는 오류'}`, 'error');
                 navigate('/login', { replace: true });
             }
         };
 
         handleLogin();
-    }, [provider, searchParams, navigate, login, showToast]);
+    }, [provider, searchParams, navigate, login, setAccessToken, showToast]);
 
     // 브라우저용 안내 화면
     if (!window.electronAPI) {
         return (
-            <div style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', textAlign: 'center'
-            }}>
+            <div
+                style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: '100vh',
+                    textAlign: 'center',
+                }}
+            >
                 <h2>로그인 완료</h2>
-                <p>브라우저 팝업이 뜨면 <b>'Synapse 열기'</b>를 클릭해주세요.</p>
+                <p>
+                    브라우저 팝업이 뜨면 <b>'Synapse 열기'</b>를 클릭해주세요.
+                </p>
                 <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '10px' }}>
                     * '항상 허용'을 체크하시면 다음부터는 자동으로 로그인됩니다.
                 </p>
@@ -77,15 +92,17 @@ const OAuthCallback: React.FC = () => {
 
     // Electron용 로딩 화면
     return (
-        <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '100vh',
-            backgroundColor: 'var(--color-bg)',
-            color: 'var(--font-color)'
-        }}>
+        <div
+            style={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                height: '100vh',
+                backgroundColor: 'var(--color-bg)',
+                color: 'var(--font-color)',
+            }}
+        >
             <h2>로그인 처리 중...</h2>
             <p>잠시만 기다려주세요.</p>
         </div>
