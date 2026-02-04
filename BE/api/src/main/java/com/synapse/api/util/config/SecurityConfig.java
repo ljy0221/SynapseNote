@@ -39,6 +39,10 @@ public class SecurityConfig {
     public SecurityFilterChain addFilterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/v*/login", "/api/v*/refresh").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v*/notes/invitations/**").permitAll() // 초대
+                                                                                                                      // 정보
+                                                                                                                      // 조회
+                                                                                                                      // 허용
                 .requestMatchers("/webrtc/**").permitAll() // WebSocket 경로 허용
                 .anyRequest().authenticated());
 
