@@ -270,6 +270,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
     }
   };
 
+  const [activeTab, setActiveTab] = useState<'personal' | 'shared'>('personal');
+
   return (
     <div className="sidebar-wrapper">
       <aside className={`sidebar-panel ${isOpen ? 'open' : ''}`}>
@@ -284,22 +286,46 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
             </button>
           </div>
 
+          <div className="sidebar-tabs">
+            <button
+              className={`sidebar-tab-btn ${activeTab === 'personal' ? 'active' : ''}`}
+              onClick={() => setActiveTab('personal')}
+            >
+              내 노트
+            </button>
+            <button
+              className={`sidebar-tab-btn ${activeTab === 'shared' ? 'active' : ''}`}
+              onClick={() => setActiveTab('shared')}
+            >
+              공유받은 노트
+            </button>
+          </div>
+
           {isLoading ? (
             <div className="sidebar-loading">Loading...</div>
           ) : (
             <div className="sidebar-content">
-              <NoteDirectory
-                node={noteTree}
-                activeNoteId={activeNoteId}
-                favoriteNoteIds={favoriteNoteIds}
-                editingNoteId={editingNoteId}
-                onSelectNote={handleSelectNote}
-                onToggleFavorite={handleToggleFavorite}
-                onContextMenu={setContextMenu}
-                onConfirmRename={handleConfirmRename}
-                onCancelRename={() => setEditingNoteId(null)}
-                onMoveNote={handleMoveNote}
-              />
+              {activeTab === 'personal' ? (
+                <NoteDirectory
+                  node={noteTree}
+                  activeNoteId={activeNoteId}
+                  favoriteNoteIds={favoriteNoteIds}
+                  editingNoteId={editingNoteId}
+                  onSelectNote={handleSelectNote}
+                  onToggleFavorite={handleToggleFavorite}
+                  onContextMenu={setContextMenu}
+                  onConfirmRename={handleConfirmRename}
+                  onCancelRename={() => setEditingNoteId(null)}
+                  onMoveNote={handleMoveNote}
+                />
+              ) : (
+                <div className="sidebar-placeholder">
+                  <div className="sidebar-placeholder-icon">
+                    <Plus size={32} style={{ transform: 'rotate(45deg)' }} />
+                  </div>
+                  <p>공유받은 노트가 없습니다.<br />아직 기능 준비 중입니다.</p>
+                </div>
+              )}
             </div>
           )}
         </div>
