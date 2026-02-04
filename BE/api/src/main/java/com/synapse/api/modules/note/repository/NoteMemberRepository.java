@@ -4,6 +4,7 @@ import com.synapse.api.modules.note.entity.NoteMember;
 import com.synapse.api.modules.note.entity.NoteMemberId;
 import com.synapse.api.modules.note.entity.NoteRole;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -29,4 +30,14 @@ public interface NoteMemberRepository extends JpaRepository<NoteMember, NoteMemb
 
     @Query("SELECT COUNT(nm) > 0 FROM NoteMember nm WHERE nm.id.noteId = :noteId AND nm.id.memberId = :memberId AND nm.deletedAt IS NULL")
     boolean existsByNoteIdAndMemberId(@Param("noteId") UUID noteId, @Param("memberId") UUID memberId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+        UPDATE NoteMember nm
+        SET nm.deletedAt = CURRENT_TIMESTAMP
+        WHERE nm.member.id = :memberId
+          AND nm.deletedAt IS NULL
+    """)
+    void softDeleteAllByMemberId(@Param("memberId") UUID memberId);
+
 }

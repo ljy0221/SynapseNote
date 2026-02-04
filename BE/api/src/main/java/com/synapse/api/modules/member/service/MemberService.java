@@ -7,16 +7,19 @@ import com.synapse.api.modules.member.dto.response.LoginResponse;
 import com.synapse.api.modules.member.dto.response.LoginResult;
 import com.synapse.api.modules.member.dto.response.ProfileResponse;
 import com.synapse.api.modules.member.dto.response.StreakResponse;
-import com.synapse.api.modules.member.entity.OAuthAccount;
 import com.synapse.api.modules.member.entity.Member;
+import com.synapse.api.modules.member.entity.OAuthAccount;
 import com.synapse.api.modules.member.entity.Streak;
 import com.synapse.api.modules.member.entity.StreakId;
-import com.synapse.api.modules.member.repository.OAuthRepository;
 import com.synapse.api.modules.member.repository.MemberRepository;
+import com.synapse.api.modules.member.repository.OAuthRepository;
 import com.synapse.api.modules.member.repository.StreakRepository;
+import com.synapse.api.modules.mindmap.repository.MindmapEdgeRepository;
+import com.synapse.api.modules.note.repository.NoteMemberRepository;
+import com.synapse.api.modules.note.repository.NoteRepository;
 import com.synapse.api.util.exception.BusinessException;
-import com.synapse.api.util.response.ErrorCode;
 import com.synapse.api.util.redis.TokenRedisService;
+import com.synapse.api.util.response.ErrorCode;
 import com.synapse.api.util.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -35,10 +38,14 @@ public class MemberService {
 
     private final MemberRepository memberRepository;
     private final OAuthRepository oAuthRepository;
-    private final OAuthServiceFactory oAuthServiceFactory;
-    private final TokenRedisService tokenRedisService;
-    private final JwtUtil jwtUtil;
+    private final NoteMemberRepository noteMemberRepository;
+    private final NoteRepository noteRepository;
+    private final MindmapEdgeRepository mindmapEdgeRepository;
     private final StreakRepository streakRepository;
+
+    private final TokenRedisService tokenRedisService;
+    private final OAuthServiceFactory oAuthServiceFactory;
+    private final JwtUtil jwtUtil;
 
     private static final int STREAK_PERIOD_DAYS = 180;
 
@@ -141,18 +148,27 @@ public class MemberService {
 
     @Transactional
     public void withdraw(UUID memberId, String accessToken, String refreshToken) {
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
-        OAuthAccount oauth = oAuthRepository.findByMemberId(memberId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        // (선택) 존재 검증은 가볍게 exists로
+        if (!memberRepository.existsById(memberId)) {
+            throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
+        }
 
         // streak
-        // document members
-        // notes
-        // mindmap_edges
+        streakRepository.softDeleteAllByMemberId(memberId);
 
-        member.delete();
-        oauth.delete();
+        noteMemberRepository.softDeleteAllByMemberId(memberId);
+
+        // OWNER note
+        noteRepository.softDeleteOwnedNotesByMemberId(memberId);
+
+        // OAuth / Member
+        oAuthRepository.softDeleteByMemberId(memberId);
+        memberRepository.softDeleteById(memberId);
+
+        // mindmap 추후 구현 예정
+
+        // 토큰 무효화
         invalidTokens(accessToken, refreshToken);
     }
 
