@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import NoteButton from "../../components/common/noteButton/NoteButton";
 import NoteMain from "../../components/layout/noteMain/NoteMain";
 import { createNoteApi } from '../../api/notes/CreateNote.api';
@@ -10,6 +10,7 @@ import type { CreateNoteRequest } from '../../types/note/CreateNote';
 import { useYjsStore } from '../../hooks/useYjsStore';
 import './Note.css';
 import { generateUuidV7 } from '../../utils/UUIDV7';
+import { useNoteStore } from '../../store/useNoteStore';
 
 // 블록 타입 정의 (이원화: text / code)
 export type BlockType = 'text' | 'code';
@@ -143,7 +144,15 @@ const Note: React.FC = () => {
         moveBlock(dragIndex, hoverIndex);
     };
 
+    const navigate = useNavigate();
+    const { canCreateNote, updateLastCreatedTime } = useNoteStore();
+
     const handleCreateNote = async () => {
+        if (!canCreateNote()) {
+            alert('노트 생성은 30초에 한 번만 가능합니다.');
+            return;
+        }
+
         try {
             const newNoteReq: CreateNoteRequest = {
                 id: generateUuidV7(),
@@ -154,12 +163,16 @@ const Note: React.FC = () => {
             const result = await createNoteApi(newNoteReq);
             console.log("노트 생성 성공:", result);
 
+            updateLastCreatedTime();
+
+            // 페이지 이동 전 딜레이 (DB 반영 대기) - 700ms
+            await new Promise(resolve => setTimeout(resolve, 700));
+
             // 사이드바 업데이트 트리거
             emitNotesChanged();
 
             if (result && result.noteId) {
-                // 임시: 페이지 이동 (리로드 혹은 라우터 사용)
-                window.location.href = `/notes/${result.noteId}`;
+                navigate(`/notes/${result.noteId}`);
             } else {
                 setIsEditing(true); // Fallback
             }

@@ -33,6 +33,7 @@ import {
 
 import { useNavigate, useParams } from 'react-router-dom';
 import { generateUuidV7 } from '../../../utils/UUIDV7'
+import { useNoteStore } from '../../../store/useNoteStore';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -233,7 +234,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
   /** -------------------------
    * 노트 생성 (temp → real)
    -------------------------- */
+  /* -------------------------
+   * 노트 생성 (temp → real)
+   * -------------------------- */
+  const { canCreateNote, updateLastCreatedTime } = useNoteStore();
+
   const handleCreateNote = async (directoryPath: string) => {
+    if (!canCreateNote()) {
+      alert('노트 생성은 30초에 한 번만 가능합니다.');
+      return;
+    }
+
     const noteId = generateUuidV7();
 
     const memberId = localStorage.getItem('memberId')
@@ -253,8 +264,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
 
     setNotes(prev => [...prev, tempNote]);
 
-    navigate(`/note/${noteId}`);
-
     try {
       await createNoteApi({
         id: noteId,
@@ -263,8 +272,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
         directoryPath,
       });
 
-    } catch {
+      updateLastCreatedTime();
 
+      // 페이지 이동 전 딜레이 (DB 반영 대기)
+      await new Promise(resolve => setTimeout(resolve, 700));
+
+      emitNotesChanged({ skipRefetch: true });
+      navigate(`/note/${noteId}`);
+    } catch {
       setNotes(prev => prev.filter(n => n.noteId !== noteId));
     }
   };
