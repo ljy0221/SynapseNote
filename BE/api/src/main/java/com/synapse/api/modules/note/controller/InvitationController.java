@@ -54,6 +54,34 @@ public class InvitationController {
     }
 
     /**
+     * 초대 링크를 통한 가입 요청
+     * POST /api/v1/notes/invitations/{token}/request
+     */
+    @PostMapping("/v1/notes/invitations/{token}/request")
+    public DataResponse<Void> requestJoin(
+            @AuthenticationPrincipal CustomMemberDetails details,
+            @PathVariable UUID token) {
+        UUID userId = details.id();
+        log.info("User: {} requesting to join via token: {}", userId, token);
+        invitationService.requestJoin(token, userId);
+        return DataResponse.of(SuccessCode.CREATED, null);
+    }
+
+    /**
+     * 가입 요청 승인
+     * POST /api/v1/notes/invitations/{invitationId}/approve
+     */
+    @PostMapping("/v1/notes/invitations/{invitationId}/approve")
+    public DataResponse<Void> approveJoin(
+            @AuthenticationPrincipal CustomMemberDetails details,
+            @PathVariable UUID invitationId) {
+        UUID ownerId = details.id();
+        log.info("Owner: {} approving invitation: {}", ownerId, invitationId);
+        invitationService.approveJoin(invitationId, ownerId);
+        return DataResponse.of(SuccessCode.SUCCESS, null);
+    }
+
+    /**
      * PENDING 초대 목록 조회
      * GET /api/v1/notes/{noteId}/invitations
      */
