@@ -99,7 +99,8 @@ class CodeAssistantServiceTest {
                 AiProvider.OPENAI,
                 Collections.emptyList(),
                 false,
-                requestedLanguage // "python"
+                requestedLanguage, // "python"
+                null // codeContent
         );
 
         // When
