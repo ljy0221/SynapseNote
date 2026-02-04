@@ -52,7 +52,7 @@ api.interceptors.response.use(
 
     // 401 에러(Unauthorized)가 발생했고, 아직 재시도하지 않은 요청일 경우
     if (error.response?.status === 401 && !originalRequest._retry) {
-      
+
       // 이미 토큰 갱신이 진행 중이라면, 요청을 큐에 넣고 대기
       if (isRefreshing) {
         return new Promise<string>((resolve, reject) => {
@@ -72,7 +72,7 @@ api.interceptors.response.use(
       try {
         // 1. 리프레시 토큰으로 액세스 토큰 갱신 요청 (쿠키 사용)
         // 주의: api 인스턴스 대신 axios 직접 사용 (인터셉터 순환 방지)
-        const response = await axios.post('/api/v1/tokens/refresh', {}, {
+        const response = await axios.post('/v1/refresh', {}, {
           baseURL: '/api',
           withCredentials: true,
         });
@@ -96,11 +96,11 @@ api.interceptors.response.use(
       } catch (refreshError) {
         // 5. 갱신 실패 시: 대기 열 비우고 에러 전파
         processQueue(refreshError, null);
-        
+
         // 결합도를 낮추기 위해 직접 로그아웃 함수를 호출하지 않고 이벤트 발생
         // (App.tsx에서 이 이벤트를 감지하여 로그아웃 및 리다이렉트 처리)
         window.dispatchEvent(new CustomEvent('auth:unauthorized'));
-        
+
         return Promise.reject(refreshError);
       } finally {
         // 갱신 상태 해제
