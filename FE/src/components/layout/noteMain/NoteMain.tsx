@@ -8,6 +8,7 @@ import { NoteSideNav } from './NoteSideNav';
 import { InviteLinkModal } from '../../common/modal/InviteLinkModal';
 import { PermissionModal } from '../../common/modal/PermissionModal';
 import { BlockData, BlockType } from '../../../pages/note/Note';
+import type { SummaryStyle } from '../../../types/ai/NoteSummary';
 import './NoteMain.css';
 
 interface NoteMainProps {
@@ -37,7 +38,13 @@ const NoteMain: React.FC<NoteMainProps> = ({
     focusedBlockId,
     onMoveBlock,
     titleInputRef,
-    noteId
+    noteId,
+    // AI 요약 관련 props
+    summary,
+    summaryStyle,
+    summaryUpdatedAt,
+    isSummaryLoading,
+    onGenerateSummary
 }) => {
     // [New] 초대 모달 상태
     const [isInviteModalOpen, setIsInviteModalOpen] = React.useState(false);
@@ -172,6 +179,29 @@ const NoteMain: React.FC<NoteMainProps> = ({
                 return null;
         }
     };
+    return (
+        <div className="note-main-layout">
+            <header className="note-main-header">
+                <input
+                    ref={titleInputRef}
+                    className="note-main-title-input"
+                    value={title}
+                    onChange={(e) => onUpdateTitle(e.target.value)}
+                    placeholder="제목 없음"
+                />
+            </header>
+            <NoteSummary
+                summary={summary}
+                summaryStyle={summaryStyle}
+                summaryUpdatedAt={summaryUpdatedAt}
+                isLoading={isSummaryLoading}
+                onGenerateSummary={onGenerateSummary}
+            />
+            <div className="note-body-wrapper">
+                <div className="note-content-area">
+                    {blocks.map((block, index) => renderBlock(block, index))}
+                    <div className="note-bottom-spacer" style={{ height: '30vh' }} />
+                </div>
 
     return (
         <div

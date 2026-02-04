@@ -26,7 +26,8 @@
     flex-direction: column;
     align-items: center;
     position: relative;
-    animation: slideUp 0.3s ease-out;
+    animation: modalIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform, opacity;
     border: 2px solid var(--color-point);
 }
 
@@ -50,24 +51,6 @@
     object-fit: cover;
     border-radius: 50%;
     /* Ensure image is round */
-}
-
-.streak-badge {
-    position: absolute;
-    bottom: -5px;
-    right: -5px;
-    background-color: var(--color-main);
-    border: 2px solid var(--color-point);
-    border-radius: 12px;
-    padding: 2px 8px;
-    font-size: 0.8rem;
-    font-weight: 700;
-    color: var(--color-point);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 @keyframes popIn {
@@ -106,7 +89,7 @@
 }
 
 .profile-label {
-    font-size: 1rem;
+    font-size: 1.1rem;
     color: var(--font-color-sub);
     font-weight: 500;
     flex-shrink: 0;
@@ -115,7 +98,7 @@
 }
 
 .profile-value {
-    font-size: 1.2rem;
+    font-size: 1.0rem;
     color: var(--font-color);
     font-weight: 600;
     text-align: left;

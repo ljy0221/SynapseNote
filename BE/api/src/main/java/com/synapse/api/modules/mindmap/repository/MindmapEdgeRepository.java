@@ -11,39 +11,37 @@ import java.util.List;
 import java.util.UUID;
 
 public interface MindmapEdgeRepository extends JpaRepository<MindmapEdge, MindmapEdgeId> {
-  void deleteByFrom_Id(UUID nodeId);
+    void deleteByFrom_Id(UUID nodeId);
 
-  void deleteByTo_Id(UUID nodeId);
+    void deleteByTo_Id(UUID nodeId);
 
-  @Modifying
-  @Query("""
-          DELETE FROM MindmapEdge e
-          WHERE e.from.createdBy.id = :memberId
-             OR e.to.createdBy.id = :memberId
-      """)
-  int deleteAllByMemberId(@Param("memberId") UUID memberId);
+        @Modifying
+        @Query("""
+                            DELETE FROM MindmapEdge e
+                            WHERE e.member.id = :memberId
+                        """)
+        int deleteAllByMemberId(@Param("memberId") UUID memberId);
 
-  @Modifying
-  @Query("""
-      DELETE FROM MindmapEdge e
-      WHERE e.from.id = :parentId
-        AND e.to.id = :childId
-        AND e.from.createdBy.id = :memberId
-      """)
-  int deleteByMemberAndEdge(
-      @Param("memberId") UUID memberId,
-      @Param("parentId") UUID parentId,
-      @Param("childId") UUID childId);
+        @Modifying
+        @Query("""
+                        DELETE FROM MindmapEdge e
+                        WHERE e.from.id = :parentId
+                          AND e.to.id = :childId
+                          AND e.member.id = :memberId
+                        """)
+        int deleteByMemberAndEdge(
+                        @Param("memberId") UUID memberId,
+                        @Param("parentId") UUID parentId,
+                        @Param("childId") UUID childId);
 
-  @Query("""
-      SELECT e FROM MindmapEdge e
-      WHERE e.from.createdBy.id = :memberId
-         OR e.to.createdBy.id = :memberId
-      """)
-  List<MindmapEdge> findAllByMember(UUID memberId);
+        @Query("""
+                SELECT e FROM MindmapEdge e
+                WHERE e.member.id = :memberId
+                """)
+        List<MindmapEdge> findAllByMember(UUID memberId);
 
-  @Modifying
-  @Query("UPDATE Note n SET n.pointX = NULL, n.pointY = NULL " +
-      "WHERE n.createdBy.id = :memberId AND n.pointX IS NOT NULL")
-  int resetMindmapNodePositions(@Param("memberId") UUID memberId);
+    @Modifying
+    @Query("UPDATE Note n SET n.pointX = NULL, n.pointY = NULL " +
+            "WHERE n.createdBy.id = :memberId AND n.pointX IS NOT NULL")
+    int resetMindmapNodePositions(@Param("memberId") UUID memberId);
 }

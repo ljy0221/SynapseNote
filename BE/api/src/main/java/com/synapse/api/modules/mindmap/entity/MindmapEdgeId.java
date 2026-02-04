@@ -19,4 +19,7 @@ public class MindmapEdgeId implements Serializable {
 
     @Column(name = "to_id", columnDefinition = "uuid", nullable = false)
     private UUID toId;
+
+    @Column(name = "member_id", columnDefinition = "uuid", nullable = false)
+    private UUID memberId;
 }

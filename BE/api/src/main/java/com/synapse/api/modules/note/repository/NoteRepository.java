@@ -16,62 +16,84 @@ import java.util.UUID;
 @Repository
 public interface NoteRepository extends JpaRepository<Note, UUID> {
 
-    // 1. 기본 조회 (Soft Delete 적용: deletedAt이 null인 것만 조회)
-    // * 주의: Entity 클래스에 @Where(clause = "deleted_at IS NULL") 설정이 있다면
-    //   findById 등 기본 메서드도 자동으로 삭제된 걸 걸러줍니다.
-    //   없다면 아래처럼 명시적으로 만들어야 합니다.
-    Optional<Note> findByIdAndDeletedAtIsNull(UUID id);
+        // 1. 기본 조회 (Soft Delete 적용: deletedAt이 null인 것만 조회)
+        // * 주의: Entity 클래스에 @Where(clause = "deleted_at IS NULL") 설정이 있다면
+        // findById 등 기본 메서드도 자동으로 삭제된 걸 걸러줍니다.
+        // 없다면 아래처럼 명시적으로 만들어야 합니다.
+        Optional<Note> findByIdAndDeletedAtIsNull(UUID id);
 
-    // 2. 내 노트 목록 조회 (특정 디렉토리 하위 조회 시 사용 가능)
-    List<Note> findByCreatedByIdAndDeletedAtIsNull(UUID memberId);
+        // 2. 내 노트 목록 조회 (특정 디렉토리 하위 조회 시 사용 가능)
+        List<Note> findByCreatedByIdAndDeletedAtIsNull(UUID memberId);
 
-    @Query("SELECT n FROM Note n WHERE n.id = :id AND n.deletedAt IS NULL")
-    Optional<Note> findById(@Param("id") UUID id);
+        @Query("SELECT n FROM Note n WHERE n.id = :id AND n.deletedAt IS NULL")
+        Optional<Note> findById(@Param("id") UUID id);
 
-    // 3. 디렉토리별 조회 (탐색기 기능용)
-    List<Note> findByCreatedByIdAndDirectoryPathAndDeletedAtIsNull(UUID memberId, String directoryPath);
+        // 3. 디렉토리별 조회 (탐색기 기능용)
+        List<Note> findByCreatedByIdAndDirectoryPathAndDeletedAtIsNull(UUID memberId, String directoryPath);
 
-    // 5. 검색 기능 (제목 기준)
-    @Query("SELECT n FROM Note n " +
-            "WHERE n.createdBy.id = :memberId " +
-            "AND n.title LIKE %:query% " +
-            "AND n.deletedAt IS NULL")
-    List<Note> searchByMemberAndQuery(@Param("memberId") UUID memberId, @Param("query") String query);
+        // 5. 검색 기능 (제목 기준)
+        @Query("SELECT n FROM Note n " +
+                        "WHERE n.createdBy.id = :memberId " +
+                        "AND n.title LIKE %:query% " +
+                        "AND n.deletedAt IS NULL")
+        List<Note> searchByMemberAndQuery(@Param("memberId") UUID memberId, @Param("query") String query);
 
-    @Query("SELECT n FROM Note n WHERE n.createdBy.id = :memberId AND n.pointX IS NOT NULL AND n.pointY IS NOT NULL")
-    List<Note> findMindMapNodesByMember(UUID memberId);
+        @Query("""
+                        SELECT DISTINCT n FROM Note n
+                        LEFT JOIN NoteMember nm ON n.id = nm.note.id AND nm.member.id = :memberId AND nm.deletedAt IS NULL
+                        WHERE (n.createdBy.id = :memberId OR nm.id IS NOT NULL)
+                          AND n.pointX IS NOT NULL
+                          AND n.pointY IS NOT NULL
+                          AND n.deletedAt IS NULL
+                        """)
+        List<Note> findMindMapNodesByMember(UUID memberId);
 
-    @Modifying
-    @Query("UPDATE Note n SET n.pointX = NULL, n.pointY = NULL " +
-            "WHERE n.createdBy.id = :memberId AND n.pointX IS NOT NULL")
-    int resetMindmapNodePositions(@Param("memberId") UUID memberId);
+        @Modifying
+        @Query("UPDATE Note n SET n.pointX = NULL, n.pointY = NULL " +
+                        "WHERE n.createdBy.id = :memberId AND n.pointX IS NOT NULL")
+        int resetMindmapNodePositions(@Param("memberId") UUID memberId);
 
-    @Query(value = "SELECT n FROM Note n " +
-            "LEFT JOIN NoteMember nm ON n.id = nm.note.id AND nm.member.id = :memberId AND nm.deletedAt IS NULL "
-            +
-            "JOIN FETCH n.createdBy " +
-            "WHERE n.deletedAt IS NULL " +
-            "AND (n.createdBy.id = :memberId OR nm.id IS NOT NULL) " +
-            "ORDER BY n.updatedAt DESC",
-            countQuery = "SELECT COUNT(n) FROM Note n " +
-                    "LEFT JOIN NoteMember nm ON n.id = nm.note.id AND nm.member.id = :memberId AND nm.deletedAt IS NULL "
-                    +
-                    "WHERE n.deletedAt IS NULL " +
-                    "AND (n.createdBy.id = :memberId OR nm.id IS NOT NULL)")
-    Page<Note> findAllNotesByMemberId(@Param("memberId") UUID memberId, Pageable pageable);
+        @Query(value = "SELECT n FROM Note n " +
+                        "LEFT JOIN NoteMember nm ON n.id = nm.note.id AND nm.member.id = :memberId AND nm.deletedAt IS NULL "
+                        +
+                        "JOIN FETCH n.createdBy " +
+                        "WHERE n.deletedAt IS NULL " +
+                        "AND (n.createdBy.id = :memberId OR nm.id IS NOT NULL) " +
+                        "ORDER BY n.updatedAt DESC", countQuery = "SELECT COUNT(n) FROM Note n " +
+                                        "LEFT JOIN NoteMember nm ON n.id = nm.note.id AND nm.member.id = :memberId AND nm.deletedAt IS NULL "
+                                        +
+                                        "WHERE n.deletedAt IS NULL " +
+                                        "AND (n.createdBy.id = :memberId OR nm.id IS NOT NULL)")
+        Page<Note> findAllNotesByMemberId(@Param("memberId") UUID memberId, Pageable pageable);
 
-    @Query("SELECT n FROM Note n JOIN FETCH n.createdBy WHERE n.createdBy.id = :memberId " +
-            "AND n.bookmark = true AND n.deletedAt IS NULL " +
-            "ORDER BY n.updatedAt DESC")
-    Page<Note> findBookmarkedNotesByMemberId(@Param("memberId") UUID memberId, Pageable pageable);
+        @Query("SELECT n FROM Note n JOIN FETCH n.createdBy WHERE n.createdBy.id = :memberId " +
+                        "AND n.bookmark = true AND n.deletedAt IS NULL " +
+                        "ORDER BY n.updatedAt DESC")
+        Page<Note> findBookmarkedNotesByMemberId(@Param("memberId") UUID memberId, Pageable pageable);
 
-    // 6. 중복 제목 검사 등 (같은 폴더 내 이름 중복 방지용)
-    boolean existsByCreatedByIdAndDirectoryPathAndTitleAndDeletedAtIsNull(UUID memberId, String directoryPath,
-                                                                          String title);
+        // 6. 중복 제목 검사 등 (같은 폴더 내 이름 중복 방지용)
+        boolean existsByCreatedByIdAndDirectoryPathAndTitleAndDeletedAtIsNull(UUID memberId, String directoryPath,
+                        String title);
 
-    @Query("SELECT n.id FROM Note n WHERE n.createdBy.id = :memberId AND n.deletedAt IS NULL")
-    List<UUID> findAllNoteIdsByMemberId(@Param("memberId") UUID memberId);
+        @Query("SELECT n.id FROM Note n WHERE n.createdBy.id = :memberId AND n.deletedAt IS NULL")
+        List<UUID> findAllNoteIdsByMemberId(@Param("memberId") UUID memberId);
 
-    // 여러 ID로 노트 조회 (DeletedAt IS NULL)
-    List<Note> findAllByIdInAndDeletedAtIsNull(List<UUID> ids);
+        // 여러 ID로 노트 조회 (DeletedAt IS NULL)
+        List<Note> findAllByIdInAndDeletedAtIsNull(List<UUID> ids);
+
+        @Modifying(clearAutomatically = true, flushAutomatically = true)
+        @Query("""
+                            UPDATE Note n
+                            SET n.deletedAt = CURRENT_TIMESTAMP
+                            WHERE n.id IN (
+                                SELECT nm.note.id
+                                FROM NoteMember nm
+                                WHERE nm.member.id = :memberId
+                                  AND nm.role = com.synapse.api.modules.note.entity.NoteRole.OWNER
+                                  AND nm.deletedAt IS NULL
+                            )
+                              AND n.deletedAt IS NULL
+                        """)
+        void softDeleteOwnedNotesByMemberId(@Param("memberId") UUID memberId);
+
 }

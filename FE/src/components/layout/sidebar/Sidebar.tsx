@@ -22,7 +22,7 @@ import {
 } from '../../../api/bookmark/Bookmarks.api';
 import { adaptBookmarkIds } from '../../../api/bookmark/Bookmarks.adapter';
 
-import { createNoteApi } from '../../../api/notes/CreateNote.api';
+
 import { deleteNoteApi } from '../../../api/notes/DeleteNote.api';
 import { updateNoteApi } from '../../../api/notes/UpdateNote.api';
 
@@ -31,7 +31,8 @@ import {
   emitNotesChanged,
 } from '../../../events/NotesEvents';
 
-import { useNavigate, useParams, useLocation } from 'react-router-dom'; // 🔥 useLocation 추가
+import { useNavigate, useParams } from 'react-router-dom';
+import { useCreateNote } from '../../../hooks/useCreateNote';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -236,6 +237,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
   /** -------------------------
    * 노트 생성 (temp → real)
    -------------------------- */
+  const { handleCreateNote: createNote } = useCreateNote();
+
   const handleCreateNote = async (directoryPath: string) => {
     const tempId = `temp-${Date.now()}`;
 
@@ -300,6 +303,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
     }
   };
 
+  const [activeTab, setActiveTab] = useState<'personal' | 'shared'>('personal');
+
   return (
     <div className="sidebar-wrapper">
       <aside className={`sidebar-panel ${isOpen ? 'open' : ''}`}>
@@ -314,22 +319,46 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
             </button>
           </div>
 
+          <div className="sidebar-tabs">
+            <button
+              className={`sidebar-tab-btn ${activeTab === 'personal' ? 'active' : ''}`}
+              onClick={() => setActiveTab('personal')}
+            >
+              내 노트
+            </button>
+            <button
+              className={`sidebar-tab-btn ${activeTab === 'shared' ? 'active' : ''}`}
+              onClick={() => setActiveTab('shared')}
+            >
+              공유받은 노트
+            </button>
+          </div>
+
           {isLoading ? (
             <div className="sidebar-loading">Loading...</div>
           ) : (
             <div className="sidebar-content">
-              <NoteDirectory
-                node={noteTree}
-                activeNoteId={activeNoteId}
-                favoriteNoteIds={favoriteNoteIds}
-                editingNoteId={editingNoteId}
-                onSelectNote={handleSelectNote}
-                onToggleFavorite={handleToggleFavorite}
-                onContextMenu={setContextMenu}
-                onConfirmRename={handleConfirmRename}
-                onCancelRename={() => setEditingNoteId(null)}
-                onMoveNote={handleMoveNote}
-              />
+              {activeTab === 'personal' ? (
+                <NoteDirectory
+                  node={noteTree}
+                  activeNoteId={activeNoteId}
+                  favoriteNoteIds={favoriteNoteIds}
+                  editingNoteId={editingNoteId}
+                  onSelectNote={handleSelectNote}
+                  onToggleFavorite={handleToggleFavorite}
+                  onContextMenu={setContextMenu}
+                  onConfirmRename={handleConfirmRename}
+                  onCancelRename={() => setEditingNoteId(null)}
+                  onMoveNote={handleMoveNote}
+                />
+              ) : (
+                <div className="sidebar-placeholder">
+                  <div className="sidebar-placeholder-icon">
+                    <Plus size={32} style={{ transform: 'rotate(45deg)' }} />
+                  </div>
+                  <p>공유받은 노트가 없습니다.<br />아직 기능 준비 중입니다.</p>
+                </div>
+              )}
             </div>
           )}
         </div>
