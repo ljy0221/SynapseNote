@@ -1,5 +1,7 @@
 package com.synapse.api.modules.mindmap.service;
 
+import com.synapse.api.modules.member.entity.Member;
+import com.synapse.api.modules.member.repository.MemberRepository;
 import com.synapse.api.modules.mindmap.dto.MindmapEdgeDto;
 import com.synapse.api.modules.mindmap.dto.MindmapNodeDto;
 import com.synapse.api.modules.mindmap.dto.NodePositionDto;
@@ -30,6 +32,7 @@ import java.util.stream.Collectors;
 public class MindmapService {
     private final MindmapEdgeRepository mindmapEdgeRepository;
     private final NoteRepository noteRepository;
+    private final MemberRepository memberRepository;
 
     public MindmapResponse getMindmap(UUID memberId) {
         List<Note> notes = noteRepository.findMindMapNodesByMember(memberId);
@@ -107,6 +110,9 @@ public class MindmapService {
     }
 
     private void syncEdges(UUID memberId, List<MindmapEdgeDto> requestedEdges) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
         List<MindmapEdge> existingEdges = mindmapEdgeRepository.findAllByMember(memberId);
 
         Map<String, MindmapEdge> existingEdgeMap = existingEdges.stream()
@@ -153,7 +159,7 @@ public class MindmapService {
                 validNoteOwner(memberId, child);
                 validNoteOwner(memberId, parent);
 
-                newEdges.add(MindmapEdge.of(child, parent));
+                newEdges.add(MindmapEdge.of(child, parent, member));
             }
 
             mindmapEdgeRepository.saveAll(newEdges);
