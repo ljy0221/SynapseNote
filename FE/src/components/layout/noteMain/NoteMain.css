@@ -96,8 +96,13 @@
     /* Increased to 100px to clearly push buttons inward */
     flex-shrink: 0;
     display: flex;
-    padding-top: 180px;
-    /* Increased from 160px to 180px (lowered by another 20px) */
+    /* 
+       Calculate top padding to align with the first content block.
+       Header top margin (60px) + Header height (approx 60px) + Header bottom margin (40px) + Header bottom padding (20px) = 180px
+       Using a variable for maintainability.
+    */
+    --note-header-offset: 180px;
+    padding-top: var(--note-header-offset);
 }
 
 /* Left gutter content (buttons) pushed to the right -> closer to content */

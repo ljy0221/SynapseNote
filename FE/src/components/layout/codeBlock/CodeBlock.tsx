@@ -15,6 +15,7 @@ import { requestCodeReview, createReviewRequest } from '../../../api/ai/AiCodeRe
 import { formatReviewAsHtml } from '../../../utils/aiReviewFormatter';
 import { getLanguageTemplate, isCodeEmpty } from '../../../utils/languageTemplates';
 import { useCodeEditorStore } from '../../../store/useCodeEditorStore';
+import { Tooltip } from '../../common/tooltip/Tooltip';
 
 interface CodeBlockProps {
     id: number | string;
@@ -266,26 +267,28 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                         return shouldShow;
                     })() && (
                             <div className="mode-selector" style={{ marginLeft: '10px', display: 'flex', gap: '5px' }}>
-                                <button
-                                    className={`code-action-btn mode-button ${executionMode === 'single' ? 'active' : ''}`}
-                                    onClick={() => setExecutionMode('single')}
-                                    disabled={loading}
-                                    title="Single Execution Mode"
-                                >
-                                    <Cpu size={16} />
-                                </button>
-                                <button
-                                    className={`code-action-btn mode-button ${executionMode === 'session' ? 'active' : ''}`}
-                                    onClick={() => {
-                                        if (noteId) {
-                                            setExecutionMode('session');
-                                        }
-                                    }}
-                                    disabled={loading || !noteId}
-                                    title={!noteId ? 'Note must be saved to use Session Mode' : 'Session Execution Mode'}
-                                >
-                                    <Server size={16} />
-                                </button>
+                                <Tooltip title="단일 실행 모드" placement="top">
+                                    <button
+                                        className={`code-action-btn mode-button ${executionMode === 'single' ? 'active' : ''}`}
+                                        onClick={() => setExecutionMode('single')}
+                                        disabled={loading}
+                                    >
+                                        <Cpu size={16} />
+                                    </button>
+                                </Tooltip>
+                                <Tooltip title={!noteId ? '노트 저장 후 사용 가능' : '세션 실행 모드'} placement="top">
+                                    <button
+                                        className={`code-action-btn mode-button ${executionMode === 'session' ? 'active' : ''}`}
+                                        onClick={() => {
+                                            if (noteId) {
+                                                setExecutionMode('session');
+                                            }
+                                        }}
+                                        disabled={loading || !noteId}
+                                    >
+                                        <Server size={16} />
+                                    </button>
+                                </Tooltip>
                             </div>
                         )}
 
@@ -293,27 +296,28 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                     <div className="code-actions">
                         {/* 세션 인디케이터 (feat/#63 추가) */}
                         {sessionInfo && executionMode === 'session' && (
-                            <button
-                                className="session-indicator"
-                                onClick={handleTerminateSession}
-                                title="Terminate Session"
-                                style={{
-                                    padding: '4px 8px',
-                                    fontSize: '12px',
-                                    cursor: 'pointer',
-                                    backgroundColor: '#28a745',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                    marginRight: '5px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '4px'
-                                }}
-                            >
-                                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#fff' }}></span>
-                                {sessionInfo.sessionId.substring(0, 8)}
-                            </button>
+                            <Tooltip title="세션 종료" placement="top">
+                                <button
+                                    className="session-indicator"
+                                    onClick={handleTerminateSession}
+                                    style={{
+                                        padding: '4px 8px',
+                                        fontSize: '12px',
+                                        cursor: 'pointer',
+                                        backgroundColor: '#28a745',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '4px',
+                                        marginRight: '5px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '4px'
+                                    }}
+                                >
+                                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#fff' }}></span>
+                                    {sessionInfo.sessionId.substring(0, 8)}
+                                </button>
+                            </Tooltip>
                         )}
 
                         <BlockRunButton onClick={handleRun} disabled={loading} />
