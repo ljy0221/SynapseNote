@@ -105,9 +105,12 @@ public class WebRtcController {
 
         // ICE Candidate 이벤트 리스너 등록
         endpoint.addIceCandidateFoundListener(event -> {
+            String candidateStr = event.getCandidate().getCandidate();
+            log.info("[Kurento] Generated ICE candidate for user {}: {}", memberId, candidateStr);
+
             IceCandidateMessage iceMsg = new IceCandidateMessage(
                     noteId, // noteId 포함
-                    event.getCandidate().getCandidate(),
+                    candidateStr,
                     event.getCandidate().getSdpMid(),
                     event.getCandidate().getSdpMLineIndex());
 
@@ -139,7 +142,8 @@ public class WebRtcController {
         UUID noteId = request.getNoteId();
         String callId = request.getCallId();
 
-        log.debug("Received ICE candidate from member {} in room {}, callId: {}", memberId, noteId, callId);
+        log.info("Received ICE candidate from member {} in room {}, callId: {}. Candidate: {}",
+                memberId, noteId, callId, request.getCandidate());
 
         WebRtcRoomManager.Room room = roomManager.getRoom(noteId);
         if (room == null) {
@@ -165,7 +169,7 @@ public class WebRtcController {
                 request.getSdpMLineIndex());
 
         endpoint.addIceCandidate(candidate);
-        log.debug("Added ICE candidate for member {} in room {}", memberId, noteId);
+        log.info("Added ICE candidate for member {} in room {}", memberId, noteId);
     }
 
     /**
