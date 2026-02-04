@@ -19,7 +19,7 @@ const formatDate = (date: Date) => {
   return `${y}-${m}-${d}`;
 };
 
-const DAYS = 140;
+const DAYS = 180;
 
 const NoteStreak: React.FC<NoteStreakProps> = ({ streak }) => {
   const activityDates = streak.dates;

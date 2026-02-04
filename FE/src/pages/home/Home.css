@@ -135,7 +135,7 @@
 .home-grid {
   display: grid;
   /* 🔥 좌우 고정 너비로 변경 (창이 커져도 늘어나지 않고 중앙 유지) */
-  grid-template-columns: 600px 300px;
+  grid-template-columns: 660px 320px;
   gap: 16px;
   height: auto;
   width: auto;
