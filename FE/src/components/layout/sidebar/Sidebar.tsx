@@ -41,8 +41,12 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
   const navigate = useNavigate();
+  const location = useLocation(); // 🔥 location 훅 사용
   const { noteId: routeNoteId } = useParams<{ noteId: string }>();
   const activeNoteId = routeNoteId ?? null;
+
+  /* [Mod] 홈 뿐만 아니라 노트 페이지에서도 사이드바 고정 (토글 버튼 숨김) */
+  const isFixedOpen = location.pathname.startsWith('/home') || location.pathname.startsWith('/note');
 
   const [notes, setNotes] = useState<NoteListItem[]>([]);
   const [favoriteNoteIds, setFavoriteNoteIds] =
@@ -236,25 +240,54 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
   const { handleCreateNote: createNote } = useCreateNote();
 
   const handleCreateNote = async (directoryPath: string) => {
-    await createNote(directoryPath, {
-      onOptimisticUpdate: (noteId, memberId) => {
-        const tempNote: NoteListItem = {
-          memberId,
-          noteId,
-          title: '새 노트',
-          directoryPath,
-          pointX: 0,
-          pointY: 0,
-          role: 'OWNER',
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        };
-        setNotes(prev => [...prev, tempNote]);
-      },
-      onError: (noteId) => {
-        setNotes(prev => prev.filter(n => n.noteId !== noteId));
-      }
-    });
+    const tempId = `temp-${Date.now()}`;
+
+    const tempNote: NoteListItem = {
+      memberId: 'temp-user',
+      noteId: tempId,
+      title: '새 노트',
+      directoryPath,
+      pointX: 0,
+      pointY: 0,
+      role: 'OWNER',
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+
+    setNotes(prev => [...prev, tempNote]);
+    navigate(`/note/${tempId}`);
+
+    try {
+      const res = await createNoteApi({
+        title: '새 노트',
+        invitationUrl: '',
+        directoryPath,
+      });
+
+      setNotes(prev =>
+        prev.map(n =>
+          n.noteId === tempId
+            ? ({
+              memberId: n.memberId,
+              noteId: res.noteId,
+              title: res.title,
+              directoryPath: res.directoryPath,
+              pointX: res.pointX ?? 0,
+              pointY: res.pointY ?? 0,
+              role: res.role ?? n.role,
+              createdAt: new Date(res.createdAt).getTime(),
+              updatedAt: new Date(res.updatedAt).getTime(),
+            } as NoteListItem)
+            : n
+        )
+      );
+
+
+      navigate(`/note/${res.noteId}`, { replace: true });
+      emitNotesChanged({ skipRefetch: true });
+    } catch {
+      setNotes(prev => prev.filter(n => n.noteId !== tempId));
+    }
   };
 
   /** -------------------------
@@ -331,12 +364,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
         </div>
       </aside>
 
-      <button
-        className={`sidebar-toggle-btn ${isOpen ? 'open' : ''}`}
-        onClick={onToggle}
-      >
-        {isOpen ? '⟨' : '⟩'}
-      </button>
+      {!isFixedOpen && (
+        <button
+          className={`sidebar-toggle-btn ${isOpen ? 'open' : ''}`}
+          onClick={onToggle}
+        >
+          {isOpen ? '⟨' : '⟩'}
+        </button>
+      )}
 
       <ContextMenu
         state={contextMenu}

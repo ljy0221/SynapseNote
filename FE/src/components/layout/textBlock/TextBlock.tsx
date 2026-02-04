@@ -32,7 +32,7 @@ import {
     Image as ImageIcon,
     Palette,
 } from 'lucide-react';
-import BlockDeleteButton from '../../common/blockDeleteButton/BlockDeleteButton';
+import BlockActionMenu from '../../common/blockActionMenu/BlockActionMenu';
 import './TextBlock.css';
 interface TextBlockProps {
     id: number | string;
@@ -44,7 +44,8 @@ interface TextBlockProps {
     onDragStart?: (e: React.DragEvent) => void;
     onDragOver?: (e: React.DragEvent) => void;
     onDrop?: (e: React.DragEvent) => void;
-    isFocused?: boolean; // [추가]
+    isFocused?: boolean;
+    isDragging?: boolean; // [추가]
 }
 
 // 색상 팔레트
@@ -79,9 +80,11 @@ const TextBlock: React.FC<TextBlockProps> = ({
     onDragStart,
     onDragOver,
     onDrop,
-    isFocused: shouldFocus, // [추가] prop 이름 충돌 방지를 위해 별칭 사용
+    isFocused: shouldFocus,
+    isDragging, // [추가]
 }) => {
     const [isFocused, setIsFocused] = React.useState(false);
+    const [menuPosition, setMenuPosition] = React.useState<{ x: number; y: number } | null>(null);
     const [showColorPicker, setShowColorPicker] = React.useState(false);
 
     // 링크 모달 상태
@@ -235,251 +238,257 @@ const TextBlock: React.FC<TextBlockProps> = ({
     };
     return (
         <div
+            id={`block-${id}`}
             className={`text-block-wrapper ${isFocused ? 'is-focused' : ''}`}
+            onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setMenuPosition({ x: e.clientX, y: e.clientY });
+            }}
             onDragOver={onDragOver}
             onDrop={onDrop}
+            style={{
+                opacity: isDragging ? 0.4 : 1,
+                transform: isDragging ? 'scale(0.98)' : 'none',
+                transition: 'opacity 0.2s, transform 0.2s'
+            }}
         >
-            <div className="block-controls">
-                <BlockDeleteButton onDelete={() => onDelete(id)} />
-                <div
-                    className="drag-handle-icon"
+
+            <div className="editor-toolbar">
+                {/* [New] Drag Handle & Menu merged into toolbar */}
+                <BlockActionMenu
+                    position={menuPosition}
+                    onClose={() => setMenuPosition(null)}
+                    onDelete={() => onDelete(id)}
                     draggable={draggable}
                     onDragStart={onDragStart}
-                    title="드래그하여 이동"
-                >
-                    ⋮⋮
+                />
+                <div className="toolbar-divider" />
+
+                <div className="toolbar-group">
+                    <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+                        className={`toolbar-btn ${editor.isActive('heading', { level: 1 }) ? 'is-active' : ''}`}
+                        title="제목 1"
+                    >
+                        <Heading1 size={18} />
+                    </button>
+                    <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+                        className={`toolbar-btn ${editor.isActive('heading', { level: 2 }) ? 'is-active' : ''}`}
+                        title="제목 2"
+                    >
+                        <Heading2 size={18} />
+                    </button>
+                    <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+                        className={`toolbar-btn ${editor.isActive('heading', { level: 3 }) ? 'is-active' : ''}`}
+                        title="제목 3"
+                    >
+                        <Heading3 size={18} />
+                    </button>
+                </div>
+                <div className="toolbar-divider" />
+                <div className="toolbar-group">
+                    <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => editor.chain().focus().toggleBold().run()}
+                        className={`toolbar-btn ${editor.isActive('bold') ? 'is-active' : ''}`}
+                        title="굵게 (Ctrl+B)"
+                    >
+                        <Bold size={18} />
+                    </button>
+                    <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => editor.chain().focus().toggleItalic().run()}
+                        className={`toolbar-btn ${editor.isActive('italic') ? 'is-active' : ''}`}
+                        title="기울임 (Ctrl+I)"
+                    >
+                        <Italic size={18} />
+                    </button>
+                    <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => editor.chain().focus().toggleStrike().run()}
+                        className={`toolbar-btn ${editor.isActive('strike') ? 'is-active' : ''}`}
+                        title="취소선"
+                    >
+                        <Strikethrough size={18} />
+                    </button>
+                    <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => editor.chain().focus().toggleUnderline().run()}
+                        className={`toolbar-btn ${editor.isActive('underline') ? 'is-active' : ''}`}
+                        title="밑줄 (Ctrl+U)"
+                    >
+                        <UnderlineIcon size={18} />
+                    </button>
+                </div>
+                <div className="toolbar-divider" />
+                <div className="toolbar-group">
+                    <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => editor.chain().focus().toggleHighlight({ color: '#fef08a' }).run()}
+                        className={`toolbar-btn ${editor.isActive('highlight') ? 'is-active' : ''}`}
+                        title="형광펜"
+                    >
+                        <Highlighter size={18} />
+                    </button>
+                    <div
+                        className="color-picker-wrapper"
+                        onMouseDown={(e) => e.preventDefault()}
+                    >
+                        <button
+                            className="toolbar-btn"
+                            onClick={() => setShowColorPicker(!showColorPicker)}
+                            title="텍스트 색상"
+                        >
+                            <Palette size={18} />
+                        </button>
+                        {showColorPicker && (
+                            <div className="color-palette">
+                                {TEXT_COLORS.map((color) => (
+                                    <button
+                                        key={color}
+                                        className="color-swatch"
+                                        style={{ backgroundColor: color }}
+                                        onClick={() => {
+                                            editor.chain().focus().setColor(color).run();
+                                            setShowColorPicker(false);
+                                        }}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+                <div className="toolbar-divider" />
+                <div className="toolbar-group">
+                    <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => editor.chain().focus().setTextAlign('left').run()}
+                        className={`toolbar-btn ${editor.isActive({ textAlign: 'left' }) ? 'is-active' : ''}`}
+                        title="왼쪽 정렬"
+                    >
+                        <AlignLeft size={18} />
+                    </button>
+                    <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => editor.chain().focus().setTextAlign('center').run()}
+                        className={`toolbar-btn ${editor.isActive({ textAlign: 'center' }) ? 'is-active' : ''}`}
+                        title="가운데 정렬"
+                    >
+                        <AlignCenter size={18} />
+                    </button>
+                    <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => editor.chain().focus().setTextAlign('right').run()}
+                        className={`toolbar-btn ${editor.isActive({ textAlign: 'right' }) ? 'is-active' : ''}`}
+                        title="오른쪽 정렬"
+                    >
+                        <AlignRight size={18} />
+                    </button>
+                    <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => editor.chain().focus().setTextAlign('justify').run()}
+                        className={`toolbar-btn ${editor.isActive({ textAlign: 'justify' }) ? 'is-active' : ''}`}
+                        title="양쪽 정렬"
+                    >
+                        <AlignJustify size={18} />
+                    </button>
+                </div>
+                <div className="toolbar-divider" />
+                <div className="toolbar-group">
+                    <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => editor.chain().focus().toggleBulletList().run()}
+                        className={`toolbar-btn ${editor.isActive('bulletList') ? 'is-active' : ''}`}
+                        title="글머리 기호 목록"
+                    >
+                        <List size={18} />
+                    </button>
+                    <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => editor.chain().focus().toggleOrderedList().run()}
+                        className={`toolbar-btn ${editor.isActive('orderedList') ? 'is-active' : ''}`}
+                        title="번호 목록"
+                    >
+                        <ListOrdered size={18} />
+                    </button>
+                    <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => editor.chain().focus().toggleBlockquote().run()}
+                        className={`toolbar-btn ${editor.isActive('blockquote') ? 'is-active' : ''}`}
+                        title="인용구"
+                    >
+                        <Quote size={18} />
+                    </button>
+                </div>
+                <div className="toolbar-divider" />
+                <div className="toolbar-group">
+                    <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => editor.chain().focus().setHorizontalRule().run()}
+                        className="toolbar-btn"
+                        title="구분선"
+                    >
+                        <Minus size={18} />
+                    </button>
+                    <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={setLink}
+                        className={`toolbar-btn ${editor.isActive('link') ? 'is-active' : ''}`}
+                        title="링크"
+                    >
+                        <LinkIcon size={18} />
+                    </button>
+                    <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={addImage}
+                        className="toolbar-btn"
+                        title="이미지 삽입"
+                    >
+                        <ImageIcon size={18} />
+                    </button>
                 </div>
             </div>
-            <div className="text-block-editor-container">
-                {/* 포커스 시에만 툴바 표시 */}
-                {isFocused && (
-                    <div className="editor-toolbar">
-                        <div className="toolbar-group">
-                            <button
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-                                className={`toolbar-btn ${editor.isActive('heading', { level: 1 }) ? 'is-active' : ''}`}
-                                title="제목 1"
-                            >
-                                <Heading1 size={18} />
-                            </button>
-                            <button
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-                                className={`toolbar-btn ${editor.isActive('heading', { level: 2 }) ? 'is-active' : ''}`}
-                                title="제목 2"
-                            >
-                                <Heading2 size={18} />
-                            </button>
-                            <button
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-                                className={`toolbar-btn ${editor.isActive('heading', { level: 3 }) ? 'is-active' : ''}`}
-                                title="제목 3"
-                            >
-                                <Heading3 size={18} />
-                            </button>
-                        </div>
-                        <div className="toolbar-divider" />
-                        <div className="toolbar-group">
-                            <button
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => editor.chain().focus().toggleBold().run()}
-                                className={`toolbar-btn ${editor.isActive('bold') ? 'is-active' : ''}`}
-                                title="굵게 (Ctrl+B)"
-                            >
-                                <Bold size={18} />
-                            </button>
-                            <button
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => editor.chain().focus().toggleItalic().run()}
-                                className={`toolbar-btn ${editor.isActive('italic') ? 'is-active' : ''}`}
-                                title="기울임 (Ctrl+I)"
-                            >
-                                <Italic size={18} />
-                            </button>
-                            <button
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => editor.chain().focus().toggleStrike().run()}
-                                className={`toolbar-btn ${editor.isActive('strike') ? 'is-active' : ''}`}
-                                title="취소선"
-                            >
-                                <Strikethrough size={18} />
-                            </button>
-                            <button
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => editor.chain().focus().toggleUnderline().run()}
-                                className={`toolbar-btn ${editor.isActive('underline') ? 'is-active' : ''}`}
-                                title="밑줄 (Ctrl+U)"
-                            >
-                                <UnderlineIcon size={18} />
-                            </button>
-                        </div>
-                        <div className="toolbar-divider" />
-                        <div className="toolbar-group">
-                            <button
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => editor.chain().focus().toggleHighlight({ color: '#fef08a' }).run()}
-                                className={`toolbar-btn ${editor.isActive('highlight') ? 'is-active' : ''}`}
-                                title="형광펜"
-                            >
-                                <Highlighter size={18} />
-                            </button>
-                            <div
-                                className="color-picker-wrapper"
-                                onMouseDown={(e) => e.preventDefault()}
-                            >
-                                <button
-                                    className="toolbar-btn"
-                                    onClick={() => setShowColorPicker(!showColorPicker)}
-                                    title="텍스트 색상"
-                                >
-                                    <Palette size={18} />
-                                </button>
-                                {showColorPicker && (
-                                    <div className="color-palette">
-                                        {TEXT_COLORS.map((color) => (
-                                            <button
-                                                key={color}
-                                                className="color-swatch"
-                                                style={{ backgroundColor: color }}
-                                                onClick={() => {
-                                                    editor.chain().focus().setColor(color).run();
-                                                    setShowColorPicker(false);
-                                                }}
-                                            />
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                        <div className="toolbar-divider" />
-                        <div className="toolbar-group">
-                            <button
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => editor.chain().focus().setTextAlign('left').run()}
-                                className={`toolbar-btn ${editor.isActive({ textAlign: 'left' }) ? 'is-active' : ''}`}
-                                title="왼쪽 정렬"
-                            >
-                                <AlignLeft size={18} />
-                            </button>
-                            <button
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => editor.chain().focus().setTextAlign('center').run()}
-                                className={`toolbar-btn ${editor.isActive({ textAlign: 'center' }) ? 'is-active' : ''}`}
-                                title="가운데 정렬"
-                            >
-                                <AlignCenter size={18} />
-                            </button>
-                            <button
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => editor.chain().focus().setTextAlign('right').run()}
-                                className={`toolbar-btn ${editor.isActive({ textAlign: 'right' }) ? 'is-active' : ''}`}
-                                title="오른쪽 정렬"
-                            >
-                                <AlignRight size={18} />
-                            </button>
-                            <button
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => editor.chain().focus().setTextAlign('justify').run()}
-                                className={`toolbar-btn ${editor.isActive({ textAlign: 'justify' }) ? 'is-active' : ''}`}
-                                title="양쪽 정렬"
-                            >
-                                <AlignJustify size={18} />
-                            </button>
-                        </div>
-                        <div className="toolbar-divider" />
-                        <div className="toolbar-group">
-                            <button
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => editor.chain().focus().toggleBulletList().run()}
-                                className={`toolbar-btn ${editor.isActive('bulletList') ? 'is-active' : ''}`}
-                                title="글머리 기호 목록"
-                            >
-                                <List size={18} />
-                            </button>
-                            <button
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => editor.chain().focus().toggleOrderedList().run()}
-                                className={`toolbar-btn ${editor.isActive('orderedList') ? 'is-active' : ''}`}
-                                title="번호 목록"
-                            >
-                                <ListOrdered size={18} />
-                            </button>
-                            <button
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => editor.chain().focus().toggleBlockquote().run()}
-                                className={`toolbar-btn ${editor.isActive('blockquote') ? 'is-active' : ''}`}
-                                title="인용구"
-                            >
-                                <Quote size={18} />
-                            </button>
-                        </div>
-                        <div className="toolbar-divider" />
-                        <div className="toolbar-group">
-                            <button
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => editor.chain().focus().setHorizontalRule().run()}
-                                className="toolbar-btn"
-                                title="구분선"
-                            >
-                                <Minus size={18} />
-                            </button>
-                            <button
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={setLink}
-                                className={`toolbar-btn ${editor.isActive('link') ? 'is-active' : ''}`}
-                                title="링크"
-                            >
-                                <LinkIcon size={18} />
-                            </button>
-                            <button
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={addImage}
-                                className="toolbar-btn"
-                                title="이미지 삽입"
-                            >
-                                <ImageIcon size={18} />
-                            </button>
-                        </div>
-                    </div>
-                )}
-                <EditorContent editor={editor} className="editor-content" />
-                {/* 링크 입력 모달 */}
-                {showLinkModal && (
-                    <div className="link-modal-overlay" onClick={closeLinkModal}>
-                        <div className="link-modal" onClick={(e) => e.stopPropagation()}>
-                            <h4>🔗 링크 URL 입력</h4>
-                            <input
-                                type="text"
-                                value={linkUrl}
-                                onChange={(e) => setLinkUrl(e.target.value)}
-                                placeholder="https://example.com"
-                                autoFocus
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') applyLink();
-                                    if (e.key === 'Escape') closeLinkModal();
-                                }}
-                            />
-                            <div className="link-modal-buttons">
-                                <button className="link-modal-apply" onClick={applyLink}>
-                                    적용
-                                </button>
-                                <button className="link-modal-cancel" onClick={closeLinkModal}>
-                                    취소
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-                {/* 업로드 중 표시 */}
-                {isUploading && (
-                    <div className="upload-overlay">
-                        <div className="upload-spinner">이미지 업로드 중...</div>
-                    </div>
-                )}
-            </div>
 
+            <EditorContent editor={editor} className="editor-content" />
+            {/* 링크 입력 모달 */}
+            {showLinkModal && (
+                <div className="link-modal-overlay" onClick={closeLinkModal}>
+                    <div className="link-modal" onClick={(e) => e.stopPropagation()}>
+                        <h4>🔗 링크 URL 입력</h4>
+                        <input
+                            type="text"
+                            value={linkUrl}
+                            onChange={(e) => setLinkUrl(e.target.value)}
+                            placeholder="https://example.com"
+                            autoFocus
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') applyLink();
+                                if (e.key === 'Escape') closeLinkModal();
+                            }}
+                        />
+                        <div className="link-modal-buttons">
+                            <button className="link-modal-apply" onClick={applyLink}>
+                                적용
+                            </button>
+                            <button className="link-modal-cancel" onClick={closeLinkModal}>
+                                취소
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* 업로드 중 표시 */}
+            {isUploading && (
+                <div className="upload-overlay">
+                    <div className="upload-spinner">이미지 업로드 중...</div>
+                </div>
+            )}
         </div>
     );
 };

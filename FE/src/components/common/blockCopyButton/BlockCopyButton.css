@@ -2,17 +2,24 @@
 .block-copy-btn {
   display: flex;
   align-items: center;
-  gap: 5px;
-  background: none;
-  border: none;
-  color: var(--font-color, #333);
-  opacity: 0.7;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: 1px solid var(--color-border, #ccc);
+  border-radius: 6px;
+  color: var(--font-color-sub);
   cursor: pointer;
-  font-size: 13px;
-  padding: 4px 8px;
-  transition: opacity 0.2s;
+  padding: 0;
+  transition: all 0.2s;
 }
 
 .block-copy-btn:hover {
-  opacity: 1;
+  border-color: var(--color-point);
+  color: var(--color-point);
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+.block-copy-btn:active {
+  transform: scale(0.95);
 }

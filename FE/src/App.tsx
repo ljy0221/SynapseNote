@@ -33,7 +33,7 @@ import Note from './pages/note/Note';
 import MindMap from './pages/mindmap/MindMap';
 
 // 사이드바가 허용되는 경로
-const SIDEBAR_ROUTES = ['/note'];
+const SIDEBAR_ROUTES = ['/note', '/home'];
 // 툴바가 허용되는 경로 (우측 여백)
 const TOOLBAR_ROUTES = ['/note'];
 
@@ -132,12 +132,15 @@ function AppContent() {
     );
 
     useEffect(() => {
-        if (isSidebarAllowed) {
+        if (location.pathname.startsWith('/home')) {
+            setIsSidebarActive(true);
+        } else if (isSidebarAllowed) {
+
             setIsSidebarActive(true);
         } else {
             setIsSidebarActive(false);
         }
-    }, [isSidebarAllowed]);
+    }, [isSidebarAllowed, location.pathname]);
 
     /** Toolbar */
     const isToolbarAllowed = TOOLBAR_ROUTES.some(path =>

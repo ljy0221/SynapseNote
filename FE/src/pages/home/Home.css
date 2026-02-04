@@ -135,7 +135,8 @@
 .home-grid {
   display: grid;
   /* 🔥 좌우 고정 너비로 변경 (창이 커져도 늘어나지 않고 중앙 유지) */
-  grid-template-columns: 740px 340px;
+  /* 사이드바(240px) 공간 확보를 위해 전체 너비 축소 (740/340 -> 700/300) */
+  grid-template-columns: 700px 300px;
   gap: 16px;
   height: auto;
   width: auto;
