@@ -63,3 +63,27 @@
     background: var(--color-sub);
     border-radius: 4px;
 }
+
+/* Empty Note State */
+.empty-note-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    gap: 1.5rem;
+    color: var(--font-color-sub);
+}
+
+.empty-note-icon {
+    width: 64px;
+    height: 64px;
+    opacity: 0.5;
+}
+
+.empty-note-text {
+    font-size: 1.25rem;
+    font-weight: 500;
+    opacity: 0.8;
+}
