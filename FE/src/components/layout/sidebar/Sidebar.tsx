@@ -165,6 +165,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, showToggle =
       isFavorite
         ? await removeBookmarkApi(noteId)
         : await addBookmarkApi(noteId);
+      emitNotesChanged({ skipRefetch: true }); // 상태 변경 알림 (필요한 곳에서 재요청 유도)
     } catch {
       setFavoriteNoteIds(prev => {
         const next = new Set(prev);
