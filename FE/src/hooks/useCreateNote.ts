@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useNoteStore } from '../store/useNoteStore';
+import { useAuthStore } from '../store/useAuthStore'; // [1] AuthStore 임포트
 import { createNoteApi } from '../api/notes/CreateNote.api';
 import { generateUuidV7 } from '../utils/UUIDV7';
 import { emitNotesChanged } from '../events/NotesEvents';
@@ -14,6 +15,7 @@ interface CreateNoteOptions {
 export const useCreateNote = () => {
     const navigate = useNavigate();
     const { canCreateNote, updateLastCreatedTime } = useNoteStore();
+    // [2] 컴포넌트 레벨에서 userInfo를 구독하지 않고, 함수 내부에서 getState()로 최신 값을 가져옵니다.
 
     const handleCreateNote = async (
         directoryPath: string = '/',
@@ -26,10 +28,14 @@ export const useCreateNote = () => {
         }
 
         const noteId = generateUuidV7();
-        const memberId = localStorage.getItem('memberId');
+        
+        // [3] 수정: LocalStorage 대신 Zustand Store에서 memberId 가져오기
+        const userInfo = useAuthStore.getState().userInfo;
+        const memberId = userInfo?.memberId;
 
         if (!memberId) {
-            console.error('Member ID not found');
+            console.error('Member ID not found in AuthStore');
+            // 만약 스토어에 정보가 없다면 세션이 만료된 것일 수 있으므로 재로그인 유도 등을 고려
             return;
         }
 
