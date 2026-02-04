@@ -118,6 +118,22 @@ public class NoteService {
         return NotePageResponse.from(responsePage);
     }
 
+    public NotePageResponse getOwnedNotes(UUID memberId, int page, int size) {
+        PageRequest pageRequest = PageRequest.of(page, size);
+        Page<Note> pageResult = noteRepository.findOwnedNotesByMemberId(memberId, pageRequest);
+
+        Page<NoteResponse> responsePage = pageResult.map(NoteResponse::from);
+        return NotePageResponse.from(responsePage);
+    }
+
+    public NotePageResponse getSharedNotes(UUID memberId, int page, int size) {
+        PageRequest pageRequest = PageRequest.of(page, size);
+        Page<Note> pageResult = noteRepository.findSharedNotesByMemberId(memberId, pageRequest);
+
+        Page<NoteResponse> responsePage = pageResult.map(NoteResponse::from);
+        return NotePageResponse.from(responsePage);
+    }
+
     // =========================================================================
     // 3. 노트 수정 (Update)
     // =========================================================================
