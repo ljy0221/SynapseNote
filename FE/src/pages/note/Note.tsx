@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { NotebookPen } from 'lucide-react';
 import { useParams } from 'react-router-dom';
-import NoteButton from "../../components/common/noteButton/NoteButton";
 import NoteMain from "../../components/layout/noteMain/NoteMain";
 import { getNoteDetailApi } from '../../api/notes/GetNoteDetail.api';
 import { updateNoteApi } from '../../api/notes/UpdateNote.api'; // ADDED
@@ -9,7 +9,6 @@ import { emitNotesChanged } from '../../events/NotesEvents'; // ADDED
 import type { SummaryStyle } from '../../types/ai/NoteSummary';
 import { useYjsStore } from '../../hooks/useYjsStore';
 import './Note.css';
-import { useCreateNote } from '../../hooks/useCreateNote';
 
 // 블록 타입 정의 (이원화: text / code)
 export type BlockType = 'text' | 'code';
@@ -170,20 +169,7 @@ const Note: React.FC = () => {
         }
     };
 
-    const { handleCreateNote: createNote } = useCreateNote();
 
-    const handleCreateNote = async () => {
-        await createNote('/', {
-            onSuccess: (noteId) => {
-                setTimeout(() => {
-                    if (titleInputRef.current) {
-                        titleInputRef.current.focus();
-                        titleInputRef.current.select();
-                    }
-                }, 100);
-            }
-        });
-    };
 
     if (isLoading) {
         return <div className="page-content-container">Loading...</div>;
@@ -192,15 +178,10 @@ const Note: React.FC = () => {
     return (
         <div className="page-content-container">
             {!isEditing ? (
-                <>
-                    <div className="note-intro-wrapper">
-                        <h2>노트 편집 페이지</h2>
-                        <div className="create-note-section">
-                            <NoteButton onClick={handleCreateNote} />
-                            <span className="create-note-label">새 노트 작성하기</span>
-                        </div>
-                    </div>
-                </>
+                <div className="empty-note-state">
+                    <NotebookPen className="empty-note-icon" />
+                    <span className="empty-note-text">지식을 불러와주세요!</span>
+                </div>
             ) : (
                 <div
                     className="editing-layout-wrapper"
