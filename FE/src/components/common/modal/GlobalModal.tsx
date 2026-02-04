@@ -22,6 +22,7 @@ const GlobalModal: React.FC = () => {
                         key={modal.id}
                         isOpen={true} // GlobalModal에서 렌더링되므로 항상 true
                         onClose={() => closeModal(modal.id)}
+                        onCancel={() => closeModal(modal.id)}
                         {...modal.props}
                     />
                 );
