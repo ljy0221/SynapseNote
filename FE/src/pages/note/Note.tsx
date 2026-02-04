@@ -9,6 +9,7 @@ import { emitNotesChanged } from '../../events/NotesEvents'; // ADDED
 import type { CreateNoteRequest } from '../../types/note/CreateNote';
 import { useYjsStore } from '../../hooks/useYjsStore';
 import './Note.css';
+import { generateUuidV7 } from '../../utils/UUIDV7';
 
 // 블록 타입 정의 (이원화: text / code)
 export type BlockType = 'text' | 'code';
@@ -63,25 +64,25 @@ const Note: React.FC = () => {
 
     // Title Auto-save Debounce (ADDED)
     useEffect(() => {
-      if (!noteId) return;
+        if (!noteId) return;
 
-      const timer = setTimeout(async () => {
-        try {
-          await updateNoteApi(noteId, { title });
+        const timer = setTimeout(async () => {
+            try {
+                await updateNoteApi(noteId, { title });
 
-          // Sidebar 즉시 반영 트리거
-          emitNotesChanged({
-            type: 'UPDATE_TITLE',
-            noteId,
-            title,
-          });
-          // 또는 아래 방식 (더 좋음, 아래 설명)
-        } catch (err) {
-          console.error('[Note] Failed to save title:', err);
-        }
-      }, 800);
+                // Sidebar 즉시 반영 트리거
+                emitNotesChanged({
+                    type: 'UPDATE_TITLE',
+                    noteId,
+                    title,
+                });
+                // 또는 아래 방식 (더 좋음, 아래 설명)
+            } catch (err) {
+                console.error('[Note] Failed to save title:', err);
+            }
+        }, 800);
 
-      return () => clearTimeout(timer);
+        return () => clearTimeout(timer);
     }, [title, noteId]);
 
 
@@ -145,6 +146,7 @@ const Note: React.FC = () => {
     const handleCreateNote = async () => {
         try {
             const newNoteReq: CreateNoteRequest = {
+                id: generateUuidV7(),
                 title: "제목 없는 노트",
                 invitationUrl: "",
                 directoryPath: "/",
