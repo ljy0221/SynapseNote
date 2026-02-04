@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { BookDashed } from 'lucide-react';
 import NoteBookmarkItem from './NoteBookmarkItem';
 
@@ -14,19 +14,28 @@ const NoteBookmarkList = () => {
   const [notes, setNotes] = useState<BookmarkedNote[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  const fetchBookmarks = useCallback(async (isSilent = false) => {
+    if (!isSilent) setIsLoading(true);
+    try {
+      const res = await getBookmarksApi();
+      setNotes(adaptBookmarkedNotes(res));
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    const fetchBookmarks = async () => {
-      setIsLoading(true);
-      try {
-        const res = await getBookmarksApi();
-        setNotes(adaptBookmarkedNotes(res));
-      } finally {
-        setIsLoading(false);
-      }
+    fetchBookmarks();
+  }, [fetchBookmarks]);
+
+  useEffect(() => {
+    const handleChanged = () => {
+      fetchBookmarks(true); // 즐겨찾기 변경 시에도 조용히 갱신
     };
 
-    fetchBookmarks();
-  }, []);
+    window.addEventListener('notes-changed', handleChanged);
+    return () => window.removeEventListener('notes-changed', handleChanged);
+  }, [fetchBookmarks]);
 
   const handleRemove = async (noteId: string) => {
     // optimistic UI

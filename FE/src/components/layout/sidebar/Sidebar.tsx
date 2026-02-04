@@ -37,9 +37,10 @@ import { useCreateNote } from '../../../hooks/useCreateNote';
 interface SidebarProps {
   isOpen: boolean;
   onToggle: () => void;
+  showToggle?: boolean; // [New] 토글 버튼 노출 여부 (기본값 true)
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, showToggle = true }) => {
   const navigate = useNavigate();
   const { noteId: routeNoteId } = useParams<{ noteId: string }>();
   const activeNoteId = routeNoteId ?? null;
@@ -164,6 +165,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
       isFavorite
         ? await removeBookmarkApi(noteId)
         : await addBookmarkApi(noteId);
+      emitNotesChanged({ skipRefetch: true }); // 상태 변경 알림 (필요한 곳에서 재요청 유도)
     } catch {
       setFavoriteNoteIds(prev => {
         const next = new Set(prev);
@@ -331,12 +333,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
         </div>
       </aside>
 
-      <button
-        className={`sidebar-toggle-btn ${isOpen ? 'open' : ''}`}
-        onClick={onToggle}
-      >
-        {isOpen ? '⟨' : '⟩'}
-      </button>
+      {showToggle && (
+        <button
+          className={`sidebar-toggle-btn ${isOpen ? 'open' : ''}`}
+          onClick={onToggle}
+        >
+          {isOpen ? '⟨' : '⟩'}
+        </button>
+      )}
 
       <ContextMenu
         state={contextMenu}

@@ -8,9 +8,7 @@ import type { SearchedNote } from '../../../types/note/SearchNotes.ts';
 import WindowControlButton from '../../common/WindowControlButton/WindowControlButton.tsx';
 import { searchNotes } from '../../../utils/noteAPI';
 
-// Electron 전용 컴포넌트 (웹 빌드에서는 사용 안 함)
-const isElectron = typeof window !== 'undefined' && (window as any).electronAPI !== undefined;
-
+// Header component
 
 interface HeaderProps {
   isSidebarActive: boolean;
@@ -24,6 +22,27 @@ export const Header: React.FC<HeaderProps> = () => {
   const [isSearching, setIsSearching] = useState(false);
 
 
+  const handleSearch = React.useCallback(async (query: string) => {
+    if (!query) {
+      setSearchQuery(null);
+      setSearchResults([]);
+      return;
+    }
+
+    setSearchQuery(query);
+    setIsSearching(true);
+
+    try {
+      const results = await searchNotes(query);
+      setSearchResults(results);
+    } catch (error) {
+      console.error('검색 실패:', error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
+
   return (
     <header className="main-header">
 
@@ -32,22 +51,7 @@ export const Header: React.FC<HeaderProps> = () => {
 
       <div className="header-search-zone">
         <div className="search-bar-wrapper">
-          <SearchBar
-            onSearch={async (query) => {
-              setSearchQuery(query);
-              setIsSearching(true);
-
-              try {
-                const results = await searchNotes(query);
-                setSearchResults(results);
-              } catch (error) {
-                console.error('검색 실패:', error);
-                setSearchResults([]);
-              } finally {
-                setIsSearching(false);
-              }
-            }}
-          />
+          <SearchBar onSearch={handleSearch} />
 
           {searchQuery && (
             <SearchResultDropdown
