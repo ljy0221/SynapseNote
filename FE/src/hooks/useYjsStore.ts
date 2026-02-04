@@ -154,7 +154,7 @@ export const useYjsStore = (noteId: string | undefined) => {
   }, [noteId, wsUrl, accessToken]); // ✅ 토큰 변경(리프레시) 시 재연결
 
   // 블록 추가
-  const addBlock = (prevBlockId: number | string | null, type: BlockType) => {
+  const addBlock = (prevBlockId: number | string | null, type: BlockType, initialContent: string | undefined) => {
     const doc = docRef.current;
     const yBlocks = doc.getArray<YBlockMap>('blocks');
 
@@ -173,7 +173,7 @@ export const useYjsStore = (noteId: string | undefined) => {
         properties.set('version', '17');
         properties.set('executionMode', 'local');
       } else {
-        properties.set('content', new Y.Text(''));
+        properties.set('content', new Y.Text(initialContent));
       }
       newBlockMap.set('properties', properties);
 

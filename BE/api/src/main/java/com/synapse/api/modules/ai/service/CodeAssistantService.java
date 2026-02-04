@@ -40,7 +40,7 @@ public class CodeAssistantService {
 
     @Transactional(readOnly = true)
     public CodeReviewResponse reviewCode(UUID noteId, UUID blockId,
-                                          UUID userId, CodeReviewRequest request) {
+            UUID userId, CodeReviewRequest request) {
         // 편집 권한 검증
         noteValidator.validateEditPermission(noteId, userId);
 
@@ -65,7 +65,10 @@ public class CodeAssistantService {
                     "Code too large for review (max 5000 characters)");
         }
 
-        String language = codeBlock.getProperties().getLanguage();
+        // 언어 설정: 요청 파라미터 우선, 없으면 DB 저장값 사용
+        String language = (request.language() != null && !request.language().isEmpty())
+                ? request.language()
+                : codeBlock.getProperties().getLanguage();
         String systemPrompt = buildCodeReviewSystemPrompt(language);
 
         // 세션 모드: 전체 블록 컨텍스트 포함
@@ -102,20 +105,20 @@ public class CodeAssistantService {
                 - 성능 이슈
                 - 코드 품질 및 가독성
                 - 모범 사례
-                
+
                 다음 내용을 포함한 구조화된 피드백을 제공하세요:
                 1. 구체적인 문제점 (심각도: error, warning, info)
                 2. 모범 사례 권장사항
                 3. 전체 요약
-                
+
                 간결하면서도 실행 가능한 조언을 제공하세요.
                 응답은 반드시 유효한 JSON 형식으로만 작성하세요. 마크다운 코드 블록은 사용하지 마세요.
                 """.formatted(language);
     }
 
     private String buildCodeReviewUserPrompt(String code, String language,
-                                             List<String> focusAreas,
-                                             List<CodeBlock> contextBlocks) {
+            List<String> focusAreas,
+            List<CodeBlock> contextBlocks) {
         StringBuilder prompt = new StringBuilder();
 
         // 컨텍스트 블록이 있으면 먼저 추가
@@ -162,9 +165,9 @@ public class CodeAssistantService {
     }
 
     private CodeReviewResponse parseCodeReviewResponse(UUID blockId,
-                                                       String language,
-                                                       String code,
-                                                       String aiResponse) {
+            String language,
+            String code,
+            String aiResponse) {
         try {
             String jsonContent = extractJsonFromMarkdown(aiResponse);
             JsonNode root = objectMapper.readTree(jsonContent);
