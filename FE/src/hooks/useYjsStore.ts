@@ -2,11 +2,15 @@ import { useEffect, useState, useRef } from 'react';
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 import { BlockData, BlockType } from '../pages/note/Note';
-import { useAuthStore } from '../store/useAuthStore'; // ✅ 추가
+import { useAuthStore } from '../store/useAuthStore';
 
 // Yjs Map에서 사용하는 키 정의
 type YBlockMap = Y.Map<any>;
 
+/**
+ * CRDT-safe 텍스트 diff 적용 함수
+ * 전체 삭제/재삽입 대신 변경된 부분만 계산하여 Y.Text에 반영
+ */
 function applyTextDiff(yText: Y.Text, oldText: string, newText: string): void {
   let prefixLen = 0;
   const minLen = Math.min(oldText.length, newText.length);
@@ -33,6 +37,7 @@ function applyTextDiff(yText: Y.Text, oldText: string, newText: string): void {
 export const useYjsStore = (noteId: string | undefined) => {
   const [blocks, setBlocks] = useState<BlockData[]>([]);
   const [isSynced, setIsSynced] = useState(false);
+
   const docRef = useRef<Y.Doc>(new Y.Doc());
   const providerRef = useRef<WebsocketProvider | null>(null);
 
@@ -43,35 +48,38 @@ export const useYjsStore = (noteId: string | undefined) => {
   const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:1234';
 
   useEffect(() => {
+    // noteId 없으면 초기화
     if (!noteId) {
       setBlocks([]);
+      setIsSynced(false);
       return;
     }
 
     console.log(`[Yjs] Connecting to ${wsUrl} for note: ${noteId}`);
     console.log(`[Yjs] Using accessToken? ${accessToken ? 'YES' : 'NO'}`);
 
-    // 이전 provider 정리(안전)
+    // ✅ 이전 provider/doc 정리 (중복 연결/리스너 누수 방지)
     if (providerRef.current) {
       providerRef.current.destroy();
       providerRef.current = null;
     }
-
-    // 새로운 문서 생성 (이전 문서 폐기)
     if (docRef.current) {
       docRef.current.destroy();
     }
-    docRef.current = new Y.Doc();
 
-    // ✅ Provider 설정: token을 params에 포함 (store 토큰 사용)
-    const provider = new WebsocketProvider(wsUrl, noteId, docRef.current, {
+    // ✅ 새 문서 생성
+    const doc = new Y.Doc();
+    docRef.current = doc;
+
+    // ✅ Provider 생성 (token params 포함)
+    const provider = new WebsocketProvider(wsUrl, noteId, doc, {
       params: { token: accessToken || '' },
     });
     providerRef.current = provider;
 
-    const yBlocks = docRef.current.getArray<YBlockMap>('blocks');
+    const yBlocks = doc.getArray<YBlockMap>('blocks');
 
-    // 상태 초기화 (중복 방지)
+    // 상태 초기화
     setBlocks([]);
     setIsSynced(false);
 
@@ -79,13 +87,13 @@ export const useYjsStore = (noteId: string | undefined) => {
       const currentBlocks = yBlocks
         .toArray()
         .map((yBlock: YBlockMap) => {
-          const properties = yBlock.get('properties') as Y.Map<any>;
+          const properties = yBlock.get('properties') as Y.Map<any> | undefined;
           const type = yBlock.get('_class') as BlockType;
 
           if (!properties) return null;
 
           let content = '';
-          let language = undefined;
+          let language: string | undefined = undefined;
 
           if (type === 'code') {
             const codeText = properties.get('code');
@@ -108,26 +116,42 @@ export const useYjsStore = (noteId: string | undefined) => {
       setBlocks(currentBlocks);
     };
 
-    // 초기 동기화 관찰
-    provider.on('sync', (isSynced: boolean) => {
-        console.log('[Yjs] sync:', isSynced);
-        setIsSynced(isSynced);
-        if (isSynced) updateBlocksState();
-    });
-    
-    // 데이터 변경 관찰
-    yBlocks.observe(() => {
-      updateBlocksState();
-    });
+    // ✅ 동기화 이벤트 (y-websocket은 'sync'가 일반적)
+    const onSync = (synced: boolean) => {
+      console.log('[Yjs] sync:', synced);
+      setIsSynced(synced);
+      if (synced) updateBlocksState();
+    };
+    provider.on('sync', onSync);
+
+    // ✅ 블록 배열 변경 관찰 (실시간 반영 핵심)
+    const onBlocksChanged = () => updateBlocksState();
+    yBlocks.observe(onBlocksChanged);
+
+    // (선택) 최초 연결 직후, 로컬에 이미 값이 있는 경우를 위해 한번 호출
+    // synced 이후가 보장되긴 하지만, UX상 빠르게 반영하고 싶으면 유지
+    updateBlocksState();
 
     return () => {
       console.log(`[Yjs] Disconnecting from ${noteId}...`);
+      try {
+        yBlocks.unobserve(onBlocksChanged);
+      } catch {
+        // observe 등록이 안 됐을 수도 있으니 무시
+      }
+      try {
+        provider.off('sync', onSync);
+      } catch {
+        // off 미지원/에러 가능성 대비
+      }
       provider.destroy();
-      docRef.current.destroy();
+      doc.destroy();
+      providerRef.current = null;
+
       setBlocks([]);
+      setIsSynced(false);
     };
-    // ✅ 토큰이 바뀌면(리프레시 포함) WS도 다시 연결되게 의존성에 추가
-  }, [noteId, wsUrl, accessToken]);
+  }, [noteId, wsUrl, accessToken]); // ✅ 토큰 변경(리프레시) 시 재연결
 
   // 블록 추가
   const addBlock = (prevBlockId: number | string | null, type: BlockType) => {
@@ -172,6 +196,8 @@ export const useYjsStore = (noteId: string | undefined) => {
     if (index === -1) return;
 
     const targetBlock = yBlocks.get(index);
+    if (!targetBlock) return;
+
     const properties = targetBlock.get('properties') as Y.Map<any>;
     const type = targetBlock.get('_class');
 
@@ -181,9 +207,11 @@ export const useYjsStore = (noteId: string | undefined) => {
       if (type === 'code') yText = properties.get('code') as Y.Text;
       else yText = properties.get('content') as Y.Text;
 
-      if (yText) {
-        const currentStr = yText.toString();
-        if (currentStr !== newContent) applyTextDiff(yText, currentStr, newContent);
+      if (!yText) return;
+
+      const currentStr = yText.toString();
+      if (currentStr !== newContent) {
+        applyTextDiff(yText, currentStr, newContent);
       }
     });
   };
@@ -211,11 +239,11 @@ export const useYjsStore = (noteId: string | undefined) => {
       const newBlockMap = new Y.Map();
 
       const blockId = targetBlock.get('blockId');
-      const noteId = targetBlock.get('noteId');
+      const nId = targetBlock.get('noteId');
       const type = targetBlock.get('_class');
 
       newBlockMap.set('blockId', blockId);
-      newBlockMap.set('noteId', noteId);
+      newBlockMap.set('noteId', nId);
       newBlockMap.set('_class', type);
 
       const oldProperties = targetBlock.get('properties') as Y.Map<any>;
