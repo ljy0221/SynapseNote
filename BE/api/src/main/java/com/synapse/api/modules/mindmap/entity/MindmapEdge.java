@@ -1,5 +1,6 @@
 package com.synapse.api.modules.mindmap.entity;
 
+import com.synapse.api.modules.member.entity.Member;
 import com.synapse.api.modules.note.entity.Note;
 import com.synapse.api.util.entity.BaseEntity;
 import jakarta.persistence.*;
@@ -26,13 +27,18 @@ public class MindmapEdge extends BaseEntity {
     @JoinColumn(name = "to_id", nullable = false)
     private Note to;
 
-    private MindmapEdge(Note from, Note to) {
+    @MapsId("memberId")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member memberId;
+
+    private MindmapEdge(Note from, Note to, Member member) {
         this.from = from;
         this.to = to;
-        this.id = new MindmapEdgeId(from.getId(), to.getId());
+        this.id = new MindmapEdgeId(from.getId(), to.getId(), member.getId());
     }
 
-    public static MindmapEdge of(Note from, Note to) {
-        return new MindmapEdge(from, to);
+    public static MindmapEdge of(Note from, Note to, Member member) {
+        return new MindmapEdge(from, to, member);
     }
 }
