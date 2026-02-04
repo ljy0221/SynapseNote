@@ -25,7 +25,7 @@ import GlobalModal from './components/common/modal/GlobalModal';
 const isElectron = typeof window !== 'undefined' && (window as any).electronAPI !== undefined;
 
 const SIDEBAR_ROUTES = ['/note', '/home'];
-const FIXED_SIDEBAR_ROUTES = ['/home', '/note']; // [New] 항상 열림 처리할 경로
+const FIXED_SIDEBAR_ROUTES = ['/home', '/note', '/mindmap']; // [New] 항상 열림 처리할 경로
 const TOOLBAR_ROUTES = ['/note'];
 
 export default function RootLayout() {
@@ -173,7 +173,7 @@ export default function RootLayout() {
             <main
                 className={[
                     !isLoginPage ? 'main-content' : '',
-                    !isLoginPage && isSidebarAllowed && isSidebarActive ? 'sidebar-open' : '',
+                    !isLoginPage && isSidebarActive ? 'sidebar-open' : '',
                     !isLoginPage && isToolbarActive && isToolbarAllowed ? 'toolbar-open' : '',
                 ].join(' ')}
             >
