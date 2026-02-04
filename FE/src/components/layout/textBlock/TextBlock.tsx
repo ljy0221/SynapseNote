@@ -40,10 +40,14 @@ interface TextBlockProps {
     onUpdate: (id: number | string, content: string) => void;
     onFocus: () => void;
     onDelete: (id: number | string) => void;
-    draggable?: boolean;
-    onDragStart?: (e: React.DragEvent) => void;
-    onDragOver?: (e: React.DragEvent) => void;
-    onDrop?: (e: React.DragEvent) => void;
+    // Native DnD props removed
+    // draggable?: boolean;
+    // onDragStart?: (e: React.DragEvent) => void;
+    // onDragOver?: (e: React.DragEvent) => void;
+    // onDrop?: (e: React.DragEvent) => void;
+
+    // Framer Motion controls
+    dragControls?: any; // DragControls type from framer-motion (using any to avoid deep imports if strictly needed)
     isFocused?: boolean; // [추가]
     onContextMenu?: (e: React.MouseEvent) => void; // [New]
 }
@@ -76,10 +80,11 @@ const TextBlock: React.FC<TextBlockProps> = ({
     onUpdate,
     onFocus,
     onDelete,
-    draggable,
-    onDragStart,
-    onDragOver,
-    onDrop,
+    // draggable,
+    // onDragStart,
+    // onDragOver,
+    // onDrop,
+    dragControls,
     isFocused: shouldFocus, // [추가] prop 이름 충돌 방지를 위해 별칭 사용
     onContextMenu, // [New]
 }) => {
@@ -89,6 +94,9 @@ const TextBlock: React.FC<TextBlockProps> = ({
     // 링크 모달 상태
     const [showLinkModal, setShowLinkModal] = React.useState(false);
     const [linkUrl, setLinkUrl] = React.useState('');
+
+    // Force update trigger
+    const [, setUpdateTrigger] = React.useState(0);
 
     // 이미지 업로드 상태
     const [isUploading, setIsUploading] = React.useState(false);
@@ -102,6 +110,10 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 link: false,
                 // @ts-ignore
                 underline: false,
+                // @ts-ignore - Disable Gapcursor/Dropcursor to prevent "ghost lines"
+                gapcursor: false,
+                // @ts-ignore
+                dropcursor: false,
             }),
             Image,
             TextStyle,
@@ -126,6 +138,17 @@ const TextBlock: React.FC<TextBlockProps> = ({
             TabHandler,
         ],
         content: content,
+        // onTransaction removed for performance optimization.
+        // We now rely on explicit onClick triggers for button state updates
+        // and onSelectionUpdate for cursor updates.
+        onSelectionUpdate: ({ editor }) => {
+            // 확실하게 상태 업데이트를 트리거하기 위해 forceUpdate 패턴 사용
+            // 여기서는 간단히 editor 상태가 변경되었음을 알림
+            // 그러나 useEditor는 내부적으로 상태 관리를 함.
+            // 문제는 isActive 체크가 렌더링 사이클에 반영되지 않는 것.
+            // setState를 호출하여 컴포넌트 리렌더링 유도
+            setUpdateTrigger(prev => prev + 1);
+        },
         onUpdate: ({ editor }) => {
             onUpdate(id, editor.getHTML());
         },
@@ -238,16 +261,16 @@ const TextBlock: React.FC<TextBlockProps> = ({
     return (
         <div
             className={`text-block-wrapper ${isFocused ? 'is-focused' : ''}`}
-            onDragOver={onDragOver}
-            onDrop={onDrop}
+            // onDragOver={onDragOver}
+            // onDrop={onDrop}
             onContextMenu={onContextMenu} // [New]
         >
             <div className="block-controls">
                 <div
                     className="drag-handle-icon"
-                    draggable={draggable}
-                    onDragStart={onDragStart}
+                    onPointerDown={(e) => dragControls?.start(e)}
                     title="드래그하여 이동"
+                    style={{ touchAction: 'none' }} // Framer motion recommendation for touch devices
                 >
                     ⋮⋮
                 </div>
@@ -261,73 +284,73 @@ const TextBlock: React.FC<TextBlockProps> = ({
                         <div className="toolbar-group">
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+                                onClick={() => { editor.chain().focus().toggleHeading({ level: 1 }).run(); setUpdateTrigger(prev => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive('heading', { level: 1 }) ? 'is-active' : ''}`}
                                 title="제목 1"
                             >
-                                <Heading1 size={18} />
+                                <Heading1 size={16} />
                             </button>
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+                                onClick={() => { editor.chain().focus().toggleHeading({ level: 2 }).run(); setUpdateTrigger(prev => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive('heading', { level: 2 }) ? 'is-active' : ''}`}
                                 title="제목 2"
                             >
-                                <Heading2 size={18} />
+                                <Heading2 size={16} />
                             </button>
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+                                onClick={() => { editor.chain().focus().toggleHeading({ level: 3 }).run(); setUpdateTrigger(prev => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive('heading', { level: 3 }) ? 'is-active' : ''}`}
                                 title="제목 3"
                             >
-                                <Heading3 size={18} />
+                                <Heading3 size={16} />
                             </button>
                         </div>
                         <div className="toolbar-divider" />
                         <div className="toolbar-group">
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => editor.chain().focus().toggleBold().run()}
+                                onClick={() => { editor.chain().focus().toggleBold().run(); setUpdateTrigger(prev => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive('bold') ? 'is-active' : ''}`}
                                 title="굵게 (Ctrl+B)"
                             >
-                                <Bold size={18} />
+                                <Bold size={16} />
                             </button>
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => editor.chain().focus().toggleItalic().run()}
+                                onClick={() => { editor.chain().focus().toggleItalic().run(); setUpdateTrigger(prev => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive('italic') ? 'is-active' : ''}`}
                                 title="기울임 (Ctrl+I)"
                             >
-                                <Italic size={18} />
+                                <Italic size={16} />
                             </button>
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => editor.chain().focus().toggleStrike().run()}
+                                onClick={() => { editor.chain().focus().toggleStrike().run(); setUpdateTrigger(prev => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive('strike') ? 'is-active' : ''}`}
                                 title="취소선"
                             >
-                                <Strikethrough size={18} />
+                                <Strikethrough size={16} />
                             </button>
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => editor.chain().focus().toggleUnderline().run()}
+                                onClick={() => { editor.chain().focus().toggleUnderline().run(); setUpdateTrigger(prev => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive('underline') ? 'is-active' : ''}`}
                                 title="밑줄 (Ctrl+U)"
                             >
-                                <UnderlineIcon size={18} />
+                                <UnderlineIcon size={16} />
                             </button>
                         </div>
                         <div className="toolbar-divider" />
                         <div className="toolbar-group">
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => editor.chain().focus().toggleHighlight({ color: '#fef08a' }).run()}
+                                onClick={() => { editor.chain().focus().toggleHighlight({ color: '#fef08a' }).run(); setUpdateTrigger(prev => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive('highlight') ? 'is-active' : ''}`}
                                 title="형광펜"
                             >
-                                <Highlighter size={18} />
+                                <Highlighter size={16} />
                             </button>
                             <div
                                 className="color-picker-wrapper"
@@ -338,7 +361,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                                     onClick={() => setShowColorPicker(!showColorPicker)}
                                     title="텍스트 색상"
                                 >
-                                    <Palette size={18} />
+                                    <Palette size={16} />
                                 </button>
                                 {showColorPicker && (
                                     <div className="color-palette">
@@ -350,6 +373,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                                                 onClick={() => {
                                                     editor.chain().focus().setColor(color).run();
                                                     setShowColorPicker(false);
+                                                    setUpdateTrigger(prev => prev + 1);
                                                 }}
                                             />
                                         ))}
@@ -361,62 +385,62 @@ const TextBlock: React.FC<TextBlockProps> = ({
                         <div className="toolbar-group">
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => editor.chain().focus().setTextAlign('left').run()}
+                                onClick={() => { editor.chain().focus().setTextAlign('left').run(); setUpdateTrigger(prev => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive({ textAlign: 'left' }) ? 'is-active' : ''}`}
                                 title="왼쪽 정렬"
                             >
-                                <AlignLeft size={18} />
+                                <AlignLeft size={16} />
                             </button>
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => editor.chain().focus().setTextAlign('center').run()}
+                                onClick={() => { editor.chain().focus().setTextAlign('center').run(); setUpdateTrigger(prev => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive({ textAlign: 'center' }) ? 'is-active' : ''}`}
                                 title="가운데 정렬"
                             >
-                                <AlignCenter size={18} />
+                                <AlignCenter size={16} />
                             </button>
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => editor.chain().focus().setTextAlign('right').run()}
+                                onClick={() => { editor.chain().focus().setTextAlign('right').run(); setUpdateTrigger(prev => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive({ textAlign: 'right' }) ? 'is-active' : ''}`}
                                 title="오른쪽 정렬"
                             >
-                                <AlignRight size={18} />
+                                <AlignRight size={16} />
                             </button>
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => editor.chain().focus().setTextAlign('justify').run()}
+                                onClick={() => { editor.chain().focus().setTextAlign('justify').run(); setUpdateTrigger(prev => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive({ textAlign: 'justify' }) ? 'is-active' : ''}`}
                                 title="양쪽 정렬"
                             >
-                                <AlignJustify size={18} />
+                                <AlignJustify size={16} />
                             </button>
                         </div>
                         <div className="toolbar-divider" />
                         <div className="toolbar-group">
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => editor.chain().focus().toggleBulletList().run()}
+                                onClick={() => { editor.chain().focus().toggleBulletList().run(); setUpdateTrigger(prev => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive('bulletList') ? 'is-active' : ''}`}
                                 title="글머리 기호 목록"
                             >
-                                <List size={18} />
+                                <List size={16} />
                             </button>
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => editor.chain().focus().toggleOrderedList().run()}
+                                onClick={() => { editor.chain().focus().toggleOrderedList().run(); setUpdateTrigger(prev => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive('orderedList') ? 'is-active' : ''}`}
                                 title="번호 목록"
                             >
-                                <ListOrdered size={18} />
+                                <ListOrdered size={16} />
                             </button>
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => editor.chain().focus().toggleBlockquote().run()}
+                                onClick={() => { editor.chain().focus().toggleBlockquote().run(); setUpdateTrigger(prev => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive('blockquote') ? 'is-active' : ''}`}
                                 title="인용구"
                             >
-                                <Quote size={18} />
+                                <Quote size={16} />
                             </button>
                         </div>
                         <div className="toolbar-divider" />
@@ -427,7 +451,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                                 className="toolbar-btn"
                                 title="구분선"
                             >
-                                <Minus size={18} />
+                                <Minus size={16} />
                             </button>
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
@@ -435,7 +459,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                                 className={`toolbar-btn ${editor.isActive('link') ? 'is-active' : ''}`}
                                 title="링크"
                             >
-                                <LinkIcon size={18} />
+                                <LinkIcon size={16} />
                             </button>
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
@@ -443,7 +467,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                                 className="toolbar-btn"
                                 title="이미지 삽입"
                             >
-                                <ImageIcon size={18} />
+                                <ImageIcon size={16} />
                             </button>
                         </div>
                     </div>
