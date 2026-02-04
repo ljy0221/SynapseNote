@@ -66,6 +66,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, showToggle =
   });
 
   const [activeTab, setActiveTab] = useState<'personal' | 'shared'>('personal');
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(1);
+  const abortControllerRef = React.useRef<AbortController | null>(null);
+  const observerTarget = React.useRef<HTMLDivElement>(null);
 
   /** -------------------------
    * 디렉토리 경로 정규화
@@ -83,42 +87,76 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, showToggle =
   /** -------------------------
    * Sidebar 전체 로딩 (페이지네이션 제거)
    -------------------------- */
-  const fetchAllNotes = useCallback(async () => {
-    setIsLoading(true);
+  const loadNotes = useCallback(async (pageNum: number, isInitial: boolean = false, signal?: AbortSignal) => {
+    if (isInitial) setIsLoading(true);
 
     try {
-      let page = 1;
-      let allNotes: NoteListItem[] = [];
       const filter = activeTab === 'personal' ? 'OWNED' : 'SHARED';
+      const res = await getNotesApi({ page: pageNum, filter, size: 20 }, signal);
+      const pageNotes = adaptNotesForSidebar(res);
 
-      while (true) {
-        const res = await getNotesApi({ page, filter });
-        const pageNotes = adaptNotesForSidebar(res);
-        allNotes.push(...pageNotes);
+      setNotes(prev => isInitial ? pageNotes : [...prev, ...pageNotes]);
+      setHasMore(res.currentPage < res.totalPages);
+      setPage(res.currentPage);
 
-        if (res.currentPage >= res.totalPages) break;
-        page += 1;
+      if (isInitial) {
+        const bookmarksRes = await getBookmarksApi();
+        setFavoriteNoteIds(adaptBookmarkIds(bookmarksRes));
       }
-
-      setNotes(allNotes);
-
-      const bookmarksRes = await getBookmarksApi();
-      setFavoriteNoteIds(adaptBookmarkIds(bookmarksRes));
+    } catch (err: any) {
+      if (err.name === 'CanceledError' || err.name === 'AbortError') {
+        console.log('Request canceled');
+      } else {
+        console.error('Failed to load notes', err);
+      }
     } finally {
-      setIsLoading(false);
+      if (isInitial) setIsLoading(false);
     }
   }, [activeTab]);
 
-  /** 최초 로딩 + 외부 변경 이벤트 */
-  useEffect(() => {
-    fetchAllNotes();
+  const loadMore = useCallback(() => {
+    if (isLoading || !hasMore) return;
+    loadNotes(page + 1);
+  }, [isLoading, hasMore, page, loadNotes]);
 
+  /** 최초 로딩 + 탭 변경 시 리셋 */
+  useEffect(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    loadNotes(1, true, controller.signal);
+
+    return () => {
+      controller.abort();
+    };
+  }, [activeTab, loadNotes]);
+
+  /** 무한 스크롤 옵저버 */
+  useEffect(() => {
+    if (!observerTarget.current || !hasMore || isLoading) return;
+
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0].isIntersecting) {
+          loadMore();
+        }
+      },
+      { threshold: 1.0 }
+    );
+
+    observer.observe(observerTarget.current);
+    return () => observer.disconnect();
+  }, [loadMore, hasMore, isLoading]);
+
+  /** 외부 변경 이벤트 */
+  useEffect(() => {
     const handleNotesChanged = (e: any) => {
       if (!(e instanceof CustomEvent)) return;
-
       const detail = e.detail;
 
-      // 제목만 로컬 업데이트
       if (detail?.type === 'UPDATE_TITLE') {
         setNotes(prev =>
           prev.map(n =>
@@ -130,16 +168,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, showToggle =
         return;
       }
 
-      // 기존 동작
       if (detail?.skipRefetch) return;
 
-      fetchAllNotes();
+      loadNotes(1, true);
     };
 
     window.addEventListener(NOTES_CHANGED_EVENT, handleNotesChanged);
     return () =>
       window.removeEventListener(NOTES_CHANGED_EVENT, handleNotesChanged);
-  }, [fetchAllNotes]);
+  }, [loadNotes]);
 
 
   /** -------------------------
@@ -321,6 +358,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, showToggle =
                 onCancelRename={() => setEditingNoteId(null)}
                 onMoveNote={handleMoveNote}
               />
+              <div ref={observerTarget} style={{ height: '20px' }} />
             </div>
           )}
         </div>
