@@ -33,30 +33,7 @@ export const NoteSummary: React.FC<NoteSummaryProps> = ({
   };
 
   if (!summary) {
-    return (
-      <div className="note-summary-container">
-        <div className="summary-generate-section">
-          <select
-            className="summary-style-select"
-            value={selectedStyle}
-            onChange={(e) => setSelectedStyle(e.target.value as SummaryStyle)}
-            disabled={isLoading}
-          >
-            <option value="concise">간결하게 (2-3문장)</option>
-            <option value="detailed">상세하게 (1-2단락)</option>
-            <option value="bullet-points">불릿 포인트 (5-7개)</option>
-          </select>
-          <button
-            className="summary-generate-btn"
-            onClick={() => onGenerateSummary(selectedStyle)}
-            disabled={isLoading}
-          >
-            <span className="sparkle-icon">&#10024;</span>
-            {isLoading ? '요약 생성 중...' : 'AI 요약 생성'}
-          </button>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
