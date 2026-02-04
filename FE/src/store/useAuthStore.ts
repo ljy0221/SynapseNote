@@ -8,7 +8,7 @@ interface AuthState {
     accessToken: string | null; // [New] Store에서 토큰 관리
     isLoading: boolean;
     isAuthenticated: boolean;
-    
+
     login: (token: string) => Promise<void>;
     logout: () => void;
     setAccessToken: (token: string) => void; // [New] 토큰 갱신용 액션
@@ -28,13 +28,16 @@ export const useAuthStore = create<AuthState>()(
             login: async (token: string) => {
                 set({ isLoading: true });
                 try {
-                    // localStorage.setItem 호출 제거 (persist가 처리)
+                    // ✅ 먼저 토큰을 store에 저장 (인터셉터가 사용할 수 있도록)
+                    set({ accessToken: token });
+
+                    // ✅ 그 다음 유저 정보 요청 (이제 인터셉터가 토큰을 찾을 수 있음)
                     const info = await getUserInfo();
-                    set({ 
-                        accessToken: token, // 상태에 저장
-                        userInfo: info, 
-                        isAuthenticated: true, 
-                        isLoading: false 
+
+                    set({
+                        userInfo: info,
+                        isAuthenticated: true,
+                        isLoading: false
                     });
                 } catch (error) {
                     console.error('Login failed:', error);
@@ -75,7 +78,7 @@ export const useAuthStore = create<AuthState>()(
                     set({ userInfo: null, isAuthenticated: false, isLoading: false });
                     return;
                 }
-                
+
                 // 유효성 검증을 위해 유저 정보 재요청
                 try {
                     const info = await getUserInfo();
@@ -94,10 +97,10 @@ export const useAuthStore = create<AuthState>()(
         {
             name: 'auth-storage',
             // accessToken도 영속화 대상에 포함
-            partialize: (state) => ({ 
-                userInfo: state.userInfo, 
+            partialize: (state) => ({
+                userInfo: state.userInfo,
                 accessToken: state.accessToken,
-                isAuthenticated: state.isAuthenticated 
+                isAuthenticated: state.isAuthenticated
             }),
         }
     )
