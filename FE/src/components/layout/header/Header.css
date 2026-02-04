@@ -42,16 +42,15 @@
 /* 검색창 구역 설정 */
 .header-search-zone {
     position: absolute;
-    /* 🔥 절대 위치로 변경 */
     left: 50%;
-    transform: translateX(-50%);
+    top: 50%;
+    transform: translate(-50%, -50%);
 
     display: flex;
     justify-content: center;
+    align-items: center;
     -webkit-app-region: no-drag;
-    /* 검색창 입력 위해 제외 */
 
-    /* 검색창의 넓이 고정 */
     width: 500px;
 }
 
