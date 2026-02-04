@@ -1,6 +1,7 @@
 package com.synapse.api.modules.mindmap.entity;
 
 import com.synapse.api.modules.note.entity.Note;
+import com.synapse.api.util.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -10,7 +11,7 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class MindmapEdge {
+public class MindmapEdge extends BaseEntity {
 
     @EmbeddedId
     private MindmapEdgeId id;
