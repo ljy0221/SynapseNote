@@ -23,8 +23,7 @@ const AiReviewButton: React.FC<Props> = ({ onClick, disabled, loading, disabledR
         onClick={onClick}
         disabled={isDisabled}
       >
-        <Sparkles size={14} className={loading ? 'spin' : ''} />
-        {loading ? 'Reviewing...' : 'AI Review'}
+        <Sparkles size={16} className={loading ? 'spin' : ''} />
       </button>
     </Tooltip>
   );
