@@ -61,20 +61,22 @@ public class InvitationService {
             throw new BusinessException(ErrorCode.INVITATION_OWNER_NOT_ALLOWED);
         }
 
-        // 4. 이미 멤버인지 확인 (이메일로 조회)
-        Member existingMember = memberRepository.findByEmail(request.invitedEmail()).orElse(null);
-        if (existingMember != null) {
-            boolean isMember = noteMemberRepository.existsByNoteIdAndMemberId(noteId, existingMember.getId());
-            if (isMember) {
-                throw new BusinessException(ErrorCode.ALREADY_NOTE_MEMBER);
+        // 4. 이미 멤버인지 확인 (이메일로 조회) - 이메일이 있는 경우만
+        if (request.invitedEmail() != null) {
+            Member existingMember = memberRepository.findByEmail(request.invitedEmail()).orElse(null);
+            if (existingMember != null) {
+                boolean isMember = noteMemberRepository.existsByNoteIdAndMemberId(noteId, existingMember.getId());
+                if (isMember) {
+                    throw new BusinessException(ErrorCode.ALREADY_NOTE_MEMBER);
+                }
             }
-        }
 
-        // 5. 동일 이메일로 PENDING 상태 초대가 있는지 확인
-        boolean hasPendingInvitation = invitationRepository.existsPendingInvitationByNoteIdAndEmail(
-                noteId, request.invitedEmail());
-        if (hasPendingInvitation) {
-            throw new BusinessException(ErrorCode.INVITATION_ALREADY_EXISTS);
+            // 5. 동일 이메일로 PENDING 상태 초대가 있는지 확인
+            boolean hasPendingInvitation = invitationRepository.existsPendingInvitationByNoteIdAndEmail(
+                    noteId, request.invitedEmail());
+            if (hasPendingInvitation) {
+                throw new BusinessException(ErrorCode.INVITATION_ALREADY_EXISTS);
+            }
         }
 
         // 6. 초대 생성
@@ -128,8 +130,8 @@ public class InvitationService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-        // 5. 이메일 일치 확인 (대소문자 무시)
-        if (!member.getEmail().equalsIgnoreCase(invitation.getInvitedEmail())) {
+        // 5. 이메일 일치 확인 (대소문자 무시) - 초대된 이메일이 있는 경우만
+        if (invitation.getInvitedEmail() != null && !member.getEmail().equalsIgnoreCase(invitation.getInvitedEmail())) {
             throw new BusinessException(ErrorCode.INVITATION_EMAIL_MISMATCH);
         }
 
