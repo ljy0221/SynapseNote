@@ -2,6 +2,8 @@ import React from 'react';
 import CodeBlock from '../codeBlock/CodeBlock';
 import TextBlock from '../textBlock/TextBlock';
 import { NoteSideNav } from './NoteSideNav';
+import { DraggableBlock } from './DraggableBlock'; // [New]
+import { Reorder, useDragControls } from 'framer-motion'; // [New]
 import { InviteLinkModal } from '../../common/modal/InviteLinkModal';
 import { PermissionModal } from '../../common/modal/PermissionModal';
 import { SummaryConfigModal } from '../../common/modal/SummaryConfigModal';
@@ -59,27 +61,33 @@ const NoteMain: React.FC<NoteMainProps> = ({
     // [New] Context Menu State
     const [contextMenu, setContextMenu] = React.useState<{ x: number; y: number; blockId: string | number } | null>(null);
 
-    // DnD 상태 관리
-    const [dragIndex, setDragIndex] = React.useState<number | null>(null);
+    // [New] Framer Motion Local State
+    const [localBlocks, setLocalBlocks] = React.useState<BlockData[]>(blocks);
+    const isDraggingRef = React.useRef(false); // [New] Track dragging state to prevent conflict with external updates
+
+    // Sync props.blocks to localBlocks when props change (and not actively dragging)
+    React.useEffect(() => {
+        if (!isDraggingRef.current) {
+            setLocalBlocks(blocks);
+        }
+    }, [blocks]);
+
+    // DnD logic moved to Reorder.Group
+
+    const handleDragEnd = (draggedBlockId: number | string) => {
+        // Find old index in original props
+        const oldIndex = blocks.findIndex(b => b.id === draggedBlockId);
+        // Find new index in local state
+        const newIndex = localBlocks.findIndex(b => b.id === draggedBlockId);
+
+        if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+            console.log(`[Reorder] Moved block ${draggedBlockId} from ${oldIndex} to ${newIndex}`);
+            onMoveBlock(oldIndex, newIndex);
+        }
+    };
 
     // 디버깅: 실제 렌더링되는 블록 데이터 확인
     console.log("[NoteMain] Current blocks for rendering:", blocks);
-
-    const onDragStart = (e: React.DragEvent, index: number) => {
-        e.dataTransfer.effectAllowed = "move";
-        e.dataTransfer.setData("text/plain", index.toString());
-        setDragIndex(index);
-    };
-
-    const onDragOver = (e: React.DragEvent) => {
-        e.preventDefault();
-    };
-
-    const onDrop = (dropIndex: number) => {
-        if (dragIndex === null || dragIndex === dropIndex) return;
-        onMoveBlock(dragIndex, dropIndex);
-        setDragIndex(null);
-    };
 
     const handleContextMenu = (e: React.MouseEvent, blockId: string | number) => {
         e.preventDefault();
@@ -97,13 +105,12 @@ const NoteMain: React.FC<NoteMainProps> = ({
         }
     };
 
-    const renderBlock = (block: BlockData, index: number) => {
+    // Removed legacy native DnD handlers
+
+    const renderBlock = (block: BlockData, index: number, dragControls: any) => {
         const commonProps = {
-            draggable: true,
-            onDragStart: (e: React.DragEvent) => onDragStart(e, index),
-            onDragOver: onDragOver,
-            onDrop: () => onDrop(index),
-            isFocused: block.id === focusedBlockId, // [추가] 포커스 여부 전달
+            dragControls: dragControls, // Passed from DraggableBlock
+            isFocused: block.id === focusedBlockId,
             onContextMenu: (e: React.MouseEvent) => handleContextMenu(e, block.id),
         };
 
@@ -188,7 +195,30 @@ const NoteMain: React.FC<NoteMainProps> = ({
                                 />
                             </header>
                             <div className="note-content-area">
-                                {blocks.map((block, index) => renderBlock(block, index))}
+                                <Reorder.Group
+                                    values={localBlocks}
+                                    onReorder={(newOrder) => {
+                                        setLocalBlocks(newOrder); // Optimistic UI update
+                                    }}
+                                    as="div"
+                                    axis="y"
+                                >
+                                    {localBlocks.map((block, index) => (
+                                        <DraggableBlock
+                                            key={block.id}
+                                            block={block}
+                                            onDragStart={() => {
+                                                isDraggingRef.current = true;
+                                            }}
+                                            onDragEnd={() => {
+                                                isDraggingRef.current = false;
+                                                handleDragEnd(block.id);
+                                            }}
+                                        >
+                                            {(dragControls) => renderBlock(block, index, dragControls)}
+                                        </DraggableBlock>
+                                    ))}
+                                </Reorder.Group>
                                 <div className="note-bottom-spacer" style={{ height: '50px' }} />
                             </div>
                         </div>
