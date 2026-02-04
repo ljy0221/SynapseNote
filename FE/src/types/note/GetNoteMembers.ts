@@ -12,3 +12,8 @@ export interface NoteMemberItem {
 export interface GetNoteMembersResponse {
   members: NoteMemberItem[];
 }
+
+export interface UpdateMemberRoleResponse {
+  memberId: string;
+  role: NoteMemberRole;
+}
