@@ -65,7 +65,11 @@ const Login: React.FC = () => {
                                 const clientId = import.meta.env.VITE_GITHUB_CLIENT_ID;
                                 const redirectUri = import.meta.env.VITE_GITHUB_REDIRECT_URI;
                                 const authUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email`;
-                                window.electronAPI.openExternal(authUrl);
+                                if (window.electronAPI) {
+                                    window.electronAPI.openExternal(authUrl);
+                                } else {
+                                    window.location.href = authUrl;
+                                }
                             }}
                         />
                         <SocialLoginButton
@@ -74,7 +78,11 @@ const Login: React.FC = () => {
                                 const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
                                 const redirectUri = import.meta.env.VITE_GOOGLE_REDIRECT_URI;
                                 const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=email profile`;
-                                window.electronAPI.openExternal(authUrl);
+                                if (window.electronAPI) {
+                                    window.electronAPI.openExternal(authUrl);
+                                } else {
+                                    window.location.href = authUrl;
+                                }
                             }}
                         />
                     </div>
