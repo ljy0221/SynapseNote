@@ -1,226 +1,42 @@
-import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
-
-// 스타일 임포트
-import './components/common/styles/Theme.css';
-import './App.css';
-
-// Zustand Stores
-import { useThemeStore } from './store/useThemeStore';
+import { useEffect, useRef } from 'react'; // useRef 추가
+import { RouterProvider } from 'react-router-dom';
+import router from './router';
 import { useAuthStore } from './store/useAuthStore';
-import { useToastStore } from './store/useToastStore';
-
-// 레이아웃 컴포넌트
-import { Header } from './components/layout/header/Header';
-import { Sidebar } from './components/layout/sidebar/Sidebar';
-import { SideMenuBar } from './components/layout/sideMenuBar/SideMenuBar';
-
-// 공통 컴포넌트
-import ThemeToggle from './components/common/themeToggle/ThemeToggle';
-import WindowControlButton from './components/common/WindowControlButton/WindowControlButton';
-import { DockerErrorModal } from './components/common/modal/DockerErrorModal';
-import { ToastNotification } from './components/common/toast/ToastNotification';
-import GlobalModal from './components/common/modal/GlobalModal'; // [New]
-
-// Electron 전용 컴포넌트
-const isElectron = typeof window !== 'undefined' && (window as any).electronAPI !== undefined;
-
-// 페이지 컴포넌트
-import Home from './pages/home/Home';
-import Login from './pages/login/Login';
-import OAuthCallback from './pages/login/OAuthCallback';
-import Note from './pages/note/Note';
-import MindMap from './pages/mindmap/MindMap';
-
-// 사이드바가 허용되는 경로
-const SIDEBAR_ROUTES = ['/note'];
-// 툴바가 허용되는 경로 (우측 여백)
-const TOOLBAR_ROUTES = ['/note'];
-
-function AppContent() {
-    const [isSidebarActive, setIsSidebarActive] = useState(false); // 가변 사이드바 상태
-    const [isToolbarActive] = useState(true);
-    const [dockerErrorType, setDockerErrorType] = useState<'installed' | 'running' | null>(null);
-    const [isDockerErrorOpen, setIsDockerErrorOpen] = useState(false);
-
-    // Zustand Hooks
-    const { themeMode, toggleTheme } = useThemeStore();
-    const initializeAuth = useAuthStore((state) => state.initializeAuth);
-    const { message, isVisible, type, closeToast } = useToastStore();
-
-    const location = useLocation();
-    const isLoginPage = location.pathname === '/login';
-
-    // Theme Synchronization
-    useEffect(() => {
-        document.documentElement.setAttribute('data-theme', themeMode);
-        // localStorage is handled by persist middleware in useThemeStore
-    }, [themeMode]);
-
-    // Auth Initialization
-    useEffect(() => {
-        initializeAuth();
-    }, [initializeAuth]);
-
-    // Docker 헬스 체크 함수
-    async function checkDocker() {
-        if (!isElectron) {
-            return;
-        }
-
-        try {
-            const installed = await (window as any).dockerAPI.checkInstalled();
-            if (!installed) {
-                setDockerErrorType('installed');
-                setIsDockerErrorOpen(true);
-                return;
-            }
-
-            const running = await (window as any).dockerAPI.checkRunning();
-            if (!running) {
-                setDockerErrorType('running');
-                setIsDockerErrorOpen(true);
-                return;
-            }
-
-            setDockerErrorType(null);
-            setIsDockerErrorOpen(false);
-        } catch (error) {
-            console.error('[App] Docker health check failed:', error);
-            setDockerErrorType('running');
-            setIsDockerErrorOpen(true);
-        }
-    }
-
-    // 초기 실행
-    useEffect(() => {
-        checkDocker();
-    }, []);
-
-    const handleRetryDocker = () => {
-        setIsDockerErrorOpen(false); // 일단 닫고
-        // 잠시 후 재시도
-        setTimeout(() => {
-            checkDocker();
-        }, 1000);
-    };
-
-    const handleCloseDockerError = () => {
-        setIsDockerErrorOpen(false);
-    };
-
-    // Deep Link 리스너
-    const navigate = useNavigate();
-    useEffect(() => {
-        // 일렉트론 환경에서만 Deep Link URL 처리
-        if (!isElectron || !window.ipcRenderer) return;
-
-        window.ipcRenderer.on('deep-link-url', (_event, url: any) => {
-            console.log('[App] Received deep link:', url);
-            if (typeof url === 'string' && url.startsWith('synapse://')) {
-                const path = url.replace('synapse://', '/');
-                navigate(path);
-            }
-        });
-    }, [navigate]);
-
-    const toggleSidebar = () => setIsSidebarActive(prev => !prev);
-
-    /** Sidebar */
-    const isSidebarAllowed = SIDEBAR_ROUTES.some(path =>
-        location.pathname.startsWith(path)
-    );
-
-    useEffect(() => {
-        if (isSidebarAllowed) {
-            setIsSidebarActive(true);
-        } else {
-            setIsSidebarActive(false);
-        }
-    }, [isSidebarAllowed]);
-
-    /** Toolbar */
-    const isToolbarAllowed = TOOLBAR_ROUTES.some(path =>
-        location.pathname.startsWith(path)
-    );
-
-    return (
-        <div className="app-container">
-            {/* Toast Notification */}
-            <ToastNotification
-                message={message}
-                isVisible={isVisible}
-                onClose={closeToast}
-                type={type}
-            />
-
-            {/* Global Modal Renderer */}
-            <GlobalModal />
-
-            {/* 1. 헤더 영역 */}
-            {isLoginPage ? (
-                <div className="login-window-header">
-                    <div className="header-spacer"></div>
-                    <div className="header-right-zone">
-                        <ThemeToggle themeMode={themeMode} onToggle={toggleTheme} />
-                        {isElectron && <WindowControlButton />}
-                    </div>
-                </div>
-            ) : (
-                <Header
-                    isSidebarActive={isSidebarActive}
-                    onToggleSidebar={toggleSidebar}
-                />
-            )}
-
-            {/* 2. 네비게이션 및 사이드바 영역 (로그인 아닐 때만) */}
-            <DockerErrorModal
-                isOpen={isDockerErrorOpen}
-                type={dockerErrorType}
-                onRetry={handleRetryDocker}
-                onClose={handleCloseDockerError}
-            />
-            {!isLoginPage && (
-                <>
-                    {/* 최좌측 고정 네비게이션 바 */}
-                    <SideMenuBar />
-
-                    {/* 헤더 버튼으로 열고 닫는 가변 사이드바 (디렉토리 등) */}
-                    {isSidebarAllowed && (
-                        <Sidebar
-                            isOpen={isSidebarActive}
-                            onToggle={toggleSidebar}
-                        />
-                    )}
-                </>
-            )}
-
-            {/* 3. 메인 콘텐츠 영역 */}
-            <main
-                className={[
-                    !isLoginPage ? 'main-content' : '',
-                    !isLoginPage && isSidebarAllowed && isSidebarActive ? 'sidebar-open' : '',
-                    !isLoginPage && isToolbarActive && isToolbarAllowed ? 'toolbar-open' : '',
-                ].join(' ')}
-            >
-                <Routes>
-                    <Route path="/" element={<Navigate to="/login" replace />} />
-                    <Route path="/auth/:provider/callback" element={<OAuthCallback />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/home" element={<Home />} />
-                    <Route path="/note" element={<Note />} />
-                    <Route path="/note/:noteId" element={<Note />} />
-                    <Route path="/mindmap" element={<MindMap />} />
-                </Routes>
-            </main>
-        </div>
-    );
-}
 
 export default function App() {
-    return (
-        <Router>
-            <AppContent />
-        </Router>
-    );
+    const { initializeAuth, logout } = useAuthStore();
+    const isLogoutProcessing = useRef(false); // [New] 중복 처리 방지 플래그
+
+    useEffect(() => {
+        initializeAuth();
+
+        const handleUnauthorized = () => {
+            // 이미 처리 중이라면 무시
+            if (isLogoutProcessing.current) return;
+            
+            isLogoutProcessing.current = true;
+            console.warn('Session expired. Logging out...');
+            
+            // 1. 스토어 정리
+            logout();
+            
+            // 2. 페이지 이동
+            if (router && router.navigate) {
+                router.navigate('/login');
+            } else {
+                window.location.href = '/login';
+            }
+
+            // (선택) 일정 시간 후 플래그 초기화 (사용자가 다시 로그인할 때 등)
+            // 여기서는 페이지가 리프레시되거나 이동하므로 굳이 초기화하지 않아도 안전합니다.
+        };
+
+        window.addEventListener('auth:unauthorized', handleUnauthorized);
+
+        return () => {
+            window.removeEventListener('auth:unauthorized', handleUnauthorized);
+        };
+    }, [initializeAuth, logout]);
+
+    return <RouterProvider router={router} />;
 }
