@@ -5,10 +5,11 @@ import TextBlock from '../textBlock/TextBlock';
 import { NoteSideNav } from './NoteSideNav';
 import { InviteLinkModal } from '../../common/modal/InviteLinkModal';
 import { PermissionModal } from '../../common/modal/PermissionModal';
-import { SummaryConfigModal } from '../../common/modal/SummaryConfigModal'; // [New]
+import { SummaryConfigModal } from '../../common/modal/SummaryConfigModal';
 import { NoteSummary } from '../../common/noteSummary/NoteSummary';
 import { BlockData, BlockType } from '../../../pages/note/Note';
 import type { SummaryStyle } from '../../../types/ai/NoteSummary';
+import BlockContextMenu from '../../common/contextMenu/BlockContextMenu';
 import './NoteMain.css';
 
 interface NoteMainProps {
@@ -59,6 +60,9 @@ const NoteMain: React.FC<NoteMainProps> = ({
     // [New] AI 요약 모달 상태
     const [isSummaryModalOpen, setIsSummaryModalOpen] = React.useState(false);
 
+    // [New] Context Menu State
+    const [contextMenu, setContextMenu] = React.useState<{ x: number; y: number; blockId: string | number } | null>(null);
+
     // DnD 상태 관리
     const [dragIndex, setDragIndex] = React.useState<number | null>(null);
     const onDragStart = (e: React.DragEvent, index: number) => {
@@ -74,6 +78,23 @@ const NoteMain: React.FC<NoteMainProps> = ({
         onMoveBlock(dragIndex, dropIndex);
         setDragIndex(null);
     };
+
+    const handleContextMenu = (e: React.MouseEvent, blockId: string | number) => {
+        e.preventDefault();
+        setContextMenu({
+            x: e.clientX,
+            y: e.clientY,
+            blockId,
+        });
+    };
+
+    const handleDeleteFromMenu = () => {
+        if (contextMenu) {
+            onDeleteBlock(contextMenu.blockId);
+            setContextMenu(null);
+        }
+    };
+
     const renderBlock = (block: BlockData, index: number) => {
         const commonProps = {
             draggable: true,
@@ -81,6 +102,7 @@ const NoteMain: React.FC<NoteMainProps> = ({
             onDragOver: onDragOver,
             onDrop: () => onDrop(index),
             isFocused: block.id === focusedBlockId, // [추가] 포커스 여부 전달
+            onContextMenu: (e: React.MouseEvent) => handleContextMenu(e, block.id),
         };
         switch (block.type) {
             case 'text':
@@ -91,7 +113,7 @@ const NoteMain: React.FC<NoteMainProps> = ({
                         id={block.id as any}
                         content={block.content}
                         onUpdate={onUpdateBlock as any}
-                        onDelete={onDeleteBlock as any}
+                        onDelete={onDeleteBlock as any} // Still keeping it for safety, though UI removed
                         onFocus={() => onFocusBlock(block.id)}
                     />
                 );
@@ -149,6 +171,13 @@ const NoteMain: React.FC<NoteMainProps> = ({
                 </div>
             </div>
 
+            {/* Context Menu */}
+            <BlockContextMenu
+                position={contextMenu}
+                onClose={() => setContextMenu(null)}
+                onDelete={handleDeleteFromMenu}
+            />
+
             {/* 초대 링크 모달 */}
             <InviteLinkModal
                 isOpen={isInviteModalOpen}
@@ -159,7 +188,7 @@ const NoteMain: React.FC<NoteMainProps> = ({
             <PermissionModal
                 isOpen={isPermissionModalOpen}
                 onClose={() => setIsPermissionModalOpen(false)}
-                noteId={noteId} // [New] Pass noteId
+                noteId={noteId}
             />
             {/* AI 요약 설정 모달 */}
             <SummaryConfigModal

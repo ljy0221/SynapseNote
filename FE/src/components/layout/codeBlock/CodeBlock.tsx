@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import VersionButton from '../../common/versionButton/VersionButton';
 import BlockRunButton from '../../common/blockRunButton/BlockRunButton';
 import BlockCopyButton from '../../common/blockCopyButton/BlockCopyButton';
-import BlockDeleteButton from '../../common/blockDeleteButton/BlockDeleteButton';
+
 import CodeMirrorEditor from '../../common/codeMirrorEditor/CodeMirrorEditor';
 import type { Language, ExecutionResult, ExecutionMode, SessionInfo } from '../../../types/execution/ExecutionTypes';
 import './CodeBlock.css';
@@ -30,6 +30,7 @@ interface CodeBlockProps {
     onDragOver?: (e: React.DragEvent) => void;
     onDrop?: (e: React.DragEvent) => void;
     isFocused?: boolean; // [추가]
+    onContextMenu?: (e: React.MouseEvent) => void; // [New]
 }
 
 function getDefaultVersion(language: Language): string {
@@ -53,6 +54,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     onDragStart,
     onDragOver,
     onDrop,
+    onContextMenu, // [New]
 }) => {
     const [result, setResult] = useState<ExecutionResult | null>(null);
     const [loading, setLoading] = useState(false);
@@ -295,11 +297,12 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
             className="code-block-wrapper"
             onDragOver={onDragOver}
             onDrop={onDrop}
+            onContextMenu={onContextMenu} // [New]
         >
             <div className="code-block-header">
-                {/* [좌측] 삭제 버튼 + 드래그 핸들 (호버 시 보임) */}
+                {/* [좌측] 삭제 버튼 제거됨 + 드래그 핸들 (호버 시 보임) */}
                 <div className="code-left-controls">
-                    <BlockDeleteButton onDelete={() => onDelete(id)} />
+                    {/* BlockDeleteButton Removed */}
                     <div
                         className="code-drag-handle"
                         draggable={draggable}
