@@ -3,13 +3,14 @@ import { useParams } from 'react-router-dom';
 import { Notebook } from 'lucide-react'; // 🔥 Import Notebook icon
 import NoteButton from "../../components/common/noteButton/NoteButton";
 import NoteMain from "../../components/layout/noteMain/NoteMain";
-import { createNoteApi } from '../../api/notes/CreateNote.api';
 import { getNoteDetailApi } from '../../api/notes/GetNoteDetail.api';
 import { updateNoteApi } from '../../api/notes/UpdateNote.api'; // ADDED
+import { summarizeNoteApi } from '../../api/ai/NoteSummary.api';
 import { emitNotesChanged } from '../../events/NotesEvents'; // ADDED
-import type { CreateNoteRequest } from '../../types/note/CreateNote';
+import type { SummaryStyle } from '../../types/ai/NoteSummary';
 import { useYjsStore } from '../../hooks/useYjsStore';
 import './Note.css';
+import { useCreateNote } from '../../hooks/useCreateNote';
 
 // 블록 타입 정의 (이원화: text / code)
 export type BlockType = 'text' | 'code';
@@ -29,6 +30,12 @@ const Note: React.FC = () => {
     const [title, setTitle] = useState("제목 없는 노트");
     const [focusedBlockId, setFocusedBlockId] = useState<number | string | null>(null);
 
+    // AI 요약 관련 state
+    const [summary, setSummary] = useState<string | undefined>(undefined);
+    const [summaryStyle, setSummaryStyle] = useState<string | undefined>(undefined);
+    const [summaryUpdatedAt, setSummaryUpdatedAt] = useState<string | undefined>(undefined);
+    const [isSummaryLoading, setIsSummaryLoading] = useState(false);
+
     // 제목 input ref
     const titleInputRef = useRef<HTMLInputElement>(null);
 
@@ -43,6 +50,10 @@ const Note: React.FC = () => {
 
             if (noteRes) {
                 setTitle(noteRes.title || "제목 없는 노트");
+                // AI 요약 상태 설정
+                setSummary(noteRes.summary);
+                setSummaryStyle(noteRes.summaryStyle);
+                setSummaryUpdatedAt(noteRes.summaryUpdatedAt);
             }
             setIsEditing(true);
         } catch (error) {
@@ -148,36 +159,36 @@ const Note: React.FC = () => {
         moveBlock(dragIndex, hoverIndex);
     };
 
-    const handleCreateNote = async () => {
+    // AI 요약 생성 핸들러
+    const handleGenerateSummary = async (style: SummaryStyle) => {
+        if (!noteId) return;
+        setIsSummaryLoading(true);
         try {
-            const newNoteReq: CreateNoteRequest = {
-                title: "제목 없는 노트",
-                invitationUrl: "",
-                directoryPath: "/",
-            };
-            const result = await createNoteApi(newNoteReq);
-            console.log("노트 생성 성공:", result);
-
-            // 사이드바 업데이트 트리거
-            emitNotesChanged();
-
-            if (result && result.noteId) {
-                // 임시: 페이지 이동 (리로드 혹은 라우터 사용)
-                window.location.href = `/notes/${result.noteId}`;
-            } else {
-                setIsEditing(true); // Fallback
-            }
-
-            setTimeout(() => {
-                if (titleInputRef.current) {
-                    titleInputRef.current.focus();
-                    titleInputRef.current.select();
-                }
-            }, 100);
+            const response = await summarizeNoteApi(noteId, { style });
+            setSummary(response.summary);
+            setSummaryStyle(response.style);
+            setSummaryUpdatedAt(response.createdAt);
         } catch (error) {
-            console.error("노트 생성 중 에러 발생:", error);
-            alert("노트를 생성하지 못했습니다.");
+            console.error("AI 요약 생성 실패:", error);
+            alert("요약 생성에 실패했습니다. 다시 시도해주세요.");
+        } finally {
+            setIsSummaryLoading(false);
         }
+    };
+
+    const { handleCreateNote: createNote } = useCreateNote();
+
+    const handleCreateNote = async () => {
+        await createNote('/', {
+            onSuccess: (noteId) => {
+                setTimeout(() => {
+                    if (titleInputRef.current) {
+                        titleInputRef.current.focus();
+                        titleInputRef.current.select();
+                    }
+                }, 100);
+            }
+        });
     };
 
     if (isLoading) {
@@ -212,10 +223,13 @@ const Note: React.FC = () => {
                         focusedBlockId={focusedBlockId}
                         onMoveBlock={handleMoveBlock}
                         titleInputRef={titleInputRef}
-                        onAddBlockAfter={(id, type) => {
-                            const newId = addBlock(id, type);
-                            setFocusedBlockId(newId);
-                        }}
+                        onAddBlockAfter={(id, type) => addBlock(id, type)}
+                        // AI 요약 관련 props
+                        summary={summary}
+                        summaryStyle={summaryStyle}
+                        summaryUpdatedAt={summaryUpdatedAt}
+                        isSummaryLoading={isSummaryLoading}
+                        onGenerateSummary={handleGenerateSummary}
                     />
                 </div>
             )}

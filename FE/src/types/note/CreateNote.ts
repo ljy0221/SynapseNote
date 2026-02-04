@@ -3,6 +3,7 @@
  * BE: NoteCreateRequest.java 와 대응
  */
 export interface CreateNoteRequest {
+  id: string;
   title: string;
   invitationUrl: string;
   directoryPath: string;
