@@ -22,7 +22,7 @@ import {
 } from '../../../api/bookmark/Bookmarks.api';
 import { adaptBookmarkIds } from '../../../api/bookmark/Bookmarks.adapter';
 
-import { createNoteApi } from '../../../api/notes/CreateNote.api';
+
 import { deleteNoteApi } from '../../../api/notes/DeleteNote.api';
 import { updateNoteApi } from '../../../api/notes/UpdateNote.api';
 
@@ -32,8 +32,7 @@ import {
 } from '../../../events/NotesEvents';
 
 import { useNavigate, useParams } from 'react-router-dom';
-import { generateUuidV7 } from '../../../utils/UUIDV7'
-import { useNoteStore } from '../../../store/useNoteStore';
+import { useCreateNote } from '../../../hooks/useCreateNote';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -237,51 +236,31 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
   /* -------------------------
    * 노트 생성 (temp → real)
    * -------------------------- */
-  const { canCreateNote, updateLastCreatedTime } = useNoteStore();
+  /* -------------------------
+   * 노트 생성 (temp → real)
+   * -------------------------- */
+  const { handleCreateNote: createNote } = useCreateNote();
 
   const handleCreateNote = async (directoryPath: string) => {
-    if (!canCreateNote()) {
-      alert('노트 생성은 30초에 한 번만 가능합니다.');
-      return;
-    }
-
-    const noteId = generateUuidV7();
-
-    const memberId = localStorage.getItem('memberId')
-    if (!memberId) return;
-
-    const tempNote: NoteListItem = {
-      memberId,
-      noteId,
-      title: '새 노트',
-      directoryPath,
-      pointX: 0,
-      pointY: 0,
-      role: 'OWNER',
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    };
-
-    setNotes(prev => [...prev, tempNote]);
-
-    try {
-      await createNoteApi({
-        id: noteId,
-        title: '새 노트',
-        invitationUrl: '',
-        directoryPath,
-      });
-
-      updateLastCreatedTime();
-
-      // 페이지 이동 전 딜레이 (DB 반영 대기)
-      await new Promise(resolve => setTimeout(resolve, 700));
-
-      emitNotesChanged({ skipRefetch: true });
-      navigate(`/note/${noteId}`);
-    } catch {
-      setNotes(prev => prev.filter(n => n.noteId !== noteId));
-    }
+    await createNote(directoryPath, {
+      onOptimisticUpdate: (noteId, memberId) => {
+        const tempNote: NoteListItem = {
+          memberId,
+          noteId,
+          title: '새 노트',
+          directoryPath,
+          pointX: 0,
+          pointY: 0,
+          role: 'OWNER',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        };
+        setNotes(prev => [...prev, tempNote]);
+      },
+      onError: (noteId) => {
+        setNotes(prev => prev.filter(n => n.noteId !== noteId));
+      }
+    });
   };
 
   /** -------------------------
