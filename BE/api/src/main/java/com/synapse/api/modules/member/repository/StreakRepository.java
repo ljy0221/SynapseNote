@@ -14,4 +14,8 @@ public interface StreakRepository extends JpaRepository<Streak, StreakId> {
     @Query("SELECT s FROM Streak s WHERE s.id.memberId = :memberId AND s.id.streakDate BETWEEN :startDate AND :endDate")
     List<Streak> findStreaksByMemberAndDateRange(@Param("memberId") UUID memberId,
             @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT s FROM Streak s WHERE s.id.memberId = :memberId AND s.deletedAt IS NULL")
+    List<Streak> findAllByMemberId(@Param("memberId") UUID memberId);
+
 }

@@ -1,6 +1,7 @@
 package com.synapse.api.modules.note.repository;
 
 import com.synapse.api.modules.note.entity.Note;
+import com.synapse.api.modules.note.entity.NoteRole;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -74,4 +75,15 @@ public interface NoteRepository extends JpaRepository<Note, UUID> {
 
     // 여러 ID로 노트 조회 (DeletedAt IS NULL)
     List<Note> findAllByIdInAndDeletedAtIsNull(List<UUID> ids);
+
+    @Query("""
+        SELECT nm.note
+        FROM NoteMember nm
+        WHERE nm.role = :role
+            AND nm.note.createdBy.id = :memberId
+            AND nm.deletedAt IS NULL
+            AND nm.note.deletedAt IS NULL
+    """)
+    List<Note> findNotesByNoteAndRole(@Param("memberId") UUID memberId, @Param("role") NoteRole role);
+
 }
