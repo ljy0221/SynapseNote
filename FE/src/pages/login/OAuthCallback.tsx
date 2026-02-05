@@ -62,17 +62,19 @@ const OAuthCallback: React.FC = () => {
 
         if (pendingInviteCode) {
           console.log('[OAuth] Found pending invite code, redirecting to processing:', pendingInviteCode);
-          localStorage.removeItem('pendingInviteCode'); // sessionStorage -> localStorage
 
           try {
             await acceptInvitationApi(pendingInviteCode);
-            showToast('초대가 성공적으로 수락되었습니다!', 'success');
+            showToast('가입 요청이 전송되었습니다. 소유자의 승인을 기다려주세요.', 'success');
             navigate('/home', { replace: true });
           } catch (invitationError: any) {
             console.error('[OAuth] Failed to process pending invitation:', invitationError);
-            const msg = invitationError.response?.data?.message || '로그인은 성공했으나 초대 수락에 실패했습니다.';
+            const msg = invitationError.response?.data?.message || '로그인은 성공했으나 가입 요청 전송에 실패했습니다.';
             showToast(msg, 'error');
             navigate('/home', { replace: true });
+          } finally {
+            // [Fix] 성공하든 실패하든 코드는 반드시 삭제하여 무한 반복 방지
+            localStorage.removeItem('pendingInviteCode');
           }
         } else if (redirectUrl) {
           localStorage.removeItem('loginRedirectUrl');
