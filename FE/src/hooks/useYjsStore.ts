@@ -329,48 +329,6 @@ export const useYjsStore = (noteId: string | undefined) => {
     });
   }, [noteId]);
 
-  // 블록 북마크 업데이트
-  const setBlockBookmark = useCallback((blockId: number | string, isBookmarked: boolean) => {
-    const doc = docRef.current;
-    if (!doc) return;
-    const yBlocks = doc.getArray<YBlockMap>('blocks');
-
-    let targetBlock: YBlockMap | undefined;
-    for (const block of yBlocks) {
-      if (block.get('blockId') === blockId) {
-        targetBlock = block;
-        break;
-      }
-    }
-
-    if (!targetBlock) return;
-
-    const properties = targetBlock.get('properties') as Y.Map<any>;
-    doc.transact(() => {
-      properties.set('bookmark', isBookmarked);
-    });
-  }, []);
-
-  // [New] 서버 데이터 기반 북마크 일괄 동기화
-  const syncBlockBookmarks = useCallback((bookmarkedBlockIds: string[]) => {
-    const doc = docRef.current;
-    if (!doc) return;
-    const yBlocks = doc.getArray<YBlockMap>('blocks');
-    const bookmarkedSet = new Set(bookmarkedBlockIds);
-
-    doc.transact(() => {
-      for (const block of yBlocks) {
-        const blockId = block.get('blockId');
-        const properties = block.get('properties') as Y.Map<any>;
-        const currentStatus = properties.get('bookmark') || false;
-        const targetStatus = bookmarkedSet.has(blockId);
-
-        if (currentStatus !== targetStatus) {
-          properties.set('bookmark', targetStatus);
-        }
-      }
-    });
-  }, []);
 
   return {
     blocks,
@@ -378,8 +336,6 @@ export const useYjsStore = (noteId: string | undefined) => {
     addBlock,
     addBlocksBatch,
     updateBlock,
-    setBlockBookmark,
-    syncBlockBookmarks, // [New]
     deleteBlock,
     moveBlock,
   };

@@ -8,6 +8,12 @@ interface Props {
   onRemove?: (noteId: string, blockId: string) => void;
 }
 
+const stripHtml = (html: string) => {
+  const tmp = document.createElement("DIV");
+  tmp.innerHTML = html;
+  return tmp.textContent || tmp.innerText || "";
+};
+
 const BlockBookmarkItem = ({ block, onRemove }: Props) => {
   const navigate = useNavigate();
 
@@ -15,6 +21,8 @@ const BlockBookmarkItem = ({ block, onRemove }: Props) => {
     // blockId를 query/hash로 넘겨서 해당 위치로 스크롤
     navigate(`/note/${block.noteId}?block=${block.blockId}`);
   };
+
+  const plainContent = stripHtml(block.content);
 
   return (
     <li className="block-bookmark-card" onClick={handleClick}>
@@ -26,7 +34,7 @@ const BlockBookmarkItem = ({ block, onRemove }: Props) => {
       {/* 내용 */}
       <div className="block-card-content">
         <div className="block-card-preview">
-          {block.content.length > 10 ? `${block.content.slice(0, 10)}...` : block.content}
+          {plainContent.length > 15 ? `${plainContent.slice(0, 15)}...` : plainContent}
         </div>
       </div>
 

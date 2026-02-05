@@ -33,6 +33,7 @@ interface NoteMainProps {
     isSummaryLoading?: boolean;
     onGenerateSummary?: (style: SummaryStyle) => void;
     onToggleBookmark?: (blockId: number | string, currentStatus: boolean) => void;
+    bookmarkedBlockIds?: Set<string>; // [New] 로컬 북마크 상태
 }
 
 const NoteMain: React.FC<NoteMainProps> = ({
@@ -53,7 +54,8 @@ const NoteMain: React.FC<NoteMainProps> = ({
     summaryUpdatedAt,
     isSummaryLoading,
     onGenerateSummary,
-    onToggleBookmark
+    onToggleBookmark,
+    bookmarkedBlockIds
 }) => {
     const [isInviteModalOpen, setIsInviteModalOpen] = React.useState(false);
     const [isPermissionModalOpen, setIsPermissionModalOpen] = React.useState(false);
@@ -135,11 +137,11 @@ const NoteMain: React.FC<NoteMainProps> = ({
                         {...commonProps}
                         id={block.id as any}
                         content={block.content}
-                        bookmark={block.bookmark}
+                        bookmark={bookmarkedBlockIds ? bookmarkedBlockIds.has(block.id.toString()) : false}
                         onUpdate={onUpdateBlock as any}
                         onDelete={onDeleteBlock as any} // Still keeping it for safety, though UI removed
                         onFocus={() => onFocusBlock(block.id)}
-                        onToggleBookmark={() => onToggleBookmark?.(block.id, block.bookmark || false)}
+                        onToggleBookmark={() => onToggleBookmark?.(block.id, bookmarkedBlockIds ? bookmarkedBlockIds.has(block.id.toString()) : false)}
                     />
                 );
             case 'code':
@@ -151,13 +153,13 @@ const NoteMain: React.FC<NoteMainProps> = ({
                         noteId={noteId}
                         language={(block.language as any) || 'javascript'}
                         code={block.content}
-                        bookmark={block.bookmark}
+                        bookmark={bookmarkedBlockIds ? bookmarkedBlockIds.has(block.id.toString()) : false}
                         onDelete={onDeleteBlock as any}
                         onChange={onUpdateBlock as any}
                         onFocus={() => onFocusBlock(block.id)}
                         onAddBlockAfter={(content: string) => onAddBlockAfter(block.id, 'text', content)}
                         onAiReviewResult={handleAiReviewResult}
-                        onToggleBookmark={() => onToggleBookmark?.(block.id, block.bookmark || false)}
+                        onToggleBookmark={() => onToggleBookmark?.(block.id, bookmarkedBlockIds ? bookmarkedBlockIds.has(block.id.toString()) : false)}
                     />
                 );
             default:
