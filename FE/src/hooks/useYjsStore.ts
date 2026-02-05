@@ -85,52 +85,62 @@ export const useYjsStore = (noteId: string | undefined) => {
     setBlocks([]);
     setIsSynced(false);
 
-    const updateBlocksState = () => {
-      const currentBlocks = yBlocks
-        .toArray()
-        .map((yBlock: YBlockMap) => {
-          const properties = yBlock.get('properties') as Y.Map<any> | undefined;
-          const type = yBlock.get('_class') as BlockType;
+    // React 상태 업데이트 디바운스 (빠른 Yjs 변경 루프 방지)
+    const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-          if (!properties) return null;
-
-          let content = '';
-          let language: string | undefined = undefined;
-          const bookmark = properties.get('bookmark') || false;
-
-          if (type === 'code') {
-            const codeText = properties.get('code');
-            content = codeText ? codeText.toString() : '';
-            language = properties.get('language');
-          } else {
-            const contentText = properties.get('content');
-            content = contentText ? contentText.toString() : '';
-          }
-
-          return {
-            id: yBlock.get('blockId'),
-            type,
-            content,
-            language,
-            bookmark,
-          } as BlockData;
-        })
-        .filter(Boolean) as BlockData[];
-
-      // [Fix] Deduplicate blocks by ID to prevent React key errors
-      const seenIds = new Set();
-      const uniqueBlocks = [];
-      for (const block of currentBlocks) {
-        if (seenIds.has(block.id)) {
-          console.warn(`[Yjs] Duplicate block detected and ignored: ${block.id}`);
-          continue;
-        }
-        seenIds.add(block.id);
-        uniqueBlocks.push(block);
+    const updateBlocksState = useCallback(() => {
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
       }
 
-      setBlocks(uniqueBlocks);
-    };
+      updateTimeoutRef.current = setTimeout(() => {
+        const currentBlocks = yBlocks
+          .toArray()
+          .map((yBlock: YBlockMap) => {
+            const properties = yBlock.get('properties') as Y.Map<any> | undefined;
+            const type = yBlock.get('_class') as BlockType;
+
+            if (!properties) return null;
+
+            let content = '';
+            let language: string | undefined = undefined;
+            const bookmark = properties.get('bookmark') || false;
+
+            if (type === 'code') {
+              const codeText = properties.get('code');
+              content = codeText ? codeText.toString() : '';
+              language = properties.get('language');
+            } else {
+              const contentText = properties.get('content');
+              content = contentText ? contentText.toString() : '';
+            }
+
+            return {
+              id: yBlock.get('blockId'),
+              type,
+              content,
+              language,
+              bookmark,
+            } as BlockData;
+          })
+          .filter(Boolean) as BlockData[];
+
+        // [Fix] Deduplicate blocks by ID to prevent React key errors
+        const seenIds = new Set();
+        const uniqueBlocks = [];
+        for (const block of currentBlocks) {
+          if (seenIds.has(block.id)) {
+            console.warn(`[Yjs] Duplicate block detected and ignored: ${block.id}`);
+            continue;
+          }
+          seenIds.add(block.id);
+          uniqueBlocks.push(block);
+        }
+
+        setBlocks(uniqueBlocks);
+        updateTimeoutRef.current = null;
+      }, 10); // 10ms debounce
+    }, []);
 
     // 동기화 이벤트 (y-websocket은 'sync'가 일반적)
     const onSync = (synced: boolean) => {
