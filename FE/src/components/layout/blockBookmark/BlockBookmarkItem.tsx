@@ -5,7 +5,7 @@ import type { BookmarkBlock } from '../../../types/bookmark/BookmarkBlockRespons
 
 interface Props {
   block: BookmarkBlock;
-  onRemove?: (blockId: string) => void;
+  onRemove?: (noteId: string, blockId: string) => void;
 }
 
 const BlockBookmarkItem = ({ block, onRemove }: Props) => {
@@ -25,8 +25,9 @@ const BlockBookmarkItem = ({ block, onRemove }: Props) => {
 
       {/* 내용 */}
       <div className="block-card-content">
-        <div className="block-card-preview">{block.content}</div>
-        <div className="block-card-note">📄 {block.notePath}</div>
+        <div className="block-card-preview">
+          {block.content.length > 10 ? `${block.content.slice(0, 10)}...` : block.content}
+        </div>
       </div>
 
       {/* 제거 */}
@@ -34,13 +35,13 @@ const BlockBookmarkItem = ({ block, onRemove }: Props) => {
         className="block-bookmark-remove"
         onClick={(e) => {
           e.stopPropagation();
-          onRemove?.(block.blockId);
+          onRemove?.(block.noteId, block.blockId);
         }}
         aria-label="즐겨찾기 해제"
       >
         <Trash2 size={14} strokeWidth={2} />
       </button>
-    </li>
+    </li >
   );
 };
 

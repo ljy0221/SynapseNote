@@ -6,4 +6,5 @@ export interface BlockData {
     type: BlockType;
     content: string;
     language?: string;  // code 타입일 때만 사용
+    bookmark?: boolean; // 즐겨찾기 여부
 }

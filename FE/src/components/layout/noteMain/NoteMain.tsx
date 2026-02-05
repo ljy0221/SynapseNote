@@ -32,6 +32,7 @@ interface NoteMainProps {
     summaryUpdatedAt?: string;
     isSummaryLoading?: boolean;
     onGenerateSummary?: (style: SummaryStyle) => void;
+    onToggleBookmark?: (blockId: number | string, currentStatus: boolean) => void;
 }
 
 const NoteMain: React.FC<NoteMainProps> = ({
@@ -51,7 +52,8 @@ const NoteMain: React.FC<NoteMainProps> = ({
     summaryStyle,
     summaryUpdatedAt,
     isSummaryLoading,
-    onGenerateSummary
+    onGenerateSummary,
+    onToggleBookmark
 }) => {
     const [isInviteModalOpen, setIsInviteModalOpen] = React.useState(false);
     const [isPermissionModalOpen, setIsPermissionModalOpen] = React.useState(false);
@@ -133,9 +135,11 @@ const NoteMain: React.FC<NoteMainProps> = ({
                         {...commonProps}
                         id={block.id as any}
                         content={block.content}
+                        bookmark={block.bookmark}
                         onUpdate={onUpdateBlock as any}
                         onDelete={onDeleteBlock as any} // Still keeping it for safety, though UI removed
                         onFocus={() => onFocusBlock(block.id)}
+                        onToggleBookmark={() => onToggleBookmark?.(block.id, block.bookmark || false)}
                     />
                 );
             case 'code':
@@ -147,11 +151,13 @@ const NoteMain: React.FC<NoteMainProps> = ({
                         noteId={noteId}
                         language={(block.language as any) || 'javascript'}
                         code={block.content}
+                        bookmark={block.bookmark}
                         onDelete={onDeleteBlock as any}
                         onChange={onUpdateBlock as any}
                         onFocus={() => onFocusBlock(block.id)}
                         onAddBlockAfter={(content: string) => onAddBlockAfter(block.id, 'text', content)}
                         onAiReviewResult={handleAiReviewResult}
+                        onToggleBookmark={() => onToggleBookmark?.(block.id, block.bookmark || false)}
                     />
                 );
             default:

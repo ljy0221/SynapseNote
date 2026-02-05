@@ -494,7 +494,8 @@
     transition: opacity 0.2s;
 }
 
-.text-block-wrapper:hover .block-actions-right {
+.text-block-wrapper:hover .block-actions-right,
+.text-block-wrapper.is-bookmarked .block-actions-right {
     opacity: 1;
 }
 
