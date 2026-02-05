@@ -66,6 +66,30 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
         }
     };
 
+    // [Refactor] 초기 로딩 시 모든 데이터 한 번 로드 (UI 숫자 표기용)
+    const initialFetch = async () => {
+        if (!noteId) return;
+        try {
+            const [membersRes, invitesRes] = await Promise.all([
+                getNoteMembersApi(noteId),
+                getPendingInvitationsApi(noteId)
+            ]);
+
+            if (membersRes?.members) setMembers(membersRes.members);
+            if (invitesRes?.invitations) {
+                setRequests(invitesRes.invitations.filter(inv => inv.status === 'REQUESTED'));
+            }
+        } catch (e) {
+            console.error("Failed to initial fetch:", e);
+        }
+    };
+
+    React.useEffect(() => {
+        if (isOpen && noteId) {
+            initialFetch();
+        }
+    }, [isOpen, noteId]);
+
 
     if (!isOpen) return null;
 
@@ -126,7 +150,7 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
             await approveInvitationApi(invitationId);
             showToast("요청을 수락했습니다.", 'success');
             // Refresh list
-            setRequests(requests.filter(r => r.invitationId !== invitationId));
+            setRequests(requests.filter(r => r.id !== invitationId));
         } catch (error) {
             console.error(error);
             showToast("요청 수락에 실패했습니다.", 'error');
@@ -227,14 +251,14 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
                                     <div className="empty-state">대기 중인 요청이 없습니다.</div>
                                 ) : (
                                     requests.map((req) => (
-                                        <div key={req.invitationId} className="request-item">
+                                        <div key={req.id} className="request-item">
                                             <div className="member-info">
                                                 <div className="member-avatar request">
                                                     <User size={20} />
                                                 </div>
                                                 <div className="member-details">
                                                     <span className="member-nickname">{req.invitedMember?.name || 'Unknown'}</span>
-                                                    <span className="member-email">{req.invitedMember?.email || 'No Email'}</span>
+                                                    <span className="member-email">{req.invitedMember?.email || req.invitedEmail}</span>
                                                 </div>
                                             </div>
 
@@ -244,7 +268,7 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
 
                                                 <button
                                                     className="action-btn accept"
-                                                    onClick={() => handleAcceptRequest(req.invitationId)}
+                                                    onClick={() => handleAcceptRequest(req.id)}
                                                     title="수락"
                                                 >
                                                     <Check size={16} />
