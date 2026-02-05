@@ -32,6 +32,7 @@ import {
     Image as ImageIcon,
     Palette,
 } from 'lucide-react';
+import { BlockBookmarkButton } from '../../common/blockBookmarkButton/BlockBookmarkButton';
 import './TextBlock.css';
 
 interface TextBlockProps {
@@ -279,8 +280,6 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 {/* 포커스 시에만 툴바 표시 */}
                 {isFocused && (
                     <div className="editor-toolbar">
-
-
                         <div className="toolbar-group">
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
@@ -506,6 +505,11 @@ const TextBlock: React.FC<TextBlockProps> = ({
                         <div className="upload-spinner">이미지 업로드 중...</div>
                     </div>
                 )}
+            </div>
+
+            {/* Right Actions (Bookmark) */}
+            <div className="block-actions-right">
+                <BlockBookmarkButton onClick={() => { /* bookmark logic */ }} />
             </div>
 
         </div>
