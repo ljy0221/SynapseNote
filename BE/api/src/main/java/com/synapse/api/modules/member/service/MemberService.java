@@ -102,7 +102,7 @@ public class MemberService {
 
     private OAuthUserInfo getOAuthMemberInfo(LoginRequest request) {
         OAuthService oAuthService = oAuthServiceFactory.getService(request.provider());
-        return oAuthService.getUserInfo(request.authorizationCode());
+        return oAuthService.getUserInfo(request.authorizationCode(), request.platform());
     }
 
     private Member saveNewMember(OAuthUserInfo oAuthMemberInfo) {
