@@ -1,14 +1,14 @@
 import { request } from '../request';
 
 export interface PendingInvitationItem {
-    invitationId: string;
+    id: string;
     invitedEmail: string;
     invitedBy: {
         memberId: string;
         name: string;
     };
     invitedMember?: {
-        memberId: string;
+        id: string;
         name: string;
         email: string;
         profileImageUrl?: string;
