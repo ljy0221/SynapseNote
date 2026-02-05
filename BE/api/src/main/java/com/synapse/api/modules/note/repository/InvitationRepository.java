@@ -24,18 +24,15 @@ public interface InvitationRepository extends JpaRepository<Invitation, UUID> {
     Optional<Invitation> findByNoteIdAndEmailAndStatus(
             @Param("noteId") UUID noteId,
             @Param("email") String email,
-            @Param("status") InvitationStatus status
-    );
+            @Param("status") InvitationStatus status);
 
     @Query("SELECT COUNT(i) > 0 FROM Invitation i WHERE i.note.id = :noteId AND LOWER(i.invitedEmail) = LOWER(:email) AND i.status = 'PENDING' AND i.deletedAt IS NULL")
     boolean existsPendingInvitationByNoteIdAndEmail(
             @Param("noteId") UUID noteId,
-            @Param("email") String email
-    );
+            @Param("email") String email);
 
     @Query("SELECT i FROM Invitation i WHERE i.note.id = :noteId AND i.status = :status AND i.deletedAt IS NULL ORDER BY i.createdAt DESC")
     List<Invitation> findByNoteIdAndStatus(
             @Param("noteId") UUID noteId,
-            @Param("status") InvitationStatus status
-    );
+            @Param("status") InvitationStatus status);
 }

@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { BookDashed } from 'lucide-react';
 import BlockBookmarkItem from './BlockBookmarkItem';
 import type { GetBookmarkBlocksResponse } from '../../../types/bookmark/BookmarkBlockResponse';
-import { getBlockBookmarksApi } from '../../../api/bookmark/Bookmarks.api';
+import { getBlockBookmarksApi, removeBlockBookmarkApi } from '../../../api/bookmark/Bookmarks.api';
 
 const BlockBookmarkList = () => {
   const [blocks, setBlocks] = useState<GetBookmarkBlocksResponse['content']>([]);
@@ -20,8 +20,14 @@ const BlockBookmarkList = () => {
     fetchBookmarks();
   }, []);
 
-  const handleRemove = (blockId: string) => {
-    setBlocks(prev => prev.filter(b => b.blockId !== blockId));
+  const handleRemove = async (noteId: string, blockId: string) => {
+    try {
+      await removeBlockBookmarkApi(noteId, blockId);
+      setBlocks(prev => prev.filter(b => b.blockId !== blockId));
+    } catch (error) {
+      console.error('Failed to remove block bookmark:', error);
+      // alert('즐겨찾기 삭제에 실패했습니다.');
+    }
   };
 
   if (blocks.length === 0) {

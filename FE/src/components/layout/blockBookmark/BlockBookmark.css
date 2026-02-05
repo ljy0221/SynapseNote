@@ -65,6 +65,8 @@
 
     cursor: pointer;
     transition: background-color 0.15s ease, transform 0.15s ease;
+    height: 80px;
+    box-sizing: border-box;
   }
 
   .block-bookmark-card:hover {

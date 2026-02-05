@@ -38,9 +38,11 @@ import './TextBlock.css';
 interface TextBlockProps {
     id: number | string;
     content: string;
+    bookmark?: boolean;
     onUpdate: (id: number | string, content: string) => void;
     onFocus: () => void;
     onDelete: (id: number | string) => void;
+    onToggleBookmark?: () => void;
     // Native DnD props removed
     // draggable?: boolean;
     // onDragStart?: (e: React.DragEvent) => void;
@@ -88,10 +90,16 @@ const TextBlock: React.FC<TextBlockProps> = ({
     dragControls,
     isFocused: shouldFocus, // [추가] prop 이름 충돌 방지를 위해 별칭 사용
     onContextMenu, // [New]
+    bookmark = false,
+    onToggleBookmark,
 }) => {
     const [isFocused, setIsFocused] = React.useState(false);
     const [showColorPicker, setShowColorPicker] = React.useState(false);
     const { openModal } = useModalStore(); // [New] Modal Store
+
+    const handleBookmark = () => {
+        onToggleBookmark?.();
+    };
 
     // 링크 모달 상태
     const [showLinkModal, setShowLinkModal] = React.useState(false);
@@ -310,7 +318,8 @@ const TextBlock: React.FC<TextBlockProps> = ({
     };
     return (
         <div
-            className={`text-block-wrapper ${isFocused ? 'is-focused' : ''}`}
+            id={id.toString()}
+            className={`text-block-wrapper ${isFocused || shouldFocus ? 'is-focused' : ''} ${bookmark ? 'is-bookmarked' : ''}`}
             // onDragOver={onDragOver}
             // onDrop={onDrop}
             onContextMenu={onContextMenu} // [New]
@@ -329,8 +338,6 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 {/* 포커스 시에만 툴바 표시 */}
                 {isFocused && (
                     <div className="editor-toolbar">
-
-
                         <div className="toolbar-group">
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
@@ -578,6 +585,11 @@ const TextBlock: React.FC<TextBlockProps> = ({
                         <div className="upload-spinner">이미지 업로드 중...</div>
                     </div>
                 )}
+            </div>
+
+            {/* Right Actions (Bookmark) */}
+            <div className="block-actions-right">
+                <BlockBookmarkButton isBookmarked={bookmark} onClick={handleBookmark} />
             </div>
 
         </div>
