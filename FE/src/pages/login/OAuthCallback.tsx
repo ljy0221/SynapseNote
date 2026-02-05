@@ -58,11 +58,11 @@ const OAuthCallback: React.FC = () => {
         console.log('[OAuth] Login success');
 
         const redirectUrl = localStorage.getItem('loginRedirectUrl');
-        const pendingInviteCode = sessionStorage.getItem('pendingInviteCode');
+        const pendingInviteCode = localStorage.getItem('pendingInviteCode'); // sessionStorage -> localStorage
 
         if (pendingInviteCode) {
           console.log('[OAuth] Found pending invite code, redirecting to processing:', pendingInviteCode);
-          sessionStorage.removeItem('pendingInviteCode');
+          localStorage.removeItem('pendingInviteCode'); // sessionStorage -> localStorage
 
           try {
             await acceptInvitationApi(pendingInviteCode);
