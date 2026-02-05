@@ -15,10 +15,12 @@ interface NoteStore {
      * 마지막 생성 시간 업데이트
      */
     updateLastCreatedTime: () => void;
-    /**
-     * 노트 상세 정보(캐시용) 업데이트
-     */
     updateNoteMetadata: (noteId: string, metadata: Partial<NoteListItem>) => void;
+    /**
+     * 로딩 상태(Fetching) 관리
+     */
+    fetchingIds: Record<string, boolean>;
+    setFetchingId: (id: string, status: boolean) => void;
 }
 
 export const useNoteStore = create(
@@ -55,9 +57,21 @@ export const useNoteStore = create(
                     ),
                 }));
             },
+
+            fetchingIds: {},
+            setFetchingId: (id, status) => {
+                set((state) => ({
+                    fetchingIds: { ...state.fetchingIds, [id]: status }
+                }));
+            },
         }),
         {
             name: 'note-storage', // localStorage key
+            partialize: (state) => {
+                // fetchingIds는 저장하지 않음 (새로고침 시 초기화 위함)
+                const { fetchingIds, ...rest } = state;
+                return rest as NoteStore;
+            },
         }
     )
 );
