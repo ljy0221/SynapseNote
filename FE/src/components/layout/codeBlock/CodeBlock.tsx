@@ -244,6 +244,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 
     return (
         <div
+            id={id.toString()}
             className={`code-block-wrapper ${isFocused ? 'is-focused' : ''} ${bookmark ? 'is-bookmarked' : ''}`}
             onContextMenu={onContextMenu}
         >
