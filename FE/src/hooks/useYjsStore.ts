@@ -94,6 +94,7 @@ export const useYjsStore = (noteId: string | undefined) => {
 
           let content = '';
           let language: string | undefined = undefined;
+          const bookmark = properties.get('bookmark') || false;
 
           if (type === 'code') {
             const codeText = properties.get('code');
@@ -109,6 +110,7 @@ export const useYjsStore = (noteId: string | undefined) => {
             type,
             content,
             language,
+            bookmark,
           } as BlockData;
         })
         .filter(Boolean) as BlockData[];
@@ -126,7 +128,7 @@ export const useYjsStore = (noteId: string | undefined) => {
 
     // ✅ 블록 배열 변경 관찰 (실시간 반영 핵심)
     const onBlocksChanged = () => updateBlocksState();
-    yBlocks.observe(onBlocksChanged);
+    yBlocks.observeDeep(onBlocksChanged);
 
     // (선택) 최초 연결 직후, 로컬에 이미 값이 있는 경우를 위해 한번 호출
     // synced 이후가 보장되긴 하지만, UX상 빠르게 반영하고 싶으면 유지
@@ -135,7 +137,7 @@ export const useYjsStore = (noteId: string | undefined) => {
     return () => {
       console.log(`[Yjs] Disconnecting from ${noteId}...`);
       try {
-        yBlocks.unobserve(onBlocksChanged);
+        yBlocks.unobserveDeep(onBlocksChanged);
       } catch {
         // observe 등록이 안 됐을 수도 있으니 무시
       }
@@ -176,6 +178,7 @@ export const useYjsStore = (noteId: string | undefined) => {
       } else {
         properties.set('content', new Y.Text(initialContent));
       }
+      properties.set('bookmark', false);
       newBlockMap.set('properties', properties);
 
       let insertIndex = yBlocks.length;
@@ -294,7 +297,7 @@ export const useYjsStore = (noteId: string | undefined) => {
   }, []);
 
   // 여러 블록 한꺼번에 추가 (batch)
-  const addBlocksBatch = useCallback((blocksToInsert: { type: BlockType; content: string }[]) => {
+  const addBlocksBatch = useCallback((blocksToInsert: { type: BlockType; content: string, bookmark?: boolean }[]) => {
     const doc = docRef.current;
     if (!doc) return;
     const yBlocks = doc.getArray<YBlockMap>('blocks');
@@ -317,6 +320,7 @@ export const useYjsStore = (noteId: string | undefined) => {
         } else {
           properties.set('content', new Y.Text(block.content));
         }
+        properties.set('bookmark', block.bookmark || false);
         newBlockMap.set('properties', properties);
         return newBlockMap;
       });
@@ -325,12 +329,57 @@ export const useYjsStore = (noteId: string | undefined) => {
     });
   }, [noteId]);
 
+  // 블록 북마크 업데이트
+  const setBlockBookmark = useCallback((blockId: number | string, isBookmarked: boolean) => {
+    const doc = docRef.current;
+    if (!doc) return;
+    const yBlocks = doc.getArray<YBlockMap>('blocks');
+
+    let targetBlock: YBlockMap | undefined;
+    for (const block of yBlocks) {
+      if (block.get('blockId') === blockId) {
+        targetBlock = block;
+        break;
+      }
+    }
+
+    if (!targetBlock) return;
+
+    const properties = targetBlock.get('properties') as Y.Map<any>;
+    doc.transact(() => {
+      properties.set('bookmark', isBookmarked);
+    });
+  }, []);
+
+  // [New] 서버 데이터 기반 북마크 일괄 동기화
+  const syncBlockBookmarks = useCallback((bookmarkedBlockIds: string[]) => {
+    const doc = docRef.current;
+    if (!doc) return;
+    const yBlocks = doc.getArray<YBlockMap>('blocks');
+    const bookmarkedSet = new Set(bookmarkedBlockIds);
+
+    doc.transact(() => {
+      for (const block of yBlocks) {
+        const blockId = block.get('blockId');
+        const properties = block.get('properties') as Y.Map<any>;
+        const currentStatus = properties.get('bookmark') || false;
+        const targetStatus = bookmarkedSet.has(blockId);
+
+        if (currentStatus !== targetStatus) {
+          properties.set('bookmark', targetStatus);
+        }
+      }
+    });
+  }, []);
+
   return {
     blocks,
     isSynced,
     addBlock,
     addBlocksBatch,
     updateBlock,
+    setBlockBookmark,
+    syncBlockBookmarks, // [New]
     deleteBlock,
     moveBlock,
   };

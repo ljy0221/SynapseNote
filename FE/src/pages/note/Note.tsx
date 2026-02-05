@@ -1,15 +1,16 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { NotebookPen } from 'lucide-react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import NoteMain from "../../components/layout/noteMain/NoteMain";
 import { getNoteDetailApi } from '../../api/notes/GetNoteDetail.api';
-import { updateNoteApi } from '../../api/notes/UpdateNote.api'; // ADDED
+import { updateNoteApi } from '../../api/notes/UpdateNote.api';
 import { summarizeNoteApi } from '../../api/ai/NoteSummary.api';
-import { emitNotesChanged } from '../../events/NotesEvents'; // ADDED
+import { emitNotesChanged } from '../../events/NotesEvents';
 import type { SummaryStyle } from '../../types/ai/NoteSummary';
 import { useYjsStore } from '../../hooks/useYjsStore';
 import { useNoteStore } from '../../store/useNoteStore';
 import { BlockType } from '../../types/note/Block';
+import { addBlockBookmarkApi, removeBlockBookmarkApi, getBlockBookmarksApi } from '../../api/bookmark/Bookmarks.api';
 import './Note.css';
 
 
@@ -28,8 +29,8 @@ const Note: React.FC = () => {
 
     const { notes, updateNoteMetadata, fetchingIds, setFetchingId } = useNoteStore();
     const notesRef = useRef(notes);
-    const fetchingIdsRef = useRef(fetchingIds); // FetchingIds 추합용 Ref
-    const currentTitleRef = useRef(title); // 현재 제목 추적용
+    const fetchingIdsRef = useRef(fetchingIds);
+    const currentTitleRef = useRef(title);
 
     // Sync state to refs
     useEffect(() => {
@@ -52,16 +53,13 @@ const Note: React.FC = () => {
     const pendingInitialDataRef = useRef<any>(null);
     const lastLoadedTitleRef = useRef<string>("제목 없는 노트");
 
-    const { blocks, isSynced, addBlock, addBlocksBatch, updateBlock, deleteBlock, moveBlock } = useYjsStore(noteId);
+    const { blocks, isSynced, addBlock, addBlocksBatch, updateBlock, deleteBlock, moveBlock, setBlockBookmark, syncBlockBookmarks } = useYjsStore(noteId);
 
     const fetchNoteDetail = useCallback(async (id: string) => {
-        // 이미 해당 ID로 로딩 성공했거나 현재 이 인스턴스에서 시도 중이면 리턴
         if (lastFetchedIdRef.current === id) return;
 
-        // 1. 캐시 확인 (NoteStore에서 해당 노트 정보를 이미 가지고 있는지)
         const cachedNote = notesRef.current.find(n => n.noteId === id);
         if (cachedNote && cachedNote.summary !== undefined) {
-            console.log("[Note] Using cached metadata for:", id);
             setTitle(cachedNote.title);
             lastLoadedTitleRef.current = cachedNote.title;
             setSummary(cachedNote.summary);
@@ -72,14 +70,11 @@ const Note: React.FC = () => {
             return;
         }
 
-        // 2. 전역 fetch 관리 (Ref 사용으로 re-creation 방지)
         if (fetchingIdsRef.current[id]) return;
         setFetchingId(id, true);
 
         try {
             const noteRes = await getNoteDetailApi(id);
-            console.log("[Note] Fetched Note Detail from API:", id);
-
             if (noteRes) {
                 setTitle(noteRes.title || "제목 없는 노트");
                 lastLoadedTitleRef.current = noteRes.title || "제목 없는 노트";
@@ -87,14 +82,12 @@ const Note: React.FC = () => {
                 setSummaryStyle(noteRes.summaryStyle);
                 setSummaryUpdatedAt(noteRes.summaryUpdatedAt);
 
-                // Store 캐시 업데이트
                 updateNoteMetadata(id, {
                     summary: noteRes.summary,
                     summaryStyle: noteRes.summaryStyle,
                     summaryUpdatedAt: noteRes.summaryUpdatedAt
                 });
 
-                // Yjs 초기 데이터 주입을 위해 저장
                 pendingInitialDataRef.current = noteRes.blocks;
             }
             setIsEditing(true);
@@ -109,7 +102,26 @@ const Note: React.FC = () => {
         } finally {
             setFetchingId(id, false);
         }
-    }, [updateNoteMetadata, setFetchingId]); // fetchingIds 제거
+    }, [updateNoteMetadata, setFetchingId]);
+
+    // [New] 노트 진입 시 즐겨찾기 상태 강제 동기화
+    useEffect(() => {
+        const syncBookmarks = async () => {
+            if (isSynced && noteId) {
+                try {
+                    console.log(`[Note] Syncing bookmarks with server for note: ${noteId}`);
+                    const response = await getBlockBookmarksApi({ size: 100 });
+                    if (response && response.content) {
+                        const bookmarkedIds = response.content.map((b: any) => b.blockId);
+                        syncBlockBookmarks(bookmarkedIds);
+                    }
+                } catch (error) {
+                    console.error('[Note] Failed to sync bookmarks from server:', error);
+                }
+            }
+        };
+        syncBookmarks();
+    }, [isSynced, noteId, syncBlockBookmarks]);
 
     // 노트 ID 변경 시 데이터 fetch
     useEffect(() => {
@@ -127,56 +139,122 @@ const Note: React.FC = () => {
     // Yjs 동기화 완료 시 초기 데이터 주입 (최초 1회, Batch 처리)
     useEffect(() => {
         if (isSynced && blocks.length === 0 && pendingInitialDataRef.current && pendingInitialDataRef.current.length > 0) {
-            console.log("[Note] Initializing Yjs with batch data");
             const blocksToInsert = pendingInitialDataRef.current.map((b: any) => ({
                 type: b.type,
-                content: b.content
+                content: b.content,
+                bookmark: b.bookmark || false
             }));
             addBlocksBatch(blocksToInsert);
             pendingInitialDataRef.current = null;
         }
     }, [isSynced, blocks.length, addBlocksBatch]);
 
+    const handleToggleBookmark = async (blockId: number | string, currentStatus: boolean) => {
+        if (!noteId) return;
+
+        // 낙관적 업데이트: API 결과와 상관없이 Yjs 상태를 먼저 변경하여 UI 반응성 확보
+        const newStatus = !currentStatus;
+        setBlockBookmark(blockId, newStatus);
+
+        try {
+            if (currentStatus) {
+                await removeBlockBookmarkApi(noteId, blockId as string);
+            } else {
+                await addBlockBookmarkApi(noteId, blockId as string);
+            }
+        } catch (error: any) {
+            console.error('북마크 토글 API 실패:', error);
+            // 대시보드에서 이미 삭제된 경우 등의 이유로 실패하더라도 
+            // Yjs 상태는 이미 사용자의 동작에 맞춰져 있으므로 사용자 경험상 이득입니다.
+        }
+    };
+
+    const location = useLocation();
+
+    // Scroll to block if present in URL
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const blockId = params.get('block');
+        if (blockId && isSynced && blocks.length > 0) {
+            console.log(`[Note] Scroll attempt for blockId: ${blockId}`);
+            console.log(`[Note] Total blocks in state: ${blocks.length}`);
+
+            let attempts = 0;
+            const maxAttempts = 15; // 최대 3초 (15 * 200ms)
+
+            const tryScroll = () => {
+                // DraggableBlock.tsx에서 id={block.id.toString()} 로 설정됨
+                const element = document.getElementById(blockId);
+
+                if (element) {
+                    console.log(`[Note] SUCCESS: Block element found for ID: ${blockId}. Scrolling...`);
+                    // block: 'start'로 변경하여 화면 최상단에 보이게 함
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    setFocusedBlockId(blockId);
+                    return true;
+                }
+
+                attempts++;
+                if (attempts % 5 === 0) {
+                    console.log(`[Note] Still searching for block element... (Attempt ${attempts}/${maxAttempts})`);
+                    const blockExists = blocks.some(b => String(b.id) === blockId);
+                    if (!blockExists) {
+                        console.warn(`[Note] BLOCK NOT FOUND IN STATE: ${blockId}. Available IDs:`, blocks.map(b => b.id));
+                    }
+                }
+
+                if (attempts < maxAttempts) {
+                    return false;
+                }
+
+                console.error(`[Note] FAILED: Block element not found after ${maxAttempts} attempts: ${blockId}`);
+                return true;
+            };
+
+            // Immediate attempt
+            if (!tryScroll()) {
+                const timer = setInterval(() => {
+                    if (tryScroll()) {
+                        clearInterval(timer);
+                    }
+                }, 200);
+                return () => clearInterval(timer);
+            }
+        }
+    }, [location.search, isSynced, blocks.length]);
+
     // 사이드바 등 외부에서의 제목 변경 감지
     useEffect(() => {
         const handleNotesChanged = (e: any) => {
             if (!(e instanceof CustomEvent)) return;
             const detail = e.detail;
-
-            // 자신이 보낸 이벤트 무시 (source 체크는 유지하되 값 기반 중복 방지 추가)
             if (detail?.source === 'NOTE_PAGE') return;
 
             if (detail?.type === 'UPDATE_TITLE' && detail.noteId === noteId) {
-                // 값이 현재와 다를 때만 업데이트 (Loop Prevention - Value based)
                 if (detail.title !== currentTitleRef.current) {
-                    console.log("[Note] Remote title update detected:", detail.title);
                     setTitle(detail.title);
                     lastLoadedTitleRef.current = detail.title;
                 }
             }
 
             if (detail?.type === 'DELETE_NOTE' && detail.noteId === noteId) {
-                console.log("[Note] Current note deleted, redirecting...");
                 navigate('/note');
             }
         };
 
         window.addEventListener('notes-changed', handleNotesChanged);
         return () => window.removeEventListener('notes-changed', handleNotesChanged);
-    }, [noteId]);
+    }, [noteId, navigate]);
 
     // Title Auto-save Debounce
     useEffect(() => {
         if (!noteId) return;
-        // 로드된 후 변경되었을 때만 저장 (race condition 방지)
         if (title === lastLoadedTitleRef.current) return;
 
         const timer = setTimeout(async () => {
             try {
                 await updateNoteApi(noteId, { title });
-                lastLoadedTitleRef.current = title; // 저장 성공 시 업데이트
-
-                // Sidebar 즉시 반영 트리거
+                lastLoadedTitleRef.current = title;
                 emitNotesChanged({
                     type: 'UPDATE_TITLE',
                     noteId,
@@ -192,7 +270,6 @@ const Note: React.FC = () => {
     }, [title, noteId]);
 
 
-    // 마지막에 블록 추가 (툴바용)
     const handleAddBlockAtEnd = (type: BlockType) => {
         addBlock(null, type, '');
     };
@@ -249,7 +326,6 @@ const Note: React.FC = () => {
         moveBlock(dragIndex, hoverIndex);
     };
 
-    // AI 요약 생성 핸들러
     const handleGenerateSummary = async (style: SummaryStyle) => {
         if (!noteId) return;
         setIsSummaryLoading(true);
@@ -265,8 +341,6 @@ const Note: React.FC = () => {
             setIsSummaryLoading(false);
         }
     };
-
-
 
     return (
         <div className="page-content-container">
@@ -295,12 +369,12 @@ const Note: React.FC = () => {
                         onMoveBlock={handleMoveBlock}
                         titleInputRef={titleInputRef}
                         onAddBlockAfter={(id, type, initialContent) => addBlock(id, type, initialContent)}
-                        // AI 요약 관련 props
                         summary={summary}
                         summaryStyle={summaryStyle}
                         summaryUpdatedAt={summaryUpdatedAt}
                         isSummaryLoading={isSummaryLoading}
                         onGenerateSummary={handleGenerateSummary}
+                        onToggleBookmark={handleToggleBookmark}
                     />
                 </div>
             )}
