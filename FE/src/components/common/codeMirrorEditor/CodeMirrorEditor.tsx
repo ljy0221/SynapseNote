@@ -297,6 +297,9 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
         },
     });
 
+    // programmatic update(prop 변경) 중인지 추적하는 ref
+    const isDispatchingRef = useRef(false);
+
     // 에디터 초기화
     useEffect(() => {
         if (!editorRef.current) return;
@@ -317,7 +320,9 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
                 EditorState.tabSize.of(settings.tabSize),
                 EditorView.lineWrapping,
                 EditorView.updateListener.of((update) => {
-                    if (update.docChanged) {
+                    // 사용자가 직접 타이핑했을 때만 onChange 호출 (무한 루프 방지)
+                    // programmatic update 중에는 호출 안 함
+                    if (update.docChanged && !isDispatchingRef.current) {
                         onChange(update.state.doc.toString());
                     }
                 }),
@@ -348,6 +353,9 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
                 // 현재 커서 위치 저장
                 const cursorPos = viewRef.current.state.selection.main.head;
 
+                // programmatic update 시작
+                isDispatchingRef.current = true;
+
                 viewRef.current.dispatch({
                     changes: {
                         from: 0,
@@ -357,6 +365,9 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
                     // 커서 위치 보존 (새 텍스트 길이를 초과하지 않도록)
                     selection: { anchor: Math.min(cursorPos, value.length) },
                 });
+
+                // dispatch 완료 후 플래그 해제 (즉시는 아니지만, 동기적 dispatch이므로 안전)
+                isDispatchingRef.current = false;
             }
         }
     }, [value]);
