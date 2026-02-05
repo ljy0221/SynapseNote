@@ -56,7 +56,7 @@ const Note: React.FC = () => {
     const lastLoadedTitleRef = useRef<string>("제목 없는 노트");
     const [bookmarkedBlockIds, setBookmarkedBlockIds] = useState<Set<string>>(new Set());
 
-    const { blocks, isSynced, addBlock, addBlocksBatch, updateBlock, deleteBlock, moveBlock } = useYjsStore(noteId);
+    const { blocks, isSynced, addBlock, addBlocksBatch, updateBlock, updateBlockLanguage, deleteBlock, moveBlock } = useYjsStore(noteId);
 
     const fetchNoteDetail = useCallback(async (id: string) => {
         if (lastFetchedIdRef.current === id) return;
@@ -453,6 +453,7 @@ const Note: React.FC = () => {
                         onGenerateSummary={handleGenerateSummary}
                         onToggleBookmark={handleToggleBookmark}
                         bookmarkedBlockIds={bookmarkedBlockIds}
+                        onUpdateBlockLanguage={updateBlockLanguage}
                     />
                 </div>
             )}

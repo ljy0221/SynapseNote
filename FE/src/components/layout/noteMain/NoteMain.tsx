@@ -34,6 +34,7 @@ interface NoteMainProps {
     onGenerateSummary?: (style: SummaryStyle) => void;
     onToggleBookmark?: (blockId: number | string, currentStatus: boolean) => void;
     bookmarkedBlockIds?: Set<string>; // [New] 로컬 북마크 상태
+    onUpdateBlockLanguage?: (blockId: number | string, language: string) => void;
 }
 
 const NoteMain: React.FC<NoteMainProps> = ({
@@ -55,7 +56,8 @@ const NoteMain: React.FC<NoteMainProps> = ({
     isSummaryLoading,
     onGenerateSummary,
     onToggleBookmark,
-    bookmarkedBlockIds
+    bookmarkedBlockIds,
+    onUpdateBlockLanguage
 }) => {
     const [isInviteModalOpen, setIsInviteModalOpen] = React.useState(false);
     const [isPermissionModalOpen, setIsPermissionModalOpen] = React.useState(false);
@@ -160,6 +162,7 @@ const NoteMain: React.FC<NoteMainProps> = ({
                         onAddBlockAfter={(content: string) => onAddBlockAfter(block.id, 'text', content)}
                         onAiReviewResult={handleAiReviewResult}
                         onToggleBookmark={() => onToggleBookmark?.(block.id, bookmarkedBlockIds ? bookmarkedBlockIds.has(block.id.toString()) : false)}
+                        onLanguageChange={onUpdateBlockLanguage}
                     />
                 );
             default:
