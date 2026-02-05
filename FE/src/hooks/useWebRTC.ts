@@ -214,9 +214,10 @@ export const useWebRTC = ({ noteId, memberId, token, onConnect, onDisconnect }: 
         if (data.type === 'PARTICIPANT_LIST') {
             if (data.payload) {
                 try {
-                    const initialMembers: { memberId: string, isMuted: boolean }[] = JSON.parse(data.payload);
+                    const initialMembers: { memberId: string, name: string, isMuted: boolean }[] = JSON.parse(data.payload);
                     const mapped: Participant[] = initialMembers.map(m => ({
                         memberId: m.memberId,
+                        name: m.name,
                         isMuted: m.isMuted,
                         status: 'connected',
                         isSpeaking: false,
@@ -234,12 +235,13 @@ export const useWebRTC = ({ noteId, memberId, token, onConnect, onDisconnect }: 
             setStatus('connected');
             if (data.payload) {
                 try {
-                    const initialMembers: { memberId: string, isMuted: boolean }[] = JSON.parse(data.payload);
+                    const initialMembers: { memberId: string, name: string, isMuted: boolean }[] = JSON.parse(data.payload);
                     setParticipants(prev => {
                         const newParticipants = initialMembers
                             .filter(m => m.memberId !== memberId)
                             .map(m => ({
                                 memberId: m.memberId,
+                                name: m.name,
                                 status: 'connected',
                                 isMuted: m.isMuted,
                                 isSpeaking: false,
@@ -256,7 +258,6 @@ export const useWebRTC = ({ noteId, memberId, token, onConnect, onDisconnect }: 
             }
         } else if (data.type === 'ERROR') {
             errorLog('Signaling Error:', data.payload);
-            // Force cleanup on critical errors if needed
             if (status === 'connecting') {
                 setStatus('error');
                 leaveVoice();
@@ -298,13 +299,26 @@ export const useWebRTC = ({ noteId, memberId, token, onConnect, onDisconnect }: 
         if (data.type === 'USER_JOINED') {
             log(`User joined: ${data.memberId}`);
             if (data.memberId && data.memberId !== memberId) {
+                let pName = 'Unknown User';
+                let pMuted = false;
+
+                // Parse Payload if available (New format)
+                if (data.payload) {
+                    try {
+                        const pInfo = JSON.parse(data.payload);
+                        if (pInfo.name) pName = pInfo.name;
+                        if (pInfo.isMuted !== undefined) pMuted = pInfo.isMuted;
+                    } catch (e) { /* ignore parse error */ }
+                }
+
                 setParticipants(prev => {
                     // 중복 방지
                     if (prev.some(p => p.memberId === data.memberId)) return prev;
                     return [...prev, {
                         memberId: data.memberId!,
+                        name: pName,
                         status: 'connected',
-                        isMuted: false,
+                        isMuted: pMuted,
                         isSpeaking: false,
                         connectionState: 'new'
                     }];
@@ -314,6 +328,28 @@ export const useWebRTC = ({ noteId, memberId, token, onConnect, onDisconnect }: 
             log(`User left: ${data.memberId}`);
             if (data.memberId) {
                 setParticipants(prev => prev.filter(p => p.memberId !== data.memberId));
+            }
+        } else if (data.type === 'USER_MUTE_CHANGED') {
+            log(`User mute changed: ${data.memberId} -> ${data.payload}`);
+            if (data.memberId) {
+                let isMuted = false;
+                if (data.payload) {
+                    try {
+                        const payloadObj = JSON.parse(data.payload);
+                        if (typeof payloadObj.isMuted === 'boolean') {
+                            isMuted = payloadObj.isMuted;
+                        } else if (payloadObj.isMuted === 'true') { // Fallback for safety
+                            isMuted = true;
+                        }
+                    } catch (e) {
+                        // Fallback for backward compatibility or raw string
+                        isMuted = data.payload === 'true';
+                    }
+                }
+
+                setParticipants(prev => prev.map(p =>
+                    p.memberId === data.memberId ? { ...p, isMuted } : p
+                ));
             }
         }
     };

@@ -21,6 +21,7 @@ export interface IceCandidateMessage {
 
 export interface Participant {
     memberId: string;
+    name?: string;
     status: 'connected' | 'connecting' | 'disconnected';
     isMuted: boolean;
     isSpeaking: boolean;
