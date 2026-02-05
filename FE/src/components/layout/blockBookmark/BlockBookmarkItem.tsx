@@ -33,9 +33,16 @@ const BlockBookmarkItem = ({ block, onRemove }: Props) => {
 
       {/* 내용 */}
       <div className="block-card-content">
-        <div className="block-card-preview">
-          {plainContent.length > 15 ? `${plainContent.slice(0, 15)}...` : plainContent}
+        <div className="block-card-preview" style={{
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis'
+        }}>
+          {plainContent.length > 30 ? `${plainContent.slice(0, 30)}...` : plainContent}
         </div>
+        {/* Path removed as requested */}
       </div>
 
       {/* 제거 */}
