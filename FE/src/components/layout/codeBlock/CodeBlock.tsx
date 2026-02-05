@@ -54,7 +54,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     language: initialLanguage,
     code,
     noteId,
-    onDelete,
+    onDelete: _onDelete,
     onChange,
     onFocus,
     onAddBlockAfter,
@@ -94,7 +94,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
         onToggleBookmark?.();
     };
 
-
+    // 🔥 초기화만 마운트 시 1회 수행 (원격 업데이트는 Yjs가 직접 처리)
     useEffect(() => {
         console.log(`[CodeBlock] Mount - ID: ${id}`);
         if (isCodeEmpty(code) && isCodeEmpty(editedCode)) {

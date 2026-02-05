@@ -10,6 +10,7 @@ import org.kurento.client.WebRtcEndpoint;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -39,7 +40,7 @@ public class WebRtcRoomManager {
     /**
      * 사용자가 룸에 참여
      */
-    public void joinRoom(UUID noteId, UUID memberId) {
+    public void joinRoom(UUID noteId, UUID memberId, String name) {
         Room room = rooms.computeIfAbsent(noteId, id -> {
             log.info("Creating new WebRTC room for note: {}", id);
 
@@ -59,12 +60,12 @@ public class WebRtcRoomManager {
             return new Room(id, pipeline);
         });
 
-        room.addParticipant(memberId);
+        room.addParticipant(memberId, name);
 
         // 사용자-룸 매핑 추가
         userRoomMap.computeIfAbsent(memberId, k -> ConcurrentHashMap.newKeySet()).add(noteId);
 
-        log.info("User {} joined room {}", memberId, noteId);
+        log.info("User {} ({}) joined room {}", memberId, name, noteId);
     }
 
     /**
@@ -146,7 +147,7 @@ public class WebRtcRoomManager {
             }
         }
 
-        public void addParticipant(UUID memberId) {
+        public void addParticipant(UUID memberId, String name) {
             WebRtcEndpoint endpoint = null;
             HubPort hubPort = null;
 
@@ -159,7 +160,7 @@ public class WebRtcRoomManager {
                 hubPort.connect(endpoint);
             }
 
-            Participant participant = new Participant(memberId, endpoint, hubPort);
+            Participant participant = new Participant(memberId, name, endpoint, hubPort);
             participants.put(memberId, participant);
         }
 
@@ -185,6 +186,16 @@ public class WebRtcRoomManager {
 
         public boolean hasParticipant(UUID memberId) {
             return participants.containsKey(memberId);
+        }
+
+        public Set<UUID> getParticipantIds() {
+            return participants.keySet();
+        }
+
+        public List<ParticipantInfo> getParticipantInfos() {
+            return participants.values().stream()
+                    .map(p -> new ParticipantInfo(p.getMemberId(), p.getName(), p.isMuted()))
+                    .collect(java.util.stream.Collectors.toList());
         }
 
         public void release() {
@@ -213,13 +224,28 @@ public class WebRtcRoomManager {
     @Getter
     public static class Participant {
         private final UUID memberId;
+        private final String name;
         private final WebRtcEndpoint endpoint;
         private final HubPort hubPort;
+        private boolean isMuted = false;
 
-        public Participant(UUID memberId, WebRtcEndpoint endpoint, HubPort hubPort) {
+        public Participant(UUID memberId, String name, WebRtcEndpoint endpoint, HubPort hubPort) {
             this.memberId = memberId;
+            this.name = name;
             this.endpoint = endpoint;
             this.hubPort = hubPort;
         }
+
+        public void setMuted(boolean muted) {
+            this.isMuted = muted;
+        }
+    }
+
+    @Getter
+    @lombok.AllArgsConstructor
+    public static class ParticipantInfo {
+        private UUID memberId;
+        private String name;
+        private boolean isMuted;
     }
 }

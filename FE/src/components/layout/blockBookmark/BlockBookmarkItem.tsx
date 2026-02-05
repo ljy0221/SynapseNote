@@ -28,9 +28,8 @@ const BlockBookmarkItem = ({ block, onRemove }: Props) => {
     <li className="block-bookmark-card" onClick={handleClick}>
       {/* 아이콘 */}
       <div className="block-card-icon">
-        {block.type === 'code' ? <Code size={16} /> : <FileText size={16} />}
+        {block.type === 'code' ? <Code size={18} /> : <FileText size={18} />}
       </div>
-
       {/* 내용 */}
       <div className="block-card-content">
         <div className="block-card-preview" style={{

@@ -19,7 +19,11 @@ const NoteBookmarkList = () => {
     if (!isSilent) setIsLoading(true);
     try {
       const res = await getBookmarksApi();
-      setNotes(adaptBookmarkedNotes(res));
+      // [New] 북마크 추가 시간(또는 생성 시간) 최신순 정렬
+      const sorted = adaptBookmarkedNotes(res).sort((a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      setNotes(sorted);
     } finally {
       setIsLoading(false);
     }

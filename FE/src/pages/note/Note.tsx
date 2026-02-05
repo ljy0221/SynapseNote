@@ -33,6 +33,7 @@ const Note: React.FC = () => {
     const notesRef = useRef(notes);
     const fetchingIdsRef = useRef(fetchingIds);
     const currentTitleRef = useRef(title);
+    const currentDirectoryPathRef = useRef<string | undefined>(undefined); // [New] 현재 경로 유지용
 
     // Sync state to refs
     useEffect(() => {
@@ -64,12 +65,21 @@ const Note: React.FC = () => {
     const { blocks, isSynced, addBlock, addBlocksBatch, updateBlock, updateBlockLanguage, deleteBlock, moveBlock } = useYjsStore(noteId);
 
     const fetchNoteDetail = useCallback(async (id: string) => {
-        if (lastFetchedIdRef.current === id) return;
+        console.log(`[Note] fetchNoteDetail called for: ${id}`); // [Debug]
+        if (lastFetchedIdRef.current === id) {
+            console.log(`[Note] Skipping fetch, already loaded: ${id}`); // [Debug]
+            return;
+        }
 
         const cachedNote = notesRef.current.find(n => n.noteId === id);
         if (cachedNote && cachedNote.summary !== undefined) {
+            console.log('[Note] Loaded from Cache (Full Detail):', { title: cachedNote.title, directoryPath: cachedNote.directoryPath });
             setTitle(cachedNote.title);
             lastLoadedTitleRef.current = cachedNote.title;
+            // [Modified] 항상 경로 저장 (없으면 빈 문자열)
+            // 캐시가 있다는 건 사이드바 목록 or 이전 로드 데이터가 있다는 뜻이므로 신뢰
+            currentDirectoryPathRef.current = cachedNote.directoryPath || "";
+
             setSummary(cachedNote.summary);
             setSummaryStyle(cachedNote.summaryStyle);
             setSummaryUpdatedAt(cachedNote.summaryUpdatedAt);
@@ -82,10 +92,25 @@ const Note: React.FC = () => {
         setFetchingId(id, true);
 
         try {
+            console.log(`[Note] Requesting API for: ${id}`); // [Debug]
             const noteRes = await getNoteDetailApi(id);
             if (noteRes) {
+                // [New] 사이드바 정보(목록)에서도 경로 확인 (API 상세 응답에 경로가 없을 경우 대비)
+                const noteFromList = notesRef.current.find(n => n.noteId === id);
+
+                const pathFromApi = noteRes.directoryPath;
+                const pathFromList = noteFromList?.directoryPath;
+
+                console.log('[Note] Loaded from API. Path Check:', { api: pathFromApi, list: pathFromList });
+
                 setTitle(noteRes.title || "제목 없는 노트");
                 lastLoadedTitleRef.current = noteRes.title || "제목 없는 노트";
+
+                // [Modified] API 값이 있으면 우선, 없으면 리스트(사이드바) 값 사용, 둘 다 없으면 ""
+                // 주의: directoryPath가 ""(root)일 수 있으므로 undefined/null 체크만 해야 함 ?? 사용
+                currentDirectoryPathRef.current = pathFromApi ?? pathFromList ?? "";
+                console.log('[Note] Settled directoryPath:', currentDirectoryPathRef.current);
+
                 setSummary(noteRes.summary);
                 setSummaryStyle(noteRes.summaryStyle);
                 setSummaryUpdatedAt(noteRes.summaryUpdatedAt);
@@ -109,8 +134,10 @@ const Note: React.FC = () => {
         } catch (error) {
             console.error("노트 상세 정보 로딩 실패:", error);
             if (cachedNote) {
+                console.log('[Note] Fallback to Cache (API Failed):', { title: cachedNote.title, directoryPath: cachedNote.directoryPath });
                 setTitle(cachedNote.title);
                 lastLoadedTitleRef.current = cachedNote.title;
+                currentDirectoryPathRef.current = cachedNote.directoryPath || "";
                 setIsEditing(true);
             }
         } finally {
@@ -118,8 +145,6 @@ const Note: React.FC = () => {
         }
     }, [updateNoteMetadata, setFetchingId]);
 
-    // [New] 노트 진입 시 즐겨찾기 상태 강제 동기화
-    // [New] 노트 진입 시 즐겨찾기 상태 강제 동기화 (로컬 상태)
     // [New] 노트 진입 시 즐겨찾기 상태 강제 동기화 (로컬 상태)
     useEffect(() => {
         const fetchBookmarks = async () => {
@@ -158,6 +183,7 @@ const Note: React.FC = () => {
             setIsEditing(false);
             setTitle("제목 없는 노트");
             lastLoadedTitleRef.current = "제목 없는 노트";
+            currentDirectoryPathRef.current = undefined; // 초기화
         }
     }, [noteId, fetchNoteDetail]);
 
@@ -334,7 +360,12 @@ const Note: React.FC = () => {
 
         const timer = setTimeout(async () => {
             try {
-                await updateNoteApi(noteId, { title });
+                // [Modified] 디렉토리 경로 유지
+                console.log('[Note] Auto-saving Title:', { title, directoryPath: currentDirectoryPathRef.current });
+                await updateNoteApi(noteId, {
+                    title,
+                    directoryPath: currentDirectoryPathRef.current
+                });
                 lastLoadedTitleRef.current = title;
                 emitNotesChanged({
                     type: 'UPDATE_TITLE',
@@ -368,8 +399,29 @@ const Note: React.FC = () => {
     }, [blocks, focusedBlockId]);
 
 
+    // [New] 내용 변경 감지 및 자동 저장 (updatedAt 갱신용) -> 백엔드 Yjs BridgeService에서 처리하므로 API 호출 제거
+    // 단, 사이드바 목록 갱신(최신순 정렬 등)을 위해 이벤트는 발생시킴
+    const contentSaveTimer = useRef<NodeJS.Timeout | null>(null);
+
+    const handleContentChange = useCallback(() => {
+        if (!noteId) return;
+        if (contentSaveTimer.current) clearTimeout(contentSaveTimer.current);
+
+        contentSaveTimer.current = setTimeout(() => {
+            // [Modified] updateNoteApi 제거 (백엔드에서 처리)
+            // 사이드바 및 홈 화면 갱신 알림만 전송
+            emitNotesChanged({
+                type: 'UPDATE_CONTENT',
+                noteId,
+                title: currentTitleRef.current,
+                source: 'NOTE_PAGE',
+            });
+        }, 1000); // 1초 디바운스
+    }, [noteId]);
+
     const handleAddBlockAtEnd = (type: BlockType) => {
         addBlock(null, type, '');
+        handleContentChange();
     };
 
     const handleShortcutCreate = (type: BlockType) => {
@@ -378,6 +430,7 @@ const Note: React.FC = () => {
         } else {
             addBlock(null, type, '');
         }
+        handleContentChange();
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -416,6 +469,7 @@ const Note: React.FC = () => {
                 const isLastBlock = blocks.length === 1;
 
                 deleteBlock(focusedBlockId);
+                handleContentChange(); // [New] 삭제 시에도 갱신
 
                 if (isLastBlock) {
                     // 마지막 블록 삭제 시 새 빈 텍스트 블록 생성
@@ -442,6 +496,7 @@ const Note: React.FC = () => {
 
     const handleMoveBlock = (dragIndex: number, hoverIndex: number) => {
         moveBlock(dragIndex, hoverIndex);
+        handleContentChange(); // [New] 이동 시에도 갱신
     };
 
     const handleGenerateSummary = async (style: SummaryStyle) => {
@@ -480,14 +535,23 @@ const Note: React.FC = () => {
                         title={title}
                         onUpdateTitle={setTitle}
                         blocks={blocks}
-                        onUpdateBlock={updateBlock}
+                        onUpdateBlock={(id, content) => {
+                            updateBlock(id, content);
+                            handleContentChange();
+                        }}
                         onAddBlockAtEnd={handleAddBlockAtEnd}
-                        onDeleteBlock={deleteBlock}
+                        onDeleteBlock={(id) => {
+                            deleteBlock(id);
+                            handleContentChange();
+                        }}
                         onFocusBlock={setFocusedBlockId}
                         focusedBlockId={focusedBlockId}
                         onMoveBlock={handleMoveBlock}
                         titleInputRef={titleInputRef}
-                        onAddBlockAfter={(id, type, initialContent) => addBlock(id, type, initialContent)}
+                        onAddBlockAfter={(id, type, initialContent) => {
+                            addBlock(id, type, initialContent);
+                            handleContentChange();
+                        }}
                         summary={summary}
                         summaryStyle={summaryStyle}
                         summaryUpdatedAt={summaryUpdatedAt}

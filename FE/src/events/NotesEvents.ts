@@ -13,6 +13,12 @@ export type NotesChangedDetail =
     source?: string;
   }
   | {
+    type: 'UPDATE_CONTENT';
+    noteId: string;
+    title: string;
+    source?: string;
+  }
+  | {
     type: 'DELETE_NOTE';
     noteId: string;
     source?: string;
