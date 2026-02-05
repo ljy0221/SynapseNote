@@ -6,6 +6,7 @@ import Home from './pages/home/Home';
 import Note from './pages/note/Note';
 import MindMap from './pages/mindmap/MindMap';
 import AcceptInvitation from './pages/invitation/AcceptInvitation';
+import InviteLanding from './pages/invite/InviteLanding';
 
 const router = createBrowserRouter([
     {
@@ -19,6 +20,7 @@ const router = createBrowserRouter([
             { path: 'note', element: <Note /> },
             { path: 'note/:noteId', element: <Note /> },
             { path: 'notes/invitation/:token', element: <AcceptInvitation /> },
+            { path: 'invite/:code', element: <InviteLanding /> }, // [New] 초대 랜딩 페이지
             { path: 'mindmap', element: <MindMap /> },
         ],
     },
