@@ -6,7 +6,8 @@ import BlockCopyButton from '../../common/blockCopyButton/BlockCopyButton';
 
 import CodeMirrorEditor from '../../common/codeMirrorEditor/CodeMirrorEditor';
 import type { Language, ExecutionResult, ExecutionMode, SessionInfo } from '../../../types/execution/ExecutionTypes';
-import { Server, RectangleEllipsis, Star } from 'lucide-react';
+import { Server, RectangleEllipsis } from 'lucide-react';
+import { BlockBookmarkButton } from '../../common/blockBookmarkButton/BlockBookmarkButton';
 import './CodeBlock.css';
 import { saveExecutionToBackend } from "../../../utils/executionAPI.ts";
 import { LanguageSelector } from "./LanguageSelector.tsx";
@@ -396,14 +397,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 
             {/* Right Actions (Bookmark) - Moved outside */}
             <div className="block-actions-right">
-                <Tooltip title="북마크" placement="left">
-                    <button
-                        className="bookmark-btn"
-                        onClick={() => { /* bookmark logic */ }}
-                    >
-                        <Star size={18} />
-                    </button>
-                </Tooltip>
+                <BlockBookmarkButton onClick={() => { /* bookmark logic */ }} />
             </div>
         </div>
     );
