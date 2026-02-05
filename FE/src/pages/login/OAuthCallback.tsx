@@ -43,7 +43,8 @@ const OAuthCallback: React.FC = () => {
       try {
         console.log(`[OAuth] Processing login for ${provider} with code...`);
 
-        const result = await socialLogin(provider, code);
+        const platform = window.electronAPI ? 'ELECTRON' : 'WEB';
+        const result = await socialLogin(provider, code, platform);
 
         // ✅ login 하나로 책임 집중
         await login(result.accessToken);
