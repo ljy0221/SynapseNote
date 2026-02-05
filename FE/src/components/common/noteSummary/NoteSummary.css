@@ -1,10 +1,31 @@
 .note-summary-container {
   width: 100%;
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 40px;
+  max-width: 800px;
+  margin: 12px auto;
   box-sizing: border-box;
   margin-bottom: 24px;
+  display: flex;
+  /* Flex layout to match TextBlock */
+  gap: 8px;
+  /* Gap between gutter and content */
+}
+
+/* 1. Gutter Column (Matches .block-controls width + padding) */
+.note-summary-gutter {
+  width: 32px;
+  /* Same as .drag-handle-icon width */
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* 2. Main Content Column */
+.note-summary-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .summary-generate-section {
@@ -129,14 +150,19 @@
   display: inline-block;
 }
 
-.refresh-icon.spinning {
+.refresh-icon.spinning,
+.sparkle-icon.spinning {
   animation: spin 1s linear infinite;
+  display: inline-block;
+  /* Ensure rotation works */
+  transform-origin: center;
 }
 
 @keyframes spin {
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -213,4 +239,3 @@
   color: var(--font-color-sub);
   font-style: italic;
 }
-

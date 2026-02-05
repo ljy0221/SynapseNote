@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type ModalType = 'CONFIRM' | 'NODE_SELECTOR';
+export type ModalType = 'CONFIRM' | 'NODE_SELECTOR' | 'EXTERNAL_LINK_WARNING';
 
 export interface Modal {
     id: string;
