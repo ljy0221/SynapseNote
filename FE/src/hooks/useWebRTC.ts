@@ -44,72 +44,91 @@ export const useWebRTC = ({ noteId, memberId, token, onConnect, onDisconnect }: 
         };
     }, []);
 
-    const connect = useCallback(() => {
-        if (status === 'connected' || status === 'connecting') return;
-        if (!noteId || !token) {
-            errorLog('Cannot connect: Missing noteId or token');
+    // 2. Join Voice (Active participation)
+    const joinVoice = async () => {
+        if (!stompClientRef.current || !stompClientRef.current.connected) {
+            errorLog('Socket not connected yet');
             return;
         }
+        if (status === 'connected' || status === 'connecting') return;
 
         setStatus('connecting');
 
-        const client = new Client({
-            brokerURL: SIGNALING_SERVER_URL,
-            connectHeaders: {
-                Authorization: `Bearer ${token}`
-            },
-            reconnectDelay: 5000,
-            onConnect: () => {
-                log('STOMP Connected');
-                subscribeToSignaling(client);
-                joinRoom(client);
-                setStatus('connected');
-                onConnect?.();
-            },
-            onStompError: (frame) => {
-                errorLog('STOMP Error', frame);
-                setStatus('error');
-            },
-            onWebSocketClose: () => {
-                log('WebSocket Closed');
-                setStatus('disconnected');
-            }
-        });
+        try {
+            // 1. Get Media
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+            localStreamRef.current = stream;
 
-        client.activate();
-        stompClientRef.current = client;
-    }, [noteId, token, status, onConnect]);
+            // 2. Setup Web Audio API
+            const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+            const audioCtx = new AudioContextClass();
+            audioContextRef.current = audioCtx;
 
-    const disconnect = useCallback(() => {
+            const source = audioCtx.createMediaStreamSource(stream);
+            const gainNode = audioCtx.createGain();
+            const destination = audioCtx.createMediaStreamDestination();
+
+            gainNode.gain.value = inputVolume;
+
+            source.connect(gainNode);
+            gainNode.connect(destination);
+
+            sourceNodeRef.current = source;
+            gainNodeRef.current = gainNode;
+            destinationNodeRef.current = destination;
+
+            // 3. Create PeerConnection
+            createPeerConnection(destination.stream);
+
+            // 4. Send Join Request
+            log('Sending JOIN request...');
+            stompClientRef.current.publish({
+                destination: '/app/webrtc/join',
+                body: JSON.stringify({ noteId, memberId })
+            });
+
+        } catch (e) {
+            errorLog('Failed to join voice', e);
+            setStatus('disconnected');
+            leaveVoice();
+        }
+    };
+
+    // 3. Leave Voice
+    const leaveVoice = useCallback(() => {
+        if (status === 'disconnected') return;
+
+        log('Leaving voice channel...');
+
         if (stompClientRef.current && stompClientRef.current.connected) {
-            if (noteId) {
+            if (noteId && memberId && status === 'connected') {
                 stompClientRef.current.publish({
                     destination: '/app/webrtc/leave',
-                    body: JSON.stringify({ noteId })
+                    body: JSON.stringify({ noteId, memberId })
                 });
             }
-            stompClientRef.current.deactivate();
         }
 
+        // Cleanup Media
         if (peerConnectionRef.current) {
             peerConnectionRef.current.close();
             peerConnectionRef.current = null;
         }
-
         if (localStreamRef.current) {
             localStreamRef.current.getTracks().forEach(track => track.stop());
             localStreamRef.current = null;
         }
-
         if (remoteAudioRef.current) {
             remoteAudioRef.current.srcObject = null;
         }
+        if (audioContextRef.current) {
+            audioContextRef.current.close();
+            audioContextRef.current = null;
+        }
 
         setStatus('disconnected');
-        setParticipants([]);
-        onDisconnect?.();
-        log('Disconnected');
-    }, [noteId, onDisconnect]);
+        setIsMuted(false);
+    }, [noteId, memberId, status]);
 
     /**
      * 구독 설정
@@ -170,31 +189,7 @@ export const useWebRTC = ({ noteId, memberId, token, onConnect, onDisconnect }: 
     /**
      * 방 참여 요청 및 미디어 획득
      */
-    const joinRoom = async (client: Client) => {
-        try {
-            // Get User Media
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            localStreamRef.current = stream;
 
-            // Check Mute State
-            stream.getAudioTracks().forEach(track => {
-                track.enabled = !isMuted;
-            });
-
-            // Initialize PeerConnection
-            createPeerConnection(stream);
-
-            // Send Join Message
-            client.publish({
-                destination: '/app/webrtc/join',
-                body: JSON.stringify({ noteId })
-            });
-            log(`Joined room: ${noteId}`);
-        } catch (err) {
-            errorLog('Failed to join room (Media/PC error)', err);
-            disconnect();
-        }
-    };
 
     const createPeerConnection = (stream: MediaStream) => {
         if (peerConnectionRef.current) return;
@@ -244,10 +239,35 @@ export const useWebRTC = ({ noteId, memberId, token, onConnect, onDisconnect }: 
     const handleSignalingMessage = async (data: SignalingMessage) => {
         if (data.type === 'JOINED') {
             log('Room join confirmed by server. Ready to offer.');
+
+            // [Snapshot] 초기 참여자 목록 설정
+            if (data.payload) {
+                try {
+                    // Backend sends List<ParticipantInfo> { memberId: UUID, isMuted: boolean }
+                    const initialMembers: { memberId: string, isMuted: boolean }[] = JSON.parse(data.payload);
+                    log(`Initial participants: ${initialMembers.length}`);
+
+                    setParticipants(prev => {
+                        const newParticipants = initialMembers
+                            .filter(m => m.memberId !== memberId)
+                            .map(m => ({
+                                memberId: m.memberId,
+                                status: 'connected',
+                                isMuted: m.isMuted,
+                                isSpeaking: false,
+                                connectionState: 'connected'
+                            } as Participant));
+
+                        return [...newParticipants];
+                    });
+                } catch (e) {
+                    errorLog('Failed to parse participant list from JOINED payload', e);
+                }
+            }
+
             if (data.status === 'READY') {
                 createAndSendOffer();
             }
-            // 내가 조인했으므로 나 자신을 리스트에 추가 (Optional, or handled by UI)
         } else if (data.type === 'ERROR') {
             errorLog('Signaling Error:', data.payload);
         }
@@ -310,26 +330,252 @@ export const useWebRTC = ({ noteId, memberId, token, onConnect, onDisconnect }: 
 
     const toggleMute = () => {
         if (localStreamRef.current) {
+            const newMutedState = !isMuted;
+
+            // 1. Local Track Control
             localStreamRef.current.getAudioTracks().forEach(track => {
-                track.enabled = !track.enabled;
+                track.enabled = !newMutedState;
             });
-            setIsMuted(prev => !prev);
+            setIsMuted(newMutedState);
+
+            // 2. Server Sync
+            if (stompClientRef.current && noteId) {
+                stompClientRef.current.publish({
+                    destination: '/app/webrtc/mute',
+                    body: JSON.stringify({
+                        noteId,
+                        isMuted: newMutedState
+                    })
+                });
+            }
         }
     };
 
     // [Note] Disconnect when noteId changes or component unmounts
+    // Audio Context for Input Volume Processing
+    const audioContextRef = useRef<AudioContext | null>(null);
+    const gainNodeRef = useRef<GainNode | null>(null);
+    const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
+    const destinationNodeRef = useRef<MediaStreamAudioDestinationNode | null>(null);
+
+    const [volume, setVolumeState] = useState(1.0); // Output Volume
+    const [inputVolume, setInputVolumeState] = useState(1.0); // Input Volume (Mic)
+
+
+
+    const setVolume = (newVolume: number) => {
+        const clamped = Math.max(0, Math.min(1, newVolume));
+        setVolumeState(clamped);
+        if (remoteAudioRef.current) {
+            remoteAudioRef.current.volume = clamped;
+        }
+    };
+
+    const setInputVolume = (newVolume: number) => {
+        // Allow amplification up to 2.0x
+        const clamped = Math.max(0, Math.min(2, newVolume));
+        setInputVolumeState(clamped);
+        if (gainNodeRef.current) {
+            gainNodeRef.current.gain.value = clamped;
+        }
+    };
+
+    // ... (rest of hook) has become very complex.
+    // I will replace specific blocks to achieve the decoupling.
+
+    // 1. Socket Connection Effect
     useEffect(() => {
+        if (!accessToken || !noteId || !user.memberId) return;
+
+        // Connect Socket
+        const client = new Client({
+            brokerURL: `${import.meta.env.VITE_WS_URL}/ws-stomp`, // Using WS_URL env
+            connectHeaders: {
+                Authorization: `Bearer ${accessToken}`,
+            },
+            reconnectDelay: 5000,
+            onConnect: () => {
+                log('STOMP connected');
+                // Subscribe to Room Topic
+                client.subscribe(`/topic/room/${noteId}`, (message) => {
+                    handleRoomMessage(JSON.parse(message.body));
+                });
+
+                // Subscribe to Private Queue
+                client.subscribe(`/user/queue/webrtc`, (message) => {
+                    handleSignalingMessage(JSON.parse(message.body));
+                });
+
+                // Subscribe to ICE candidates
+                client.subscribe(`/user/queue/webrtc/ice`, (message) => {
+                    handleIceCandidateMessage(JSON.parse(message.body));
+                });
+
+                // Request initial participant list (Observer Mode)
+                client.publish({
+                    destination: '/app/webrtc/participants',
+                    body: JSON.stringify({ noteId })
+                });
+
+                // If onConnect callback was passed
+                onConnect?.();
+            },
+            onStompError: (frame) => {
+                errorLog('Broker reported error: ' + frame.headers['message']);
+                errorLog('Additional details: ' + frame.body);
+            },
+        });
+
+        client.activate();
+        stompClientRef.current = client;
+
         return () => {
-            disconnect();
+            // Cleanup on unmount or note change
+            leaveVoice(); // Ensure voice is left
+            client.deactivate();
+            log('STOMP disconnected');
+            setParticipants([]);
         };
-    }, [noteId, disconnect]); // Added noteId dependency to ensure cleanup on switch
+    }, [noteId, accessToken, user.memberId]);
+
+    // 2. Join Voice (Active participation)
+    const joinVoice = async () => {
+        if (!stompClientRef.current || !stompClientRef.current.connected) {
+            errorLog('Socket not connected yet');
+            return;
+        }
+        if (status === 'connected' || status === 'connecting') return;
+
+        setStatus('connecting');
+
+        try {
+            // 1. Get Media
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+            localStreamRef.current = stream;
+
+            // 2. Setup Web Audio API
+            const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+            const audioCtx = new AudioContextClass();
+            audioContextRef.current = audioCtx;
+
+            const source = audioCtx.createMediaStreamSource(stream);
+            const gainNode = audioCtx.createGain();
+            const destination = audioCtx.createMediaStreamDestination();
+
+            gainNode.gain.value = inputVolume;
+
+            source.connect(gainNode);
+            gainNode.connect(destination);
+
+            sourceNodeRef.current = source;
+            gainNodeRef.current = gainNode;
+            destinationNodeRef.current = destination;
+
+            // 3. Create PeerConnection
+            createPeerConnection(destination.stream);
+
+            // 4. Send Join Request
+            log('Sending JOIN request...');
+            stompClientRef.current.publish({
+                destination: '/app/webrtc/join',
+                body: JSON.stringify({ noteId, memberId })
+            });
+
+        } catch (e) {
+            errorLog('Failed to join voice', e);
+            setStatus('disconnected');
+            leaveVoice();
+        }
+    };
+
+    // 3. Leave Voice
+    const leaveVoice = useCallback(() => {
+        if (status === 'disconnected') return;
+
+        log('Leaving voice channel...');
+
+        if (stompClientRef.current && stompClientRef.current.connected) {
+            if (noteId && memberId && status === 'connected') {
+                stompClientRef.current.publish({
+                    destination: '/app/webrtc/leave',
+                    body: JSON.stringify({ noteId, memberId })
+                });
+            }
+        }
+
+        // Cleanup Media
+        if (peerConnectionRef.current) {
+            peerConnectionRef.current.close();
+            peerConnectionRef.current = null;
+        }
+        if (localStreamRef.current) {
+            localStreamRef.current.getTracks().forEach(track => track.stop());
+            localStreamRef.current = null;
+        }
+        if (remoteAudioRef.current) {
+            remoteAudioRef.current.srcObject = null;
+        }
+        if (audioContextRef.current) {
+            audioContextRef.current.close();
+            audioContextRef.current = null;
+        }
+
+        setStatus('disconnected');
+        setIsMuted(false);
+    }, [noteId, memberId, status, log]);
+
+    // ... handleSignalingMessage updates ...
+    const handleSignalingMessage = async (data: SignalingMessage) => {
+        // ... existing switch ...
+        if (data.type === 'PARTICIPANT_LIST') {
+            if (data.payload) {
+                try {
+                    const initialMembers: { memberId: string, isMuted: boolean }[] = JSON.parse(data.payload);
+                    const mapped = initialMembers.map(m => ({
+                        memberId: m.memberId,
+                        isMuted: m.isMuted,
+                        // stream is undefined for remote initially
+                    }));
+                    setParticipants(mapped);
+                    log(`Loaded ${mapped.length} participants (Observer Mode)`);
+                } catch (e) {
+                    errorLog('Failed to parse participant list', e);
+                }
+            }
+        }
+        // ... JOINED logic needs to be careful not to double-add or overwrite if we already have the list
+        // Actually JOINED gives the *full* snapshot too? Yes.
+        // So we can reuse the same logic or just rely on updates.
+        else if (data.type === 'JOINED') {
+            if (data.payload) {
+                try {
+                    const initialMembers: { memberId: string, isMuted: boolean }[] = JSON.parse(data.payload);
+                    const mapped = initialMembers.map(m => ({
+                        memberId: m.memberId,
+                        isMuted: m.isMuted,
+                    }));
+                    setParticipants(mapped);
+                    setStatus('connected'); // IMPORTANT: This confirms WE joined
+                } catch (e) {
+                    errorLog('Error parsing JOINED snapshot', e);
+                }
+            }
+        }
+        // ...
+    };
+
+    // ...
 
     return {
-        status,
-        connect,
-        disconnect,
+        status, // 'connecting' | 'connected' (Voice) | 'disconnected'
+        joinVoice,
+        leaveVoice,
         toggleMute,
         isMuted,
-        participants
+        participants,
+        volume,
+        setVolume,
+        inputVolume,
+        setInputVolume
     };
 };

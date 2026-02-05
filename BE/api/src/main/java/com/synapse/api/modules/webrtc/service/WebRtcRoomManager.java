@@ -10,6 +10,7 @@ import org.kurento.client.WebRtcEndpoint;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -187,6 +188,16 @@ public class WebRtcRoomManager {
             return participants.containsKey(memberId);
         }
 
+        public Set<UUID> getParticipantIds() {
+            return participants.keySet();
+        }
+
+        public List<ParticipantInfo> getParticipantInfos() {
+            return participants.values().stream()
+                    .map(p -> new ParticipantInfo(p.getMemberId(), p.isMuted()))
+                    .collect(java.util.stream.Collectors.toList());
+        }
+
         public void release() {
             participants.values().forEach(p -> {
                 if (p.getEndpoint() != null) {
@@ -215,11 +226,23 @@ public class WebRtcRoomManager {
         private final UUID memberId;
         private final WebRtcEndpoint endpoint;
         private final HubPort hubPort;
+        private boolean isMuted = false;
 
         public Participant(UUID memberId, WebRtcEndpoint endpoint, HubPort hubPort) {
             this.memberId = memberId;
             this.endpoint = endpoint;
             this.hubPort = hubPort;
         }
+
+        public void setMuted(boolean muted) {
+            this.isMuted = muted;
+        }
+    }
+
+    @Getter
+    @lombok.AllArgsConstructor
+    public static class ParticipantInfo {
+        private UUID memberId;
+        private boolean isMuted;
     }
 }
