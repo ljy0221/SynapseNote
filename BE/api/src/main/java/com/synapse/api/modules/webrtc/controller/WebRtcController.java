@@ -56,6 +56,27 @@ public class WebRtcController {
         // Room Manager에 참여 처리
         roomManager.joinRoom(noteId, memberId, memberName);
 
+        // [FIX] 본인에게 JOINED 메시지 전송 (클라이언트 Offer 트리거용)
+        try {
+            WebRtcRoomManager.Room room = roomManager.getRoom(noteId);
+            java.util.List<WebRtcRoomManager.ParticipantInfo> participants = (room != null) ? room.getParticipantInfos()
+                    : java.util.Collections.emptyList();
+
+            String participantsJson = objectMapper.writeValueAsString(participants);
+
+            SignalingMessage joinedMsg = new SignalingMessage();
+            joinedMsg.setType("JOINED");
+            joinedMsg.setNoteId(noteId);
+            joinedMsg.setMemberId(memberId);
+            joinedMsg.setPayload(participantsJson);
+            joinedMsg.setStatus("READY"); // Client checks this to start Offer
+
+            messagingTemplate.convertAndSendToUser(memberId.toString(), "/queue/webrtc", joinedMsg);
+            log.info("Sent JOINED confirmation to member {}", memberId);
+        } catch (Exception e) {
+            log.error("Failed to send JOINED confirmation", e);
+        }
+
         // 같은 룸의 다른 사용자들에게 알림
         WebRtcRoomManager.ParticipantInfo newParticipantInfo = new WebRtcRoomManager.ParticipantInfo(memberId,
                 memberName, false);
