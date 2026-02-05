@@ -104,15 +104,22 @@ const MindMapContent: React.FC = () => {
 
                     // 2. 서버 엣지 -> ReactFlow 엣지 변환
                     if (serverEdges && serverEdges.length > 0) {
+                        // [Refactor] 성능 최적화: Node Lookup Table 생성 (O(N))
+                        // 반복적인 find() 호출(O(N*E))을 방지하기 위해 Map 활용 (O(1))
+                        const nodeMap = new Map<string, Node>();
+                        constructedNodes.forEach(node => nodeMap.set(node.id, node));
+
                         const uniqueEdges = new Map<string, Edge>(); // 중복 방지용 Map
 
                         serverEdges.forEach((e: MindmapEdge) => {
                             // 1. 자기 자신 연결(Self-loop) 무시
                             if (e.fromId === e.toId) return;
 
-                            // 2. 유효한 노드인지 확인
-                            const sourceNode = constructedNodes.find(n => n.id === e.fromId);
-                            const targetNode = constructedNodes.find(n => n.id === e.toId);
+                            // 2. 유효한 노드인지 확인 (O(1) Lookup)
+                            const sourceNode = nodeMap.get(e.fromId);
+                            const targetNode = nodeMap.get(e.toId);
+
+                            // 노드가 존재하지 않으면 엣지 생성 불가
                             if (!sourceNode || !targetNode) return;
 
                             // 3. 고유 키 생성 (중복 방지)
@@ -178,6 +185,10 @@ const MindMapContent: React.FC = () => {
     }, [setNodes, setEdges]);
 
     // 노트 제목 변경/삭제 이벤트 수신
+    // [Critical Note] 데이터 영속성(Persistence) 및 일관성(Consistency) 관련 주의사항
+    // 현재 이 이벤트 핸들러는 '낙관적 업데이트(Optimistic Update)' 혹은 '외부 컴포넌트(Sidebar 등)의 책임'을 가정하고 있습니다.
+    // 즉, Sidebar에서 API 호출이 성공한 후에 이 이벤트를 발송한다고 가정합니다.
+    // 만약 데이터 불일치가 우려된다면, 여기서 상태를 직접 수정하는 대신 `fetchMindmap()`을 호출하여 서버와 동기화하는 것이 안전합니다.
     useEffect(() => {
         const handleNotesChanged = (e: Event) => {
             if (!(e instanceof CustomEvent)) return;
