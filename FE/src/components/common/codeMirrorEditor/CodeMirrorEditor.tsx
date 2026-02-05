@@ -137,11 +137,9 @@ const createCustomTheme = (themeMode: ThemeMode) => {
         '.cm-cursor, .cm-dropCursor': {
             borderLeftColor: config.caret,
         },
-        '&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection': {
-            backgroundColor: config.selection,
-        },
+        // Explicitly transparent when not focused to override defaults
         '.cm-activeLine': {
-            backgroundColor: config.activeLine,
+            backgroundColor: 'transparent',
         },
         '.cm-gutters': {
             backgroundColor: config.gutterBackground,
@@ -151,6 +149,13 @@ const createCustomTheme = (themeMode: ThemeMode) => {
             fontFamily: "'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace",
         },
         '.cm-activeLineGutter': {
+            backgroundColor: 'transparent',
+        },
+        // Only show highlight when focused
+        '&.cm-focused .cm-activeLine': {
+            backgroundColor: config.activeLine,
+        },
+        '&.cm-focused .cm-activeLineGutter': {
             backgroundColor: config.activeLine,
         },
         // 구문 강조 스타일
