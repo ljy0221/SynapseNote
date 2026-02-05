@@ -1,150 +1,65 @@
 import * as Y from 'yjs';
 import { Block, BlockHistory, BlockProperties } from '../models/Block';
-import { loadEnv } from '../config/env';
-import _ from 'lodash';
-import connectionManager, { UserContext } from '../ws/connectionManager';
-import { generateUuidV7 } from '../utils/uuid';
+import { Note } from '../models/Note';
 import { Binary } from 'mongodb';
+import { v7 as uuidv7 } from 'uuid';
+import * as _ from 'lodash';
 
-/**
- * ID(Buffer 혹은 String)를 일관된 소문자 Hex 문자열로 변환
- */
+// UUID 유틸리티
+function uuidToBuffer(uuid: string): Binary | string {
+  if (!uuid) return uuid;
+  // 이미 Binary이면 그대로 반환
+  if (typeof uuid === 'object' && (uuid as any)._bsontype === 'Binary') return uuid;
+  // 36자 문자열이면 변환
+  if (typeof uuid === 'string' && uuid.length === 36) {
+    return new Binary(Buffer.from(uuid.replace(/-/g, ''), 'hex'), 4);
+  }
+  return uuid;
+}
+
+function toUuidString(bufferOrString: any): string {
+  if (!bufferOrString) return '';
+  if (typeof bufferOrString === 'string') return bufferOrString;
+  if (bufferOrString._bsontype === 'Binary') {
+    const hex = bufferOrString.toString('hex');
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  }
+  return '';
+}
+
 function normalizeToHex(id: any): string {
   if (!id) return '';
-  if (Buffer.isBuffer(id)) return id.toString('hex').toLowerCase();
-
-  // mongodb Binary 객체 대응
-  if (id._bsontype === 'Binary') {
-    return id.value(true).toString('hex').toLowerCase();
-  }
-
   if (typeof id === 'string') return id.replace(/-/g, '').toLowerCase();
-
-  // 기타 객체 (Mongoose 가공 객체 등) 대응
-  if (id.buffer && Buffer.isBuffer(id.buffer)) return id.buffer.toString('hex').toLowerCase();
-
-  return id.toString().replace(/-/g, '').toLowerCase();
+  if (id._bsontype === 'Binary') return id.toString('hex').toLowerCase();
+  return '';
 }
 
-/**
- * UUID 문자열을 MongoDB Binary(subtype 04 - Standard UUID) 호환 객체로 변환
- * - Java(Spring Boot)의 "standard" UUID representation과 호환
- */
-function uuidToBuffer(uuid: string): Binary | string {
-  if (!uuid || typeof uuid !== 'string') return uuid;
-  const hex = uuid.replace(/-/g, '');
-  if (hex.length !== 32) return uuid;
-  try {
-    const buffer = Buffer.from(hex, 'hex');
-    return new Binary(buffer, 4); // Subtype 4 (Standard UUID) 강제
-  } catch (e) {
-    return uuid;
-  }
+function generateUuidV7(): string {
+  return uuidv7();
 }
 
-/**
- * ID(Buffer 혹은 String)를 하이픈이 포함된 UUID 형식문자열로 변환
- */
-function toUuidString(val: any): string {
-  if (!val) return '';
-  const hex = normalizeToHex(val);
-
-  // 손상된 데이터(32자 미만 혹은 깨진 데이터) 발견 시 UUID v7으로 "치유(Heal)"
-  if (hex.length !== 32 || hex.includes('efbfbd')) {
-    const healedId = generateUuidV7();
-    console.warn(`[Bridge] Invalid/Corrupted ID detected (${hex}). Healed to: ${healedId}`);
-    return healedId;
-  }
-
-  return hex.replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
-}
-
-// Yjs에서 넘어오는 블록 데이터 구조 인터페이스
-interface YjsBlockData {
-  blockId: string;
-  _class: string;
-  properties: BlockProperties;
-  bookmark?: boolean;
-  outputHistory?: Array<any>;
-  lastOutput?: string;
-  lastExecutedAt?: string;
+interface UserContext {
+  userId: string;
+  name: string;
 }
 
 class BridgeService {
-  private debounceTimers: Map<string, NodeJS.Timeout>;
-  private readonly DEBOUNCE_TIME: number;
+  private debounceTimers: Map<string, NodeJS.Timeout> = new Map();
+  private readonly DEBOUNCE_TIME = 2000;
 
   constructor() {
-    this.debounceTimers = new Map();
-    const env = loadEnv();
-    this.DEBOUNCE_TIME = env.MONGO_SYNC_DEBOUNCE_MS;
+    this.handleUpdate = this.handleUpdate.bind(this);
   }
 
-  /**
-   * DB에서 데이터를 불러와 Yjs 문서를 초기화 (서버 시작 시 1회)
-   */
-  public async initDocFromDB(noteId: string, yDoc: Y.Doc): Promise<void> {
-    try {
-      console.log(`[Bridge] initDocFromDB started for ${noteId}`);
+  public handleUpdate(docName: string, yDoc: Y.Doc, origin: any) {
+    if (origin === 'from-db') return;
+    if (!docName.startsWith('note:')) return;
 
-      const queryId = uuidToBuffer(noteId); // Standard UUID (Subtype 04)로 조회
-      const blocks = await Block.find({ noteId: queryId }).sort({ order: 1 }).lean();
+    const noteId = docName.split(':')[1];
 
-      if (!blocks || blocks.length === 0) {
-        console.log(`[Bridge] No existing blocks found for ${noteId}. Starting fresh.`);
-        return;
-      }
+    // User Context extraction (if available in origin)
+    // const userContext = ...
 
-      const yblocks = yDoc.getArray<Y.Map<any>>('blocks');
-
-      // 이미 데이터가 있다면 (다른 유저에 의해 이미 생성되었거나, 동기화가 진행된 경우)
-      // DB 로딩을 생략하여 실시간 편집 중인 데이터를 보호함
-      if (yblocks.length > 0) {
-        console.log(`[Bridge] Doc ${noteId} already has ${yblocks.length} blocks. Skipping DB population.`);
-        return;
-      }
-
-      yDoc.transact(() => {
-        blocks.forEach((dbBlock: any) => {
-          const blockMap = new Y.Map();
-
-          // ID 정규화 (UUID String으로 변환)
-          const bIdStr = toUuidString(dbBlock.blockId);
-          const nIdStr = toUuidString(dbBlock.noteId);
-
-          blockMap.set("blockId", bIdStr);
-          blockMap.set("noteId", nIdStr);
-          blockMap.set("_class", dbBlock._class);
-          blockMap.set("bookmark", dbBlock.bookmark ?? false);
-          blockMap.set("outputHistory", dbBlock.outputHistory || []);
-          blockMap.set("order", dbBlock.order ?? 0);
-
-          const propertiesMap = new Y.Map();
-          if (dbBlock.properties) {
-            Object.entries(dbBlock.properties).forEach(([key, value]) => {
-              if (key === 'content' || key === 'code') {
-                const yText = new Y.Text();
-                yText.insert(0, value as string);
-                propertiesMap.set(key, yText);
-              } else {
-                propertiesMap.set(key, value);
-              }
-            });
-          }
-          blockMap.set("properties", propertiesMap);
-
-          yblocks.push([blockMap]);
-        });
-      });
-
-      console.log(`[Bridge] initDocFromDB success. Blocks loaded: ${blocks.length}`);
-    } catch (error) {
-      console.error(`[Bridge Error] initDocFromDB failed for ${noteId}:`, error);
-    }
-  }
-
-  public handleUpdate(noteId: string, yDoc: Y.Doc): void {
-    console.log(`[Bridge] handleUpdate called for ${noteId}`);
     if (this.debounceTimers.has(noteId)) {
       clearTimeout(this.debounceTimers.get(noteId)!);
     }
@@ -167,23 +82,119 @@ class BridgeService {
         return;
       }
 
-      import { Block, BlockHistory, BlockProperties } from '../models/Block';
-      import { Note } from '../models/Note'; // [New]
-      import { loadEnv } from '../config/env';
+      const queryNoteId = uuidToBuffer(noteId);
+      const dbBlocks = await Block.find({ noteId: queryNoteId }).lean();
 
-// ... (existing helper functions)
+      // [Fix] Explicit map creation to avoid syntax errors
+      const safeDbBlocks = Array.isArray(dbBlocks) ? dbBlocks : [];
+      const dbBlocksMap = new Map();
+      safeDbBlocks.forEach((b: any) => {
+        dbBlocksMap.set(normalizeToHex(b.blockId), b);
+      });
 
-  private async syncToDB(noteId: string, yDoc: Y.Doc, userContext?: UserContext): Promise<void> {
-    try {
-      const yArray = yDoc.getArray<any>('blocks');
-      // ... (rest of logic)
+      const bulkOps: any[] = [];
+      const currentBlockIds = new Set<string>();
+      const processedBlockIds = new Set<string>();
+
+      for (let i = 0; i < currentBlocks.length; i++) {
+        const yBlock = currentBlocks[i];
+
+        if (!yBlock.blockId) {
+          const newId = generateUuidV7();
+          const yBlockMap = yArray.get(i);
+          if (yBlockMap instanceof Y.Map) {
+            yBlockMap.set('blockId', newId);
+            yBlock.blockId = newId;
+          } else {
+            continue;
+          }
+        }
+
+        const validBlockId = toUuidString(yBlock.blockId);
+        const blockIdHex = normalizeToHex(validBlockId);
+        currentBlockIds.add(blockIdHex);
+
+        if (processedBlockIds.has(blockIdHex)) {
+          continue;
+        }
+        processedBlockIds.add(blockIdHex);
+
+        const springClass = yBlock._class;
+        const existingBlock = dbBlocksMap.get(blockIdHex);
+
+        const cleanProps: any = {};
+        if (yBlock.properties) {
+          Object.entries(yBlock.properties).forEach(([key, val]) => {
+            cleanProps[key] = val;
+          });
+        }
+
+        const rootFields: any = {
+          outputHistory: yBlock.outputHistory || (springClass === 'code' ? [] : undefined)
+        };
+
+        if (springClass === 'code') {
+          if (yBlock.lastOutput) rootFields.lastOutput = yBlock.lastOutput;
+          if (yBlock.lastExecutedAt) rootFields.lastExecutedAt = yBlock.lastExecutedAt;
+        }
+
+        if (existingBlock) {
+          const isPropsChanged = !_.isEqual(existingBlock.properties, cleanProps);
+          const isMetadataChanged = existingBlock._class !== springClass ||
+            (existingBlock as any).bookmark !== (yBlock.bookmark ?? false);
+
+          if (isPropsChanged || isMetadataChanged || existingBlock.order !== i) {
+            bulkOps.push({
+              updateOne: {
+                filter: { _id: existingBlock._id },
+                update: {
+                  $set: {
+                    blockId: uuidToBuffer(validBlockId),
+                    _class: springClass,
+                    properties: cleanProps,
+                    bookmark: yBlock.bookmark ?? false,
+                    order: i,
+                    ...rootFields
+                  }
+                }
+              }
+            });
+          }
+        } else {
+          bulkOps.push({
+            insertOne: {
+              document: {
+                _class: springClass,
+                noteId: queryNoteId,
+                blockId: uuidToBuffer(validBlockId),
+                properties: cleanProps,
+                bookmark: yBlock.bookmark ?? false,
+                order: i,
+                ...rootFields
+              }
+            }
+          });
+        }
+      }
+
+      // Delete blocks not in Yjs
+      const toDeleteOps = dbBlocks
+        .filter((b: any) => !currentBlockIds.has(normalizeToHex(b.blockId)))
+        .map((b: any) => ({
+          deleteOne: {
+            filter: { _id: b._id }
+          }
+        }));
+
+      if (toDeleteOps.length > 0) {
+        bulkOps.push(...toDeleteOps);
+      }
 
       if (bulkOps.length > 0) {
         await Block.bulkWrite(bulkOps);
         console.log(`[Bridge] Sync Success for ${noteId}. Updates: ${bulkOps.length}`);
 
-        // [New] Note 컬렉션의 updatedAt 갱신
-        const queryNoteId = uuidToBuffer(noteId);
+        // [New] Note updatedAt update logic
         await Note.updateOne(
           { _id: queryNoteId },
           { $set: { updatedAt: new Date() } }
