@@ -35,6 +35,7 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import { useCreateNote } from '../../../hooks/useCreateNote';
 import { useNoteStore } from '../../../store/useNoteStore';
+import { useAuthStore } from '../../../store/useAuthStore';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -48,6 +49,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, showToggle =
   const activeNoteId = routeNoteId ?? null;
 
   const { notes, setNotes } = useNoteStore();
+  const { userInfo, accessToken } = useAuthStore();
   const [favoriteNoteIds, setFavoriteNoteIds] =
     useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
@@ -379,7 +381,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, showToggle =
             </div>
           )}
 
-          <VoiceChannelSidebar noteId={activeNoteId} />
+
+          {activeNoteId && userInfo && accessToken ? (
+            <VoiceChannelSidebar
+              noteId={activeNoteId}
+              accessToken={accessToken}
+              user={{ memberId: userInfo.memberId, name: userInfo.name }}
+              getMemberName={(id) =>
+                id === userInfo.memberId
+                  ? userInfo.name
+                  : `User ${id.slice(0, 4)}`
+              }
+            />
+          ) : null}
         </div>
       </aside>
 
