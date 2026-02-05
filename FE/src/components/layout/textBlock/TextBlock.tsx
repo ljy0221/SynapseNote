@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import { useModalStore } from '../../../store/useModalStore';
 import './TextBlock.css';
+import { BlockBookmarkButton } from '../../common/blockBookmarkButton/BlockBookmarkButton';
 
 interface TextBlockProps {
     id: number | string;

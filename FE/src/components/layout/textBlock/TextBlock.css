@@ -532,3 +532,28 @@
     opacity: 0;
     overflow: hidden;
 }
+
+/* Bookmark Button Container */
+.block-actions-right {
+    display: flex;
+    align-items: center;
+    padding-top: 8px;
+    /* Slightly adjust alignment */
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+/* Show actions on hover */
+.text-block-wrapper:hover .block-actions-right {
+    opacity: 1;
+}
+
+/* Always show actions if bookmarked */
+.text-block-wrapper.is-bookmarked .block-actions-right {
+    opacity: 1;
+}
+
+/* Make sure the bookmark button itself looks active */
+.text-block-wrapper.is-bookmarked .bookmark-btn {
+    color: var(--color-point, #f59e0b);
+}
