@@ -7,6 +7,7 @@ export interface MindmapNode {
   x: number;
   y: number;
   priority: number;
+  isShared?: boolean;
 }
 
 /** 마인드맵 엣지 */

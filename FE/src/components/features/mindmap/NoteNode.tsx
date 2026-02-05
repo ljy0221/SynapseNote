@@ -14,6 +14,7 @@ export interface NoteNodeData {
     title: string;
     directoryPath?: string;
     connectionCount?: number; // 연결된 노드 개수
+    isShared?: boolean; // 공유 여부
 }
 
 /**
@@ -60,7 +61,7 @@ const NoteNode: React.FC<NodeProps<NoteNodeData>> = ({ id, data, selected, isCon
 
     return (
         <div
-            className={`note-node-container ${selected ? 'selected' : ''}`}
+            className={`note-node-container ${selected ? 'selected' : ''} ${data.isShared ? 'shared' : ''}`}
             style={{
                 '--scale': scale,
                 animationDelay: randomDelay,
@@ -68,7 +69,7 @@ const NoteNode: React.FC<NodeProps<NoteNodeData>> = ({ id, data, selected, isCon
             } as React.CSSProperties}
         >
             {/* [New] 육각형 배경 (SVG) */}
-            <HexagonBackground color={borderColor} level={level} />
+            <HexagonBackground color={borderColor} level={level} isShared={data.isShared} />
 
             {/* Selected Tooltip (Name Tag with Connector) */}
             {selected && (

@@ -40,6 +40,10 @@
     --node-color-mid: var(--node-color-rank-3);
     --node-color-high: var(--node-color-rank-4);
     --node-color-master: var(--node-color-rank-5);
+
+    /* [Shared Note] */
+    --node-shared-border: #f59e0b;
+    /* Match --color-point (Amber) */
 }
 
 /* [쿠키 모드] 아몬드 & 카라멜 - 따뜻하고 맛있는 색감 */
@@ -79,6 +83,10 @@
     --node-color-mid: var(--node-color-rank-3);
     --node-color-high: var(--node-color-rank-4);
     --node-color-master: var(--node-color-rank-5);
+
+    /* [Shared Note] */
+    --node-shared-border: #fbbf24;
+    /* Match --color-point (Golden Yellow) */
 }
 
 /* [리얼 다크 모드] 모노크롬 & 메탈릭 */
@@ -115,6 +123,10 @@
     --node-color-mid: var(--node-color-rank-3);
     --node-color-high: var(--node-color-rank-4);
     --node-color-master: var(--node-color-rank-5);
+
+    /* [Shared Note] */
+    --node-shared-border: #ffffff;
+    /* Match --color-point (White) */
 }
 
 /* [딥블루 모드] 사이버펑크 & 네온 */
@@ -151,4 +163,8 @@
     --node-color-mid: var(--node-color-rank-3);
     --node-color-high: var(--node-color-rank-4);
     --node-color-master: var(--node-color-rank-5);
+
+    /* [Shared Note] */
+    --node-shared-border: #22d3ee;
+    /* Cyan 400 */
 }
