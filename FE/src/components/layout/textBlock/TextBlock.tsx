@@ -83,7 +83,8 @@ const TextBlock: React.FC<TextBlockProps> = ({
     content,
     onUpdate,
     onFocus,
-    onDelete,
+    onDelete: _onDelete,
+    // draggable,
     // draggable,
     // onDragStart,
     // onDragOver,
@@ -171,7 +172,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 return false;
             }
         },
-        onSelectionUpdate: ({ editor }) => {
+        onSelectionUpdate: () => {
             // 확실하게 상태 업데이트를 트리거하기 위해 forceUpdate 패턴 사용
             // 여기서는 간단히 editor 상태가 변경되었음을 알림
             // 그러나 useEditor는 내부적으로 상태 관리를 함.
@@ -198,6 +199,12 @@ const TextBlock: React.FC<TextBlockProps> = ({
         }
     }, [shouldFocus, editor]);
     useEffect(() => {
+        // [Fix] IME Duplication & Content Disappearance
+        // Check editor.isFocused directly from the Tiptap instance. 
+        // This is the source of truth. If the editor has focus, DO NOT touch the content
+        // based on external props. The user is typing.
+        if (editor && editor.isFocused) return;
+
         if (editor && content !== editor.getHTML()) {
             editor.commands.setContent(content);
         }
