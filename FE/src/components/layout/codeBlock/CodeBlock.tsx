@@ -94,9 +94,6 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
         onToggleBookmark?.();
     };
 
-    useEffect(() => {
-        if (code !== undefined) setEditedCode(code);
-    }, [code]);
 
     useEffect(() => {
         console.log(`[CodeBlock] Mount - ID: ${id}`);

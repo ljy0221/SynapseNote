@@ -129,8 +129,16 @@ export const useYjsStore = (noteId: string | undefined) => {
     provider.on('sync', onSync);
 
     // ✅ 블록 배열 변경 관찰 (실시간 반영 핵심)
+    // 🔥 Transaction origin 체크 추가: 로컬 변경은 무시하여 무한 루프 방지
     const onBlocksChanged = (event: Y.YEvent<any>[], transaction: Y.Transaction) => {
-      // console.log('[Yjs] Blocks changed', event, transaction.origin);
+      // 로컬에서 발생한 트랜잭션은 무시 (이미 로컬 상태는 컴포넌트에서 관리)
+      if (transaction.origin === 'local') {
+        console.log('[Yjs] Ignoring local transaction to prevent loop');
+        return;
+      }
+
+      // 원격 변경사항만 React 상태에 반영
+      console.log('[Yjs] Remote change detected, updating blocks state');
       updateBlocksState();
     };
     yBlocks.observeDeep(onBlocksChanged);
@@ -166,6 +174,7 @@ export const useYjsStore = (noteId: string | undefined) => {
     if (!doc) return;
     const yBlocks = doc.getArray<YBlockMap>('blocks');
 
+    // 🔥 Transaction origin 'local' 추가
     doc.transact(() => {
       const newBlockMap = new Y.Map();
       const newBlockId = crypto.randomUUID();
@@ -195,7 +204,7 @@ export const useYjsStore = (noteId: string | undefined) => {
       }
 
       yBlocks.insert(insertIndex, [newBlockMap]);
-    });
+    }, 'local');
   }, [noteId]); // Removed blocks dependency
 
   // 블록 업데이트
@@ -218,6 +227,7 @@ export const useYjsStore = (noteId: string | undefined) => {
     const properties = targetBlock.get('properties') as Y.Map<any>;
     const type = targetBlock.get('_class');
 
+    // 🔥 Transaction origin 'local' 추가: 로컬 변경임을 표시
     doc.transact(() => {
       let yText: Y.Text | undefined;
 
@@ -230,7 +240,7 @@ export const useYjsStore = (noteId: string | undefined) => {
       if (currentStr !== newContent) {
         applyTextDiff(yText, currentStr, newContent);
       }
-    });
+    }, 'local'); // ← 로컬 변경 마커
   }, []);
 
   // 블록 언어 업데이트
@@ -255,9 +265,10 @@ export const useYjsStore = (noteId: string | undefined) => {
 
     if (type !== 'code') return;
 
+    // 🔥 Transaction origin 'local' 추가
     doc.transact(() => {
       properties.set('language', newLanguage);
-    });
+    }, 'local');
   }, []);
 
   // 블록 삭제
@@ -266,23 +277,27 @@ export const useYjsStore = (noteId: string | undefined) => {
     if (!doc) return;
     const yBlocks = doc.getArray<YBlockMap>('blocks');
 
-    // Remove reliance on 'blocks' state index
-    let targetIndex = -1;
-    let i = 0;
-    for (const block of yBlocks) {
-      if (block.get('blockId') === blockId) {
-        targetIndex = i;
-        break;
+    // 🔥 Transaction origin 'local' 추가
+    doc.transact(() => {
+      // Remove reliance on 'blocks' state index
+      let targetIndex = -1;
+      let i = 0;
+      for (const block of yBlocks) {
+        if (block.get('blockId') === blockId) {
+          targetIndex = i;
+          break;
+        }
+        i++;
       }
-      i++;
-    }
 
-    if (targetIndex !== -1) {
-      yBlocks.delete(targetIndex, 1);
-    } else {
-      // Fallback or log if needed
-      console.warn('[Yjs] Block to delete not found in YDoc:', blockId);
-    }
+      if (targetIndex !== -1) {
+        yBlocks.delete(targetIndex, 1);
+        console.log(`[Yjs] Block deleted locally: ${blockId}`);
+      } else {
+        // Fallback or log if needed
+        console.warn('[Yjs] Block to delete not found in YDoc:', blockId);
+      }
+    }, 'local');
   }, []);
 
   // 블록 이동
@@ -293,6 +308,7 @@ export const useYjsStore = (noteId: string | undefined) => {
 
     if (fromIndex === toIndex) return;
 
+    // 🔥 Transaction origin 'local' 추가
     doc.transact(() => {
       const targetBlock = yBlocks.get(fromIndex);
       if (!targetBlock) return;
@@ -325,7 +341,7 @@ export const useYjsStore = (noteId: string | undefined) => {
         yBlocks.insert(toIndex, [newBlockMap]);
         yBlocks.delete(fromIndex + 1, 1);
       }
-    });
+    }, 'local');
   }, []);
 
   // 여러 블록 한꺼번에 추가 (batch)
@@ -334,6 +350,7 @@ export const useYjsStore = (noteId: string | undefined) => {
     if (!doc) return;
     const yBlocks = doc.getArray<YBlockMap>('blocks');
 
+    // 🔥 Transaction origin 'local' 추가
     doc.transact(() => {
       const mapsToInsert = blocksToInsert.map(block => {
         const newBlockMap = new Y.Map();
@@ -358,7 +375,7 @@ export const useYjsStore = (noteId: string | undefined) => {
       });
 
       yBlocks.push(mapsToInsert);
-    });
+    }, 'local');
   }, [noteId]);
 
 
