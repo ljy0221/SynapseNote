@@ -171,7 +171,12 @@ class BridgeService {
       const dbBlocks = await Block.find({ noteId: queryNoteId }).lean();
 
       // DB 데이터 맵 생성 시 blockId를 Hex로 정규화하여 매칭률 향상
-      const dbBlocksMap = new Map(dbBlocks.map((b: any) => [normalizeToHex(b.blockId), b]));
+      const safeDbBlocks = Array.isArray(dbBlocks) ? dbBlocks : [];
+      const dbBlocksMap = new Map();
+      safeDbBlocks.forEach((b: any) => {
+        dbBlocksMap.set(normalizeToHex(b.blockId), b);
+      });
+
       const bulkOps: any[] = [];
       const currentBlockIds = new Set<string>();
       const processedBlockIds = new Set<string>(); // 배치 내 중복 처리 방지
