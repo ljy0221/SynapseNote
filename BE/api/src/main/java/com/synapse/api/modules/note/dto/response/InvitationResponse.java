@@ -19,10 +19,22 @@ public record InvitationResponse(
         NoteRole role,
         InvitationStatus status,
         LocalDateTime expiresAt,
-        LocalDateTime createdAt
-) {
+        LocalDateTime createdAt,
+        com.synapse.api.modules.member.dto.response.ProfileResponse invitedMember) {
     public static InvitationResponse from(Invitation invitation, String baseUrl) {
         String invitationUrl = baseUrl + "/notes/invitation/" + invitation.getInvitationToken();
+
+        com.synapse.api.modules.member.dto.response.ProfileResponse memberProfile = null;
+        if (invitation.getInvitedMember() != null) {
+            memberProfile = com.synapse.api.modules.member.dto.response.ProfileResponse.builder()
+                    .id(invitation.getInvitedMember().getId())
+                    .email(invitation.getInvitedMember().getEmail())
+                    .name(invitation.getInvitedMember().getName())
+                    .theme(invitation.getInvitedMember().getTheme())
+                    .provider(invitation.getInvitedMember().getProvider())
+                    .createdAt(invitation.getInvitedMember().getCreatedAt())
+                    .build();
+        }
 
         return InvitationResponse.builder()
                 .id(invitation.getId())
@@ -35,6 +47,7 @@ public record InvitationResponse(
                 .status(invitation.getStatus())
                 .expiresAt(invitation.getExpiresAt())
                 .createdAt(invitation.getCreatedAt())
+                .invitedMember(memberProfile)
                 .build();
     }
 }
