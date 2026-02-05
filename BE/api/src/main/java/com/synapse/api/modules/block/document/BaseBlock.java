@@ -27,7 +27,7 @@ import java.util.UUID;
                 @JsonSubTypes.Type(value = CodeBlock.class, name = "code"),
                 @JsonSubTypes.Type(value = TextBlock.class, name = "text"),
 })
-public abstract class BaseBlock {
+public class BaseBlock {
 
         @Id
         private String id; // MongoDB ObjectId
@@ -52,7 +52,9 @@ public abstract class BaseBlock {
         private LocalDateTime deletedAt;
 
         // DB에는 저장하지 않고, JSON 응답에만 포함 (하위 클래스에서 구현)
-        public abstract BlockType getType();
+        public BlockType getType() {
+                return BlockType.UNKNOWN;
+        }
 
         // Soft Delete
         public void delete() {
