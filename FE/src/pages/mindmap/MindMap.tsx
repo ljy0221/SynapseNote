@@ -24,7 +24,7 @@ import './MindMap.css';
 import { getMindmapApi, syncMindmapApi } from '../../api/mindmap/Mindmap.api';
 import { SyncMindmapRequest } from '../../types/mindmap/Requests';
 import { MindmapNode, MindmapEdge } from '../../types/mindmap/Mindmap';
-
+import { NOTES_CHANGED_EVENT } from '../../events/NotesEvents';
 
 const MindMapContent: React.FC = () => {
     // 1. 상태 관리
@@ -160,6 +160,41 @@ const MindMapContent: React.FC = () => {
         };
 
         fetchMindmap();
+    }, [setNodes, setEdges]);
+
+    // 노트 제목 변경/삭제 이벤트 수신
+    useEffect(() => {
+        const handleNotesChanged = (e: Event) => {
+            if (!(e instanceof CustomEvent)) return;
+            const detail = e.detail;
+
+            // UPDATE_TITLE 이벤트 처리
+            if (detail?.type === 'UPDATE_TITLE') {
+                const { noteId, title } = detail;
+                setNodes((nds) =>
+                    nds.map((node) =>
+                        node.id === noteId
+                            ? { ...node, data: { ...node.data, title } }
+                            : node
+                    )
+                );
+            }
+
+            // DELETE_NOTE 이벤트 처리
+            if (detail?.type === 'DELETE_NOTE') {
+                const { noteId } = detail;
+                setNodes((nds) => nds.filter((node) => node.id !== noteId));
+                // 해당 노드와 연결된 엣지도 삭제
+                setEdges((eds) => eds.filter((edge) =>
+                    edge.source !== noteId && edge.target !== noteId
+                ));
+            }
+        };
+
+        window.addEventListener(NOTES_CHANGED_EVENT, handleNotesChanged);
+        return () => {
+            window.removeEventListener(NOTES_CHANGED_EVENT, handleNotesChanged);
+        };
     }, [setNodes, setEdges]);
 
     // 3. [Modified] 모달 상태 제거 (Global Store 사용)
@@ -841,6 +876,24 @@ const MindMapContent: React.FC = () => {
                     onNodeDragStop={onNodeDragStop}
                     isEditMode={isEditMode}
                 />
+
+                {/* 연결 모드 안내문 */}
+                {isEditMode && isConnectMode && (
+                    <div className="mode-guidance-top">
+                        {connectSource
+                            ? `'${connectSource.data?.title || '선택된 노드'}'와 연결할 대상 노드를 클릭하세요`
+                            : '연결할 첫 번째 노드를 클릭하세요'}
+                    </div>
+                )}
+
+                {/* 연결 해제 모드 안내문 */}
+                {isEditMode && isDisconnectMode && (
+                    <div className="mode-guidance-top">
+                        {disconnectSource
+                            ? `'${disconnectSource.data?.title || '선택된 노드'}'와 연결 해제할 대상 노드를 클릭하세요`
+                            : '연결 해제할 첫 번째 노드를 클릭하세요'}
+                    </div>
+                )}
 
                 {/* 편집 모드 힌트 */}
 

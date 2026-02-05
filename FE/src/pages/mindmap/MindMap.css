@@ -228,3 +228,37 @@
     color: var(--color-point);
     border-color: var(--color-point);
 }
+
+/* [New] 연결 모드 상단 안내문 */
+.mode-guidance-top {
+    position: absolute;
+    top: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+
+    padding: 12px 24px;
+    background-color: var(--color-main);
+    border: 2px solid var(--color-point);
+    border-radius: 12px;
+
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-point);
+
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
