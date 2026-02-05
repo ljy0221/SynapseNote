@@ -1,7 +1,7 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
-import { BlockData, BlockType } from '../pages/note/Note';
+import { BlockData, BlockType } from '../types/note/Block';
 import { useAuthStore } from '../store/useAuthStore';
 
 // Yjs Map에서 사용하는 키 정의
@@ -154,8 +154,9 @@ export const useYjsStore = (noteId: string | undefined) => {
   }, [noteId, wsUrl, accessToken]); // ✅ 토큰 변경(리프레시) 시 재연결
 
   // 블록 추가
-  const addBlock = (prevBlockId: number | string | null, type: BlockType, initialContent: string | undefined) => {
+  const addBlock = useCallback((prevBlockId: number | string | null, type: BlockType, initialContent: string | undefined) => {
     const doc = docRef.current;
+    if (!doc) return;
     const yBlocks = doc.getArray<YBlockMap>('blocks');
 
     doc.transact(() => {
@@ -179,17 +180,20 @@ export const useYjsStore = (noteId: string | undefined) => {
 
       let insertIndex = yBlocks.length;
       if (prevBlockId) {
-        const prevIndex = blocks.findIndex((b) => b.id === prevBlockId);
+        // Find index from the current Yjs array to avoid depending on React state
+        const currentYBlocks = yBlocks.toArray();
+        const prevIndex = currentYBlocks.findIndex((b) => b.get('blockId') === prevBlockId);
         if (prevIndex !== -1) insertIndex = prevIndex + 1;
       }
 
       yBlocks.insert(insertIndex, [newBlockMap]);
     });
-  };
+  }, [noteId]); // Removed blocks dependency
 
   // 블록 업데이트
-  const updateBlock = (blockId: number | string, newContent: string) => {
+  const updateBlock = useCallback((blockId: number | string, newContent: string) => {
     const doc = docRef.current;
+    if (!doc) return;
     const yBlocks = doc.getArray<YBlockMap>('blocks');
 
     // Find the YBlock directly
@@ -219,11 +223,12 @@ export const useYjsStore = (noteId: string | undefined) => {
         applyTextDiff(yText, currentStr, newContent);
       }
     });
-  };
+  }, []);
 
   // 블록 삭제
-  const deleteBlock = (blockId: number | string) => {
+  const deleteBlock = useCallback((blockId: number | string) => {
     const doc = docRef.current;
+    if (!doc) return;
     const yBlocks = doc.getArray<YBlockMap>('blocks');
 
     // Remove reliance on 'blocks' state index
@@ -243,11 +248,12 @@ export const useYjsStore = (noteId: string | undefined) => {
       // Fallback or log if needed
       console.warn('[Yjs] Block to delete not found in YDoc:', blockId);
     }
-  };
+  }, []);
 
   // 블록 이동
-  const moveBlock = (fromIndex: number, toIndex: number) => {
+  const moveBlock = useCallback((fromIndex: number, toIndex: number) => {
     const doc = docRef.current;
+    if (!doc) return;
     const yBlocks = doc.getArray<YBlockMap>('blocks');
 
     if (fromIndex === toIndex) return;
@@ -285,12 +291,45 @@ export const useYjsStore = (noteId: string | undefined) => {
         yBlocks.delete(fromIndex + 1, 1);
       }
     });
-  };
+  }, []);
+
+  // 여러 블록 한꺼번에 추가 (batch)
+  const addBlocksBatch = useCallback((blocksToInsert: { type: BlockType; content: string }[]) => {
+    const doc = docRef.current;
+    if (!doc) return;
+    const yBlocks = doc.getArray<YBlockMap>('blocks');
+
+    doc.transact(() => {
+      const mapsToInsert = blocksToInsert.map(block => {
+        const newBlockMap = new Y.Map();
+        const newBlockId = crypto.randomUUID();
+
+        newBlockMap.set('blockId', newBlockId);
+        newBlockMap.set('noteId', noteId);
+        newBlockMap.set('_class', block.type);
+
+        const properties = new Y.Map();
+        if (block.type === 'code') {
+          properties.set('code', new Y.Text(''));
+          properties.set('language', 'javascript');
+          properties.set('version', '17');
+          properties.set('executionMode', 'local');
+        } else {
+          properties.set('content', new Y.Text(block.content));
+        }
+        newBlockMap.set('properties', properties);
+        return newBlockMap;
+      });
+
+      yBlocks.push(mapsToInsert);
+    });
+  }, [noteId]);
 
   return {
     blocks,
     isSynced,
     addBlock,
+    addBlocksBatch,
     updateBlock,
     deleteBlock,
     moveBlock,

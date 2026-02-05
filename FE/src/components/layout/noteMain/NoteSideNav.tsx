@@ -2,7 +2,7 @@ import React from 'react';
 import { Type, Code, Link, Users, Sparkles } from 'lucide-react';
 import './NoteSideNav.css';
 
-export type BlockType = 'text' | 'code';
+import { BlockType } from '../../../types/note/Block';
 
 interface NoteSideNavProps {
     onAddBlock: (type: BlockType) => void;
