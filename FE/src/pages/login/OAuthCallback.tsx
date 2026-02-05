@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { socialLogin } from '../../api/authApi';
+import { acceptInvitationApi } from '../../api/notes/AcceptInvitation.api';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useToastStore } from '../../store/useToastStore';
 
@@ -22,9 +23,11 @@ const OAuthCallback: React.FC = () => {
       return;
     }
 
-    // 1️⃣ Browser 환경 → Deep Link로 Electron 전달
-    if (!window.electronAPI) {
-      console.log('[OAuthCallback] Running in Browser -> Redirecting to Deep Link');
+    const state = searchParams.get('state');
+
+    // 1️⃣ Browser 환경 + Electron 요청인 경우 → Deep Link로 전달
+    if (!window.electronAPI && state === 'ELECTRON') {
+      console.log('[OAuthCallback] Electron Login Request -> Redirecting to Deep Link');
 
       const deepLink = `synapse://auth/${provider}/callback?code=${code}`;
       window.location.href = deepLink;
@@ -43,6 +46,9 @@ const OAuthCallback: React.FC = () => {
       try {
         console.log(`[OAuth] Processing login for ${provider} with code...`);
 
+        // state가 ELECTRON이면 ELECTRON, 아니면(WEB or undefined) WEB
+        // 단, 이미 위에서 ELECTRON인 경우 앱으로 리다이렉트했으므로, 여기 도달했다는 것은 WEB임.
+        // 하지만 Electron 앱 내부에서 실행된 경우(window.electronAPI 존재)는 ELECTRON임.
         const platform = window.electronAPI ? 'ELECTRON' : 'WEB';
         const result = await socialLogin(provider, code, platform);
 
@@ -52,7 +58,23 @@ const OAuthCallback: React.FC = () => {
         console.log('[OAuth] Login success');
 
         const redirectUrl = localStorage.getItem('loginRedirectUrl');
-        if (redirectUrl) {
+        const pendingInviteCode = sessionStorage.getItem('pendingInviteCode');
+
+        if (pendingInviteCode) {
+          console.log('[OAuth] Found pending invite code, redirecting to processing:', pendingInviteCode);
+          sessionStorage.removeItem('pendingInviteCode');
+
+          try {
+            await acceptInvitationApi(pendingInviteCode);
+            showToast('초대가 성공적으로 수락되었습니다!', 'success');
+            navigate('/home', { replace: true });
+          } catch (invitationError: any) {
+            console.error('[OAuth] Failed to process pending invitation:', invitationError);
+            const msg = invitationError.response?.data?.message || '로그인은 성공했으나 초대 수락에 실패했습니다.';
+            showToast(msg, 'error');
+            navigate('/home', { replace: true });
+          }
+        } else if (redirectUrl) {
           localStorage.removeItem('loginRedirectUrl');
           navigate(redirectUrl, { replace: true });
         } else {
