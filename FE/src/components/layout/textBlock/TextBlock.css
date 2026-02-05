@@ -461,3 +461,25 @@
     background: var(--color-sub);
     color: var(--font-color);
 }
+
+/* 1. Remove margin-top for hr following Headers, Lists, Blockquotes, or HR directly */
+.editor-content .ProseMirror :is(h1, h2, h3, ul, ol, blockquote, hr)+hr {
+    margin-top: 0;
+}
+
+/* 2. Collapse empty paragraph between Headers/Lists/Blockquotes/HR and HR (Ghost line squashing) */
+.editor-content .ProseMirror :is(h1, h2, h3, ul, ol, blockquote, hr)+p:has(br:only-child)+hr {
+    margin-top: 0;
+}
+
+.editor-content .ProseMirror :is(h1, h2, h3, ul, ol, blockquote, hr)+p:has(br:only-child) {
+    display: none;
+}
+
+/* 3. Collapse empty paragraph after HR (forced by Tiptap) until typed in */
+.editor-content .ProseMirror hr+p:has(br:only-child) {
+    height: 0;
+    margin: 0;
+    opacity: 0;
+    overflow: hidden;
+}
