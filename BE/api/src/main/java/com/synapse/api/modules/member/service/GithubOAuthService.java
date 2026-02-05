@@ -36,13 +36,22 @@ public class GithubOAuthService implements OAuthService {
     @Value("${github.redirect.uri}")
     private String redirectUri;
 
+    @Value("${github.web.client.id}")
+    private String webClientId;
+
+    @Value("${github.web.client.secret}")
+    private String webClientSecret;
+
+    @Value("${github.web.redirect.uri}")
+    private String webRedirectUri;
+
     private static final String TOKEN_URL = "https://github.com/login/oauth/access_token";
     private static final String USERINFO_URL = "https://api.github.com/user";
     private static final String EMAILS_URL = "https://api.github.com/user/emails";
 
     @Override
-    public OAuthUserInfo getUserInfo(String authorizationCode) {
-        String accessToken = exchangeAccessToken(authorizationCode);
+    public OAuthUserInfo getUserInfo(String authorizationCode, String platform) {
+        String accessToken = exchangeAccessToken(authorizationCode, platform);
 
         GithubUserInfo userInfo = fetchUserInfo(accessToken);
 
@@ -75,8 +84,7 @@ public class GithubOAuthService implements OAuthService {
             log.error("GitHub UserInfo 요청 실패: status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString(), e);
             throw new BusinessException(ErrorCode.OAUTH_PROVIDER_ERROR, Map.of(
                     "status", e.getStatusCode().value(),
-                    "body", e.getResponseBodyAsString()
-            ));
+                    "body", e.getResponseBodyAsString()));
         } catch (ResourceAccessException e) {
             log.error("GitHub UserInfo 네트워크 오류", e);
             throw new BusinessException(ErrorCode.OAUTH_PROVIDER_ERROR, Map.of("message", e.getMessage()));
@@ -103,27 +111,30 @@ public class GithubOAuthService implements OAuthService {
                     .findFirst()
                     .orElseThrow(() -> new BusinessException(
                             ErrorCode.OAUTH_PROVIDER_ERROR,
-                            Map.of("reason", "No primary verified email")
-                    ));
+                            Map.of("reason", "No primary verified email")));
 
         } catch (HttpStatusCodeException e) {
             log.error("GitHub Emails 요청 실패: status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString(), e);
             throw new BusinessException(ErrorCode.OAUTH_PROVIDER_ERROR, Map.of(
                     "status", e.getStatusCode().value(),
-                    "body", e.getResponseBodyAsString()
-            ));
+                    "body", e.getResponseBodyAsString()));
         } catch (ResourceAccessException e) {
             log.error("GitHub Emails 네트워크 오류", e);
             throw new BusinessException(ErrorCode.OAUTH_PROVIDER_ERROR, Map.of("message", e.getMessage()));
         }
     }
 
-    private String exchangeAccessToken(String authorizationCode) {
+    private String exchangeAccessToken(String authorizationCode, String platform) {
+        boolean isWeb = "WEB".equalsIgnoreCase(platform);
+        String currentClientId = isWeb ? webClientId : clientId;
+        String currentClientSecret = isWeb ? webClientSecret : clientSecret;
+        String currentRedirectUri = isWeb ? webRedirectUri : redirectUri;
+
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
-        form.add("client_id", clientId);
-        form.add("client_secret", clientSecret);
+        form.add("client_id", currentClientId);
+        form.add("client_secret", currentClientSecret);
         form.add("code", authorizationCode);
-        form.add("redirect_uri", redirectUri);
+        form.add("redirect_uri", currentRedirectUri);
 
         try {
             GithubTokenResponse tokenResponse = restClient.post()
@@ -145,8 +156,7 @@ public class GithubOAuthService implements OAuthService {
             log.error("GitHub Token 요청 실패: status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString(), e);
             throw new BusinessException(ErrorCode.OAUTH_TOKEN_ISSUE, Map.of(
                     "status", e.getStatusCode().value(),
-                    "body", e.getResponseBodyAsString()
-            ));
+                    "body", e.getResponseBodyAsString()));
         } catch (ResourceAccessException e) {
             log.error("GitHub Token 네트워크 오류", e);
             throw new BusinessException(ErrorCode.OAUTH_TOKEN_ISSUE, Map.of("message", e.getMessage()));

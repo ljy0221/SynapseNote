@@ -34,12 +34,15 @@ public class GoogleOAuthService implements OAuthService {
     @Value("${google.redirect.uri}")
     private String redirectUri;
 
+    @Value("${google.web.redirect.uri}")
+    private String webRedirectUri;
+
     private static final String TOKEN_URL = "https://oauth2.googleapis.com/token";
     private static final String USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo";
 
     @Override
-    public OAuthUserInfo getUserInfo(String authorizationCode) {
-        String accessToken = exchangeAccessToken(authorizationCode);
+    public OAuthUserInfo getUserInfo(String authorizationCode, String platform) {
+        String accessToken = exchangeAccessToken(authorizationCode, platform);
 
         try {
             GoogleUserInfo userInfo = restClient.get()
@@ -59,20 +62,22 @@ public class GoogleOAuthService implements OAuthService {
             log.error("Google UserInfo 요청 실패: status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString(), e);
             throw new BusinessException(ErrorCode.OAUTH_PROVIDER_ERROR, Map.of(
                     "status", e.getStatusCode().value(),
-                    "body", e.getResponseBodyAsString()
-            ));
+                    "body", e.getResponseBodyAsString()));
         } catch (ResourceAccessException e) {
             log.error("Google UserInfo 네트워크 오류", e);
             throw new BusinessException(ErrorCode.OAUTH_PROVIDER_ERROR, Map.of("message", e.getMessage()));
         }
     }
 
-    private String exchangeAccessToken(String authorizationCode) {
+    private String exchangeAccessToken(String authorizationCode, String platform) {
+        boolean isWeb = "WEB".equalsIgnoreCase(platform);
+        String currentRedirectUri = isWeb ? webRedirectUri : redirectUri;
+
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
         form.add("code", authorizationCode);
         form.add("client_id", clientId);
         form.add("client_secret", clientSecret);
-        form.add("redirect_uri", redirectUri);
+        form.add("redirect_uri", currentRedirectUri);
         form.add("grant_type", "authorization_code");
 
         try {
@@ -94,8 +99,7 @@ public class GoogleOAuthService implements OAuthService {
             log.error("Google Token 요청 실패: status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString(), e);
             throw new BusinessException(ErrorCode.OAUTH_TOKEN_ISSUE, Map.of(
                     "status", e.getStatusCode().value(),
-                    "body", e.getResponseBodyAsString()
-            ));
+                    "body", e.getResponseBodyAsString()));
         } catch (ResourceAccessException e) {
             log.error("Google Token 네트워크 오류", e);
             throw new BusinessException(ErrorCode.OAUTH_TOKEN_ISSUE, Map.of("message", e.getMessage()));
