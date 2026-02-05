@@ -31,6 +31,7 @@ export const getBookmarksApi = () => {
   );
 };
 
+
 /** 블록 즐겨찾기 목록 조회 */
 export const getBlockBookmarksApi = (params?: {
   page?: number;
@@ -42,5 +43,21 @@ export const getBlockBookmarksApi = (params?: {
     {
       params,
     }
+  );
+};
+
+/** 블록 즐겨찾기 추가 */
+export const addBlockBookmarkApi = (noteId: string, blockId: string) => {
+  return request<void>(
+    'post',
+    `/v1/notes/${noteId}/blocks/${blockId}/bookmarks`
+  );
+};
+
+/** 블록 즐겨찾기 제거 */
+export const removeBlockBookmarkApi = (noteId: string, blockId: string) => {
+  return request<void>(
+    'delete',
+    `/v1/notes/${noteId}/blocks/${blockId}/bookmarks`
   );
 };
