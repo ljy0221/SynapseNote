@@ -107,7 +107,6 @@
 .code-content-container {
     background-color: transparent;
     min-height: auto;
-    display: flex;
     overflow: hidden;
     /* CodeMirror 스크롤 처리 */
 }
@@ -209,7 +208,8 @@
     /* Fixed width */
 }
 
-.code-block-wrapper:hover .block-actions-right {
+.code-block-wrapper:hover .block-actions-right,
+.code-block-wrapper.is-bookmarked .block-actions-right {
     opacity: 1;
 }
 

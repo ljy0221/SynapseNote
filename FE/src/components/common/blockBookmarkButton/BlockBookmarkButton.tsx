@@ -16,7 +16,10 @@ export const BlockBookmarkButton: React.FC<BlockBookmarkButtonProps> = ({
         <Tooltip title="북마크" placement="left">
             <button
                 className={`bookmark-btn ${isBookmarked ? 'is-active' : ''}`}
-                onClick={onClick}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onClick?.();
+                }}
                 aria-label="북마크"
             >
                 <Star size={18} fill={isBookmarked ? 'currentColor' : 'none'} />

@@ -32,15 +32,17 @@ import {
     Image as ImageIcon,
     Palette,
 } from 'lucide-react';
-import { BlockBookmarkButton } from '../../common/blockBookmarkButton/BlockBookmarkButton';
+import { useModalStore } from '../../../store/useModalStore';
 import './TextBlock.css';
 
 interface TextBlockProps {
     id: number | string;
     content: string;
+    bookmark?: boolean;
     onUpdate: (id: number | string, content: string) => void;
     onFocus: () => void;
     onDelete: (id: number | string) => void;
+    onToggleBookmark?: () => void;
     // Native DnD props removed
     // draggable?: boolean;
     // onDragStart?: (e: React.DragEvent) => void;
@@ -88,13 +90,21 @@ const TextBlock: React.FC<TextBlockProps> = ({
     dragControls,
     isFocused: shouldFocus, // [추가] prop 이름 충돌 방지를 위해 별칭 사용
     onContextMenu, // [New]
+    bookmark = false,
+    onToggleBookmark,
 }) => {
     const [isFocused, setIsFocused] = React.useState(false);
     const [showColorPicker, setShowColorPicker] = React.useState(false);
+    const { openModal } = useModalStore(); // [New] Modal Store
+
+    const handleBookmark = () => {
+        onToggleBookmark?.();
+    };
 
     // 링크 모달 상태
     const [showLinkModal, setShowLinkModal] = React.useState(false);
     const [linkUrl, setLinkUrl] = React.useState('');
+    const [linkText, setLinkText] = React.useState(''); // [New] 링크 텍스트 상태
 
     // Force update trigger
     const [, setUpdateTrigger] = React.useState(0);
@@ -130,7 +140,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 types: ['heading', 'paragraph'],
             }),
             Link.configure({
-                openOnClick: true,
+                openOnClick: false, // [Change] 직접 핸들링을 위해 false로 설정
                 HTMLAttributes: {
                     target: '_blank',
                     rel: 'noopener noreferrer',
@@ -142,6 +152,24 @@ const TextBlock: React.FC<TextBlockProps> = ({
         // onTransaction removed for performance optimization.
         // We now rely on explicit onClick triggers for button state updates
         // and onSelectionUpdate for cursor updates.
+        editorProps: {
+            handleClick: (view, pos, event) => {
+                const attrs = view.state.doc.resolve(pos).marks().find(mark => mark.type.name === 'link')?.attrs;
+                const link = attrs?.href;
+
+                if (link && event.target instanceof HTMLAnchorElement) { // [Check] a 태그 클릭 시에만 동작
+                    // 링크 클릭 시 외부 링크 경고 모달 표시
+                    openModal('EXTERNAL_LINK_WARNING', {
+                        url: link,
+                        onConfirm: () => {
+                            window.open(link, '_blank');
+                        }
+                    });
+                    return true; // 이벤트 전파 중단
+                }
+                return false;
+            }
+        },
         onSelectionUpdate: ({ editor }) => {
             // 확실하게 상태 업데이트를 트리거하기 위해 forceUpdate 패턴 사용
             // 여기서는 간단히 editor 상태가 변경되었음을 알림
@@ -240,28 +268,58 @@ const TextBlock: React.FC<TextBlockProps> = ({
     // ========================================
     const setLink = () => {
         const previousUrl = editor.getAttributes('link').href || '';
+        const { from, to } = editor.state.selection;
+        const selectedText = editor.state.doc.textBetween(from, to, ' ');
+
         setLinkUrl(previousUrl);
+        setLinkText(selectedText); // 선택된 텍스트 설정
         setShowLinkModal(true);
     };
     // 링크 적용
     const applyLink = () => {
         if (linkUrl.trim() === '') {
+            // URL이 비어있으면 링크 제거
             editor.chain().focus().extendMarkRange('link').unsetLink().run();
         } else {
-            editor.chain().focus().extendMarkRange('link').setLink({ href: linkUrl }).run();
+            // 텍스트와 URL 적용
+            if (linkText) {
+                editor
+                    .chain()
+                    .focus()
+                    .extendMarkRange('link')
+                    .insertContent({
+                        type: 'text',
+                        text: linkText,
+                        marks: [
+                            {
+                                type: 'link',
+                                attrs: {
+                                    href: linkUrl,
+                                },
+                            },
+                        ],
+                    })
+                    .run();
+            } else {
+                // 텍스트가 없으면 그냥 링크만 설정 (기본 동작)
+                editor.chain().focus().extendMarkRange('link').setLink({ href: linkUrl }).run();
+            }
         }
         setShowLinkModal(false);
         setLinkUrl('');
+        setLinkText('');
     };
     // 링크 모달 닫기
     const closeLinkModal = () => {
         setShowLinkModal(false);
         setLinkUrl('');
+        setLinkText('');
         editor.commands.focus();
     };
     return (
         <div
-            className={`text-block-wrapper ${isFocused ? 'is-focused' : ''}`}
+            id={id.toString()}
+            className={`text-block-wrapper ${isFocused || shouldFocus ? 'is-focused' : ''} ${bookmark ? 'is-bookmarked' : ''}`}
             // onDragOver={onDragOver}
             // onDrop={onDrop}
             onContextMenu={onContextMenu} // [New]
@@ -476,21 +534,43 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 {showLinkModal && (
                     <div className="link-modal-overlay" onClick={closeLinkModal}>
                         <div className="link-modal" onClick={(e) => e.stopPropagation()}>
-                            <h4>🔗 링크 URL 입력</h4>
-                            <input
-                                type="text"
-                                value={linkUrl}
-                                onChange={(e) => setLinkUrl(e.target.value)}
-                                placeholder="https://example.com"
-                                autoFocus
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') applyLink();
-                                    if (e.key === 'Escape') closeLinkModal();
-                                }}
-                            />
+                            <div className="link-modal-header">
+                                <h4>🔗 링크 생성</h4>
+                            </div>
+
+                            <div className="link-modal-field">
+                                <label>표시할 텍스트</label>
+                                <input
+                                    type="text"
+                                    value={linkText}
+                                    onChange={(e) => setLinkText(e.target.value)}
+                                    placeholder="텍스트를 입력하세요"
+                                    autoFocus
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') document.getElementById('link-url-input')?.focus();
+                                        if (e.key === 'Escape') closeLinkModal();
+                                    }}
+                                />
+                            </div>
+
+                            <div className="link-modal-field">
+                                <label>링크 주소</label>
+                                <input
+                                    id="link-url-input"
+                                    type="text"
+                                    value={linkUrl}
+                                    onChange={(e) => setLinkUrl(e.target.value)}
+                                    placeholder="https://example.com"
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') applyLink();
+                                        if (e.key === 'Escape') closeLinkModal();
+                                    }}
+                                />
+                            </div>
+
                             <div className="link-modal-buttons">
                                 <button className="link-modal-apply" onClick={applyLink}>
-                                    적용
+                                    링크 생성
                                 </button>
                                 <button className="link-modal-cancel" onClick={closeLinkModal}>
                                     취소
@@ -509,7 +589,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
 
             {/* Right Actions (Bookmark) */}
             <div className="block-actions-right">
-                <BlockBookmarkButton onClick={() => { /* bookmark logic */ }} />
+                <BlockBookmarkButton isBookmarked={bookmark} onClick={handleBookmark} />
             </div>
 
         </div>
