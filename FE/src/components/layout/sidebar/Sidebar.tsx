@@ -35,6 +35,7 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import { useCreateNote } from '../../../hooks/useCreateNote';
 import { useNoteStore } from '../../../store/useNoteStore';
+import { useAuthStore } from '../../../store/useAuthStore';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -48,6 +49,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, showToggle =
   const activeNoteId = routeNoteId ?? null;
 
   const { notes, setNotes } = useNoteStore();
+  const { userInfo, accessToken } = useAuthStore();
+
+  // Helper for member names (Simple fallback for now)
+  const getMemberName = useCallback((memberId: string) => {
+    // If it's me
+    if (userInfo?.memberId === memberId) return userInfo.name;
+    // Ideally we would look up from a member store or cache.
+    // For now returning ID slice or 'Unknown'
+    return `User ${memberId.slice(0, 4)}`;
+  }, [userInfo]);
   const [favoriteNoteIds, setFavoriteNoteIds] =
     useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
@@ -379,7 +390,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, showToggle =
             </div>
           )}
 
-          <VoiceChannelSidebar noteId={activeNoteId} />
+
+          {activeNoteId && userInfo && accessToken ? (
+            <VoiceChannelSidebar
+              noteId={activeNoteId}
+              user={userInfo}
+              accessToken={accessToken}
+              getMemberName={getMemberName}
+            />
+          ) : null}
         </div>
       </aside>
 
@@ -407,20 +426,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, showToggle =
         }
       />
 
-      {moveModal.open && (
-        <MoveNoteModal
-          isOpen
-          currentPath={moveModal.currentPath}
-          onCancel={() =>
-            setMoveModal({ open: false, noteId: null, currentPath: '' })
-          }
-          onConfirm={async path => {
-            if (!moveModal.noteId) return;
-            await handleMoveNote(moveModal.noteId, path);
-            setMoveModal({ open: false, noteId: null, currentPath: '' });
-          }}
-        />
-      )}
-    </div>
+      {
+        moveModal.open && (
+          <MoveNoteModal
+            isOpen
+            currentPath={moveModal.currentPath}
+            onCancel={() =>
+              setMoveModal({ open: false, noteId: null, currentPath: '' })
+            }
+            onConfirm={async path => {
+              if (!moveModal.noteId) return;
+              await handleMoveNote(moveModal.noteId, path);
+              setMoveModal({ open: false, noteId: null, currentPath: '' });
+            }}
+          />
+        )
+      }
+    </div >
   );
 };
