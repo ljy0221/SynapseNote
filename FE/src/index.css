@@ -37,7 +37,7 @@ body {
 body {
   min-width: 320px;
   min-height: 100vh;
-  /* 테마 변수 적용 */
+  /* 테마 변수 적 용 */
   background-color: var(--color-main);
   color: var(--font-color);
   transition: background-color 0.3s, color 0.3s;
