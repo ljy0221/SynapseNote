@@ -1,6 +1,6 @@
 // FE/src/components/layout/blockTypeMenu/BlockTypeMenu.tsx
 import React from 'react';
-import { BlockType } from '../../../pages/note/Note';
+import { BlockType } from '../../../types/note/Block';
 import './BlockTypeMenu.css';
 interface BlockTypeMenuProps {
     onSelect: (type: BlockType) => void;
