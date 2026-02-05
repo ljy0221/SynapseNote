@@ -84,21 +84,16 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
         onToggleBookmark?.();
     };
 
+    // 🔥 초기화만 마운트 시 1회 수행 (원격 업데이트는 Yjs가 직접 처리)
     useEffect(() => {
-        // [Fix] CodeMirror Sync Guard
-        // Prevent external props from overwriting local edits while focused (typing).
-        // This prevents cursor jumps and revert issues.
-        if (code !== undefined && code !== editedCode && !isFocused) {
-            setEditedCode(code);
-        }
-    }, [code, isFocused]);
-
-    useEffect(() => {
+        console.log(`[CodeBlock] Mount - ID: ${id}`);
         if (isCodeEmpty(code) && isCodeEmpty(editedCode)) {
+            console.log(`[CodeBlock] Empty code detect - ID: ${id}, applying template`);
             const template = getLanguageTemplate(language);
             setEditedCode(template);
             onChange(id, template);
         }
+        return () => console.log(`[CodeBlock] Unmount - ID: ${id}`);
     }, []);
 
     useEffect(() => {
