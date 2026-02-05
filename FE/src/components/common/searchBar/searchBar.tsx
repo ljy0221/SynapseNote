@@ -49,6 +49,9 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
   return (
     <div className="search-bar-container">
       <form onSubmit={handleSearch} className="search-form" onClick={handleContainerClick}>
+        <div className="search-icon-wrapper">
+          <FontAwesomeIcon icon={faMagnifyingGlass} className="search-icon" />
+        </div>
         <input
           ref={inputRef}
           type="text"
@@ -57,9 +60,6 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-        <button type="submit" className="search-button" aria-label="검색">
-          <FontAwesomeIcon icon={faMagnifyingGlass} className="search-icon" />
-        </button>
       </form>
     </div>
   );

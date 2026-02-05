@@ -3,12 +3,12 @@ import CodeBlock from '../codeBlock/CodeBlock';
 import TextBlock from '../textBlock/TextBlock';
 import { NoteSideNav } from './NoteSideNav';
 import { DraggableBlock } from './DraggableBlock'; // [New]
-import { Reorder, useDragControls } from 'framer-motion'; // [New]
+import { Reorder } from 'framer-motion'; // [New]
 import { InviteLinkModal } from '../../common/modal/InviteLinkModal';
 import { PermissionModal } from '../../common/modal/PermissionModal';
 import { SummaryConfigModal } from '../../common/modal/SummaryConfigModal';
 import { NoteSummary } from '../../common/noteSummary/NoteSummary';
-import { BlockData, BlockType } from '../../../pages/note/Note';
+import { BlockData, BlockType } from '../../../types/note/Block';
 import type { SummaryStyle } from '../../../types/ai/NoteSummary';
 import BlockContextMenu from '../../common/contextMenu/BlockContextMenu';
 import './NoteMain.css';

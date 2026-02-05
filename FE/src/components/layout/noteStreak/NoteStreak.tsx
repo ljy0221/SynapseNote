@@ -19,34 +19,38 @@ const formatDate = (date: Date) => {
   return `${y}-${m}-${d}`;
 };
 
-const DAYS = 180;
-
 const NoteStreak: React.FC<NoteStreakProps> = ({ streak }) => {
   const activityDates = streak.dates;
-
   const activitySet = new Set(activityDates);
-  const today = new Date();
 
   const streakCount = useMemo(
     () => calculateStreakCount(activityDates),
     [activityDates]
   );
 
-  /** 현재 전시할 전시 기간 (약 180일 전부터 이번 주 토요일까지) */
+  /** 오늘 기준 지난 26주(182일) 데이터 생성 (해당 주의 일요일부터 시작) */
   const days: Date[] = useMemo(() => {
-    const end = new Date(today);
-    // 이번 주 토요일까지 채우기 (일:0 ~ 토:6)
-    const dayOfWeek = today.getDay();
-    end.setDate(today.getDate() + (6 - dayOfWeek));
-
     const result: Date[] = [];
-    for (let i = 0; i < DAYS; i++) {
-      const d = new Date(end);
-      d.setDate(end.getDate() - (DAYS - 1 - i));
+    const today = new Date();
+
+    // 오늘로부터 181일 전(총 182일)을 구함
+    const startCandidate = new Date(today);
+    startCandidate.setDate(today.getDate() - 181);
+
+    // 그 주의 일요일로 맞춤 (0: 일요일, 1: 월요일...)
+    const dayOfWeek = startCandidate.getDay();
+    const start = new Date(startCandidate);
+    start.setDate(startCandidate.getDate() - dayOfWeek);
+
+    // 182일(26주) + 일요일 맞춤에 따른 추가 일수만큼 생성하여 그리드가 딱 떨어지게 함
+    // 하지만 단순하게 182일로 고정하고 싶다면 아래와 같이 26주 분량 생성
+    for (let i = 0; i < 182; i++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
       result.push(d);
     }
     return result;
-  }, [today]);
+  }, []);
 
   /** 주(week) 단위로 묶기 */
   const weeks: Date[][] = useMemo(() => {
@@ -60,17 +64,16 @@ const NoteStreak: React.FC<NoteStreakProps> = ({ streak }) => {
         currentWeek = [];
       }
     });
-    if (currentWeek.length) result.push(currentWeek);
+
     return result;
   }, [days]);
 
-  /** 월 라벨 계산 (월이 시작되는 첫 번째 주에 라벨 표시) */
+  /** 월 라벨 계산 (간격: cellWidth 20px + gap 3px = 23px) */
   const monthLabels = useMemo(() => {
     const labels: { index: number; label: string }[] = [];
     let lastMonth = -1;
 
     weeks.forEach((week, index) => {
-      // 해당 주의 어떤 하루라도 이전 달과 다르다면 (그 달의 첫 주라고 판단)
       const hasMonthStart = week.some(d => {
         const m = d.getMonth();
         if (m !== lastMonth) {
@@ -81,7 +84,6 @@ const NoteStreak: React.FC<NoteStreakProps> = ({ streak }) => {
       });
 
       if (hasMonthStart) {
-        // 주의 중간에 월이 바뀌더라도 해당 열에 라벨 표시
         labels.push({
           index,
           label: `${lastMonth + 1}월`,
@@ -109,14 +111,13 @@ const NoteStreak: React.FC<NoteStreakProps> = ({ streak }) => {
       </div>
 
       <div className="note-streak-content">
-        {/* 월 라벨 */}
         <div className="streak-months">
           {monthLabels.map(m => (
             <span
               key={`${m.index}-${m.label}`}
               className="month-label"
               style={{
-                left: `${m.index * (24 + 3)}px` // cellWidth + gap
+                left: `${m.index * 23}px` // 20px(cell) + 3px(gap)
               }}
             >
               {m.label}
@@ -124,7 +125,6 @@ const NoteStreak: React.FC<NoteStreakProps> = ({ streak }) => {
           ))}
         </div>
 
-        {/* GitHub 스타일 스트릭 */}
         <div className="streak-grid">
           {weeks.map((week, wIdx) => (
             <div key={wIdx} className="week-column">
