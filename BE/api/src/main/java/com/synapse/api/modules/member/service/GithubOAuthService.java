@@ -4,6 +4,7 @@ import com.synapse.api.modules.member.dto.oauth.GithubEmail;
 import com.synapse.api.modules.member.dto.oauth.GithubTokenResponse;
 import com.synapse.api.modules.member.dto.oauth.GithubUserInfo;
 import com.synapse.api.modules.member.dto.oauth.OAuthUserInfo;
+import com.synapse.api.modules.member.entity.Platform;
 import com.synapse.api.util.exception.BusinessException;
 import com.synapse.api.util.response.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -50,7 +51,7 @@ public class GithubOAuthService implements OAuthService {
     private static final String EMAILS_URL = "https://api.github.com/user/emails";
 
     @Override
-    public OAuthUserInfo getUserInfo(String authorizationCode, String platform) {
+    public OAuthUserInfo getUserInfo(String authorizationCode, Platform platform) {
         String accessToken = exchangeAccessToken(authorizationCode, platform);
 
         GithubUserInfo userInfo = fetchUserInfo(accessToken);
@@ -124,8 +125,8 @@ public class GithubOAuthService implements OAuthService {
         }
     }
 
-    private String exchangeAccessToken(String authorizationCode, String platform) {
-        boolean isWeb = "WEB".equalsIgnoreCase(platform);
+    private String exchangeAccessToken(String authorizationCode, Platform platform) {
+        boolean isWeb = platform == Platform.WEB;
         String currentClientId = isWeb ? webClientId : clientId;
         String currentClientSecret = isWeb ? webClientSecret : clientSecret;
         String currentRedirectUri = isWeb ? webRedirectUri : redirectUri;

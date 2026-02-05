@@ -2,7 +2,9 @@ package com.synapse.api.modules.member.service;
 
 import com.synapse.api.modules.member.dto.oauth.GoogleTokenResponse;
 import com.synapse.api.modules.member.dto.oauth.GoogleUserInfo;
+
 import com.synapse.api.modules.member.dto.oauth.OAuthUserInfo;
+import com.synapse.api.modules.member.entity.Platform;
 import com.synapse.api.util.exception.BusinessException;
 import com.synapse.api.util.response.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -41,7 +43,7 @@ public class GoogleOAuthService implements OAuthService {
     private static final String USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo";
 
     @Override
-    public OAuthUserInfo getUserInfo(String authorizationCode, String platform) {
+    public OAuthUserInfo getUserInfo(String authorizationCode, Platform platform) {
         String accessToken = exchangeAccessToken(authorizationCode, platform);
 
         try {
@@ -69,8 +71,8 @@ public class GoogleOAuthService implements OAuthService {
         }
     }
 
-    private String exchangeAccessToken(String authorizationCode, String platform) {
-        boolean isWeb = "WEB".equalsIgnoreCase(platform);
+    private String exchangeAccessToken(String authorizationCode, Platform platform) {
+        boolean isWeb = platform == Platform.WEB;
         String currentRedirectUri = isWeb ? webRedirectUri : redirectUri;
 
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
