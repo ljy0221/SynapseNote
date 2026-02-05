@@ -7,6 +7,7 @@ import BlockCopyButton from '../../common/blockCopyButton/BlockCopyButton';
 import CodeMirrorEditor from '../../common/codeMirrorEditor/CodeMirrorEditor';
 import type { Language, ExecutionResult, ExecutionMode, SessionInfo } from '../../../types/execution/ExecutionTypes';
 import { Server, RectangleEllipsis } from 'lucide-react';
+import { BlockBookmarkButton } from '../../common/blockBookmarkButton/BlockBookmarkButton';
 import './CodeBlock.css';
 import { saveExecutionToBackend } from "../../../utils/executionAPI.ts";
 import { LanguageSelector } from "./LanguageSelector.tsx";
@@ -23,11 +24,13 @@ interface CodeBlockProps {
     id: number | string;
     language: Language;
     code: string;
+    bookmark?: boolean;
     noteId?: string;
     onDelete: (id: number | string) => void;
     onChange: (id: number | string, newCode: string) => void;
     onFocus: () => void;
     onAddBlockAfter?: (content: string) => void; // AI 리뷰 결과를 새 블록으로 추가
+    onToggleBookmark?: () => void;
     // Native DnD removed
     // Framer Motion controls
     dragControls?: DragControls;
@@ -57,6 +60,9 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     dragControls,
     onContextMenu, // [New]
     onAiReviewResult, // [New]
+    isFocused,
+    bookmark = false,
+    onToggleBookmark,
 }) => {
     const [result, setResult] = useState<ExecutionResult | null>(null);
     const [loading, setLoading] = useState(false);
@@ -71,6 +77,10 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     // AI 리뷰 관련 상태
     const [aiReviewLoading, setAiReviewLoading] = useState(false);
     const aiReviewAbortRef = useRef<AbortController | null>(null);
+
+    const handleBookmark = () => {
+        onToggleBookmark?.();
+    };
 
     useEffect(() => {
         if (code !== undefined) setEditedCode(code);
@@ -234,10 +244,9 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 
     return (
         <div
-            className="code-block-wrapper"
-            // onDragOver={onDragOver}
-            // onDrop={onDrop}
-            onContextMenu={onContextMenu} // [New]
+            id={id.toString()}
+            className={`code-block-wrapper ${isFocused ? 'is-focused' : ''} ${bookmark ? 'is-bookmarked' : ''}`}
+            onContextMenu={onContextMenu}
         >
             <div className="block-controls">
                 <div
@@ -252,23 +261,17 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 
             <div className="code-block-main">
                 <div className="code-block-header">
-                    {/* [좌측] 삭제 버튼 제거됨 + 드래그 핸들 이동됨 */}
-                    <div className="code-left-controls">
-                        {/* Empty now, preserving for spacing or future use if needed */}
-                    </div>
-                    {/* [중앙] 언어 선택기 */}
+                    <div className="code-left-controls"></div>
                     <LanguageSelector
                         value={language}
                         onChange={handleLanguageChange}
                         disabled={loading}
                     />
 
-                    {/* 모드 선택 버튼 (feat/#63 추가 - Java 제외, 다중 언어 시 비활성화) */}
                     {(() => {
                         const isJava = language === 'java';
                         const hasMultiple = hasMultipleLanguages(noteId || '');
                         const shouldShow = !isJava && !hasMultiple;
-                        console.log(`[Session Button] lang:${language}, isJava:${isJava}, hasMultiple:${hasMultiple}, noteId:${noteId}, shouldShow:${shouldShow}`);
                         return shouldShow;
                     })() && (
                             <div className="mode-selector" style={{ marginLeft: '10px', display: 'flex', gap: '5px' }}>
@@ -297,9 +300,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                             </div>
                         )}
 
-                    {/* [우측] 액션 버튼들 (삭제 버튼 제거됨) */}
                     <div className="code-actions">
-                        {/* 세션 인디케이터 (feat/#63 추가) */}
                         {sessionInfo && executionMode === 'session' && (
                             <Tooltip title="세션 종료" placement="top">
                                 <button
@@ -344,6 +345,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                         />
                     </div>
                 </div>
+
                 {/* 메인 코드 영역 */}
                 <div className="code-content-container">
                     <CodeMirrorEditor
@@ -359,6 +361,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                         maxHeight="800px"
                     />
                 </div>
+
                 {/* 결과 출력 영역 */}
                 {result && (
                     <div className="code-output-zone">
@@ -372,6 +375,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                         </pre>
                     </div>
                 )}
+
                 {/* 로딩 표시 */}
                 {loading && (
                     <div className="code-output-zone">
@@ -389,10 +393,13 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                         onRestore={handleRestore}
                     />
                 )}
-
-                {/* AI 리뷰 섹션 (코드 블록 하단) */}
-
             </div>
+
+            {/* 즐겨찾기 버튼 (블록 외부 우측) */}
+            <div className="block-actions-right">
+                <BlockBookmarkButton isBookmarked={bookmark} onClick={handleBookmark} />
+            </div>
+
         </div>
     );
 };

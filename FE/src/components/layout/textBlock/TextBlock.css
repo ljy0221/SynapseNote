@@ -8,6 +8,28 @@
     margin: 12px auto;
 }
 
+/* 1. Remove margin-top for hr following H1 directly */
+.editor-content .ProseMirror h1+hr {
+    margin-top: 0;
+}
+
+/* 2. Collapse empty paragraph between H1 and HR (Ghost line squashing) */
+.editor-content .ProseMirror h1+p:has(br:only-child)+hr {
+    margin-top: 0;
+}
+
+.editor-content .ProseMirror h1+p:has(br:only-child) {
+    display: none;
+}
+
+/* 3. Collapse empty paragraph after HR (forced by Tiptap) until typed in */
+.editor-content .ProseMirror hr+p:has(br:only-child) {
+    height: 0;
+    margin: 0;
+    opacity: 0;
+    overflow: hidden;
+}
+
 .block-controls {
     display: flex;
     flex-direction: column;
