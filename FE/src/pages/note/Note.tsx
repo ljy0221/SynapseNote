@@ -13,8 +13,6 @@ import { BlockType } from '../../types/note/Block';
 import './Note.css';
 
 
-const globalFetchRecord = new Map<string, boolean>();
-
 const Note: React.FC = () => {
     const { noteId } = useParams<{ noteId: string }>();
     const navigate = useNavigate();
@@ -28,13 +26,23 @@ const Note: React.FC = () => {
     const [summaryUpdatedAt, setSummaryUpdatedAt] = useState<string | undefined>(undefined);
     const [isSummaryLoading, setIsSummaryLoading] = useState(false);
 
-    const { notes, updateNoteMetadata } = useNoteStore();
+    const { notes, updateNoteMetadata, fetchingIds, setFetchingId } = useNoteStore();
     const notesRef = useRef(notes);
+    const fetchingIdsRef = useRef(fetchingIds); // FetchingIds 추합용 Ref
+    const currentTitleRef = useRef(title); // 현재 제목 추적용
 
-    // Sync notes to ref
+    // Sync state to refs
     useEffect(() => {
         notesRef.current = notes;
     }, [notes]);
+
+    useEffect(() => {
+        fetchingIdsRef.current = fetchingIds;
+    }, [fetchingIds]);
+
+    useEffect(() => {
+        currentTitleRef.current = title;
+    }, [title]);
 
     // 제목 input ref
     const titleInputRef = useRef<HTMLInputElement>(null);
@@ -64,9 +72,9 @@ const Note: React.FC = () => {
             return;
         }
 
-        // 2. 전역 fetch 관리 (Strict Mode 등으로 인한 중복 요청 방지)
-        if (globalFetchRecord.get(id)) return;
-        globalFetchRecord.set(id, true);
+        // 2. 전역 fetch 관리 (Ref 사용으로 re-creation 방지)
+        if (fetchingIdsRef.current[id]) return;
+        setFetchingId(id, true);
 
         try {
             const noteRes = await getNoteDetailApi(id);
@@ -99,9 +107,9 @@ const Note: React.FC = () => {
                 setIsEditing(true);
             }
         } finally {
-            globalFetchRecord.delete(id);
+            setFetchingId(id, false);
         }
-    }, [updateNoteMetadata]);
+    }, [updateNoteMetadata, setFetchingId]); // fetchingIds 제거
 
     // 노트 ID 변경 시 데이터 fetch
     useEffect(() => {
@@ -135,11 +143,16 @@ const Note: React.FC = () => {
             if (!(e instanceof CustomEvent)) return;
             const detail = e.detail;
 
-            if (detail?.source === 'NOTE_PAGE') return; // 자신이 보낸 이벤트 무시
+            // 자신이 보낸 이벤트 무시 (source 체크는 유지하되 값 기반 중복 방지 추가)
+            if (detail?.source === 'NOTE_PAGE') return;
 
             if (detail?.type === 'UPDATE_TITLE' && detail.noteId === noteId) {
-                setTitle(detail.title);
-                lastLoadedTitleRef.current = detail.title;
+                // 값이 현재와 다를 때만 업데이트 (Loop Prevention - Value based)
+                if (detail.title !== currentTitleRef.current) {
+                    console.log("[Note] Remote title update detected:", detail.title);
+                    setTitle(detail.title);
+                    lastLoadedTitleRef.current = detail.title;
+                }
             }
 
             if (detail?.type === 'DELETE_NOTE' && detail.noteId === noteId) {
