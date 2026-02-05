@@ -96,8 +96,10 @@ const OAuthCallback: React.FC = () => {
     handleLogin();
   }, [provider, searchParams, navigate, login, showToast]);
 
-  // 브라우저용 안내 화면
-  if (!window.electronAPI) {
+  // 브라우저용 안내 화면 (Electron Callback인 경우)
+  const state = searchParams.get('state');
+
+  if (!window.electronAPI && state === 'ELECTRON') {
     return (
       <div
         style={{
@@ -110,9 +112,7 @@ const OAuthCallback: React.FC = () => {
         }}
       >
         <h2>로그인 완료</h2>
-        <p>
-          브라우저 팝업이 뜨면 <b>'Synapse 열기'</b>를 클릭해주세요.
-        </p>
+        <p>앱으로 돌아갑니다.</p>
         <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '10px' }}>
           * '항상 허용'을 체크하시면 다음부터는 자동으로 로그인됩니다.
         </p>
@@ -120,7 +120,7 @@ const OAuthCallback: React.FC = () => {
     );
   }
 
-  // Electron 로딩 화면
+  // Web App 로그인 처리 중 or Electron App 내부 로딩
   return (
     <div
       style={{
