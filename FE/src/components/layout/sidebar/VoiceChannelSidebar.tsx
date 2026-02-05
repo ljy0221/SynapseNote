@@ -42,13 +42,9 @@ export const VoiceChannelSidebar: React.FC<VoiceChannelSidebarProps> = ({
     };
 
     const handleInputVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const val = parseFloat(e.target.value);
-        setInputVolume(val);
+        setInputVolume(parseFloat(e.target.value));
     };
 
-    // Auto-disconnect on unmount is handled by hook
-
-    // Handler for join button
     const handleJoin = async () => {
         await joinVoice();
     };
@@ -86,18 +82,21 @@ export const VoiceChannelSidebar: React.FC<VoiceChannelSidebarProps> = ({
                 {participants.map(p => (
                     <div key={p.memberId} className="participant-item">
                         <div className="participant-avatar">
-                            {getMemberName(p.memberId)?.slice(0, 1) || '?'}
+                            {p.name ? p.name.charAt(0) : (getMemberName(p.memberId)?.charAt(0) || '?')}
                             {p.isMuted && <div className="mute-badge"><MicOff size={8} /></div>}
                         </div>
-                        <span className="participant-name">
-                            {getMemberName(p.memberId) || 'Unknown'}
-                        </span>
+                        <div className="participant-info">
+                            <span className="participant-name">
+                                {p.name || getMemberName(p.memberId) || 'Unknown'}
+                            </span>
+                            <span className="participant-status">{p.status}</span>
+                        </div>
                     </div>
                 ))}
 
-                {participants.length === 0 && status !== 'connected' && (
+                {participants.length === 0 && status === 'connecting' && (
                     <div className="empty-state">
-                        {status === 'connecting' ? '연결 중...' : '대기 중'}
+                        연결 중...
                     </div>
                 )}
             </div>
