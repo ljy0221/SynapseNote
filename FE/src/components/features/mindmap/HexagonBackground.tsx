@@ -3,6 +3,7 @@ import React, { memo } from 'react';
 interface HexagonBackgroundProps {
     color: string;
     level: number; // 1 to 5
+    isShared?: boolean; // [New] 공유 상태
 }
 
 /**
@@ -10,7 +11,7 @@ interface HexagonBackgroundProps {
  * Level 1: 단일 육각형
  * Level 5: 5겹 육각형
  */
-const HexagonBackground: React.FC<HexagonBackgroundProps> = ({ color, level }) => {
+const HexagonBackground: React.FC<HexagonBackgroundProps> = ({ color, level, isShared }) => {
     // 육각형 경로 생성 함수 (중심점 50, 50 기준)
     // r: 반지름 (크기)
     const createHexagonPath = (r: number) => {
@@ -72,8 +73,10 @@ const HexagonBackground: React.FC<HexagonBackgroundProps> = ({ color, level }) =
                 key={i}
                 points={createHexagonPath(r)}
                 fill="none"
-                stroke={color}
-                strokeWidth={i === 0 ? 3 : 1.5} // 가장 바깥쪽은 두껍게
+                stroke={(isShared && i === 0) ? "var(--node-shared-border)" : color} // 공유일 때는 가장 바깥쪽만 테마 색상 적용
+                strokeWidth={i === 0 ? (isShared ? 4 : 3) : 1.5} // 공유면 태두리 조금 더 두껍게
+                strokeDasharray={isShared && i === 0 ? "8, 6" : "none"} // 공유면 가장 바깥쪽 점선
+                strokeLinecap="round" // 점선 끝을 둥글게
                 strokeOpacity={1 - (i * 0.15)} // 안쪽으로 갈수록 연하게? 
                 style={{ transition: 'all 0.3s ease' }}
             />
