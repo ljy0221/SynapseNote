@@ -55,6 +55,51 @@ export const useWebRTC = ({ noteId, memberId, token, onConnect, onDisconnect }: 
         };
     }, []);
 
+    const createPeerConnection = (stream: MediaStream) => {
+        if (peerConnectionRef.current) return;
+
+        const pc = new RTCPeerConnection({
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ]
+        });
+
+        // Add Local Tracks
+        stream.getTracks().forEach(track => {
+            pc.addTrack(track, stream);
+        });
+
+        // On ICE Candidate
+        pc.onicecandidate = (event) => {
+            if (event.candidate && stompClientRef.current) {
+                stompClientRef.current.publish({
+                    destination: '/app/webrtc/ice',
+                    body: JSON.stringify({
+                        noteId,
+                        callId: callIdRef.current,
+                        candidate: event.candidate.candidate,
+                        sdpMid: event.candidate.sdpMid,
+                        sdpMLineIndex: event.candidate.sdpMLineIndex
+                    })
+                });
+            }
+        };
+
+        // On Track (Remote Stream)
+        pc.ontrack = (event) => {
+            log('Received remote track');
+            if (event.streams && event.streams[0]) {
+                if (remoteAudioRef.current) {
+                    remoteAudioRef.current.srcObject = event.streams[0];
+                    remoteAudioRef.current.play().catch(e => errorLog('Audio Play Error', e));
+                }
+            }
+        };
+
+        peerConnectionRef.current = pc;
+    };
+
     // 2. Join Voice (Active participation)
     const joinVoice = async () => {
         if (!stompClientRef.current || !stompClientRef.current.connected) {
