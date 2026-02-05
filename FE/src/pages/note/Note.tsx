@@ -37,6 +37,11 @@ const Note: React.FC = () => {
 
     // Sync state to refs
     useEffect(() => {
+        console.log(`[NotePage] Mount noteId: ${noteId}`);
+        return () => console.log(`[NotePage] Unmount noteId: ${noteId}`);
+    }, []);
+
+    useEffect(() => {
         notesRef.current = notes;
     }, [notes]);
 
@@ -376,6 +381,23 @@ const Note: React.FC = () => {
         return () => clearTimeout(timer);
     }, [title, noteId]);
 
+    // 🔥 포커스된 블록이 원격에서 삭제되었는지 감지
+    useEffect(() => {
+        if (focusedBlockId && blocks.length > 0) {
+            const blockExists = blocks.some(b => b.id === focusedBlockId);
+            if (!blockExists) {
+                console.warn('[Note] Focused block was deleted remotely, moving focus');
+                // 첫 번째 블록으로 안전하게 이동
+                const firstBlock = blocks[0];
+                if (firstBlock) {
+                    setFocusedBlockId(firstBlock.id);
+                } else {
+                    setFocusedBlockId(null);
+                }
+            }
+        }
+    }, [blocks, focusedBlockId]);
+
 
     // [New] 내용 변경 감지 및 자동 저장 (updatedAt 갱신용) -> 백엔드 Yjs BridgeService에서 처리하므로 API 호출 제거
     // 단, 사이드바 목록 갱신(최신순 정렬 등)을 위해 이벤트는 발생시킴
@@ -433,8 +455,9 @@ const Note: React.FC = () => {
                 e.stopPropagation();
 
                 const currentIndex = blocks.findIndex(b => b.id === focusedBlockId);
-                if (currentIndex === -1) return;
+                if (currentIndex === -1) return; // 이미 삭제됨
 
+                // 🔥 삭제 전에 다음 포커스 대상 결정
                 let nextFocusId: number | string | null = null;
                 if (currentIndex > 0) {
                     nextFocusId = blocks[currentIndex - 1].id;
@@ -442,11 +465,30 @@ const Note: React.FC = () => {
                     nextFocusId = blocks[currentIndex + 1].id;
                 }
 
+                // 마지막 블록 삭제 시 새 블록 자동 생성
+                const isLastBlock = blocks.length === 1;
+
                 deleteBlock(focusedBlockId);
                 handleContentChange(); // [New] 삭제 시에도 갱신
 
-                if (nextFocusId) {
-                    setFocusedBlockId(nextFocusId);
+                if (isLastBlock) {
+                    // 마지막 블록 삭제 시 새 빈 텍스트 블록 생성
+                    setTimeout(() => {
+                        addBlock(null, 'text', '');
+                    }, 100);
+                } else if (nextFocusId) {
+                    // 🔥 포커스 이동 시 블록 존재 여부 재확인 (동시 삭제 대응)
+                    setTimeout(() => {
+                        const targetExists = document.getElementById(nextFocusId.toString());
+                        if (targetExists) {
+                            setFocusedBlockId(nextFocusId);
+                        } else {
+                            // 대상 블록이 없으면 첫 번째 블록으로 폴백
+                            console.warn('[Note] Target focus block was deleted, falling back to first block');
+                            const firstBlock = blocks[0];
+                            if (firstBlock) setFocusedBlockId(firstBlock.id);
+                        }
+                    }, 50);
                 }
             }
         }
