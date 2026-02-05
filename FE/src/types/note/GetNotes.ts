@@ -11,6 +11,10 @@ export interface NoteListItem {
   role: 'OWNER' | 'EDITOR' | 'VIEWER';
   createdAt: number; // string -> number로 변경
   updatedAt: number;
+  // AI 요약 관련 캐시 필드
+  summary?: string;
+  summaryStyle?: string;
+  summaryUpdatedAt?: string;
 }
 
 export interface GetNotesResponse {
