@@ -16,6 +16,7 @@ export const useWebRTC = ({ noteId, memberId, token, onConnect, onDisconnect }: 
     const [status, setStatus] = useState<'disconnected' | 'connecting' | 'connected' | 'error'>('disconnected');
     const [participants, setParticipants] = useState<Participant[]>([]);
     const [isMuted, setIsMuted] = useState(false);
+    const [socketConnected, setSocketConnected] = useState(false); // [New] Socket status
 
     // Refs
     const stompClientRef = useRef<Client | null>(null);
@@ -44,120 +45,7 @@ export const useWebRTC = ({ noteId, memberId, token, onConnect, onDisconnect }: 
         };
     }, []);
 
-    // 2. Join Voice (Active participation)
-    const joinVoice = async () => {
-        if (!stompClientRef.current || !stompClientRef.current.connected) {
-            errorLog('Socket not connected yet');
-            return;
-        }
-        if (status === 'connected' || status === 'connecting') return;
 
-        setStatus('connecting');
-
-        try {
-            // 1. Get Media
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-            localStreamRef.current = stream;
-
-            // 2. Setup Web Audio API
-            const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-            const audioCtx = new AudioContextClass();
-            audioContextRef.current = audioCtx;
-
-            const source = audioCtx.createMediaStreamSource(stream);
-            const gainNode = audioCtx.createGain();
-            const destination = audioCtx.createMediaStreamDestination();
-
-            gainNode.gain.value = inputVolume;
-
-            source.connect(gainNode);
-            gainNode.connect(destination);
-
-            sourceNodeRef.current = source;
-            gainNodeRef.current = gainNode;
-            destinationNodeRef.current = destination;
-
-            // 3. Create PeerConnection
-            createPeerConnection(destination.stream);
-
-            // 4. Send Join Request
-            log('Sending JOIN request...');
-            stompClientRef.current.publish({
-                destination: '/app/webrtc/join',
-                body: JSON.stringify({ noteId, memberId })
-            });
-
-        } catch (e) {
-            errorLog('Failed to join voice', e);
-            setStatus('disconnected');
-            leaveVoice();
-        }
-    };
-
-    // 3. Leave Voice
-    const leaveVoice = useCallback(() => {
-        if (status === 'disconnected') return;
-
-        log('Leaving voice channel...');
-
-        if (stompClientRef.current && stompClientRef.current.connected) {
-            if (noteId && memberId && status === 'connected') {
-                stompClientRef.current.publish({
-                    destination: '/app/webrtc/leave',
-                    body: JSON.stringify({ noteId, memberId })
-                });
-            }
-        }
-
-        // Cleanup Media
-        if (peerConnectionRef.current) {
-            peerConnectionRef.current.close();
-            peerConnectionRef.current = null;
-        }
-        if (localStreamRef.current) {
-            localStreamRef.current.getTracks().forEach(track => track.stop());
-            localStreamRef.current = null;
-        }
-        if (remoteAudioRef.current) {
-            remoteAudioRef.current.srcObject = null;
-        }
-        if (audioContextRef.current) {
-            audioContextRef.current.close();
-            audioContextRef.current = null;
-        }
-
-        setStatus('disconnected');
-        setIsMuted(false);
-    }, [noteId, memberId, status]);
-
-    /**
-     * 구독 설정
-     */
-    const subscribeToSignaling = (client: Client) => {
-        // 1. Personal Signaling (Existing)
-        client.subscribe('/user/queue/webrtc', (message: IMessage) => {
-            const data: SignalingMessage = JSON.parse(message.body);
-            handleSignalingMessage(data);
-        });
-
-        client.subscribe('/user/queue/webrtc/answer', (message: IMessage) => {
-            const data: AnswerMessage = JSON.parse(message.body);
-            handleAnswerMessage(data);
-        });
-
-        client.subscribe('/user/queue/webrtc/ice', (message: IMessage) => {
-            const data: IceCandidateMessage = JSON.parse(message.body);
-            handleIceCandidateMessage(data);
-        });
-
-        // 2. Room Broadcasting (New: Participants)
-        if (noteId) {
-            client.subscribe(`/topic/room/${noteId}`, (message: IMessage) => {
-                const data: SignalingMessage = JSON.parse(message.body);
-                handleRoomMessage(data);
-            });
-        }
-    };
 
     /**
      * Room Topic 메시지 핸들러 (USER_JOINED, USER_LEFT)
@@ -236,42 +124,7 @@ export const useWebRTC = ({ noteId, memberId, token, onConnect, onDisconnect }: 
         peerConnectionRef.current = pc;
     };
 
-    const handleSignalingMessage = async (data: SignalingMessage) => {
-        if (data.type === 'JOINED') {
-            log('Room join confirmed by server. Ready to offer.');
 
-            // [Snapshot] 초기 참여자 목록 설정
-            if (data.payload) {
-                try {
-                    // Backend sends List<ParticipantInfo> { memberId: UUID, isMuted: boolean }
-                    const initialMembers: { memberId: string, isMuted: boolean }[] = JSON.parse(data.payload);
-                    log(`Initial participants: ${initialMembers.length}`);
-
-                    setParticipants(prev => {
-                        const newParticipants = initialMembers
-                            .filter(m => m.memberId !== memberId)
-                            .map(m => ({
-                                memberId: m.memberId,
-                                status: 'connected',
-                                isMuted: m.isMuted,
-                                isSpeaking: false,
-                                connectionState: 'connected'
-                            } as Participant));
-
-                        return [...newParticipants];
-                    });
-                } catch (e) {
-                    errorLog('Failed to parse participant list from JOINED payload', e);
-                }
-            }
-
-            if (data.status === 'READY') {
-                createAndSendOffer();
-            }
-        } else if (data.type === 'ERROR') {
-            errorLog('Signaling Error:', data.payload);
-        }
-    };
 
     // ... (createAndSendOffer, handleAnswerMessage, handleIceCandidateMessage, toggleMute - same as before)
     const createAndSendOffer = async () => {
@@ -390,17 +243,18 @@ export const useWebRTC = ({ noteId, memberId, token, onConnect, onDisconnect }: 
 
     // 1. Socket Connection Effect
     useEffect(() => {
-        if (!accessToken || !noteId || !user.memberId) return;
+        if (!token || !noteId || !memberId) return;
 
         // Connect Socket
         const client = new Client({
-            brokerURL: `${import.meta.env.VITE_WS_URL}/ws-stomp`, // Using WS_URL env
+            brokerURL: SIGNALING_SERVER_URL, // [Fix] Use correct defined constant
             connectHeaders: {
-                Authorization: `Bearer ${accessToken}`,
+                Authorization: `Bearer ${token}`,
             },
             reconnectDelay: 5000,
             onConnect: () => {
                 log('STOMP connected');
+                setSocketConnected(true);
                 // Subscribe to Room Topic
                 client.subscribe(`/topic/room/${noteId}`, (message) => {
                     handleRoomMessage(JSON.parse(message.body));
@@ -408,7 +262,13 @@ export const useWebRTC = ({ noteId, memberId, token, onConnect, onDisconnect }: 
 
                 // Subscribe to Private Queue
                 client.subscribe(`/user/queue/webrtc`, (message) => {
+                    log('Raw signaling: ' + message.body);
                     handleSignalingMessage(JSON.parse(message.body));
+                });
+
+                // Subscribe to Answer Queue (Restored)
+                client.subscribe(`/user/queue/webrtc/answer`, (message) => {
+                    handleAnswerMessage(JSON.parse(message.body));
                 });
 
                 // Subscribe to ICE candidates
@@ -439,9 +299,10 @@ export const useWebRTC = ({ noteId, memberId, token, onConnect, onDisconnect }: 
             leaveVoice(); // Ensure voice is left
             client.deactivate();
             log('STOMP disconnected');
+            setSocketConnected(false);
             setParticipants([]);
         };
-    }, [noteId, accessToken, user.memberId]);
+    }, [noteId, token, memberId]);
 
     // 2. Join Voice (Active participation)
     const joinVoice = async () => {
@@ -552,6 +413,7 @@ export const useWebRTC = ({ noteId, memberId, token, onConnect, onDisconnect }: 
         // Actually JOINED gives the *full* snapshot too? Yes.
         // So we can reuse the same logic or just rely on updates.
         else if (data.type === 'JOINED') {
+            setStatus('connected'); // IMPORTANT: This confirms WE joined
             if (data.payload) {
                 try {
                     const initialMembers: { memberId: string, isMuted: boolean }[] = JSON.parse(data.payload);
@@ -560,13 +422,19 @@ export const useWebRTC = ({ noteId, memberId, token, onConnect, onDisconnect }: 
                         isMuted: m.isMuted,
                     }));
                     setParticipants(mapped);
-                    setStatus('connected'); // IMPORTANT: This confirms WE joined
                 } catch (e) {
                     errorLog('Error parsing JOINED snapshot', e);
                 }
             }
         }
         // ...
+        else if (data.type === 'ERROR') {
+            errorLog('Received ERROR from server: ' + data.payload);
+            setStatus('error');
+            // Optionally show toast via callback or effect
+            // Force cleanup
+            leaveVoice();
+        }
     };
 
     // ...
@@ -581,6 +449,7 @@ export const useWebRTC = ({ noteId, memberId, token, onConnect, onDisconnect }: 
         volume,
         setVolume,
         inputVolume,
-        setInputVolume
-    };
+        setInputVolume,
+        socketConnected
+    }
 };
