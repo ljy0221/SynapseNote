@@ -38,49 +38,57 @@ export const NoteSummary: React.FC<NoteSummaryProps> = ({
 
   return (
     <div className="note-summary-container">
-      <div className="summary-content">
-        <div className="summary-header" onClick={() => setIsExpanded(!isExpanded)}>
-          <div className="summary-title">
-            <span className="sparkle-icon">&#10024;</span>
-            <span>AI 요약</span>
-            {summaryUpdatedAt && (
-              <span className="summary-date">{formatDate(summaryUpdatedAt)}</span>
-            )}
+      {/* 1. Gutter Column (Matches Block Controls) */}
+      <div className="note-summary-gutter">
+        {/* Empty placeholder for alignment */}
+      </div>
+
+      {/* 2. Main Content Column */}
+      <div className="note-summary-main">
+        <div className="summary-content">
+          <div className="summary-header" onClick={() => setIsExpanded(!isExpanded)}>
+            <div className="summary-title">
+              <span className={`sparkle-icon ${isLoading ? 'spinning' : ''}`}>&#10024;</span>
+              <span>AI 요약</span>
+              {summaryUpdatedAt && (
+                <span className="summary-date">{formatDate(summaryUpdatedAt)}</span>
+              )}
+            </div>
+            <div className="summary-actions">
+              <select
+                className="summary-style-select small"
+                value={selectedStyle}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  setSelectedStyle(e.target.value as SummaryStyle);
+                }}
+                disabled={isLoading}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <option value="concise">간결</option>
+                <option value="detailed">상세</option>
+                <option value="bullet-points">불릿</option>
+              </select>
+              <button
+                className="summary-refresh-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onGenerateSummary(selectedStyle);
+                }}
+                disabled={isLoading}
+                title="다시 생성"
+              >
+                <span className={`refresh-icon ${isLoading ? 'spinning' : ''}`}>&#8635;</span>
+              </button>
+              <span className="expand-icon">{isExpanded ? '▲' : '▼'}</span>
+            </div>
           </div>
-          <div className="summary-actions">
-            <select
-              className="summary-style-select small"
-              value={selectedStyle}
-              onChange={(e) => {
-                e.stopPropagation();
-                setSelectedStyle(e.target.value as SummaryStyle);
-              }}
-              disabled={isLoading}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <option value="concise">간결</option>
-              <option value="detailed">상세</option>
-              <option value="bullet-points">불릿</option>
-            </select>
-            <button
-              className="summary-refresh-btn"
-              onClick={(e) => {
-                e.stopPropagation();
-                onGenerateSummary(selectedStyle);
-              }}
-              disabled={isLoading}
-              title="다시 생성"
-            >
-              <span className={`refresh-icon ${isLoading ? 'spinning' : ''}`}>&#8635;</span>
-            </button>
-            <span className="expand-icon">{isExpanded ? '▲' : '▼'}</span>
-          </div>
+          {isExpanded && (
+            <div className="summary-text">
+              <ReactMarkdown>{summary}</ReactMarkdown>
+            </div>
+          )}
         </div>
-        {isExpanded && (
-          <div className="summary-text">
-            <ReactMarkdown>{summary}</ReactMarkdown>
-          </div>
-        )}
       </div>
     </div>
   );
