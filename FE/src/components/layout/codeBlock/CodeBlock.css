@@ -194,3 +194,56 @@
     opacity: 0.5;
     cursor: not-allowed;
 }
+
+/* Right Block Actions - Consistent with TextBlock */
+.block-actions-right {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 12px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    flex-shrink: 0;
+    /* Prevent shrinking */
+    width: 32px;
+    /* Fixed width */
+}
+
+.code-block-wrapper:hover .block-actions-right {
+    opacity: 1;
+}
+
+/* Reuse same bookmark button style logic or just copy for isolation if preferred. 
+   Here we copy to ensure CodeBlock has self-contained styles but matching visual. */
+.bookmark-btn {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    border: 1px solid rgba(128, 128, 128, 0.2);
+    background-color: transparent;
+    color: var(--font-color-sub, #78716c);
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.2s ease;
+}
+
+.bookmark-btn:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: var(--color-point, #f59e0b);
+    border-color: var(--color-point, #f59e0b);
+}
+
+[data-theme='dark'] .bookmark-btn {
+    color: var(--font-color-sub, #a8a29e);
+    border-color: rgba(128, 128, 128, 0.2);
+}
+
+[data-theme='dark'] .bookmark-btn:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--color-point, #fbbf24);
+    border-color: var(--color-point, #fbbf24);
+}

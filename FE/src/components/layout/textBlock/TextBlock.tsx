@@ -31,7 +31,9 @@ import {
     Link as LinkIcon,
     Image as ImageIcon,
     Palette,
+    Star,
 } from 'lucide-react';
+import { Tooltip } from '../../common/tooltip/Tooltip';
 import './TextBlock.css';
 
 interface TextBlockProps {
@@ -279,8 +281,6 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 {/* 포커스 시에만 툴바 표시 */}
                 {isFocused && (
                     <div className="editor-toolbar">
-
-
                         <div className="toolbar-group">
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
@@ -506,6 +506,18 @@ const TextBlock: React.FC<TextBlockProps> = ({
                         <div className="upload-spinner">이미지 업로드 중...</div>
                     </div>
                 )}
+            </div>
+
+            {/* Right Actions (Bookmark) */}
+            <div className="block-actions-right">
+                <Tooltip title="북마크" placement="left">
+                    <button
+                        className="bookmark-btn"
+                        onClick={() => { /* bookmark logic */ }}
+                    >
+                        <Star size={18} />
+                    </button>
+                </Tooltip>
             </div>
 
         </div>
