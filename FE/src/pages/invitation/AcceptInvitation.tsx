@@ -93,28 +93,20 @@ const AcceptInvitation: React.FC = () => {
                     </>
                 )}
                 {status === 'error' && (
-                    { status === 'error' && (
-                        <>
-                            <div className="error-icon" style={{ fontSize: '4rem', color: '#f44336', marginBottom: '20px' }}>!</div>
-                            <h2 style={{ margin: '0 0 10px 0', fontSize: '1.5rem' }}>오류 발생</h2>
-                            <p className="error-text" style={{ color: '#666', marginBottom: '30px' }}>{errorMessage}</p>
-                            <button
-                                onClick={() => navigate('/home')}
-                                style={{
-                                    padding: '10px 20px',
-                                    backgroundColor: 'var(--color-main)',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '5px',
-                                    cursor: 'pointer'
+                    backgroundColor: 'var(--color-main)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: 'pointer'
                                 }}
                             >
-                                홈으로 가기
-                            </button>
-                        </>
-                    )}
-            </div>
-        </div>
+                홈으로 가기
+            </button>
+        </>
+    )
+}
+            </div >
+        </div >
     );
 };
 
