@@ -31,7 +31,7 @@ public record InvitationResponse(
                     .email(invitation.getInvitedMember().getEmail())
                     .name(invitation.getInvitedMember().getName())
                     .theme(invitation.getInvitedMember().getTheme())
-                    .provider(invitation.getInvitedMember().getProvider())
+                    .provider(null) // Member does not have provider field
                     .createdAt(invitation.getInvitedMember().getCreatedAt())
                     .build();
         }
