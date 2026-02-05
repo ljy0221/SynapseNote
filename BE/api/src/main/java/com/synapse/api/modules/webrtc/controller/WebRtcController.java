@@ -1,11 +1,12 @@
 package com.synapse.api.modules.webrtc.controller;
 
-import com.synapse.api.modules.member.entity.Member;
 import com.synapse.api.modules.webrtc.dto.request.*;
 import com.synapse.api.modules.webrtc.dto.response.*;
+
 import com.synapse.api.modules.webrtc.service.WebRtcRoomManager;
+import com.synapse.api.modules.webrtc.service.WebRtcService;
 import com.synapse.api.util.exception.BusinessException;
-import com.synapse.api.util.response.ErrorCode;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.kurento.client.IceCandidate;
@@ -29,7 +30,7 @@ public class WebRtcController {
 
     private final WebRtcRoomManager roomManager;
     private final SimpMessagingTemplate messagingTemplate;
-    private final com.synapse.api.modules.note.repository.NoteMemberRepository noteMemberRepository;
+    private final WebRtcService webRtcService;
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     /**
@@ -43,35 +44,34 @@ public class WebRtcController {
 
         log.info("Member {} joining room {}", memberId, noteId);
 
+        // 노트 멤버십 확인 및 이름 조회 (트랜잭션 처리)
+        String memberName;
+        try {
+            memberName = webRtcService.validateAndGetMemberName(noteId, memberId);
+        } catch (BusinessException e) {
+            sendError(memberId, "Access denied: You are not a member of this note.");
+            throw e;
+        }
 
-
-        // 노트 멤버십 확인 (권한 체크)
-        Member member = noteMemberRepository.findByNoteIdAndMemberId(noteId, memberId)
-                .map(com.synapse.api.modules.note.entity.NoteMember::getMember)
-                .orElseThrow(() -> {
-                    log.warn("Access denied: Member {} is not a participant of Note {}", memberId, noteId);
-                    sendError(memberId, "Access denied: You are not a member of this note.");
-                    return new BusinessException(ErrorCode.NOTE_ACCESS_DENIED);
-                });
-
-        // ...
+        // Room Manager에 참여 처리
+        roomManager.joinRoom(noteId, memberId, memberName);
 
         // 같은 룸의 다른 사용자들에게 알림
-        WebRtcRoomManager.ParticipantInfo newParticipantInfo = 
-            new WebRtcRoomManager.ParticipantInfo(memberId, member.getName(), false);
+        WebRtcRoomManager.ParticipantInfo newParticipantInfo = new WebRtcRoomManager.ParticipantInfo(memberId,
+                memberName, false);
 
         try {
-             String payload = objectMapper.writeValueAsString(newParticipantInfo);
-             
-             SignalingMessage notification = new SignalingMessage();
-             notification.setType("USER_JOINED");
-             notification.setNoteId(noteId);
-             notification.setMemberId(memberId);
-             notification.setPayload(payload);
-             
-             messagingTemplate.convertAndSend("/topic/room/" + noteId, notification);
+            String payload = objectMapper.writeValueAsString(newParticipantInfo);
+
+            SignalingMessage notification = new SignalingMessage();
+            notification.setType("USER_JOINED");
+            notification.setNoteId(noteId);
+            notification.setMemberId(memberId);
+            notification.setPayload(payload);
+
+            messagingTemplate.convertAndSend("/topic/room/" + noteId, notification);
         } catch (Exception e) {
-             log.error("Failed to serialize new participant info for USER_JOINED. Skipping notification.", e);
+            log.error("Failed to serialize new participant info for USER_JOINED. Skipping notification.", e);
         }
     }
 
@@ -96,8 +96,9 @@ public class WebRtcController {
                 // 다른 사용자들에게 알림
                 try {
                     // JSON Payload: {"isMuted": true}
-                    String payload = objectMapper.writeValueAsString(java.util.Collections.singletonMap("isMuted", isMuted));
-                    
+                    String payload = objectMapper
+                            .writeValueAsString(java.util.Collections.singletonMap("isMuted", isMuted));
+
                     SignalingMessage notification = new SignalingMessage();
                     notification.setType("USER_MUTE_CHANGED");
                     notification.setNoteId(noteId);
@@ -233,7 +234,7 @@ public class WebRtcController {
 
         messagingTemplate.convertAndSend("/topic/room/" + noteId, notification);
     }
-    
+
     /**
      * 현재 참여자 목록 조회 (Join 없이)
      * 클라이언트: /app/webrtc/participants
