@@ -203,18 +203,11 @@ const TextBlock: React.FC<TextBlockProps> = ({
     const lastRemoteUpdate = useRef<string>('');
 
     useEffect(() => {
-        // [Fix] IME Duplication & Content Disappearance
-        // Check editor.isFocused directly from the Tiptap instance. 
-        // This is the source of truth. If the editor has focus, DO NOT touch the content
-        // based on external props. The user is typing.
-        if (editor && editor.isFocused) return;
-
-        const currentContent = editor?.getHTML();
-        // 실제로 다른 경우에만 업데이트 (중복 방지)
-        if (editor && content !== currentContent && content !== lastRemoteUpdate.current) {
-            lastRemoteUpdate.current = content;
-            // emitUpdate: false로 불필요한 이벤트 방지
-            editor.commands.setContent(content, { emitUpdate: false });
+        // 포커스 상태일 때는 외부 prop 업데이트를 무시하여 타이핑 중 충돌(레이스 컨디션) 및 무한 루프 방지
+        // 단, 협업 시 다른 사용자의 입력이 즉시 반영되지 않는 단점이 있을 수 있음.
+        // 완벽한 해결을 위해서는 Yjs binding을 직접 사용하거나 transaction origin을 확인해야 함.
+        if (editor && !editor.isFocused && content !== editor.getHTML()) {
+            editor.commands.setContent(content);
         }
     }, [content, editor]);
     if (!editor) {
