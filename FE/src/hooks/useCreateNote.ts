@@ -26,7 +26,7 @@ export const useCreateNote = () => {
     ) => {
         // 1. 30초 제한 확인
         if (!canCreateNote()) {
-            showToast('노트 생성은 30초에 한 번만 가능합니다.', 'error');
+            showToast('노트 생성은 30초에 한 번만 가능합니다.', 'warning');
             return;
         }
 
