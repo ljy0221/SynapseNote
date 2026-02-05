@@ -6,7 +6,7 @@ interface ToastNotificationProps {
     isVisible: boolean;
     onClose: () => void;
     duration?: number;
-    type?: 'success' | 'error' | 'info'; // [New] 타입 추가
+    type?: 'success' | 'error' | 'info' | 'warning'; // [New] 타입 추가
 }
 
 export const ToastNotification: React.FC<ToastNotificationProps> = ({
