@@ -440,15 +440,35 @@
 
 .link-modal {
     background: var(--color-main);
-    padding: 20px;
+    padding: 24px;
     border-radius: 12px;
-    min-width: 300px;
+    min-width: 320px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.link-modal-header {
+    margin-bottom: 4px;
 }
 
 .link-modal h4 {
-    margin: 0 0 12px 0;
+    margin: 0;
     color: var(--font-color);
+    font-size: 18px;
+}
+
+.link-modal-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.link-modal-field label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--font-color-sub);
 }
 
 .link-modal input {
@@ -457,8 +477,15 @@
     border: 1px solid var(--color-sub);
     border-radius: 8px;
     font-size: 14px;
-    margin-bottom: 16px;
     box-sizing: border-box;
+    background-color: var(--color-bg);
+    color: var(--font-color);
+    transition: border-color 0.2s;
+}
+
+.link-modal input:focus {
+    border-color: var(--color-point);
+    outline: none;
 }
 
 .link-modal-buttons {
@@ -484,20 +511,24 @@
     color: var(--font-color);
 }
 
-/* Right Block Actions */
-.block-actions-right {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding-top: 12px;
+/* 1. Remove margin-top for hr following Headers, Lists, Blockquotes, or HR directly */
+.editor-content .ProseMirror :is(h1, h2, h3, ul, ol, blockquote, hr)+hr {
+    margin-top: 0;
+}
+
+/* 2. Collapse empty paragraph between Headers/Lists/Blockquotes/HR and HR (Ghost line squashing) */
+.editor-content .ProseMirror :is(h1, h2, h3, ul, ol, blockquote, hr)+p:has(br:only-child)+hr {
+    margin-top: 0;
+}
+
+.editor-content .ProseMirror :is(h1, h2, h3, ul, ol, blockquote, hr)+p:has(br:only-child) {
+    display: none;
+}
+
+/* 3. Collapse empty paragraph after HR (forced by Tiptap) until typed in */
+.editor-content .ProseMirror hr+p:has(br:only-child) {
+    height: 0;
+    margin: 0;
     opacity: 0;
-    transition: opacity 0.2s;
+    overflow: hidden;
 }
-
-.text-block-wrapper:hover .block-actions-right,
-.text-block-wrapper.is-bookmarked .block-actions-right {
-    opacity: 1;
-}
-
-/* Bookmark button style unified with CodeBlock mode-button */
-/* bookmark-btn styles removed - using shared component */
