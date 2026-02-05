@@ -161,13 +161,7 @@ const NoteMain: React.FC<NoteMainProps> = ({
 
     return (
         <div className="note-main-layout">
-            <NoteSummary
-                summary={summary}
-                summaryStyle={summaryStyle}
-                summaryUpdatedAt={summaryUpdatedAt}
-                isLoading={isSummaryLoading ?? false}
-                onGenerateSummary={onGenerateSummary ?? (() => { })}
-            />
+
             <div className="note-body-wrapper">
                 {/* External sidebar area removed */}
 
@@ -195,6 +189,13 @@ const NoteMain: React.FC<NoteMainProps> = ({
                                 />
                             </header>
                             <div className="note-content-area">
+                                <NoteSummary
+                                    summary={summary}
+                                    summaryStyle={summaryStyle}
+                                    summaryUpdatedAt={summaryUpdatedAt}
+                                    isLoading={isSummaryLoading ?? false}
+                                    onGenerateSummary={onGenerateSummary ?? (() => { })}
+                                />
                                 <Reorder.Group
                                     values={localBlocks}
                                     onReorder={(newOrder) => {

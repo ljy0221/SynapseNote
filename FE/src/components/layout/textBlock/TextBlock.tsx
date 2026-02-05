@@ -32,6 +32,7 @@ import {
     Image as ImageIcon,
     Palette,
 } from 'lucide-react';
+import { useModalStore } from '../../../store/useModalStore';
 import './TextBlock.css';
 
 interface TextBlockProps {
@@ -90,6 +91,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
 }) => {
     const [isFocused, setIsFocused] = React.useState(false);
     const [showColorPicker, setShowColorPicker] = React.useState(false);
+    const { openModal } = useModalStore(); // [New] Modal Store
 
     // 링크 모달 상태
     const [showLinkModal, setShowLinkModal] = React.useState(false);
@@ -130,7 +132,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 types: ['heading', 'paragraph'],
             }),
             Link.configure({
-                openOnClick: true,
+                openOnClick: false, // [Change] 직접 핸들링을 위해 false로 설정
                 HTMLAttributes: {
                     target: '_blank',
                     rel: 'noopener noreferrer',
@@ -142,6 +144,24 @@ const TextBlock: React.FC<TextBlockProps> = ({
         // onTransaction removed for performance optimization.
         // We now rely on explicit onClick triggers for button state updates
         // and onSelectionUpdate for cursor updates.
+        editorProps: {
+            handleClick: (view, pos, event) => {
+                const attrs = view.state.doc.resolve(pos).marks().find(mark => mark.type.name === 'link')?.attrs;
+                const link = attrs?.href;
+
+                if (link && event.target instanceof HTMLAnchorElement) { // [Check] a 태그 클릭 시에만 동작
+                    // 링크 클릭 시 외부 링크 경고 모달 표시
+                    openModal('EXTERNAL_LINK_WARNING', {
+                        url: link,
+                        onConfirm: () => {
+                            window.open(link, '_blank');
+                        }
+                    });
+                    return true; // 이벤트 전파 중단
+                }
+                return false;
+            }
+        },
         onSelectionUpdate: ({ editor }) => {
             // 확실하게 상태 업데이트를 트리거하기 위해 forceUpdate 패턴 사용
             // 여기서는 간단히 editor 상태가 변경되었음을 알림
