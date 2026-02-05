@@ -1,0 +1,125 @@
+.voice-channel-sidebar {
+    background-color: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    max-height: 200px; /* Adjust height or make it flexible */
+    overflow-y: auto;
+    font-size: 0.9rem;
+}
+
+.voice-connection-status {
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: rgba(0, 0, 0, 0.1);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.connection-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.channel-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.status-text {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+}
+
+.status-text.connected {
+    color: var(--color-success);
+}
+
+.voice-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.voice-action-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    padding: 4px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.voice-action-btn:hover {
+    background-color: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.voice-action-btn.active {
+    color: var(--color-danger); /* Mute active */
+    background-color: rgba(255, 0, 0, 0.1);
+}
+
+.participant-list {
+    padding: 8px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.participant-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    color: var(--text-secondary);
+}
+
+.participant-item:hover {
+    background-color: var(--bg-hover);
+}
+
+.participant-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: var(--color-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    color: white;
+}
+
+.participant-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.join-voice-btn {
+    margin: 12px;
+    padding: 8px;
+    background-color: var(--color-primary);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.join-voice-btn:hover {
+    background-color: var(--bg-hover); /* Adjust based on primary hover color */
+    opacity: 0.9;
+}
