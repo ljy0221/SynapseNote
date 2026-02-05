@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Copy, Check } from 'lucide-react';
+import { X, Copy } from 'lucide-react';
 import { createInvitationApi } from '../../../api/notes/CreateInvitation.api';
+import { useToastStore } from '../../../store/useToastStore';
 import './InviteLinkModal.css';
 
 interface InviteLinkModalProps {
@@ -10,7 +11,7 @@ interface InviteLinkModalProps {
 }
 
 export const InviteLinkModal: React.FC<InviteLinkModalProps> = ({ isOpen, onClose, noteId }) => {
-    const [isCopied, setIsCopied] = useState(false);
+    const { showToast } = useToastStore();
     const [inviteUrl, setInviteUrl] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
@@ -40,14 +41,16 @@ export const InviteLinkModal: React.FC<InviteLinkModalProps> = ({ isOpen, onClos
 
     if (!isOpen) return null;
 
+
+
     const handleCopy = async () => {
         try {
             await navigator.clipboard.writeText(inviteUrl);
-            setIsCopied(true);
-            setTimeout(() => setIsCopied(false), 2000); // 2초 후 복귀
+            showToast('링크가 복사되었습니다.', 'success');
+            onClose();
         } catch (err) {
             console.error('Failed to copy text: ', err);
-            // Fallback for older browsers if needed, but modern browsers support clipboard API
+            showToast('링크 복사에 실패했습니다.', 'error');
         }
     };
 
@@ -85,16 +88,14 @@ export const InviteLinkModal: React.FC<InviteLinkModalProps> = ({ isOpen, onClos
                             className="invite-link-input"
                         />
                         <button
-                            className={`invite-copy-btn ${isCopied ? 'copied' : ''}`}
+                            className="invite-copy-btn"
                             onClick={handleCopy}
                             title="링크 복사"
                             disabled={isLoading || !!error}
                         >
-                            {isCopied ? <Check size={18} /> : <Copy size={18} />}
+                            <Copy size={18} />
                         </button>
                     </div>
-
-                    {isCopied && <span className="invite-copy-feedback">링크가 복사되었습니다!</span>}
                 </div>
             </div>
         </div>
