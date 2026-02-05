@@ -41,7 +41,7 @@ export const useYjsStore = (noteId: string | undefined) => {
   const docRef = useRef<Y.Doc>(new Y.Doc());
   const providerRef = useRef<WebsocketProvider | null>(null);
 
-  // ✅ Zustand store에서 토큰 가져오기 (persist 복원 포함)
+  // Zustand store에서 토큰 가져오기 (persist 복원 포함)
   const accessToken = useAuthStore((state) => state.accessToken);
 
   // 환경 변수에서 WS URL 가져오기
@@ -58,7 +58,7 @@ export const useYjsStore = (noteId: string | undefined) => {
     console.log(`[Yjs] Connecting to ${wsUrl} for note: ${noteId}`);
     console.log(`[Yjs] Using accessToken? ${accessToken ? 'YES' : 'NO'}`);
 
-    // ✅ 이전 provider/doc 정리 (중복 연결/리스너 누수 방지)
+    // 이전 provider/doc 정리 (중복 연결/리스너 누수 방지)
     if (providerRef.current) {
       providerRef.current.destroy();
       providerRef.current = null;
@@ -67,11 +67,11 @@ export const useYjsStore = (noteId: string | undefined) => {
       docRef.current.destroy();
     }
 
-    // ✅ 새 문서 생성
+    // 새 문서 생성
     const doc = new Y.Doc();
     docRef.current = doc;
 
-    // ✅ Provider 생성 (token params 포함)
+    // Provider 생성 (token params 포함)
     const provider = new WebsocketProvider(wsUrl, noteId, doc, {
       params: { token: accessToken || '' },
     });
@@ -115,10 +115,22 @@ export const useYjsStore = (noteId: string | undefined) => {
         })
         .filter(Boolean) as BlockData[];
 
-      setBlocks(currentBlocks);
+      // [Fix] Deduplicate blocks by ID to prevent React key errors
+      const seenIds = new Set();
+      const uniqueBlocks = [];
+      for (const block of currentBlocks) {
+        if (seenIds.has(block.id)) {
+          console.warn(`[Yjs] Duplicate block detected and ignored: ${block.id}`);
+          continue;
+        }
+        seenIds.add(block.id);
+        uniqueBlocks.push(block);
+      }
+
+      setBlocks(uniqueBlocks);
     };
 
-    // ✅ 동기화 이벤트 (y-websocket은 'sync'가 일반적)
+    // 동기화 이벤트 (y-websocket은 'sync'가 일반적)
     const onSync = (synced: boolean) => {
       console.log('[Yjs] sync:', synced);
       setIsSynced(synced);
@@ -126,8 +138,11 @@ export const useYjsStore = (noteId: string | undefined) => {
     };
     provider.on('sync', onSync);
 
+    // 블록 배열 변경 관찰 (실시간 반영 핵심)
     // ✅ 블록 배열 변경 관찰 (실시간 반영 핵심)
-    const onBlocksChanged = () => updateBlocksState();
+    const onBlocksChanged = (_events: Y.YEvent<any>[], _transaction: Y.Transaction) => {
+      updateBlocksState();
+    };
     yBlocks.observeDeep(onBlocksChanged);
 
     // (선택) 최초 연결 직후, 로컬에 이미 값이 있는 경우를 위해 한번 호출
@@ -153,7 +168,7 @@ export const useYjsStore = (noteId: string | undefined) => {
       setBlocks([]);
       setIsSynced(false);
     };
-  }, [noteId, wsUrl, accessToken]); // ✅ 토큰 변경(리프레시) 시 재연결
+  }, [noteId, wsUrl, accessToken]); // 토큰 변경(리프레시) 시 재연결
 
   // 블록 추가
   const addBlock = useCallback((prevBlockId: number | string | null, type: BlockType, initialContent: string | undefined) => {
@@ -190,7 +205,7 @@ export const useYjsStore = (noteId: string | undefined) => {
       }
 
       yBlocks.insert(insertIndex, [newBlockMap]);
-    });
+    }, 'local-structure');
   }, [noteId]); // Removed blocks dependency
 
   // 블록 업데이트
@@ -214,10 +229,16 @@ export const useYjsStore = (noteId: string | undefined) => {
     const type = targetBlock.get('_class');
 
     doc.transact(() => {
-      let yText: Y.Text | undefined;
+      const key = type === 'code' ? 'code' : 'content';
+      let yText = properties.get(key) as any;
 
-      if (type === 'code') yText = properties.get('code') as Y.Text;
-      else yText = properties.get('content') as Y.Text;
+      // [Fix] Self-healing for corrupted data (if yText is a string or missing methods)
+      if (yText && typeof yText.insert !== 'function') {
+        console.warn(`[Yjs] Corrupted Y.Text detected for block ${blockId}. Repairing...`);
+        const strContent = yText.toString(); // Works for string or objects with toString
+        yText = new Y.Text(strContent);
+        properties.set(key, yText);
+      }
 
       if (!yText) return;
 
@@ -252,7 +273,7 @@ export const useYjsStore = (noteId: string | undefined) => {
 
     doc.transact(() => {
       properties.set('language', newLanguage);
-    });
+    }, 'local-structure');
   }, []);
 
   // 블록 삭제
@@ -307,10 +328,20 @@ export const useYjsStore = (noteId: string | undefined) => {
 
       if (oldProperties) {
         oldProperties.forEach((value, key) => {
-          if (value instanceof Y.Text) newProperties.set(key, new Y.Text(value.toString()));
-          else newProperties.set(key, value);
+          // [Fix] Explicitly handle Y.Text fields by key name to verify/clone correctly
+          // relying on 'instanceof' can be flaky with different Yjs bundles
+          if (key === 'content' || key === 'code') {
+            newProperties.set(key, new Y.Text(value.toString()));
+          } else if (value instanceof Y.Text) {
+            // Fallback for other potential text fields
+            newProperties.set(key, new Y.Text(value.toString()));
+          } else {
+            newProperties.set(key, value);
+          }
         });
       }
+      newProperties.set('bookmark', oldProperties.get('bookmark') || false); // Ensure bookmark is preserved properly
+
       newBlockMap.set('properties', newProperties);
 
       if (fromIndex < toIndex) {
@@ -320,7 +351,7 @@ export const useYjsStore = (noteId: string | undefined) => {
         yBlocks.insert(toIndex, [newBlockMap]);
         yBlocks.delete(fromIndex + 1, 1);
       }
-    });
+    }, 'local-move');
   }, []);
 
   // 여러 블록 한꺼번에 추가 (batch)
@@ -353,7 +384,7 @@ export const useYjsStore = (noteId: string | undefined) => {
       });
 
       yBlocks.push(mapsToInsert);
-    });
+    }, 'local-structure');
   }, [noteId]);
 
 
