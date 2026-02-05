@@ -141,17 +141,13 @@ export const useYjsStore = (noteId: string | undefined) => {
     provider.on('sync', onSync);
 
     // 블록 배열 변경 관찰 (실시간 반영 핵심)
-    // ✅ 블록 배열 변경 관찰 (실시간 반영 핵심)
-    // 🔥 Transaction origin 체크 추가: 로컬 변경은 무시하여 무한 루프 방지
-    const onBlocksChanged = (event: Y.YEvent<any>[], transaction: Y.Transaction) => {
-      // 로컬에서 발생한 트랜잭션은 무시 (이미 로컬 상태는 컴포넌트에서 관리)
-      if (transaction.origin === 'local') {
-        console.log('[Yjs] Ignoring local transaction to prevent loop');
-        return;
-      }
+    // 🔥 로컬/원격 모두 React 상태 업데이트 필요
+    // 무한 루프는 이미 컴포넌트 레벨에서 방지됨 (useEffect 제거)
+    const onBlocksChanged = (_events: Y.YEvent<any>[], transaction: Y.Transaction) => {
+      const origin = transaction.origin || 'remote';
+      console.log(`[Yjs] Blocks changed, origin: ${origin}`);
 
-      // 원격 변경사항만 React 상태에 반영
-      console.log('[Yjs] Remote change detected, updating blocks state');
+      // 로컬/원격 모두 상태 업데이트 (블록 추가/삭제/이동 시 필수)
       updateBlocksState();
     };
     yBlocks.observeDeep(onBlocksChanged);
