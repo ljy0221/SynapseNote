@@ -19,10 +19,11 @@ interface ApiResponse<T> {
   data: T;
 }
 
-export const socialLogin = async (provider: string, code: string): Promise<LoginResult> => {
+export const socialLogin = async (provider: string, code: string, platform?: string): Promise<LoginResult> => {
   const response = await api.post<ApiResponse<LoginResponse>>('/v1/login', {
     provider: provider.toUpperCase(),
     authorizationCode: code,
+    platform: platform || 'WEB', // Default to WEB if not specified, though caller should provide it
   });
 
   const data = response.data.data;
