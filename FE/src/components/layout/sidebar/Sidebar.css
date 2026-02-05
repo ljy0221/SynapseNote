@@ -33,7 +33,7 @@
 
   width: calc(var(--sidebar-width) + var(--sidebar-toggle-width));
   bottom: 0;
-
+  pointer-events: none;
   /* SideMenuBar를 덮지 않도록 */
 
   z-index: 900;
