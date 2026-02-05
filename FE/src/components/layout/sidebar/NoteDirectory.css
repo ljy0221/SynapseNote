@@ -20,7 +20,7 @@
 }
 
 .tree-row:hover {
-  background-color: rgba(0, 0, 0, 0.035);
+  background-color: color-mix(in srgb, var(--color-point), transparent 90%);
 }
 
 /* =========================
@@ -54,7 +54,7 @@
    Active 노트
 ========================= */
 .tree-row.note.active {
-  background-color: rgba(255, 165, 0, 0.14);
+  background-color: color-mix(in srgb, var(--color-point), transparent 80%);
 }
 
 .tree-row.note.active .tree-title {
@@ -70,8 +70,10 @@
 
 .side-note-title {
   flex: 1;
-  min-width: 0;            /* flex ellipsis 핵심 */
-  max-width: 120px;        /* 8글자 내외에 해당 (폰트 13~14px 기준) */
+  min-width: 0;
+  /* flex ellipsis 핵심 */
+  max-width: 120px;
+  /* 8글자 내외에 해당 (폰트 13~14px 기준) */
 
   white-space: nowrap;
   overflow: hidden;
@@ -95,6 +97,6 @@
    Drag & Drop
 ========================= */
 .tree-row.directory.drag-over {
-  background-color: rgba(255, 165, 0, 0.2);
-  outline: 1px dashed orange;
+  background-color: color-mix(in srgb, var(--color-point), transparent 70%);
+  outline: 1px dashed var(--color-point);
 }
