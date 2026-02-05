@@ -36,6 +36,7 @@
   padding: 20px;
   flex: 1;
   /* 남은 높이 차지 */
+  /* max-height removed for Absolute Layout */
   overflow-y: auto;
   /* 내부 스크롤 */
   min-height: 0;
