@@ -37,6 +37,7 @@ interface CodeBlockProps {
     isFocused?: boolean; // [추가]
     onContextMenu?: (e: React.MouseEvent) => void; // [New]
     onAiReviewResult?: (htmlContent: string) => void;
+    onLanguageChange?: (id: number | string, language: string) => void;
 }
 
 function getDefaultVersion(language: Language): string {
@@ -60,6 +61,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     dragControls,
     onContextMenu, // [New]
     onAiReviewResult, // [New]
+    onLanguageChange,
     isFocused,
     bookmark = false,
     onToggleBookmark,
@@ -183,6 +185,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
             onChange(id, template);
             setLanguage(newLanguage);
             if (noteId) setNoteLanguage(noteId, newLanguage);
+            if (onLanguageChange) onLanguageChange(id, newLanguage);
             return;
         }
         if (window.confirm('언어를 변경하면 기본 템플릿이 적용됩니다. 계속하시겠습니까?')) {
@@ -192,6 +195,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
         }
         setLanguage(newLanguage);
         if (noteId) setNoteLanguage(noteId, newLanguage);
+        if (onLanguageChange) onLanguageChange(id, newLanguage);
     };
 
     const handleRestore = (code: string) => {
