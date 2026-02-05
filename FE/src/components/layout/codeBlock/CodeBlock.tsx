@@ -6,7 +6,7 @@ import BlockCopyButton from '../../common/blockCopyButton/BlockCopyButton';
 
 import CodeMirrorEditor from '../../common/codeMirrorEditor/CodeMirrorEditor';
 import type { Language, ExecutionResult, ExecutionMode, SessionInfo } from '../../../types/execution/ExecutionTypes';
-import { Server, Cpu } from 'lucide-react';
+import { Server, RectangleEllipsis } from 'lucide-react';
 import './CodeBlock.css';
 import { saveExecutionToBackend } from "../../../utils/executionAPI.ts";
 import { LanguageSelector } from "./LanguageSelector.tsx";
@@ -278,7 +278,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                                         onClick={() => setExecutionMode('single')}
                                         disabled={loading}
                                     >
-                                        <Cpu size={16} />
+                                        <RectangleEllipsis size={16} />
                                     </button>
                                 </Tooltip>
                                 <Tooltip title={!noteId ? '노트 저장 후 사용 가능' : '세션 실행 모드'} placement="top">
