@@ -54,7 +54,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     language: initialLanguage,
     code,
     noteId,
-    onDelete,
+    onDelete: _onDelete,
     onChange,
     onFocus,
     onAddBlockAfter,
@@ -85,8 +85,13 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     };
 
     useEffect(() => {
-        if (code !== undefined) setEditedCode(code);
-    }, [code]);
+        // [Fix] CodeMirror Sync Guard
+        // Prevent external props from overwriting local edits while focused (typing).
+        // This prevents cursor jumps and revert issues.
+        if (code !== undefined && code !== editedCode && !isFocused) {
+            setEditedCode(code);
+        }
+    }, [code, isFocused]);
 
     useEffect(() => {
         if (isCodeEmpty(code) && isCodeEmpty(editedCode)) {
