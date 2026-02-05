@@ -47,6 +47,7 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
         setIsLoading(true);
         try {
             if (activeTab === 'MEMBERS') {
+                const res = await getNoteMembersApi(noteId);
                 if (res && res.members) {
                     setMembers(res.members);
                 }
@@ -97,10 +98,52 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
     };
 
     const handleRoleChange = async (memberId: string, newRole: NoteMemberRole) => {
-        // ... (existing logic)
+        if (!noteId) return;
+
+        // Optimistic update
+        const previousMembers = [...members];
+        setMembers(members.map(m =>
+            m.memberId === memberId ? { ...m, role: newRole } : m
+        ));
+
+        try {
+            await updateMemberRoleApi(noteId, memberId, newRole);
+            console.log(`Updated role for ${memberId} to ${newRole}`);
+            showToast("권한이 변경되었습니다.", 'success');
+        } catch (error) {
+            console.error("Failed to update role:", error);
+            // Revert on error
+            setMembers(previousMembers);
+            showToast("권한 변경에 실패했습니다.", 'error');
+        }
     };
 
-    // ... (existing remove logic)
+    const confirmRemoveMember = (memberId: string) => {
+        setConfirmModal({
+            isOpen: true,
+            message: "정말로 이 멤버를 내보내시겠습니까?",
+            targetId: memberId,
+        });
+    };
+
+    const executeRemoveMember = async () => {
+        const memberId = confirmModal.targetId;
+        if (!noteId || !memberId) return;
+
+        setConfirmModal({ ...confirmModal, isOpen: false }); // Close modal
+
+        const previousMembers = [...members];
+        setMembers(members.filter(m => m.memberId !== memberId));
+
+        try {
+            await deleteMemberApi(noteId, memberId);
+            showToast("멤버를 내보냈습니다.", 'success');
+        } catch (error) {
+            console.error("Failed to remove member:", error);
+            setMembers(previousMembers);
+            showToast("멤버 내보내기에 실패했습니다.", 'error');
+        }
+    };
 
     const handleAcceptRequest = async (invitationId: string) => {
         try {
