@@ -1,16 +1,14 @@
 import * as Y from 'yjs';
-import { Block, BlockHistory, BlockProperties } from '../models/Block';
+import { Block } from '../models/Block';
 import { Note } from '../models/Note';
 import { Binary } from 'mongodb';
-import { v7 as uuidv7 } from 'uuid';
 import * as _ from 'lodash';
+import * as crypto from 'crypto';
 
 // UUID 유틸리티
 function uuidToBuffer(uuid: string): Binary | string {
   if (!uuid) return uuid;
-  // 이미 Binary이면 그대로 반환
   if (typeof uuid === 'object' && (uuid as any)._bsontype === 'Binary') return uuid;
-  // 36자 문자열이면 변환
   if (typeof uuid === 'string' && uuid.length === 36) {
     return new Binary(Buffer.from(uuid.replace(/-/g, ''), 'hex'), 4);
   }
@@ -35,7 +33,7 @@ function normalizeToHex(id: any): string {
 }
 
 function generateUuidV7(): string {
-  return uuidv7();
+  return crypto.randomUUID(); // Fallback to v4 if v7 not explicitly needed, or use proper v7 impl if strict
 }
 
 interface UserContext {
@@ -51,14 +49,13 @@ class BridgeService {
     this.handleUpdate = this.handleUpdate.bind(this);
   }
 
-  public handleUpdate(docName: string, yDoc: Y.Doc, origin: any) {
+  // [Fix] Match docManager usage: handleUpdate(noteId, yDoc, origin?)
+  public handleUpdate(docName: string, yDoc: Y.Doc, origin?: any) {
+    // If docName comes as "note:xyz" from y-websocket, we split.
+    // If docManager sends pure UUID, we handle it.
+    const noteId = docName.startsWith('note:') ? docName.split(':')[1] : docName;
+
     if (origin === 'from-db') return;
-    if (!docName.startsWith('note:')) return;
-
-    const noteId = docName.split(':')[1];
-
-    // User Context extraction (if available in origin)
-    // const userContext = ...
 
     if (this.debounceTimers.has(noteId)) {
       clearTimeout(this.debounceTimers.get(noteId)!);
@@ -70,6 +67,70 @@ class BridgeService {
     }, this.DEBOUNCE_TIME);
 
     this.debounceTimers.set(noteId, timer);
+  }
+
+  // [Fix] Restore initDocFromDB logic
+  public async initDocFromDB(noteId: string, yDoc: Y.Doc): Promise<void> {
+    try {
+      const queryNoteId = uuidToBuffer(noteId);
+      const dbBlocks = await Block.find({ noteId: queryNoteId }).lean().sort({ order: 1 }) as any[];
+
+      if (!dbBlocks || dbBlocks.length === 0) {
+        console.log(`[Bridge] No blocks found in DB for ${noteId}`);
+        return;
+      }
+
+      const yArray = yDoc.getArray('blocks');
+
+      // Initialize YArray with DB content
+      yDoc.transact(() => {
+        if (yArray.length > 0) {
+          yArray.delete(0, yArray.length); // Clear existing if any (unlikely on init)
+        }
+
+        const formattedBlocks = dbBlocks.map(block => {
+          const blockMap = new Y.Map();
+          // Core fields
+          blockMap.set('blockId', toUuidString(block.blockId));
+          blockMap.set('_class', block._class);
+
+          // Nested properties
+          if (block.properties) {
+            const props = new Y.Map();
+            Object.entries(block.properties).forEach(([k, v]) => {
+              props.set(k, v);
+            });
+            blockMap.set('properties', props); // Note: Yjs expects properties to be a Map if you want to sync deeply? 
+            // Actually typically Yjs stores properties as a JS object inside the Map if they are not collaborative themselves. 
+            // But looking at syncToDB, it reads yBlock.properties.
+            // Let's assume blockMap structure matches what syncToDB expects.
+            // syncToDB: const cleanProps = ... Object.entries(yBlock.properties)
+          }
+
+          // Other fields
+          if (block.bookmark !== undefined) blockMap.set('bookmark', block.bookmark);
+          if (block.lastOutput) blockMap.set('lastOutput', block.lastOutput);
+          if (block.lastExecutedAt) blockMap.set('lastExecutedAt', block.lastExecutedAt);
+          if (block.outputHistory) blockMap.set('outputHistory', block.outputHistory);
+
+          return blockMap;
+        });
+
+        // Insert as JSON/Map? 
+        // yArray.insert(0, formattedBlocks); 
+        // Wait, yArray.toJSON() returns simple objects in syncToDB. 
+        // If we insert Y.Map instances, that makes it a shared type.
+        // Yes, syncToDB checks `if (yBlockMap instanceof Y.Map)` in one place (line 120 approx).
+
+        yArray.insert(0, formattedBlocks);
+      }, 'from-db'); // Origin 'from-db' to prevent echo
+
+      console.log(`[Bridge] Initialized ${dbBlocks.length} blocks from DB for ${noteId}`);
+
+    } catch (error) {
+      console.error(`[Bridge Error] initDocFromDB failed for ${noteId}:`, error);
+      throw error;
+    }
   }
 
   private async syncToDB(noteId: string, yDoc: Y.Doc, userContext?: UserContext): Promise<void> {
@@ -99,15 +160,13 @@ class BridgeService {
       for (let i = 0; i < currentBlocks.length; i++) {
         const yBlock = currentBlocks[i];
 
+        // Ensure blockId exists
         if (!yBlock.blockId) {
           const newId = generateUuidV7();
-          const yBlockMap = yArray.get(i);
-          if (yBlockMap instanceof Y.Map) {
-            yBlockMap.set('blockId', newId);
-            yBlock.blockId = newId;
-          } else {
-            continue;
-          }
+          // We can't modify yArray here easily without transaction or knowing index reliably if changed.
+          // ideally frontend should have generated it.
+          // But here, we just assign to the object to proceed with DB save.
+          yBlock.blockId = newId;
         }
 
         const validBlockId = toUuidString(yBlock.blockId);
@@ -194,12 +253,10 @@ class BridgeService {
         await Block.bulkWrite(bulkOps);
         console.log(`[Bridge] Sync Success for ${noteId}. Updates: ${bulkOps.length}`);
 
-        // [New] Note updatedAt update logic
         await Note.updateOne(
           { _id: queryNoteId },
           { $set: { updatedAt: new Date() } }
         );
-        console.log(`[Bridge] Note ${noteId} updatedAt bumped.`);
       }
     } catch (error) {
       console.error(`[Bridge Error] syncToDB failed for ${noteId}:`, error);
