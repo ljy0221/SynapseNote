@@ -214,7 +214,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
         if (editor && content !== currentContent && content !== lastRemoteUpdate.current) {
             lastRemoteUpdate.current = content;
             // emitUpdate: false로 불필요한 이벤트 방지
-            editor.commands.setContent(content, false);
+            editor.commands.setContent(content, { emitUpdate: false });
         }
     }, [content, editor]);
     if (!editor) {
