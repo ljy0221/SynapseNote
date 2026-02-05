@@ -69,7 +69,17 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     const [result, setResult] = useState<ExecutionResult | null>(null);
     const [loading, setLoading] = useState(false);
     const [editedCode, setEditedCode] = useState(code);
-    const { settings, getNoteLanguage, setNoteLanguage, trackBlockLanguage, hasMultipleLanguages } = useCodeEditorStore();
+    const { settings, getNoteLanguage, setNoteLanguage, trackBlockLanguage } = useCodeEditorStore();
+
+    // Optimize selector to prevent re-renders and log spam
+    const hasMultiple = useCodeEditorStore(state => {
+        if (!noteId) return false;
+        const noteBlocks = state.noteBlockLanguages[noteId];
+        if (!noteBlocks) return false;
+        const langs = new Set(Object.values(noteBlocks));
+        return langs.size > 1;
+    });
+
     const savedLanguage = noteId ? getNoteLanguage(noteId) : undefined;
     const [language, setLanguage] = useState<Language>(savedLanguage || initialLanguage);
     const [executionMode, setExecutionMode] = useState<ExecutionMode>('single');
@@ -109,7 +119,10 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     }, [noteId, language]);
 
     useEffect(() => {
-        if (noteId) trackBlockLanguage(noteId, id.toString(), language);
+        if (noteId) {
+            console.log(`[CodeBlock] useEffect Triggered - ID: ${id}, NoteID: ${noteId}, Lang: ${language}`);
+            trackBlockLanguage(noteId, id.toString(), language);
+        }
     }, [noteId, id, language]);
 
     const { showToast } = useToastStore();
@@ -274,7 +287,8 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 
                     {(() => {
                         const isJava = language === 'java';
-                        const hasMultiple = hasMultipleLanguages(noteId || '');
+                        // Selector inside render is bad, but we are inside a map.
+                        // Better to use the hook at top level.
                         const shouldShow = !isJava && !hasMultiple;
                         return shouldShow;
                     })() && (
