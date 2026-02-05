@@ -111,7 +111,11 @@ export const useWebRTC = ({ noteId, memberId, token, onConnect, onDisconnect }: 
         log('Disconnected');
     }, [noteId, onDisconnect]);
 
+    /**
+     * 구독 설정
+     */
     const subscribeToSignaling = (client: Client) => {
+        // 1. Personal Signaling (Existing)
         client.subscribe('/user/queue/webrtc', (message: IMessage) => {
             const data: SignalingMessage = JSON.parse(message.body);
             handleSignalingMessage(data);
@@ -126,19 +130,61 @@ export const useWebRTC = ({ noteId, memberId, token, onConnect, onDisconnect }: 
             const data: IceCandidateMessage = JSON.parse(message.body);
             handleIceCandidateMessage(data);
         });
+
+        // 2. Room Broadcasting (New: Participants)
+        if (noteId) {
+            client.subscribe(`/topic/room/${noteId}`, (message: IMessage) => {
+                const data: SignalingMessage = JSON.parse(message.body);
+                handleRoomMessage(data);
+            });
+        }
     };
 
+    /**
+     * Room Topic 메시지 핸들러 (USER_JOINED, USER_LEFT)
+     */
+    const handleRoomMessage = (data: SignalingMessage) => {
+        if (data.type === 'USER_JOINED') {
+            log(`User joined: ${data.memberId}`);
+            if (data.memberId && data.memberId !== memberId) {
+                setParticipants(prev => {
+                    // 중복 방지
+                    if (prev.some(p => p.memberId === data.memberId)) return prev;
+                    return [...prev, {
+                        memberId: data.memberId!,
+                        status: 'connected',
+                        isMuted: false,
+                        isSpeaking: false,
+                        connectionState: 'new'
+                    }];
+                });
+            }
+        } else if (data.type === 'USER_LEFT') {
+            log(`User left: ${data.memberId}`);
+            if (data.memberId) {
+                setParticipants(prev => prev.filter(p => p.memberId !== data.memberId));
+            }
+        }
+    };
+
+    /**
+     * 방 참여 요청 및 미디어 획득
+     */
     const joinRoom = async (client: Client) => {
         try {
+            // Get User Media
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             localStreamRef.current = stream;
 
+            // Check Mute State
             stream.getAudioTracks().forEach(track => {
                 track.enabled = !isMuted;
             });
 
+            // Initialize PeerConnection
             createPeerConnection(stream);
 
+            // Send Join Message
             client.publish({
                 destination: '/app/webrtc/join',
                 body: JSON.stringify({ noteId })
@@ -160,10 +206,12 @@ export const useWebRTC = ({ noteId, memberId, token, onConnect, onDisconnect }: 
             ]
         });
 
+        // Add Local Tracks
         stream.getTracks().forEach(track => {
             pc.addTrack(track, stream);
         });
 
+        // On ICE Candidate
         pc.onicecandidate = (event) => {
             if (event.candidate && stompClientRef.current) {
                 stompClientRef.current.publish({
@@ -179,6 +227,7 @@ export const useWebRTC = ({ noteId, memberId, token, onConnect, onDisconnect }: 
             }
         };
 
+        // On Track (Remote Stream)
         pc.ontrack = (event) => {
             log('Received remote track');
             if (event.streams && event.streams[0]) {
@@ -198,11 +247,13 @@ export const useWebRTC = ({ noteId, memberId, token, onConnect, onDisconnect }: 
             if (data.status === 'READY') {
                 createAndSendOffer();
             }
+            // 내가 조인했으므로 나 자신을 리스트에 추가 (Optional, or handled by UI)
         } else if (data.type === 'ERROR') {
             errorLog('Signaling Error:', data.payload);
         }
     };
 
+    // ... (createAndSendOffer, handleAnswerMessage, handleIceCandidateMessage, toggleMute - same as before)
     const createAndSendOffer = async () => {
         const pc = peerConnectionRef.current;
         const client = stompClientRef.current;
@@ -266,11 +317,12 @@ export const useWebRTC = ({ noteId, memberId, token, onConnect, onDisconnect }: 
         }
     };
 
+    // [Note] Disconnect when noteId changes or component unmounts
     useEffect(() => {
         return () => {
             disconnect();
         };
-    }, []);
+    }, [noteId, disconnect]); // Added noteId dependency to ensure cleanup on switch
 
     return {
         status,
