@@ -20,17 +20,42 @@ export default function App() {
                 const code = url.split('synapse://invite/')[1];
                 if (!code) return;
 
-                const { isAuthenticated } = useAuthStore.getState();
+                // [Fix] Race Condition 해결 \& 스토어 상태 확인
+                const { isAuthenticated, accessToken } = useAuthStore.getState();
+                const hasToken = !!accessToken;
 
-                if (isAuthenticated) {
-                    // 로그인 상태 -> 즉시 처리 (추후 API 연동 필요)
-                    console.log('[App] Authenticated. Processing invite code:', code);
-                    // 예: joinWorkspace(code);
-                    // navigate(`/workspace/join/${code}`);
+                if (isAuthenticated || hasToken) {
+                    // 로그인 상태(또는 토큰 존재) -> 즉시 처리
+                    console.log('[App] Authenticated (or Token exists). Processing invite code:', code);
+                    try {
+                        await acceptInvitationApi(code);
+                        useToastStore.getState().showToast('가입 요청이 전송되었습니다. 소유자의 승인을 기다려주세요.', 'success');
+
+                        // 성공 후 홈으로 이동
+                        if (router && router.navigate) {
+                            router.navigate('/home');
+                        } else {
+                            window.location.href = '/home';
+                        }
+                    } catch (error: any) {
+                        console.error('[App] Failed to accept invitation:', error);
+                        const errorMsg = error.response?.data?.message || '';
+
+                        // [Fix] 이미 가입/요청 상태인 경우 (409 Conflict)
+                        if (error.response?.status === 409 || errorMsg.includes('이미') || errorMsg.includes('exists')) {
+                            useToastStore.getState().showToast('이미 가입 요청이 전송된 상태입니다.', 'info');
+                        } else {
+                            useToastStore.getState().showToast(errorMsg || '초대 수락 중 오류가 발생했습니다.', 'error');
+                        }
+
+                        if (router && router.navigate) {
+                            router.navigate('/home');
+                        }
+                    }
                 } else {
                     // 미로그인 상태 -> 저장 후 로그인으로 이동
                     console.log('[App] Unauthenticated. Saving invite code and redirecting to login.');
-                    sessionStorage.setItem('pendingInviteCode', code);
+                    localStorage.setItem('pendingInviteCode', code); // sessionStorage -> localStorage
                     if (router && router.navigate) {
                         router.navigate('/login');
                     } else {
