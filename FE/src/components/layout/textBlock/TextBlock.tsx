@@ -94,6 +94,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
     // 링크 모달 상태
     const [showLinkModal, setShowLinkModal] = React.useState(false);
     const [linkUrl, setLinkUrl] = React.useState('');
+    const [linkText, setLinkText] = React.useState(''); // [New] 링크 텍스트 상태
 
     // Force update trigger
     const [, setUpdateTrigger] = React.useState(0);
@@ -239,23 +240,52 @@ const TextBlock: React.FC<TextBlockProps> = ({
     // ========================================
     const setLink = () => {
         const previousUrl = editor.getAttributes('link').href || '';
+        const { from, to } = editor.state.selection;
+        const selectedText = editor.state.doc.textBetween(from, to, ' ');
+
         setLinkUrl(previousUrl);
+        setLinkText(selectedText); // 선택된 텍스트 설정
         setShowLinkModal(true);
     };
     // 링크 적용
     const applyLink = () => {
         if (linkUrl.trim() === '') {
+            // URL이 비어있으면 링크 제거
             editor.chain().focus().extendMarkRange('link').unsetLink().run();
         } else {
-            editor.chain().focus().extendMarkRange('link').setLink({ href: linkUrl }).run();
+            // 텍스트와 URL 적용
+            if (linkText) {
+                editor
+                    .chain()
+                    .focus()
+                    .extendMarkRange('link')
+                    .insertContent({
+                        type: 'text',
+                        text: linkText,
+                        marks: [
+                            {
+                                type: 'link',
+                                attrs: {
+                                    href: linkUrl,
+                                },
+                            },
+                        ],
+                    })
+                    .run();
+            } else {
+                // 텍스트가 없으면 그냥 링크만 설정 (기본 동작)
+                editor.chain().focus().extendMarkRange('link').setLink({ href: linkUrl }).run();
+            }
         }
         setShowLinkModal(false);
         setLinkUrl('');
+        setLinkText('');
     };
     // 링크 모달 닫기
     const closeLinkModal = () => {
         setShowLinkModal(false);
         setLinkUrl('');
+        setLinkText('');
         editor.commands.focus();
     };
     return (
@@ -477,21 +507,43 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 {showLinkModal && (
                     <div className="link-modal-overlay" onClick={closeLinkModal}>
                         <div className="link-modal" onClick={(e) => e.stopPropagation()}>
-                            <h4>🔗 링크 URL 입력</h4>
-                            <input
-                                type="text"
-                                value={linkUrl}
-                                onChange={(e) => setLinkUrl(e.target.value)}
-                                placeholder="https://example.com"
-                                autoFocus
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') applyLink();
-                                    if (e.key === 'Escape') closeLinkModal();
-                                }}
-                            />
+                            <div className="link-modal-header">
+                                <h4>🔗 링크 생성</h4>
+                            </div>
+
+                            <div className="link-modal-field">
+                                <label>표시할 텍스트</label>
+                                <input
+                                    type="text"
+                                    value={linkText}
+                                    onChange={(e) => setLinkText(e.target.value)}
+                                    placeholder="텍스트를 입력하세요"
+                                    autoFocus
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') document.getElementById('link-url-input')?.focus();
+                                        if (e.key === 'Escape') closeLinkModal();
+                                    }}
+                                />
+                            </div>
+
+                            <div className="link-modal-field">
+                                <label>링크 주소</label>
+                                <input
+                                    id="link-url-input"
+                                    type="text"
+                                    value={linkUrl}
+                                    onChange={(e) => setLinkUrl(e.target.value)}
+                                    placeholder="https://example.com"
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') applyLink();
+                                        if (e.key === 'Escape') closeLinkModal();
+                                    }}
+                                />
+                            </div>
+
                             <div className="link-modal-buttons">
                                 <button className="link-modal-apply" onClick={applyLink}>
-                                    적용
+                                    링크 생성
                                 </button>
                                 <button className="link-modal-cancel" onClick={closeLinkModal}>
                                     취소
