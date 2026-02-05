@@ -55,6 +55,8 @@ export const useYjsStore = (noteId: string | undefined) => {
       return;
     }
 
+    console.log(`[Yjs] Effect triggered. noteId: ${noteId}, wsUrl: ${wsUrl}, token: ${accessToken ? accessToken.substring(0, 10) + '...' : 'null'}`);
+
     console.log(`[Yjs] Connecting to ${wsUrl} for note: ${noteId}`);
     console.log(`[Yjs] Using accessToken? ${accessToken ? 'YES' : 'NO'}`);
 
@@ -127,7 +129,10 @@ export const useYjsStore = (noteId: string | undefined) => {
     provider.on('sync', onSync);
 
     // ✅ 블록 배열 변경 관찰 (실시간 반영 핵심)
-    const onBlocksChanged = () => updateBlocksState();
+    const onBlocksChanged = (event: Y.YEvent<any>[], transaction: Y.Transaction) => {
+      // console.log('[Yjs] Blocks changed', event, transaction.origin);
+      updateBlocksState();
+    };
     yBlocks.observeDeep(onBlocksChanged);
 
     // (선택) 최초 연결 직후, 로컬에 이미 값이 있는 경우를 위해 한번 호출

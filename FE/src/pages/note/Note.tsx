@@ -36,6 +36,11 @@ const Note: React.FC = () => {
 
     // Sync state to refs
     useEffect(() => {
+        console.log(`[NotePage] Mount noteId: ${noteId}`);
+        return () => console.log(`[NotePage] Unmount noteId: ${noteId}`);
+    }, []);
+
+    useEffect(() => {
         notesRef.current = notes;
     }, [notes]);
 
