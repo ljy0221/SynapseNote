@@ -1,5 +1,5 @@
 // FE/src/components/layout/textBlock/TextBlock.tsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
@@ -83,7 +83,8 @@ const TextBlock: React.FC<TextBlockProps> = ({
     content,
     onUpdate,
     onFocus,
-    onDelete,
+    onDelete: _onDelete,
+    // draggable,
     // draggable,
     // onDragStart,
     // onDragOver,
@@ -171,7 +172,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 return false;
             }
         },
-        onSelectionUpdate: ({ editor }) => {
+        onSelectionUpdate: () => {
             // 확실하게 상태 업데이트를 트리거하기 위해 forceUpdate 패턴 사용
             // 여기서는 간단히 editor 상태가 변경되었음을 알림
             // 그러나 useEditor는 내부적으로 상태 관리를 함.
@@ -197,8 +198,15 @@ const TextBlock: React.FC<TextBlockProps> = ({
             editor.commands.focus();
         }
     }, [shouldFocus, editor]);
+
+    // 🔥 원격 변경사항 동기화 (깜빡임 방지)
+    const lastRemoteUpdate = useRef<string>('');
+
     useEffect(() => {
-        if (editor && content !== editor.getHTML()) {
+        // 포커스 상태일 때는 외부 prop 업데이트를 무시하여 타이핑 중 충돌(레이스 컨디션) 및 무한 루프 방지
+        // 단, 협업 시 다른 사용자의 입력이 즉시 반영되지 않는 단점이 있을 수 있음.
+        // 완벽한 해결을 위해서는 Yjs binding을 직접 사용하거나 transaction origin을 확인해야 함.
+        if (editor && !editor.isFocused && content !== editor.getHTML()) {
             editor.commands.setContent(content);
         }
     }, [content, editor]);

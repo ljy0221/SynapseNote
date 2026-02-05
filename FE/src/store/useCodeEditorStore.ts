@@ -65,6 +65,13 @@ export const useCodeEditorStore = create<CodeEditorState>()(
             trackBlockLanguage: (noteId, blockId, language) =>
                 set((state) => {
                     const noteBlocks = state.noteBlockLanguages[noteId] || {};
+
+                    // 기존에 저장된 언어와 같으면 상태 업데이트 안 함 (무한 렌더링 방지)
+                    if (noteBlocks[blockId] === language) {
+                        console.log(`[CodeEditor] Skipping update - Note: ${noteId}, Block: ${blockId}, Lang: ${language} (Already set)`);
+                        return state;
+                    }
+
                     const newNoteBlocks = {
                         ...noteBlocks,
                         [blockId]: language,
