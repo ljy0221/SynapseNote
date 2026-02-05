@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useNoteStore } from '../store/useNoteStore';
 import { useAuthStore } from '../store/useAuthStore'; // [1] AuthStore 임포트
+import { useToastStore } from '../store/useToastStore';
 import { createNoteApi } from '../api/notes/CreateNote.api';
 import { generateUuidV7 } from '../utils/UUIDV7';
 import { emitNotesChanged } from '../events/NotesEvents';
@@ -17,18 +18,20 @@ export const useCreateNote = () => {
     const { canCreateNote, updateLastCreatedTime } = useNoteStore();
     // [2] 컴포넌트 레벨에서 userInfo를 구독하지 않고, 함수 내부에서 getState()로 최신 값을 가져옵니다.
 
+    const { showToast } = useToastStore(); // Toast store hook
+
     const handleCreateNote = async (
         directoryPath: string = '/',
         options?: CreateNoteOptions
     ) => {
         // 1. 30초 제한 확인
         if (!canCreateNote()) {
-            alert('노트 생성은 30초에 한 번만 가능합니다.');
+            showToast('노트 생성은 30초에 한 번만 가능합니다.', 'warning');
             return;
         }
 
         const noteId = generateUuidV7();
-        
+
         // [3] 수정: LocalStorage 대신 Zustand Store에서 memberId 가져오기
         const userInfo = useAuthStore.getState().userInfo;
         const memberId = userInfo?.memberId;
@@ -75,7 +78,7 @@ export const useCreateNote = () => {
             if (options?.onError) {
                 options.onError(noteId);
             } else {
-                alert("노트를 생성하지 못했습니다.");
+                showToast("노트를 생성하지 못했습니다.", 'error');
             }
         }
     };
