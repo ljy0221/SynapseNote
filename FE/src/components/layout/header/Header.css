@@ -21,24 +21,16 @@
     border-bottom: 1px solid var(--color-sub);
 }
 
-/* 핵심: 컴포넌트 사이의 빈 공간을 드래그 영역으로 확장 */
-.drag-handle {
-    flex: 1;
-    /* 가용한 빈 공간을 모두 채움 */
-    height: 100%;
-    /* 헤더 높이만큼 꽉 채움 */
-    -webkit-app-region: drag;
-}
+/* 핵심: 드래그 핸들 대신 헤더 전체를 드래그 가능하게 설정 */
+/* 단, 개별 존들은 no-drag로 설정하여 클릭 보장 */
 
 /* 왼쪽 구역 설정 (사이드바 버튼 등) */
 .header-left {
     display: flex;
     align-items: center;
     -webkit-app-region: no-drag;
-    /* 버튼 클릭을 위해 제외 */
 }
 
-/* 검색창 구역 설정 */
 /* 검색창 구역 설정 */
 .header-search-zone {
     position: absolute;
@@ -50,6 +42,7 @@
     justify-content: center;
     align-items: center;
     -webkit-app-region: no-drag;
+    z-index: 10;
 
     width: 500px;
 }
@@ -57,22 +50,16 @@
 .header-logo {
     font-weight: bold;
     color: var(--color-point);
-    /* 앰버 포인트 컬러 적용 */
 }
 
 /* 오른쪽 구역 설정 (테마 토글 + 윈도우 컨트롤) */
 .header-right-zone {
+    margin-left: auto;
     display: flex;
     align-items: center;
-
-    /* 요소 간 간격 조절 (테마 버튼과 신호등 버튼 사이) */
     gap: 16px;
-
-    /* 중요: 이 영역 전체는 클릭이 가능해야 함 */
     -webkit-app-region: no-drag;
-
-    /* 버튼들이 너무 끝에 붙지 않도록 미세한 여백 */
-    padding-left: 10px;
+    padding-right: 20px;
 }
 
 input,
