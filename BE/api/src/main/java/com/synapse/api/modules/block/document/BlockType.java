@@ -5,7 +5,8 @@ import com.synapse.api.util.entity.EnumParser;
 
 public enum BlockType {
     TEXT,
-    CODE;
+    CODE,
+    UNKNOWN;
 
     @JsonCreator
     public static BlockType from(String value) {
