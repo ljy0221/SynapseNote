@@ -1,5 +1,6 @@
 package com.synapse.api.modules.webrtc.controller;
 
+import com.synapse.api.modules.member.entity.Member;
 import com.synapse.api.modules.webrtc.dto.request.*;
 import com.synapse.api.modules.webrtc.dto.response.*;
 import com.synapse.api.modules.webrtc.service.WebRtcRoomManager;
@@ -41,17 +42,18 @@ public class WebRtcController {
         log.info("Member {} joining room {}", memberId, noteId);
 
         // 노트 멤버십 확인 (권한 체크)
-        boolean isMember = noteMemberRepository.existsByNoteIdAndMemberId(noteId, memberId);
-        if (!isMember) {
-            log.warn("Access denied: Member {} is not a participant of Note {}", memberId, noteId);
-            sendError(memberId, "Access denied: You are not a member of this note.");
-            return;
-        }
+        Member member = noteMemberRepository.findByNoteIdAndMemberId(noteId, memberId)
+                .map(com.synapse.api.modules.note.entity.NoteMember::getMember)
+                .orElseThrow(() -> {
+                    log.warn("Access denied: Member {} is not a participant of Note {}", memberId, noteId);
+                    sendError(memberId, "Access denied: You are not a member of this note.");
+                    return new RuntimeException("Access denied");
+                });
 
         // 룸 생성 및 참여 (Kurento Pipeline 생성)
-        roomManager.joinRoom(noteId, memberId);
+        roomManager.joinRoom(noteId, memberId, member.getName());
 
-        // 현재 참여자 목록 조회 (Snapshot: ID + Mute Status)
+        // 현재 참여자 목록 조회 (Snapshot: ID + Name + Mute Status)
         WebRtcRoomManager.Room room = roomManager.getRoom(noteId);
         java.util.List<WebRtcRoomManager.ParticipantInfo> currentParticipants = room.getParticipantInfos();
 
@@ -76,10 +78,18 @@ public class WebRtcController {
         messagingTemplate.convertAndSendToUser(memberId.toString(), destination, response);
 
         // 같은 룸의 다른 사용자들에게 알림
+        WebRtcRoomManager.ParticipantInfo newParticipantInfo = 
+            new WebRtcRoomManager.ParticipantInfo(memberId, member.getName(), false);
+
         SignalingMessage notification = new SignalingMessage();
         notification.setType("USER_JOINED");
         notification.setNoteId(noteId);
         notification.setMemberId(memberId);
+        try {
+             notification.setPayload(objectMapper.writeValueAsString(newParticipantInfo));
+        } catch (Exception e) {
+             log.error("Failed to serialize new participant info", e);
+        }
 
         messagingTemplate.convertAndSend("/topic/room/" + noteId, notification);
     }
