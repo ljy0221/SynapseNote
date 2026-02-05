@@ -332,7 +332,21 @@ export const useWebRTC = ({ noteId, memberId, token, onConnect, onDisconnect }: 
         } else if (data.type === 'USER_MUTE_CHANGED') {
             log(`User mute changed: ${data.memberId} -> ${data.payload}`);
             if (data.memberId) {
-                const isMuted = data.payload === 'true';
+                let isMuted = false;
+                if (data.payload) {
+                    try {
+                        const payloadObj = JSON.parse(data.payload);
+                        if (typeof payloadObj.isMuted === 'boolean') {
+                            isMuted = payloadObj.isMuted;
+                        } else if (payloadObj.isMuted === 'true') { // Fallback for safety
+                            isMuted = true;
+                        }
+                    } catch (e) {
+                        // Fallback for backward compatibility or raw string
+                        isMuted = data.payload === 'true';
+                    }
+                }
+
                 setParticipants(prev => prev.map(p =>
                     p.memberId === data.memberId ? { ...p, isMuted } : p
                 ));
