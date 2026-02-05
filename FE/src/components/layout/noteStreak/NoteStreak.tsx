@@ -28,22 +28,13 @@ const NoteStreak: React.FC<NoteStreakProps> = ({ streak }) => {
     [activityDates]
   );
 
-  /** 오늘 기준 지난 26주(182일) 데이터 생성 (해당 주의 일요일부터 시작) */
+  /** 2026년 1월 1일이 포함된 주의 일요일부터 182일(26주) 데이터 생성 */
   const days: Date[] = useMemo(() => {
     const result: Date[] = [];
-    const today = new Date();
+    // 2026-01-01 is Thursday. Sunday of that week is 2025-12-28.
+    const start = new Date(2025, 11, 28);
 
-    // 오늘로부터 181일 전(총 182일)을 구함
-    const startCandidate = new Date(today);
-    startCandidate.setDate(today.getDate() - 181);
-
-    // 그 주의 일요일로 맞춤 (0: 일요일, 1: 월요일...)
-    const dayOfWeek = startCandidate.getDay();
-    const start = new Date(startCandidate);
-    start.setDate(startCandidate.getDate() - dayOfWeek);
-
-    // 182일(26주) + 일요일 맞춤에 따른 추가 일수만큼 생성하여 그리드가 딱 떨어지게 함
-    // 하지만 단순하게 182일로 고정하고 싶다면 아래와 같이 26주 분량 생성
+    // 182일 = 딱 26주로 맞춤
     for (let i = 0; i < 182; i++) {
       const d = new Date(start);
       d.setDate(start.getDate() + i);
@@ -74,6 +65,13 @@ const NoteStreak: React.FC<NoteStreakProps> = ({ streak }) => {
     let lastMonth = -1;
 
     weeks.forEach((week, index) => {
+      // 첫 번째 열은 무조건 '1월'로 표시 (2026년 시작 강조)
+      if (index === 0) {
+        labels.push({ index, label: '1월' });
+        lastMonth = 0; // 1월(0)로 초기화하여 다음 달(2월)부터 감지하게 함
+        return;
+      }
+
       const hasMonthStart = week.some(d => {
         const m = d.getMonth();
         if (m !== lastMonth) {
