@@ -134,6 +134,8 @@ public class NoteSummaryService {
                                 - bullet-points: 5-7개의 불릿 포인트
 
                                 응답은 한국어로 작성하세요.
+
+                                코드 블록이 포함될 경우, 반드시 원본 코드의 언어를 그대로 유지하여 마크다운 코드 펜스(```language)를 사용하세요.
                                 """.formatted(style);
         }
 
@@ -168,7 +170,6 @@ public class NoteSummaryService {
                         for (CodeBlock codeBlock : codeBlocks) {
                                 String language = codeBlock.getProperties().getLanguage();
                                 String code = codeBlock.getProperties().getCode();
-                                prompt.append("### ").append(language).append(" 코드\n");
                                 prompt.append("```").append(language).append("\n");
                                 prompt.append(code).append("\n```\n\n");
                         }
