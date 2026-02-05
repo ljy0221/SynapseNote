@@ -26,6 +26,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   maximize: () => ipcRenderer.send('window-maximize'),
   close: () => ipcRenderer.send('window-close'),
   openExternal: (url: string) => ipcRenderer.send('open-external', url),
+  onDeepLinkUrl: (callback: (event: any, url: string) => void) => {
+    ipcRenderer.on('deep-link-url', callback);
+  },
+  removeDeepLinkListener: (callback: (event: any, url: string) => void) => {
+    ipcRenderer.removeListener('deep-link-url', callback);
+  }
 })
 
 // Docker API 노출
