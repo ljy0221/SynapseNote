@@ -228,6 +228,33 @@ export const useYjsStore = (noteId: string | undefined) => {
     });
   }, []);
 
+  // 블록 언어 업데이트
+  const updateBlockLanguage = useCallback((blockId: number | string, newLanguage: string) => {
+    const doc = docRef.current;
+    if (!doc) return;
+    const yBlocks = doc.getArray<YBlockMap>('blocks');
+
+    // Find the YBlock directly
+    let targetBlock: YBlockMap | undefined;
+    for (const block of yBlocks) {
+      if (block.get('blockId') === blockId) {
+        targetBlock = block;
+        break;
+      }
+    }
+
+    if (!targetBlock) return;
+
+    const properties = targetBlock.get('properties') as Y.Map<any>;
+    const type = targetBlock.get('_class');
+
+    if (type !== 'code') return;
+
+    doc.transact(() => {
+      properties.set('language', newLanguage);
+    });
+  }, []);
+
   // 블록 삭제
   const deleteBlock = useCallback((blockId: number | string) => {
     const doc = docRef.current;
@@ -336,6 +363,7 @@ export const useYjsStore = (noteId: string | undefined) => {
     addBlock,
     addBlocksBatch,
     updateBlock,
+    updateBlockLanguage,
     deleteBlock,
     moveBlock,
   };
