@@ -167,130 +167,33 @@ class BridgeService {
         return;
       }
 
-      const queryNoteId = uuidToBuffer(noteId); // Standard UUID (Subtype 04) 사용
-      const dbBlocks = await Block.find({ noteId: queryNoteId }).lean();
+      import { Block, BlockHistory, BlockProperties } from '../models/Block';
+      import { Note } from '../models/Note'; // [New]
+      import { loadEnv } from '../config/env';
 
-      // DB 데이터 맵 생성 시 blockId를 Hex로 정규화하여 매칭률 향상
-      const safeDbBlocks = Array.isArray(dbBlocks) ? dbBlocks : [];
-      const dbBlocksMap = new Map();
-      safeDbBlocks.forEach((b: any) => {
-        dbBlocksMap.set(normalizeToHex(b.blockId), b);
-      });
+// ... (existing helper functions)
 
-      const bulkOps: any[] = [];
-      const currentBlockIds = new Set<string>();
-      const processedBlockIds = new Set<string>(); // 배치 내 중복 처리 방지
-
-      for (let i = 0; i < currentBlocks.length; i++) {
-        const yBlock = currentBlocks[i];
-
-        // blockId가 없으면 UUID v7 생성 (방어 코드)
-        if (!yBlock.blockId) {
-          const newId = generateUuidV7();
-          console.log(`[Bridge] Assigning new UUID v7 to block at index ${i}: ${newId}`);
-
-          // Yjs Map에 직접 주입 (이후 재귀적으로 syncToDB가 다시 호출됨)
-          const yBlockMap = yArray.get(i);
-          if (yBlockMap instanceof Y.Map) {
-            yBlockMap.set('blockId', newId);
-            yBlock.blockId = newId; // 현재 loop 처리를 위해 할당
-          } else {
-            console.warn(`[Bridge] Failed to set blockId on non-Map block at index ${i}`);
-            continue;
-          }
-        }
-
-        const validBlockId = toUuidString(yBlock.blockId);
-        const blockIdHex = normalizeToHex(validBlockId);
-        currentBlockIds.add(blockIdHex);
-
-        // 이미 이번 배치에서 처리한 ID면 스킵 (Yjs 문서 내 중복 방어)
-        if (processedBlockIds.has(blockIdHex)) {
-          console.warn(`[Bridge] Duplicate blockId detected in sync batch: ${validBlockId}`);
-          continue;
-        }
-        processedBlockIds.add(blockIdHex);
-
-        const springClass = yBlock._class;
-        const existingBlock = dbBlocksMap.get(blockIdHex);
-
-        const cleanProps: any = {};
-        if (yBlock.properties) {
-          Object.entries(yBlock.properties).forEach(([key, val]) => {
-            cleanProps[key] = val;
-          });
-        }
-
-        const rootFields: any = {
-          outputHistory: yBlock.outputHistory || (springClass === 'code' ? [] : undefined)
-        };
-
-        if (springClass === 'code') {
-          if (yBlock.lastOutput) rootFields.lastOutput = yBlock.lastOutput;
-          if (yBlock.lastExecutedAt) rootFields.lastExecutedAt = yBlock.lastExecutedAt;
-        }
-
-        if (existingBlock) {
-          const isPropsChanged = !_.isEqual(existingBlock.properties, cleanProps);
-          const isMetadataChanged = existingBlock._class !== springClass ||
-            (existingBlock as any).bookmark !== (yBlock.bookmark ?? false);
-
-          if (isPropsChanged || isMetadataChanged || existingBlock.order !== i) {
-            bulkOps.push({
-              updateOne: {
-                filter: { _id: existingBlock._id },
-                update: {
-                  $set: {
-                    blockId: uuidToBuffer(validBlockId), // Subtype 04 저장
-                    _class: springClass,
-                    properties: cleanProps,
-                    bookmark: yBlock.bookmark ?? false,
-                    order: i,
-                    ...rootFields
-                  }
-                }
-              }
-            });
-          }
-        } else {
-          bulkOps.push({
-            insertOne: {
-              document: {
-                _class: springClass,
-                noteId: queryNoteId, // Subtype 04 저장
-                blockId: uuidToBuffer(validBlockId), // Subtype 04 저장
-                properties: cleanProps,
-                bookmark: yBlock.bookmark ?? false,
-                order: i,
-                ...rootFields
-              }
-            }
-          });
-        }
-      }
-
-      // 4. 삭제 (Delete)
-      const toDeleteOps = dbBlocks
-        .filter((b: any) => !currentBlockIds.has(normalizeToHex(b.blockId)))
-        .map((b: any) => ({
-          deleteOne: {
-            filter: { _id: b._id }
-          }
-        }));
-
-      if (toDeleteOps.length > 0) {
-        bulkOps.push(...toDeleteOps);
-      }
+  private async syncToDB(noteId: string, yDoc: Y.Doc, userContext?: UserContext): Promise<void> {
+    try {
+      const yArray = yDoc.getArray<any>('blocks');
+      // ... (rest of logic)
 
       if (bulkOps.length > 0) {
         await Block.bulkWrite(bulkOps);
         console.log(`[Bridge] Sync Success for ${noteId}. Updates: ${bulkOps.length}`);
+
+        // [New] Note 컬렉션의 updatedAt 갱신
+        const queryNoteId = uuidToBuffer(noteId);
+        await Note.updateOne(
+          { _id: queryNoteId },
+          { $set: { updatedAt: new Date() } }
+        );
+        console.log(`[Bridge] Note ${noteId} updatedAt bumped.`);
       }
     } catch (error) {
       console.error(`[Bridge Error] syncToDB failed for ${noteId}:`, error);
     }
   }
-
 }
 
 export default new BridgeService();

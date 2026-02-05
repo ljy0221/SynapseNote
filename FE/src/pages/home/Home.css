@@ -55,8 +55,6 @@
 }
 
 /* 대시보드 라벨 (좌측 상단 위) */
-/* 대시보드 라벨 (좌측 상단 위) */
-/* 대시보드 라벨 (좌측 상단 위) */
 .dashboard-label {
   position: absolute;
   top: 24px;
@@ -106,11 +104,6 @@
   /* 아이콘은 약간 흐리게 */
 }
 
-.label-text {
-  /* 추가 스타일 없음 */
-}
-
-
 /* Header */
 .home-header {
   margin-top: 0;
@@ -128,20 +121,15 @@
   opacity: 0.6;
 }
 
-/* 카드 그리드 - 높이 자동 (콘텐츠에 맞춤) */
-/* 카드 그리드 - 높이 자동 (콘텐츠에 맞춤) */
-/* 카드 그리드 - 높이 자동 (콘텐츠에 맞춤) */
-/* 카드 그리드 - 높이 자동 (콘텐츠에 맞춤) */
+/* 카드 그리드 - Layout Switch: Relative + Absolute for Height Matching */
 .home-grid {
-  display: grid;
-  /* 🔥 좌우 고정 너비로 변경 (창이 커져도 늘어나지 않고 중앙 유지) */
-  grid-template-columns: 660px 320px;
-  gap: 16px;
+  display: block;
+  position: relative;
+  width: 996px;
+  /* 660px + 16px + 320px */
+  margin: 0 auto;
+  /* Center alignment */
   height: auto;
-  width: auto;
-  /* 꽉 채우지 않음 */
-  justify-content: center;
-  /* 중앙 정렬 */
 }
 
 /* 컬럼 스타일 */
@@ -149,15 +137,21 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  /* width: max-content; -> Grid Track 따름 */
-  width: 100%;
-  /* max-width 제거 (필요하면 복구) */
+  width: 660px;
+  /* Fixed width */
 }
 
 .right-column {
+  position: absolute;
+  /* Match height of left column */
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 320px;
+  /* Fixed width */
+
   display: flex;
   flex-direction: column;
-  /* 가로 배치 -> 세로 배치 (1x2) */
   gap: 16px;
   overflow: hidden;
 }
