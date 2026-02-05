@@ -375,10 +375,15 @@ export const useWebRTC = ({ noteId, memberId, token, onConnect, onDisconnect }: 
         // Allow amplification up to 2.0x
         const clamped = Math.max(0, Math.min(2, newVolume));
         setInputVolumeState(clamped);
-        if (gainNodeRef.current) {
-            gainNodeRef.current.gain.value = clamped;
-        }
+        // The actual update is handled by the useEffect below
     };
+
+    // [Fix] Update GainNode when inputVolume changes
+    useEffect(() => {
+        if (gainNodeRef.current) {
+            gainNodeRef.current.gain.value = inputVolume;
+        }
+    }, [inputVolume]);
 
     // ... (rest of hook) has become very complex.
     // I will replace specific blocks to achieve the decoupling.
