@@ -1,129 +1,156 @@
-import React, {useEffect, useState, useCallback} from 'react';
-import {useWebRTC} from '../../../hooks/useWebRTC';
+import React, { useEffect, useState, useCallback } from 'react';
+import { useWebRTC } from '../../../hooks/useWebRTC';
 import './VoiceChannelSidebar.css';
-import {Mic, MicOff, PhoneOff, Volume2, Volume1, VolumeX, Radio} from 'lucide-react';
-// ...
-const {
-    status,
-    connect,
-    disconnect,
-    toggleMute,
-    isMuted,
-    participants,
-    volume,
-    setVolume,
-    inputVolume,
-    setInputVolume
-} = useWebRTC({
+import { Mic, MicOff, PhoneOff, Volume2 } from 'lucide-react';
+
+interface VoiceChannelSidebarProps {
+    noteId: string;
+    accessToken: string;
+    user: { memberId: string; name: string };
+    getMemberName: (id: string) => string;
+    onConnect?: () => void;
+}
+
+export const VoiceChannelSidebar: React.FC<VoiceChannelSidebarProps> = ({
     noteId,
-    memberId: user.memberId,
-    token: accessToken,
+    accessToken,
+    user,
+    getMemberName,
     onConnect
-});
+}) => {
+    const {
+        status,
+        joinVoice,
+        leaveVoice,
+        toggleMute,
+        isMuted,
+        participants,
+        volume,
+        setVolume,
+        inputVolume,
+        setInputVolume,
+        socketConnected
+    } = useWebRTC({
+        noteId,
+        memberId: user.memberId,
+        token: accessToken,
+        onConnect
+    });
 
-// ...
+    const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setVolume(parseFloat(e.target.value));
+    };
 
-const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setVolume(parseFloat(e.target.value));
-};
+    const handleInputVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = parseFloat(e.target.value);
+        setInputVolume(val);
+    };
 
-const handleInputVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputVolume(parseFloat(e.target.value));
-};
+    // Auto-disconnect on unmount is handled by hook
 
-return (
-    <div className="voice-channel-sidebar">
-        <div className="voice-connection-status">
-            <div className="connection-info">
-                <span className="channel-name">
-                    <Volume2 size={14}/>
-                    음성 채널
-                </span>
-                <span className={`status-text ${status}`}>
-                    {status === 'connected' ? '연결됨' : '연결 중...'}
-                </span>
-            </div>
-            <div className="voice-actions">
-                <div className="volume-control-group">
-                    {/* Output Volume */}
-                    <div className="volume-control" title="수신 음량">
-                        {volume === 0 ? <VolumeX size={14}/> : volume < 0.5 ? <Volume1 size={14}/> :
-                            <Volume2 size={14}/>}
-                        <input
-                            type="range"
-                            min="0"
-                            max="1"
-                            step="0.05"
-                            value={volume}
-                            onChange={handleVolumeChange}
-                            className="volume-slider"
-                            style={{width: '50px'}}
-                        />
-                    </div>
-                    {/* Input Volume */}
-                    <div className="volume-control" title="마이크 음량">
-                        <Mic size={14}/>
-                        <input
-                            type="range"
-                            min="0"
-                            max="2"
-                            step="0.1"
-                            value={inputVolume}
-                            onChange={handleInputVolumeChange}
-                            className="volume-slider"
-                            style={{width: '50px'}}
-                        />
-                    </div>
+    // Handler for join button
+    const handleJoin = async () => {
+        await joinVoice();
+    };
+
+    return (
+        <div className="voice-channel-sidebar">
+            {/* 1. Header Area */}
+            <div className="voice-channel-header">
+                <div className="header-title">
+                    <Volume2 size={16} />
+                    <span>음성 채널</span>
                 </div>
-                <div className="action-buttons">
-                    <button
-                        className={`voice-action-btn ${isMuted ? 'active' : ''}`}
-                        onClick={toggleMute}
-                        title={isMuted ? "음소거 해제" : "음소거"}
-                    >
-                        {isMuted ? <MicOff size={16}/> : <Mic size={16}/>}
-                    </button>
-                    <button
-                        className="voice-action-btn"
-                        onClick={disconnect}
-                        title="연결 끊기"
-                    >
-                        <PhoneOff size={16}/>
-                    </button>
+                <div className={`status-badge ${status}`}>
+                    {status === 'connected' ? 'LIVE' : status === 'connecting' ? '...' : ''}
                 </div>
             </div>
-        </div>
 
-        {(status === 'connected' || status === 'connecting') && (
+            {/* 2. Participant List (Scrollable) */}
             <div className="participant-list">
-                {/* 내 자신 */}
-                <div className="participant-item">
-                    <div className="participant-avatar">
-                        {user.name.slice(0, 1)}
+                {/* Me (Only show if joined) */}
+                {status === 'connected' && (
+                    <div className="participant-item me">
+                        <div className="participant-avatar me">
+                            {user.name.slice(0, 1)}
+                            {isMuted && <div className="mute-badge"><MicOff size={8} /></div>}
+                        </div>
+                        <div className="participant-info">
+                            <span className="participant-name">{user.name}</span>
+                            <span className="participant-status">나</span>
+                        </div>
                     </div>
-                    <span className="participant-name">{user.name} (나)</span>
-                    {isMuted && <MicOff size={12} className="status-icon"/>}
-                </div>
-                {/* 다른 참가자들 */}
+                )}
+
+                {/* Others */}
                 {participants.map(p => (
                     <div key={p.memberId} className="participant-item">
                         <div className="participant-avatar">
-                            {getMemberName(p.memberId).slice(0, 1)}
+                            {getMemberName(p.memberId)?.slice(0, 1) || '?'}
+                            {p.isMuted && <div className="mute-badge"><MicOff size={8} /></div>}
                         </div>
                         <span className="participant-name">
-                            {getMemberName(p.memberId)}
+                            {getMemberName(p.memberId) || 'Unknown'}
                         </span>
-                        {p.isMuted && <MicOff size={12} className="status-icon"/>}
                     </div>
                 ))}
-                {participants.length === 0 && status === 'connected' && (
-                    <div style={{padding: '8px', fontSize: '0.8rem', color: '#999', textAlign: 'center'}}>
-                        대기 중...
+
+                {participants.length === 0 && status !== 'connected' && (
+                    <div className="empty-state">
+                        {status === 'connecting' ? '연결 중...' : '대기 중'}
                     </div>
                 )}
             </div>
-        )}
-    </div>
-);
-}
-;
+
+            {/* 3. Bottom Controls (Fixed) */}
+            <div className="voice-bottom-controls">
+                {status === 'connected' ? (
+                    <>
+                        <div className="control-row">
+                            <button
+                                className={`control-btn ${isMuted ? 'muted' : ''}`}
+                                onClick={toggleMute}
+                                title={isMuted ? "마이크 켜기" : "음소거"}
+                            >
+                                {isMuted ? <MicOff size={18} /> : <Mic size={18} />}
+                            </button>
+                            <button
+                                className="control-btn disconnect"
+                                onClick={leaveVoice}
+                                title="연결 끊기"
+                            >
+                                <PhoneOff size={18} />
+                            </button>
+                        </div>
+
+                        {/* Mini Volume Sliders (Optional/Compact) */}
+                        <div className="volume-sliders">
+                            <div className="slider-group" title="수신 음량">
+                                <Volume2 size={12} />
+                                <input
+                                    type="range" min="0" max="1" step="0.05"
+                                    value={volume} onChange={handleVolumeChange}
+                                />
+                            </div>
+                            <div className="slider-group" title="마이크 감도">
+                                <Mic size={12} />
+                                <input
+                                    type="range" min="0" max="2" step="0.1"
+                                    value={inputVolume} onChange={handleInputVolumeChange}
+                                />
+                            </div>
+                        </div>
+                    </>
+                ) : (
+                    <button
+                        className={`join-btn-full ${!socketConnected ? 'disabled' : ''}`}
+                        onClick={handleJoin}
+                        disabled={status === 'connecting' || !socketConnected}
+                    >
+                        {status === 'connecting' ? '연결 중...' : '음성 참여하기'}
+                    </button>
+                )}
+            </div>
+        </div>
+    );
+};
