@@ -198,6 +198,10 @@ const TextBlock: React.FC<TextBlockProps> = ({
             editor.commands.focus();
         }
     }, [shouldFocus, editor]);
+
+    // 🔥 원격 변경사항 동기화 (깜빡임 방지)
+    const lastRemoteUpdate = useRef<string>('');
+
     useEffect(() => {
         // [Fix] IME Duplication & Content Disappearance
         // Check editor.isFocused directly from the Tiptap instance. 
@@ -205,8 +209,12 @@ const TextBlock: React.FC<TextBlockProps> = ({
         // based on external props. The user is typing.
         if (editor && editor.isFocused) return;
 
-        if (editor && content !== editor.getHTML()) {
-            editor.commands.setContent(content);
+        const currentContent = editor?.getHTML();
+        // 실제로 다른 경우에만 업데이트 (중복 방지)
+        if (editor && content !== currentContent && content !== lastRemoteUpdate.current) {
+            lastRemoteUpdate.current = content;
+            // emitUpdate: false로 불필요한 이벤트 방지
+            editor.commands.setContent(content, false);
         }
     }, [content, editor]);
     if (!editor) {
