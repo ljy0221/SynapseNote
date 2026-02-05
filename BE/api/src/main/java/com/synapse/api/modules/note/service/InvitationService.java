@@ -281,9 +281,9 @@ public class InvitationService {
         // 2. OWNER 권한 확인
         validateOwnership(note, memberId);
 
-        // 3. PENDING 상태 초대 목록 조회
+        // 3. REQUESTED 상태 초대 목록 조회 (가입 신청만 조회)
         List<Invitation> invitations = invitationRepository.findByNoteIdAndStatus(
-                noteId, InvitationStatus.PENDING);
+                noteId, InvitationStatus.REQUESTED);
 
         // 4. DTO 변환
         List<InvitationResponse> responses = invitations.stream()

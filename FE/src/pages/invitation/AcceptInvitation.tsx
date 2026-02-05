@@ -41,8 +41,15 @@ const AcceptInvitation: React.FC = () => {
                 }, 2000);
             } catch (err: any) {
                 // ...
-                setStatus('error');
-                setErrorMessage(err.response?.data?.message || '초대 수락 중 오류가 발생했습니다.');
+                const errorMsg = err.response?.data?.message || '초대 수락 중 오류가 발생했습니다.';
+                // [Fix] 이미 요청된 경우 처리
+                if (errorMsg.includes('이미') || err.response?.status === 409) {
+                    setStatus('success'); // 성공 화면과 유사하게 처리하되 메시지 변경
+                    setErrorMessage('이미 가입 요청이 전송된 상태입니다. 승인을 기다려주세요.'); // errorMessage state 재활용
+                } else {
+                    setStatus('error');
+                    setErrorMessage(errorMsg);
+                }
             }
         };
 
@@ -51,25 +58,44 @@ const AcceptInvitation: React.FC = () => {
 
     return (
         <div className="accept-invitation-container">
-            <div className="accept-card">
+            <div className="accept-card" style={{ padding: '40px', textAlign: 'center' }}>
                 {status === 'loading' && (
                     <>
                         <div className="spinner"></div>
-                        <p>초대를 확인하고 있습니다...</p>
+                        <p style={{ marginTop: '20px', fontSize: '1.2rem' }}>초대를 확인하고 있습니다...</p>
                     </>
                 )}
+                {/* status가 success이거나, 이미 요청된 경우(success로 처리했으나 메시지가 있는 경우) */}
                 {status === 'success' && (
                     <>
-                        <div className="success-icon">✓</div>
-                        <p>가입 요청이 전송되었습니다. 관리자가 승인하면 알림을 받게 됩니다.</p>
-                        <p className="sub-text">잠시 후 홈으로 이동합니다.</p>
+                        <div className="success-icon" style={{ fontSize: '4rem', color: '#4CAF50', marginBottom: '20px' }}>✓</div>
+                        <h2 style={{ margin: '0 0 10px 0', fontSize: '1.5rem' }}>
+                            {errorMessage ? '이미 요청되었습니다' : '가입 요청 전송 완료'}
+                        </h2>
+                        <p style={{ color: '#666', marginBottom: '30px' }}>
+                            {errorMessage || '관리자가 승인하면 알림을 받게 됩니다.'}
+                        </p>
+                        <p className="sub-text" style={{ fontSize: '0.9rem', color: '#999' }}>잠시 후 홈으로 이동합니다.</p>
                     </>
                 )}
                 {status === 'error' && (
                     <>
-                        <div className="error-icon">!</div>
-                        <p className="error-text">{errorMessage}</p>
-                        <button onClick={() => navigate('/home')}>홈으로 가기</button>
+                        <div className="error-icon" style={{ fontSize: '4rem', color: '#f44336', marginBottom: '20px' }}>!</div>
+                        <h2 style={{ margin: '0 0 10px 0', fontSize: '1.5rem' }}>오류 발생</h2>
+                        <p className="error-text" style={{ color: '#666', marginBottom: '30px' }}>{errorMessage}</p>
+                        <button
+                            onClick={() => navigate('/home')}
+                            style={{
+                                padding: '10px 20px',
+                                backgroundColor: 'var(--color-main)',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '5px',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            홈으로 가기
+                        </button>
                     </>
                 )}
             </div>

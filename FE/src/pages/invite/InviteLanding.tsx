@@ -34,7 +34,7 @@ const InviteLanding: React.FC = () => {
             gap: '20px'
         }}>
             <h1 style={{ fontSize: '2rem' }}>워크스페이스 초대</h1>
-            <p>Synapse 앱을 실행하여 초대를 수락합니다.</p>
+            <p>초대 링크를 확인했습니다.</p>
 
             <button
                 onClick={handleOpenApp}
