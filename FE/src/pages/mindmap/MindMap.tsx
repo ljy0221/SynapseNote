@@ -104,10 +104,22 @@ const MindMapContent: React.FC = () => {
 
                     // 2. 서버 엣지 -> ReactFlow 엣지 변환
                     if (serverEdges && serverEdges.length > 0) {
-                        const newEdges = serverEdges.map((e: MindmapEdge) => {
-                            // [Fix] 스코프 문제 해결된 노드 리스트 사용
+                        const uniqueEdges = new Map<string, Edge>(); // 중복 방지용 Map
+
+                        serverEdges.forEach((e: MindmapEdge) => {
+                            // 1. 자기 자신 연결(Self-loop) 무시
+                            if (e.fromId === e.toId) return;
+
+                            // 2. 유효한 노드인지 확인
                             const sourceNode = constructedNodes.find(n => n.id === e.fromId);
                             const targetNode = constructedNodes.find(n => n.id === e.toId);
+                            if (!sourceNode || !targetNode) return;
+
+                            // 3. 고유 키 생성 (중복 방지)
+                            const edgeKey = `${e.fromId}-${e.toId}`;
+
+                            // 4. 이미 존재하는 연결이면 건너뛰기
+                            if (uniqueEdges.has(edgeKey)) return;
 
                             let sourceHandle = 'bottom-s';
                             let targetHandle = 'top-t';
@@ -135,17 +147,20 @@ const MindMapContent: React.FC = () => {
                                 }
                             }
 
-                            return {
+                            const newEdge = {
                                 id: `e${e.fromId}-${e.toId}`,
                                 source: e.fromId,
                                 target: e.toId,
-                                sourceHandle, // calculated handle
-                                targetHandle, // calculated handle
-                                type: 'synapse', // [New] 시냅스 엣지 사용
+                                sourceHandle,
+                                targetHandle,
+                                type: 'synapse',
                                 style: { stroke: 'var(--color-point)', strokeWidth: 2 }
                             };
+
+                            uniqueEdges.set(edgeKey, newEdge);
                         });
-                        setEdges(newEdges);
+
+                        setEdges(Array.from(uniqueEdges.values()));
                     } else {
                         setEdges([]);
                     }
@@ -230,16 +245,29 @@ const MindMapContent: React.FC = () => {
 
     // 4. [New] 엣지 변경 시 노드의 connectionCount(비중) 업데이트 로직
     useEffect(() => {
-        const counts: Record<string, number> = {};
+        const counts: Record<string, Set<string>> = {}; // [Modified] 단순 개수가 아닌 '연결된 상대 노드 ID 집합'으로 변경
+
         edges.forEach((edge) => {
-            counts[edge.source] = (counts[edge.source] || 0) + 1;
+            if (!counts[edge.source]) counts[edge.source] = new Set();
+            // if (!counts[edge.target]) counts[edge.target] = new Set(); // [Modified] 받는 쪽은 카운트 안 함
+
+            // [Modified] 지식이 뻗어나가는 방향(Source)만 카운트 (중복 제거)
+            counts[edge.source].add(edge.target);
+            // counts[edge.target].add(edge.source);
         });
+
+        // [DEBUG] 연결 상태 확인 로그
+        // console.log("Current Edges:", edges);
+        // console.log("Calculated Connections:", counts);
 
         setNodes((nds) =>
             nds.map((node) => {
-                const newCount = counts[node.id] || 0;
+                const connectedNeighbors = counts[node.id];
+                const newCount = connectedNeighbors ? connectedNeighbors.size : 0;
+
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 if ((node.data as any).connectionCount !== newCount) {
+                    // console.log(`Node ${node.data.title} count updated: ${newCount}`);
                     return {
                         ...node,
                         data: { ...node.data, connectionCount: newCount }
@@ -464,12 +492,10 @@ const MindMapContent: React.FC = () => {
 
             const isDuplicate = nds.some(n => n.id === noteData.id);
 
-            // [New] 중복 체크 로직 (Modified: Toast + Auto Select)
+            // [New] 중복 체크 로직
             if (isDuplicate) {
-                // 1. Toast 알림
                 showToast("이미 생성되어있는 지식입니다.", 'error');
 
-                // 2. 해당 노드로 이동 및 선택
                 const targetNode = nds.find(n => n.id === noteData.id);
                 if (targetNode) {
                     setTimeout(() => {
@@ -481,7 +507,6 @@ const MindMapContent: React.FC = () => {
                         selected: n.id === noteData.id
                     }));
                 }
-
                 return nds;
             }
 
@@ -494,19 +519,19 @@ const MindMapContent: React.FC = () => {
                     connectionCount: 0
                 },
                 position: { x: newX, y: newY },
-                selected: true,
+                selected: false, // [Modified] 시각적 오해 방지를 위해 선택 안 함
             };
 
             setTimeout(() => {
                 setCenter(newX + 30, newY + 30, { zoom: 1.2, duration: 1000 });
             }, 50);
 
-
+            // [SAFETY] 엣지 생성 로직 없음 (노드만 추가)
             return nds.map(n => ({ ...n, selected: false })).concat([newNode]);
         });
 
         closeAll();
-    }, [setNodes, setCenter, showToast, closeAll]); // showToast 추가됨
+    }, [setNodes, setCenter, showToast, closeAll]);
 
 
     /**
@@ -531,8 +556,8 @@ const MindMapContent: React.FC = () => {
      * 기능 2-1: 실제 삭제 실행 (모달 확인 시)
      */
     const executeDelete = useCallback(() => {
-        // [Toast] 삭제 알림 로직
         const selectedNodes = nodes.filter((node) => node.selected);
+        const selectedNodeIds = new Set(selectedNodes.map(n => n.id)); // 삭제할 노드 ID 집합
         const count = selectedNodes.length;
 
         if (count > 0) {
@@ -543,10 +568,20 @@ const MindMapContent: React.FC = () => {
             }
         }
 
+        // 1. 노드 삭제
         setNodes((nds) => nds.filter((node) => !node.selected));
-        setEdges((eds) => eds.filter((edge) => !edge.selected));
+
+        // 2. 엣지 삭제 (선택된 엣지 + 삭제된 노드와 연결된 엣지)
+        setEdges((eds) => eds.filter((edge) => {
+            // A. 엣지 자체가 선택된 경우
+            if (edge.selected) return false;
+            // B. Ghost Edge 방지: Source나 Target이 삭제되는 노드인 경우
+            if (selectedNodeIds.has(edge.source) || selectedNodeIds.has(edge.target)) return false;
+            return true;
+        }));
+
         closeAll();
-    }, [setNodes, setEdges, nodes, showToast, closeAll]);
+    }, [nodes, setNodes, setEdges, showToast, closeAll]);
 
     /**
      * 기능 2: 선택된 노드 및 연결선 삭제 (모달 호출)
