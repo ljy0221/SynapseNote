@@ -27,6 +27,7 @@ public class WebRtcController {
     private final WebRtcRoomManager roomManager;
     private final SimpMessagingTemplate messagingTemplate;
     private final com.synapse.api.modules.note.repository.NoteMemberRepository noteMemberRepository;
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     /**
      * 룸 참여
@@ -62,7 +63,7 @@ public class WebRtcController {
         response.setStatus("READY");
         // Payload에 현재 참여자 목록(JSON) 포함
         try {
-            response.setPayload(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(currentParticipants));
+            response.setPayload(objectMapper.writeValueAsString(currentParticipants));
         } catch (Exception e) {
             log.error("Failed to serialize participant list", e);
             response.setPayload("[]");
@@ -233,6 +234,37 @@ public class WebRtcController {
         notification.setMemberId(memberId);
 
         messagingTemplate.convertAndSend("/topic/room/" + noteId, notification);
+    }
+    
+    /**
+     * 현재 참여자 목록 조회 (Join 없이)
+     * 클라이언트: /app/webrtc/participants
+     */
+    @MessageMapping("/webrtc/participants")
+    public void getParticipants(@Payload ParticipantListRequest request, SimpMessageHeaderAccessor headerAccessor) {
+        UUID memberId = (UUID) headerAccessor.getSessionAttributes().get("memberId");
+        UUID noteId = request.getNoteId();
+
+        WebRtcRoomManager.Room room = roomManager.getRoom(noteId);
+        java.util.List<WebRtcRoomManager.ParticipantInfo> participants;
+
+        if (room != null) {
+            participants = room.getParticipantInfos();
+        } else {
+            participants = java.util.Collections.emptyList();
+        }
+
+        SignalingMessage response = new SignalingMessage();
+        response.setType("PARTICIPANT_LIST");
+        response.setNoteId(noteId);
+        try {
+            response.setPayload(objectMapper.writeValueAsString(participants));
+        } catch (Exception e) {
+            log.error("Failed to serialize participant list", e);
+            response.setPayload("[]");
+        }
+
+        messagingTemplate.convertAndSendToUser(memberId.toString(), "/queue/webrtc", response);
     }
 
     /**
