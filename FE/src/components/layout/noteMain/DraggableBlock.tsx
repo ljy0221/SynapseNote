@@ -1,6 +1,6 @@
 import React from 'react';
 import { Reorder, useDragControls } from 'framer-motion';
-import { BlockData } from '../../../pages/note/Note';
+import { BlockData } from '../../../types/note/Block';
 
 interface DraggableBlockProps {
     block: BlockData;

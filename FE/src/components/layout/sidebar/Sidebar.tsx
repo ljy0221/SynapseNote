@@ -33,6 +33,7 @@ import {
 
 import { useNavigate, useParams } from 'react-router-dom';
 import { useCreateNote } from '../../../hooks/useCreateNote';
+import { useNoteStore } from '../../../store/useNoteStore';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -45,7 +46,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, showToggle =
   const { noteId: routeNoteId } = useParams<{ noteId: string }>();
   const activeNoteId = routeNoteId ?? null;
 
-  const [notes, setNotes] = useState<NoteListItem[]>([]);
+  const { notes, setNotes } = useNoteStore();
   const [favoriteNoteIds, setFavoriteNoteIds] =
     useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
@@ -157,6 +158,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, showToggle =
       if (!(e instanceof CustomEvent)) return;
       const detail = e.detail;
 
+      if (detail?.source === 'SIDEBAR') return; // 자신이 보낸 이벤트는 무시
+
       if (detail?.type === 'UPDATE_TITLE') {
         setNotes(prev =>
           prev.map(n =>
@@ -205,7 +208,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, showToggle =
       isFavorite
         ? await removeBookmarkApi(noteId)
         : await addBookmarkApi(noteId);
-      emitNotesChanged({ skipRefetch: true }); // 상태 변경 알림 (필요한 곳에서 재요청 유도)
+      emitNotesChanged({ skipRefetch: true, source: 'SIDEBAR' }); // 상태 변경 알림
     } catch {
       setFavoriteNoteIds(prev => {
         const next = new Set(prev);
@@ -239,7 +242,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, showToggle =
         title: newTitle,
         directoryPath: target.directoryPath,
       });
-      emitNotesChanged({ skipRefetch: true });
+      emitNotesChanged({
+        type: 'UPDATE_TITLE',
+        noteId,
+        title: newTitle,
+        source: 'SIDEBAR',
+      });
     } catch {
       emitNotesChanged();
     }
@@ -266,7 +274,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, showToggle =
         title: target.title,
         directoryPath: normalizedPath,
       });
-      emitNotesChanged({ skipRefetch: true });
+      emitNotesChanged({ skipRefetch: true, source: 'SIDEBAR' });
     } catch {
       emitNotesChanged();
     }
@@ -278,6 +286,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, showToggle =
   const { handleCreateNote: createNote } = useCreateNote();
 
   const handleCreateNote = async (directoryPath: string) => {
+    if (activeTab !== 'personal') {
+      setActiveTab('personal');
+    }
+
     await createNote(directoryPath, {
       onOptimisticUpdate: (noteId, memberId) => {
         const tempNote: NoteListItem = {
@@ -306,7 +318,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, showToggle =
     setNotes(prev => prev.filter(n => n.noteId !== noteId));
     try {
       await deleteNoteApi(noteId);
-      emitNotesChanged({ skipRefetch: true });
+      emitNotesChanged({
+        type: 'DELETE_NOTE',
+        noteId,
+        source: 'SIDEBAR'
+      });
     } catch {
       emitNotesChanged();
     }
