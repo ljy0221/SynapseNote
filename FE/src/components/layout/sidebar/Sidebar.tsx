@@ -8,6 +8,7 @@ import type { ContextMenuState } from '../../../types/sidebar/ContextMenu';
 
 import { buildNoteTree } from '../../features/noteDirectory/buildNoteTree';
 import { NoteDirectory } from './NoteDirectory';
+import { VoiceChannelSidebar } from './VoiceChannelSidebar';
 
 import ContextMenu from '../../common/contextMenu/ContextMenu';
 import MoveNoteModal from './MoveNoteModal';
@@ -377,6 +378,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, showToggle =
               <div ref={observerTarget} style={{ height: '20px' }} />
             </div>
           )}
+
+          <VoiceChannelSidebar noteId={activeNoteId} />
         </div>
       </aside>
 
