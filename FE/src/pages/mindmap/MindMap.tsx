@@ -22,6 +22,7 @@ import './MindMap.css';
 
 // ... (기존 임포트 유지)
 import { getMindmapApi, syncMindmapApi } from '../../api/mindmap/Mindmap.api';
+import { getNotesApi } from '../../api/notes/Notes.api'; // [New] 공유 노트 확인용 API
 import { SyncMindmapRequest } from '../../types/mindmap/Requests';
 import { MindmapNode, MindmapEdge } from '../../types/mindmap/Mindmap';
 import { NOTES_CHANGED_EVENT } from '../../events/NotesEvents';
@@ -46,20 +47,39 @@ const MindMapContent: React.FC = () => {
         const fetchMindmap = async () => {
             try {
                 // setLoading(true);
-                const response = await getMindmapApi();
-                if (response) {
-                    const { nodes: serverNodes, edges: serverEdges } = response;
+                // 1. 마인드맵 데이터와 공유 노트 데이터를 병렬로 요청
+                const [mindmapResponse, sharedNotesResponse] = await Promise.all([
+                    getMindmapApi(),
+                    getNotesApi({ filter: 'SHARED', size: 1000 }) // 공유된 노트만 최대 1000개 가져옴
+                ]);
 
-                    // 1. 서버 노드 -> ReactFlow 노드 변환
+                if (mindmapResponse) {
+                    const { nodes: serverNodes, edges: serverEdges } = mindmapResponse;
+
+                    // 2. 공유 노트 ID 집합 생성 (O(1) 조회를 위해 Set 사용)
+                    const sharedNoteIds = new Set(
+                        sharedNotesResponse?.content?.map(note => note.noteId) || []
+                    );
+
+                    // 3. 서버 노드 -> ReactFlow 노드 변환
                     let constructedNodes: Node[] = [];
 
                     if (serverNodes && serverNodes.length > 0) {
-                        constructedNodes = serverNodes.map((n: MindmapNode) => ({
-                            id: n.id,
-                            type: 'note',
-                            position: { x: n.x, y: n.y },
-                            data: { title: n.title, connectionCount: 0 },
-                        }));
+                        constructedNodes = serverNodes.map((n: MindmapNode) => {
+                            // 실제 공유 여부 확인
+                            const isShared = sharedNoteIds.has(n.id);
+
+                            return {
+                                id: n.id,
+                                type: 'note',
+                                position: { x: n.x, y: n.y },
+                                data: {
+                                    title: n.title,
+                                    connectionCount: 0,
+                                    isShared: isShared, // 실제 API 데이터 기반 설정
+                                },
+                            };
+                        });
                         // Boundary Node 추가 (필수)
                         const boundaryNode = {
                             id: 'world-boundary',
