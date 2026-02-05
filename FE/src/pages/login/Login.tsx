@@ -70,7 +70,8 @@ const Login: React.FC = () => {
                                     ? import.meta.env.VITE_GITHUB_REDIRECT_URI
                                     : import.meta.env.VITE_GITHUB_WEB_REDIRECT_URI;
 
-                                const authUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email`;
+                                const state = isElectron ? 'ELECTRON' : 'WEB';
+                                const authUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email&state=${state}`;
                                 if (isElectron) {
                                     window.electronAPI.openExternal(authUrl);
                                 } else {
@@ -87,7 +88,8 @@ const Login: React.FC = () => {
                                     ? import.meta.env.VITE_GOOGLE_REDIRECT_URI
                                     : import.meta.env.VITE_GOOGLE_WEB_REDIRECT_URI;
 
-                                const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=email profile`;
+                                const state = isElectron ? 'ELECTRON' : 'WEB';
+                                const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=email profile&state=${state}`;
                                 if (isElectron) {
                                     window.electronAPI.openExternal(authUrl);
                                 } else {
