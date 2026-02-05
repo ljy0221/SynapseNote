@@ -198,7 +198,10 @@ const TextBlock: React.FC<TextBlockProps> = ({
         }
     }, [shouldFocus, editor]);
     useEffect(() => {
-        if (editor && content !== editor.getHTML()) {
+        // 포커스 상태일 때는 외부 prop 업데이트를 무시하여 타이핑 중 충돌(레이스 컨디션) 및 무한 루프 방지
+        // 단, 협업 시 다른 사용자의 입력이 즉시 반영되지 않는 단점이 있을 수 있음.
+        // 완벽한 해결을 위해서는 Yjs binding을 직접 사용하거나 transaction origin을 확인해야 함.
+        if (editor && !editor.isFocused && content !== editor.getHTML()) {
             editor.commands.setContent(content);
         }
     }, [content, editor]);
