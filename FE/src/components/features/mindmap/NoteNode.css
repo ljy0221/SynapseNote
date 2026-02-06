@@ -60,7 +60,7 @@
 
 /* 호버 시 살짝 커지는 효과 */
 .note-node-container:hover {
-    transform: scale(1.15);
+    transform: scale(calc(var(--scale, 1) * 1.15));
     z-index: 10;
     color: var(--color-point);
     /* 드롭 섀도우 필터로 육각형 그림자 효과 */
@@ -71,7 +71,7 @@
 .note-node-container.selected {
     /* 선택 시 강한 글로우 (filter 사용) */
     filter: drop-shadow(0 0 8px var(--color-point));
-    transform: scale(1.15);
+    transform: scale(calc(var(--scale, 1) * 1.15));
     z-index: 20;
     color: var(--color-point);
 }
@@ -105,7 +105,8 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 
     animation: tooltipFadeIn 0.2s ease-out forwards;
-    pointer-events: auto;
+    pointer-events: none;
+    /* 다른 노드 클릭을 막지 않도록 */
     z-index: 100;
 }
 
@@ -126,6 +127,8 @@
     border-radius: 50%;
     transition: all 0.2s;
     margin-left: 4px;
+    pointer-events: auto;
+    /* 버튼은 클릭 가능하도록 */
 }
 
 .tooltip-nav-btn:hover {
