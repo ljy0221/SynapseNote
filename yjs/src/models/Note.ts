@@ -5,7 +5,9 @@ export interface INote extends Document {
 }
 
 // Minimal Schema to just update timestamps
-const NoteSchema: Schema = new Schema({}, {
+const NoteSchema: Schema = new Schema({
+    _id: { type: String, required: true } // UUID string as primary key
+}, {
     timestamps: true, // auto-update updatedAt/createdAt if using save(), but we use updateOne
     strict: false, // Allow unknown fields
     versionKey: false,

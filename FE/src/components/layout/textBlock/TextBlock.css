@@ -6,6 +6,8 @@
     width: 90%;
     max-width: 800px;
     margin: 12px auto;
+    position: relative;
+    /* For absolute positioning of avatar */
 }
 
 /* 1. Remove margin-top for hr following H1 directly */

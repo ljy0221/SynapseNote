@@ -1,8 +1,18 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
+import { Awareness } from 'y-protocols/awareness';
 import { BlockData, BlockType } from '../types/note/Block';
 import { useAuthStore } from '../store/useAuthStore';
+
+// Type for awareness state
+export interface AwarenessUser {
+  memberId: string;
+  memberName: string;
+  profileImageUrl?: string;
+  role?: string; // [New] User role for tooltip display
+  focusedBlockId: string | null;
+}
 
 // Yjs Map에서 사용하는 키 정의
 type YBlockMap = Y.Map<any>;
@@ -39,12 +49,15 @@ export const useYjsStore = (noteId: string | undefined) => {
   const [isSynced, setIsSynced] = useState(false);
   const [isDataLoaded, setIsDataLoaded] = useState(false); // [New]
   const [isInitialized, setIsInitialized] = useState(false); // [New]
+  const [editingUsers, setEditingUsers] = useState<Map<string, AwarenessUser>>(new Map()); // [New] Map of clientId to user info
 
   const docRef = useRef<Y.Doc>(new Y.Doc());
   const providerRef = useRef<WebsocketProvider | null>(null);
+  const awarenessRef = useRef<Awareness | null>(null); // [New]
 
   // Zustand store에서 토큰 가져오기 (persist 복원 포함)
   const accessToken = useAuthStore((state) => state.accessToken);
+  const userInfo = useAuthStore((state) => state.userInfo); // [New] Get user info for awareness
 
   // 환경 변수에서 WS URL 가져오기
   const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:1234';
@@ -80,6 +93,20 @@ export const useYjsStore = (noteId: string | undefined) => {
     const provider = new WebsocketProvider(wsUrl, noteId, doc, {
       params: { token: accessToken || '' },
     });
+
+    // [New] Get awareness from provider
+    const awareness = provider.awareness;
+    awarenessRef.current = awareness;
+
+    // [New] Set initial awareness state with user info
+    if (userInfo) {
+      awareness.setLocalStateField('user', {
+        memberId: userInfo.memberId,
+        memberName: userInfo.name || userInfo.email,
+        profileImageUrl: undefined, // Not available in UserInfo, will be fetched from members list
+        focusedBlockId: null,
+      });
+    }
     providerRef.current = provider;
 
     const yBlocks = doc.getArray<YBlockMap>('blocks');
@@ -163,6 +190,42 @@ export const useYjsStore = (noteId: string | undefined) => {
     };
     provider.on('sync', onSync);
 
+    // [New] Listen to awareness changes
+    const onAwarenessChange = () => {
+      const states = awareness.getStates();
+      const users = new Map<string, AwarenessUser>();
+
+      states.forEach((state, clientId) => {
+        // Skip local client
+        if (clientId === awareness.clientID) return;
+
+        const user = state.user as AwarenessUser | undefined;
+        if (user && user.focusedBlockId) {
+          users.set(clientId.toString(), user);
+        }
+      });
+
+      // [Optimization] Only update state if there are actual changes
+      setEditingUsers(prevUsers => {
+        // Check if the new map is different from the previous one
+        if (prevUsers.size !== users.size) return users;
+
+        let hasChanges = false;
+        users.forEach((user, clientId) => {
+          const prevUser = prevUsers.get(clientId);
+          if (!prevUser ||
+            prevUser.focusedBlockId !== user.focusedBlockId ||
+            prevUser.memberId !== user.memberId) {
+            hasChanges = true;
+          }
+        });
+
+        return hasChanges ? users : prevUsers;
+      });
+    };
+
+    awareness.on('change', onAwarenessChange);
+
     // 블록 배열 변경 관찰 (실시간 반영 핵심)
     // 🔥 로컬/원격 모두 React 상태 업데이트 필요
     // 무한 루프는 이미 컴포넌트 레벨에서 방지됨 (useEffect 제거)
@@ -191,6 +254,11 @@ export const useYjsStore = (noteId: string | undefined) => {
       }
       try {
         provider.off('sync', onSync);
+      } catch {
+        // off 미지원/에러 가능성 대비
+      }
+      try {
+        awareness.off('change', onAwarenessChange);
       } catch {
         // off 미지원/에러 가능성 대비
       }
@@ -492,6 +560,32 @@ export const useYjsStore = (noteId: string | undefined) => {
     initializeYjs(initialBlocks);
   }, [initializeYjs]);
 
+  // [New] Update focused block in awareness
+  const setFocusedBlock = useCallback((blockId: string | null) => {
+    const awareness = awarenessRef.current;
+    if (!awareness || !userInfo) return;
+
+    const currentState = awareness.getLocalState();
+    awareness.setLocalStateField('user', {
+      ...currentState?.user,
+      memberId: userInfo.memberId,
+      memberName: userInfo.name || userInfo.email,
+      profileImageUrl: undefined, // Not available in UserInfo
+      focusedBlockId: blockId,
+    });
+  }, [userInfo]);
+
+  // [New] Get users editing a specific block
+  const getBlockEditors = useCallback((blockId: string): AwarenessUser[] => {
+    const editors: AwarenessUser[] = [];
+    editingUsers.forEach((user) => {
+      if (user.focusedBlockId === blockId) {
+        editors.push(user);
+      }
+    });
+    return editors;
+  }, [editingUsers]);
+
 
   return {
     blocks,
@@ -506,5 +600,8 @@ export const useYjsStore = (noteId: string | undefined) => {
     updateBlockLanguage,
     deleteBlock,
     moveBlock,
+    setFocusedBlock, // [New]
+    getBlockEditors, // [New]
+    editingUsers, // [New]
   };
 };
