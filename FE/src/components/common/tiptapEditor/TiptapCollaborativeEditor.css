@@ -1,0 +1,49 @@
+/* Tiptap Collaborative Editor Styles */
+
+.tiptap-collaborative-editor {
+    min-height: 100px;
+    padding: 12px;
+    outline: none;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--font-color);
+}
+
+.tiptap-collaborative-editor:focus {
+    outline: none;
+}
+
+.tiptap-collaborative-editor p {
+    margin: 0;
+}
+
+.tiptap-collaborative-editor p.is-editor-empty:first-child::before {
+    content: attr(placeholder);
+    color: var(--font-color-sub);
+    pointer-events: none;
+    height: 0;
+}
+
+/* Collaboration cursor styles (if using collaboration-cursor extension) */
+.collaboration-cursor__caret {
+    border-left: 2px solid;
+    margin-left: -1px;
+    margin-right: -1px;
+    pointer-events: none;
+    position: relative;
+    word-break: normal;
+}
+
+.collaboration-cursor__label {
+    border-radius: 3px;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    left: -1px;
+    line-height: normal;
+    padding: 2px 6px;
+    position: absolute;
+    top: -1.4em;
+    user-select: none;
+    white-space: nowrap;
+}

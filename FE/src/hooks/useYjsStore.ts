@@ -55,6 +55,11 @@ export const useYjsStore = (noteId: string | undefined) => {
   const providerRef = useRef<WebsocketProvider | null>(null);
   const awarenessRef = useRef<Awareness | null>(null); // [New]
 
+  // [New] Simple tracking for delayed remote updates
+  const focusedBlockIdRef = useRef<string | null>(null);
+  const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastLocalUpdateRef = useRef<Map<string, number>>(new Map());
+
   // Zustand store에서 토큰 가져오기 (persist 복원 포함)
   const accessToken = useAuthStore((state) => state.accessToken);
   const userInfo = useAuthStore((state) => state.userInfo); // [New] Get user info for awareness
@@ -227,13 +232,12 @@ export const useYjsStore = (noteId: string | undefined) => {
     awareness.on('change', onAwarenessChange);
 
     // 블록 배열 변경 관찰 (실시간 반영 핵심)
-    // 🔥 로컬/원격 모두 React 상태 업데이트 필요
-    // 무한 루프는 이미 컴포넌트 레벨에서 방지됨 (useEffect 제거)
+    // 🔥 Immediate CRDT merging for proper collaboration
     const onBlocksChanged = (_events: Y.YEvent<any>[], transaction: Y.Transaction) => {
       const origin = transaction.origin || 'remote';
       console.log(`[Yjs] Blocks changed, origin: ${origin}`);
 
-      // 로컬/원격 모두 상태 업데이트 (블록 추가/삭제/이동 시 필수)
+      // Always update state immediately for proper CRDT merging
       updateBlocksState();
     };
     yBlocks.observeDeep(onBlocksChanged);
@@ -562,6 +566,17 @@ export const useYjsStore = (noteId: string | undefined) => {
 
   // [New] Update focused block in awareness
   const setFocusedBlock = useCallback((blockId: string | null) => {
+    const previousId = focusedBlockIdRef.current;
+
+    // [New] On blur: clear timestamp so remote updates can come through
+    if (previousId && previousId !== blockId) {
+      lastLocalUpdateRef.current.delete(previousId);
+      console.log(`[Yjs] Blur from block ${previousId} - clearing timestamp`);
+    }
+
+    // Update focused block ref
+    focusedBlockIdRef.current = blockId;
+
     const awareness = awarenessRef.current;
     if (!awareness || !userInfo) return;
 
