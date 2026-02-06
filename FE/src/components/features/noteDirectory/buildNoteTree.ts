@@ -64,8 +64,8 @@ export function buildNoteTree(
   const sortTree = (node: NoteTreeNode) => {
     // 디렉토리 정렬
     node.children.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
-    // 노트 정렬
-    node.notes.sort((a, b) => a.title.localeCompare(b.title, 'ko'));
+    // 노트 정렬 (최신 수정순)
+    node.notes.sort((a, b) => b.updatedAt - a.updatedAt);
 
     // 자식들도 정렬
     node.children.forEach(sortTree);

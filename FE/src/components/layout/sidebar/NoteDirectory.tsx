@@ -21,6 +21,8 @@ interface NoteDirectoryProps {
   onConfirmRename: (noteId: string, newTitle: string) => void;
   onCancelRename: () => void;
   onMoveNote: (noteId: string, targetPath: string) => void;
+  disableContextMenu?: boolean;
+  hideFavorite?: boolean; // [New]
 }
 
 export const NoteDirectory: React.FC<NoteDirectoryProps> = ({
@@ -35,6 +37,8 @@ export const NoteDirectory: React.FC<NoteDirectoryProps> = ({
   onConfirmRename,
   onCancelRename,
   onMoveNote,
+  disableContextMenu,
+  hideFavorite, // [New]
 }) => {
   const [isOpen, setIsOpen] = useState(true);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -49,6 +53,7 @@ export const NoteDirectory: React.FC<NoteDirectoryProps> = ({
           onClick={() => setIsOpen(prev => !prev)}
           onContextMenu={(e) => {
             e.preventDefault();
+            if (disableContextMenu) return; // [New] Block context menu if prop is set
             onContextMenu({
               visible: true,
               x: e.clientX,
@@ -94,6 +99,8 @@ export const NoteDirectory: React.FC<NoteDirectoryProps> = ({
               onConfirmRename={onConfirmRename}
               onCancelRename={onCancelRename}
               onMoveNote={onMoveNote}
+              disableContextMenu={disableContextMenu}
+              hideFavorite={hideFavorite} // [New] Propagate prop to children
             />
           ))}
 
@@ -116,6 +123,7 @@ export const NoteDirectory: React.FC<NoteDirectoryProps> = ({
                 }}
                 onContextMenu={(e) => {
                   e.preventDefault();
+                  if (disableContextMenu) return; // [New] Block context menu if prop is set
                   onContextMenu({
                     visible: true,
                     x: e.clientX,
@@ -150,14 +158,16 @@ export const NoteDirectory: React.FC<NoteDirectoryProps> = ({
                   </span>
                 )}
 
-                <AddRecommendButton
-                  active={isFavorite}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (isTempNote) return;
-                    onToggleFavorite(note.noteId);
-                  }}
-                />
+                {!hideFavorite && ( // [New] Conditionally render favorite button
+                  <AddRecommendButton
+                    active={isFavorite}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (isTempNote) return;
+                      onToggleFavorite(note.noteId);
+                    }}
+                  />
+                )}
               </div>
             );
           })}

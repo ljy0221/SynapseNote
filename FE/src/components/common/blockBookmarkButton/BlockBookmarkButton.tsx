@@ -22,7 +22,7 @@ export const BlockBookmarkButton: React.FC<BlockBookmarkButtonProps> = ({
                 }}
                 aria-label="북마크"
             >
-                <Star size={18} fill={isBookmarked ? 'currentColor' : 'none'} />
+                <Star size={18} />
             </button>
         </Tooltip>
     );
