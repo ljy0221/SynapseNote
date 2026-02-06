@@ -43,7 +43,7 @@ const RecentNotes: React.FC<RecentNotesProps> = ({ notes }) => {
               >
                 <h4 className="note-title">
                   <Hexagon size={14} className="note-icon" />
-                  <span className="note-title-text">{note.title}</span>
+                  <span className="note-title-text" title={note.title}>{note.title}</span>
                 </h4>
 
                 <span className="note-date">

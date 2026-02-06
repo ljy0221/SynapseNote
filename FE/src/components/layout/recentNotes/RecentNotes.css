@@ -71,6 +71,8 @@
   border: 1px solid var(--color-sub);
   cursor: pointer;
   transition: all 0.2s ease;
+  min-width: 0;
+  /* Prevent grid item from expanding beyond track size */
 }
 
 .note-card:hover {
@@ -86,7 +88,8 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  overflow: hidden; /* Ensures the container respects overflow */
+  overflow: hidden;
+  /* Ensures the container respects overflow */
 }
 
 .note-title-text {
@@ -94,7 +97,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
   flex: 1;
-  min-width: 0; /* Critical for flex child truncation */
+  min-width: 0;
+  /* Critical for flex child truncation */
 }
 
 .note-icon {
