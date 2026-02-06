@@ -90,8 +90,20 @@ export const useAuthStore = create<AuthState>()(
 
             updateUserNickname: async (newNickname: string) => {
                 const token = get().accessToken;
-                if (!token) return;
-                // ... (기존 로직 동일)
+                if (!token) {
+                    useToastStore.getState().showToast('로그인이 필요합니다.', 'error');
+                    return;
+                }
+
+                try {
+                    const updatedInfo = await updateNickname(newNickname);
+                    set({ userInfo: updatedInfo });
+                    useToastStore.getState().showToast('닉네임이 변경되었습니다.', 'success');
+                } catch (error) {
+                    console.error('Update nickname failed:', error);
+                    useToastStore.getState().showToast('닉네임 변경에 실패했습니다.', 'error');
+                    throw error;
+                }
             }
         }),
         {
