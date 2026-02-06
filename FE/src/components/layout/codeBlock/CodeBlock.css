@@ -18,8 +18,21 @@
     border-radius: 12px;
     border: 1px solid rgba(128, 128, 128, 0.2);
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-    /* ensure children don't overflow corners */
+    overflow: visible;
+    /* [Fix] Allow tooltips to overflow */
+    position: relative;
+    /* Ensure z-index context works if needed */
+}
+
+/* [New] Restore border radius logic since overflow is visible */
+.code-block-main> :first-child {
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+}
+
+.code-block-main> :last-child {
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
 }
 
 /* Use common name or reuse style from TextBlock if global, but here define locally or reuse if possible. 

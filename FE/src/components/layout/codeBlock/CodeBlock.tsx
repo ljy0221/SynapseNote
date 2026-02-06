@@ -19,6 +19,7 @@ import { getLanguageTemplate, isCodeEmpty } from '../../../utils/languageTemplat
 import { useCodeEditorStore } from '../../../store/useCodeEditorStore';
 import { useToastStore } from '../../../store/useToastStore';
 import { Tooltip } from '../../common/tooltip/Tooltip';
+import ConfirmModal from '../../common/modal/ConfirmModal';
 
 interface CodeBlockProps {
     id: number | string;
@@ -73,7 +74,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     const [result, setResult] = useState<ExecutionResult | null>(null);
     const [loading, setLoading] = useState(false);
     const [editedCode, setEditedCode] = useState(code);
-    const { settings, getNoteLanguage, setNoteLanguage, trackBlockLanguage } = useCodeEditorStore();
+    const { settings, setNoteLanguage, trackBlockLanguage } = useCodeEditorStore();
 
     // Optimize selector to prevent re-renders and log spam
     const hasMultiple = useCodeEditorStore(state => {
@@ -84,11 +85,14 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
         return langs.size > 1;
     });
 
-    const savedLanguage = noteId ? getNoteLanguage(noteId) : undefined;
-    const [language, setLanguage] = useState<Language>(savedLanguage || initialLanguage);
+    const [language, setLanguage] = useState<Language>(initialLanguage);
     const [executionMode, setExecutionMode] = useState<ExecutionMode>('single');
     const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
     const [showCheckpoints, setShowCheckpoints] = useState(false);
+
+    // [New] Language Change Modal State
+    const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+    const [pendingLanguage, setPendingLanguage] = useState<Language | null>(null);
 
     // AI 리뷰 관련 상태
     const [aiReviewLoading, setAiReviewLoading] = useState(false);
@@ -197,22 +201,36 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 
     const handleLanguageChange = (newLanguage: Language) => {
         if (isCodeEmpty(editedCode)) {
-            const template = getLanguageTemplate(newLanguage);
-            setEditedCode(template);
-            onChange(id, template);
-            setLanguage(newLanguage);
-            if (noteId) setNoteLanguage(noteId, newLanguage);
-            if (onLanguageChange) onLanguageChange(id, newLanguage);
+            // 코드가 비어있는 경우 즉시 변경
+            applyLanguageChange(newLanguage);
             return;
         }
-        if (window.confirm('언어를 변경하면 기본 템플릿이 적용됩니다. 계속하시겠습니까?')) {
-            const template = getLanguageTemplate(newLanguage);
-            setEditedCode(template);
-            onChange(id, template);
-        }
+
+        // 코드가 있는 경우 모달 오픈
+        setPendingLanguage(newLanguage);
+        setIsConfirmModalOpen(true);
+    };
+
+    const applyLanguageChange = (newLanguage: Language) => {
+        const template = getLanguageTemplate(newLanguage);
+        setEditedCode(template);
+        onChange(id, template);
         setLanguage(newLanguage);
         if (noteId) setNoteLanguage(noteId, newLanguage);
         if (onLanguageChange) onLanguageChange(id, newLanguage);
+    };
+
+    const handleConfirmLanguageChange = () => {
+        if (pendingLanguage) {
+            applyLanguageChange(pendingLanguage);
+        }
+        setIsConfirmModalOpen(false);
+        setPendingLanguage(null);
+    };
+
+    const handleCancelLanguageChange = () => {
+        setIsConfirmModalOpen(false);
+        setPendingLanguage(null);
     };
 
     const handleRestore = (code: string) => {
@@ -289,6 +307,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
             id={id.toString()}
             className={`code-block-wrapper ${isFocused ? 'is-focused' : ''} ${bookmark ? 'is-bookmarked' : ''}`}
             onContextMenu={onContextMenu}
+            onClick={(e) => e.stopPropagation()} // [Fix] Prevent clearing focus when clicking inside the block
         >
             <div className="block-controls">
                 <div
@@ -452,6 +471,14 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                     <BlockBookmarkButton isBookmarked={bookmark} onClick={handleBookmark} />
                 </div>
             )}
+
+            {/* Language Change Confirmation Modal */}
+            <ConfirmModal
+                isOpen={isConfirmModalOpen}
+                message="언어를 변경하면 작성된 코드가 초기화되고 기본 템플릿이 적용됩니다. 계속하시겠습니까?"
+                onConfirm={handleConfirmLanguageChange}
+                onCancel={handleCancelLanguageChange}
+            />
 
         </div>
     );
