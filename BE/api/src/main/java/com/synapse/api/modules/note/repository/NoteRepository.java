@@ -40,18 +40,12 @@ public interface NoteRepository extends JpaRepository<Note, UUID> {
 
     @Query("""
             SELECT DISTINCT n FROM Note n
+            JOIN MindmapNodePosition mnp ON n.id = mnp.id.noteId AND mnp.id.memberId = :memberId
             LEFT JOIN NoteMember nm ON n.id = nm.note.id AND nm.member.id = :memberId AND nm.deletedAt IS NULL
             WHERE (n.createdBy.id = :memberId OR nm.id IS NOT NULL)
-              AND n.pointX IS NOT NULL
-              AND n.pointY IS NOT NULL
               AND n.deletedAt IS NULL
             """)
-    List<Note> findMindMapNodesByMember(UUID memberId);
-
-    @Modifying
-    @Query("UPDATE Note n SET n.pointX = NULL, n.pointY = NULL " +
-            "WHERE n.createdBy.id = :memberId AND n.pointX IS NOT NULL")
-    int resetMindmapNodePositions(@Param("memberId") UUID memberId);
+    List<Note> findMindMapNodesByMember(@Param("memberId") UUID memberId);
 
     @Query(value = "SELECT n FROM Note n " +
             "LEFT JOIN NoteMember nm ON n.id = nm.note.id AND nm.member.id = :memberId AND nm.deletedAt IS NULL "

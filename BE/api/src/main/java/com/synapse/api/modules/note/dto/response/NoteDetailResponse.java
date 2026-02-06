@@ -28,15 +28,14 @@ public record NoteDetailResponse(
         LocalDateTime summaryUpdatedAt,
 
         // [변경] 블록 리스트 (Code, Text, Image 섞여있음)
-        List<BaseBlock> blocks
-) {
+        List<BaseBlock> blocks) {
     public static NoteDetailResponse from(Note note, List<BaseBlock> blocks) {
         return NoteDetailResponse.builder()
                 .id(note.getId())
                 .title(note.getTitle())
                 .directoryPath(note.getDirectoryPath())
-                .pointX(note.getPointX())
-                .pointY(note.getPointY())
+                .pointX(null)
+                .pointY(null)
                 .bookmark(note.isBookmark())
                 .version(note.getVersion())
                 .createdBy(note.getCreatedBy().getId())
