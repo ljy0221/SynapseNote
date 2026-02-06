@@ -86,6 +86,15 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  overflow: hidden; /* Ensures the container respects overflow */
+}
+
+.note-title-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0; /* Critical for flex child truncation */
 }
 
 .note-icon {
