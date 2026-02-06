@@ -24,6 +24,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
     const showToast = useToastStore((state) => state.showToast);
     const logout = useAuthStore((state) => state.logout);
     const updateUserNickname = useAuthStore((state) => state.updateUserNickname);
+    const withdrawAccount = useAuthStore((state) => state.withdrawAccount);
 
     // 모달 외부 클릭 시 닫기
     useEffect(() => {
@@ -49,6 +50,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
     useEffect(() => {
         if (isOpen && user) {
             setTempName(user.name);
+            setIsWithdrawalOpen(false); // 모달 열릴 때 탈퇴 모달 상태 초기화
         }
     }, [isOpen, user]);
 
@@ -87,12 +89,17 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
         onClose();
     };
 
-    const handleConfirmWithdraw = () => {
-        console.log('Withdraw account confirmed');
-        setIsWithdrawalOpen(false);
-        onClose();
-        // 탈퇴 후에도 로그아웃 처리 필요하면 추가
-        handleLogout();
+    const handleConfirmWithdraw = async () => {
+        try {
+            await withdrawAccount();
+            setIsWithdrawalOpen(false);
+            onClose();
+            // 탈퇴 후 로그인 페이지로 이동
+            navigate('/login');
+        } catch (error) {
+            // 에러는 스토어에서 처리됨
+            console.error('Withdrawal failed:', error);
+        }
     };
 
     if (!isOpen) return null;
