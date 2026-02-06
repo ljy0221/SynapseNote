@@ -54,7 +54,7 @@ public class MemberService {
 
         OAuthUserInfo oAuthMemberInfo = getOAuthMemberInfo(request);
 
-        Optional<Member> optionalMember = memberRepository.findByEmail(oAuthMemberInfo.getEmail());
+        Optional<Member> optionalMember = memberRepository.findByEmailIgnoreDeletedAt(oAuthMemberInfo.getEmail());
 
         Member member;
         if (optionalMember.isPresent()) {
@@ -62,7 +62,7 @@ public class MemberService {
 
             // 탈퇴(soft delete)된 계정인지 체크
             if (member.getDeletedAt() != null) {
-                throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
+                throw new BusinessException(ErrorCode.DELETED_MEMBER);
             }
 
             // 다른 provider로 가입했는지 체크
