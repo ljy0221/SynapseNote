@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, User, ChevronDown, Check, Trash2 } from 'lucide-react';
+import { emitNotesChanged } from '../../../events/NotesEvents';
 import './PermissionModal.css';
 
 import { getNoteMembersApi } from '../../../api/notes/GetNoteMembers.api';
@@ -140,6 +141,13 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
         try {
             await deleteMemberApi(noteId, memberId);
             showToast("멤버를 내보냈습니다.", 'success');
+
+            // [New] Notify Note page to refresh members
+            emitNotesChanged({
+                type: 'UPDATE_MEMBERS',
+                noteId: noteId,
+                source: 'PERMISSION_MODAL'
+            });
         } catch (error) {
             console.error("Failed to remove member:", error);
             setMembers(previousMembers);
@@ -175,6 +183,13 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
             // 멤버 목록 갱신
             const membersRes = await getNoteMembersApi(noteId!);
             if (membersRes?.members) setMembers(membersRes.members);
+
+            // [New] Notify Note page to refresh members
+            emitNotesChanged({
+                type: 'UPDATE_MEMBERS',
+                noteId: noteId!,
+                source: 'PERMISSION_MODAL'
+            });
 
         } catch (error: any) {
             console.error(error);

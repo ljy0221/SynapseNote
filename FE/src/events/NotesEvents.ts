@@ -22,6 +22,11 @@ export type NotesChangedDetail =
     type: 'DELETE_NOTE';
     noteId: string;
     source?: string;
+  }
+  | {
+    type: 'UPDATE_MEMBERS';
+    noteId: string;
+    source?: string;
   };
 
 export const emitNotesChanged = (detail?: NotesChangedDetail) => {
