@@ -2,7 +2,7 @@ import { spawn } from 'child_process';
 import { writeFileSync, unlinkSync, mkdtempSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import type { ExecutionRequest, ExecutionResult, Language, SessionExecutionResult, SessionInfo } from '../../src/types/execution/ExecutionTypes';
+import type { ExecutionRequest, Language, SessionExecutionResult, SessionInfo } from '../../src/types/execution/ExecutionTypes';
 import { DOCKER_SECURITY_CONFIG } from './SecurityConfig';
 import { SessionManager } from './SessionManager';
 
@@ -151,11 +151,11 @@ export class DockerExecService {
     ];
 
     if (request.language === 'java' && tempDir) {
-      return [ ...baseArgs, '-v', `${tempDir}:/workspace`, '-w', '/workspace', config.image, 'sh', '-c', 'javac Main.java 2>&1 && java Main 2>&1' ];
+      return [...baseArgs, '-v', `${tempDir}:/workspace`, '-w', '/workspace', config.image, 'sh', '-c', 'javac Main.java 2>&1 && java Main 2>&1'];
     } else {
       const extension = this.getFileExtension(request.language);
       const containerPath = `/code/main.${extension}`;
-      return [ ...baseArgs, '--read-only', '--tmpfs', '/tmp:size=64m', '-v', `${filePath}:${containerPath}:ro`, config.image, ...this.getExecutionCommand(request.language, containerPath) ];
+      return [...baseArgs, '--read-only', '--tmpfs', '/tmp:size=64m', '-v', `${filePath}:${containerPath}:ro`, config.image, ...this.getExecutionCommand(request.language, containerPath)];
     }
   }
 

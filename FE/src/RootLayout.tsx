@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 // 스타일 (경로 수정 필요)
@@ -9,17 +9,19 @@ import './App.css';
 import { useThemeStore } from './store/useThemeStore';
 import { useToastStore } from './store/useToastStore';
 
-// 레이아웃 컴포넌트
-import { Header } from './components/layout/header/Header';
-import { Sidebar } from './components/layout/sidebar/Sidebar';
-import { SideMenuBar } from './components/layout/sideMenuBar/SideMenuBar';
+// 레이아웃 컴포넌트 (Lazy Loading)
+const Header = lazy(() => import('./components/layout/header/Header').then(module => ({ default: module.Header })));
+const Sidebar = lazy(() => import('./components/layout/sidebar/Sidebar').then(module => ({ default: module.Sidebar })));
+const SideMenuBar = lazy(() => import('./components/layout/sideMenuBar/SideMenuBar').then(module => ({ default: module.SideMenuBar })));
 
 // 공통 컴포넌트
 import ThemeToggle from './components/common/themeToggle/ThemeToggle';
-import WindowControlButton from './components/common/WindowControlButton/WindowControlButton';
-import { DockerErrorModal } from './components/common/modal/DockerErrorModal';
 import { ToastNotification } from './components/common/toast/ToastNotification';
 import GlobalModal from './components/common/modal/GlobalModal';
+
+// Less critical components (Lazy)
+const WindowControlButton = lazy(() => import('./components/common/WindowControlButton/WindowControlButton'));
+const DockerErrorModal = lazy(() => import('./components/common/modal/DockerErrorModal').then(module => ({ default: module.DockerErrorModal })));
 
 // 전자 확인
 const isElectron = typeof window !== 'undefined' && (window as any).electronAPI !== undefined;
@@ -143,22 +145,30 @@ export default function RootLayout() {
                     <div className="header-spacer"></div>
                     <div className="header-right-zone">
                         <ThemeToggle themeMode={themeMode} onToggle={toggleTheme} />
-                        {isElectron && <WindowControlButton />}
+                        {isElectron && (
+                            <Suspense fallback={null}>
+                                <WindowControlButton />
+                            </Suspense>
+                        )}
                     </div>
                 </div>
             ) : (
-                <Header isSidebarActive={isSidebarActive} onToggleSidebar={toggleSidebar} />
+                <Suspense fallback={null}>
+                    <Header isSidebarActive={isSidebarActive} onToggleSidebar={toggleSidebar} />
+                </Suspense>
             )}
 
-            <DockerErrorModal
-                isOpen={isDockerErrorOpen}
-                type={dockerErrorType}
-                onRetry={handleRetryDocker}
-                onClose={() => setIsDockerErrorOpen(false)}
-            />
+            <Suspense fallback={null}>
+                <DockerErrorModal
+                    isOpen={isDockerErrorOpen}
+                    type={dockerErrorType}
+                    onRetry={handleRetryDocker}
+                    onClose={() => setIsDockerErrorOpen(false)}
+                />
+            </Suspense>
 
             {!isLoginPage && (
-                <>
+                <Suspense fallback={null}>
                     <SideMenuBar />
                     {(isSidebarAllowed || isFixedSidebar) && (
                         <Sidebar
@@ -167,7 +177,7 @@ export default function RootLayout() {
                             showToggle={!isFixedSidebar} // 고정이면 토글 버튼 숨김
                         />
                     )}
-                </>
+                </Suspense>
             )}
 
             <main

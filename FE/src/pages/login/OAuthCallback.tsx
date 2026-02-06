@@ -49,7 +49,17 @@ const OAuthCallback: React.FC = () => {
         // state가 ELECTRON이면 ELECTRON, 아니면(WEB or undefined) WEB
         // 단, 이미 위에서 ELECTRON인 경우 앱으로 리다이렉트했으므로, 여기 도달했다는 것은 WEB임.
         // 하지만 Electron 앱 내부에서 실행된 경우(window.electronAPI 존재)는 ELECTRON임.
-        const platform = window.electronAPI ? 'ELECTRON' : 'WEB';
+
+        // [Fix] Electron Production 빌드는 Web Redirect URI(https://i14b102...)를 사용하므로
+        // 백엔드 검증 시에도 'WEB'으로 처리되어야 Redirect URI가 일치함.
+        // 단, Dev 모드(localhost)에서는 'ELECTRON'으로 보낼 수도 있으나, 
+        // 확실한 건 'Web Bridge'를 탔으면 'WEB'으로 맞추는 것이 안전함.
+        const isElectron = !!window.electronAPI;
+        const isDev = import.meta.env.DEV;
+
+        // 개발 모드면 ELECTRON(localhost), 배포 모드면 WEB(https://domain)으로 플랫폼 전송
+        const platform = (isElectron && isDev) ? 'ELECTRON' : 'WEB';
+
         const result = await socialLogin(provider, code, platform);
 
         // ✅ login 하나로 책임 집중

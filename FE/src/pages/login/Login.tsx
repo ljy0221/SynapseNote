@@ -63,12 +63,19 @@ const Login: React.FC = () => {
                             provider="github"
                             onClick={() => {
                                 const isElectron = !!window.electronAPI;
+                                const isDev = import.meta.env.DEV;
                                 const clientId = isElectron
                                     ? import.meta.env.VITE_GITHUB_CLIENT_ID
                                     : import.meta.env.VITE_GITHUB_WEB_CLIENT_ID;
-                                const redirectUri = isElectron
-                                    ? import.meta.env.VITE_GITHUB_REDIRECT_URI
-                                    : import.meta.env.VITE_GITHUB_WEB_REDIRECT_URI;
+
+                                let redirectUri;
+                                if (isElectron) {
+                                    redirectUri = isDev
+                                        ? import.meta.env.VITE_GITHUB_REDIRECT_URI
+                                        : import.meta.env.VITE_GITHUB_PRODUCTION_REDIRECT_URI;
+                                } else {
+                                    redirectUri = import.meta.env.VITE_GITHUB_WEB_REDIRECT_URI;
+                                }
 
                                 const state = isElectron ? 'ELECTRON' : 'WEB';
                                 const authUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email&state=${state}`;
@@ -83,10 +90,17 @@ const Login: React.FC = () => {
                             provider="google"
                             onClick={() => {
                                 const isElectron = !!window.electronAPI;
+                                const isDev = import.meta.env.DEV;
                                 const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID; // Google shares Client ID
-                                const redirectUri = isElectron
-                                    ? import.meta.env.VITE_GOOGLE_REDIRECT_URI
-                                    : import.meta.env.VITE_GOOGLE_WEB_REDIRECT_URI;
+
+                                let redirectUri;
+                                if (isElectron) {
+                                    redirectUri = isDev
+                                        ? import.meta.env.VITE_GOOGLE_REDIRECT_URI
+                                        : import.meta.env.VITE_GOOGLE_PRODUCTION_REDIRECT_URI;
+                                } else {
+                                    redirectUri = import.meta.env.VITE_GOOGLE_WEB_REDIRECT_URI;
+                                }
 
                                 const state = isElectron ? 'ELECTRON' : 'WEB';
                                 const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=email profile&state=${state}`;
