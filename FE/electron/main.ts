@@ -138,6 +138,15 @@ ipcMain.handle('docker:execute-single', async (_event, request) => {
 });
 
 // Deep Link 설정
+let pendingDeepLinkUrl: string | null = null; // [New] 대기 중인 딥링크 URL
+
+// [New] 딥링크 조회 핸들러 (렌더러가 준비된 후 호출)
+ipcMain.handle('docker:get-deep-link', () => {
+  const url = pendingDeepLinkUrl;
+  pendingDeepLinkUrl = null; // 한 번 조회하면 초기화
+  return url;
+});
+
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
     app.setAsDefaultProtocolClient('synapse', process.execPath, [path.resolve(process.argv[1])])
@@ -167,12 +176,9 @@ if (!gotTheLock) {
       // Deep Link URL 찾기 (Windows/Linux)
       const url = commandLine.find((arg) => arg.startsWith('synapse://'));
       if (url) {
-        // [Fix] 윈도우가 로드될 때까지 기다리거나 바로 전송
-        if (win.webContents.isLoading()) {
-          win.webContents.once('did-finish-load', () => {
-            win?.webContents.send('deep-link-url', url);
-          });
-        } else {
+        pendingDeepLinkUrl = url; // [New] URL 저장
+        // 윈도우가 로드된 상태라면 바로 전송 (Push)
+        if (!win.webContents.isLoading()) {
           win.webContents.send('deep-link-url', url);
         }
       }
@@ -192,12 +198,9 @@ if (!gotTheLock) {
       if (win.isMinimized()) win.restore();
       win.focus();
 
-      // [Fix] 윈도우가 로드 중이면 기다림
-      if (win.webContents.isLoading()) {
-        win.webContents.once('did-finish-load', () => {
-          win?.webContents.send('deep-link-url', url);
-        });
-      } else {
+      pendingDeepLinkUrl = url; // [New] URL 저장
+      // 윈도우가 로드된 상태라면 바로 전송 (Push)
+      if (!win.webContents.isLoading()) {
         win.webContents.send('deep-link-url', url);
       }
     }
