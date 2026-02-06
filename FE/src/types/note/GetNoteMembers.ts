@@ -1,9 +1,12 @@
 export type NoteMemberRole = 'OWNER' | 'EDITOR' | 'VIEWER';
 
 export interface NoteMemberItem {
-  memberId: string;
+  memberId?: string; // [Optional]
+  userId?: string;   // [New] Backend may use userId
+  id?: string;       // [New] fallback
   email: string;
-  name: string;
+  name?: string;
+  memberName?: string;
   profileImageUrl?: string;
   role: NoteMemberRole;
   joinedAt: string;

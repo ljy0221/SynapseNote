@@ -3,11 +3,13 @@ export type NoteMemberRole = 'OWNER' | 'EDITOR' | 'VIEWER';
 
 /** 노트 멤버 (owner, members 공용) */
 export interface NoteMember {
-  memberId: string;
+  memberId?: string;
+  userId?: string;   // [New] fallback
+  id?: string;
   email: string;
-  name: string;
+  name?: string;
+  memberName?: string;
   role?: NoteMemberRole;
-  // owner에는 role이 없으므로 optional
 }
 
 /** 노트 상세 응답 data */
