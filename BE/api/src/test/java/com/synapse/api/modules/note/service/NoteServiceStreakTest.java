@@ -49,7 +49,8 @@ class NoteServiceStreakTest {
                 NoteCreateRequest request = new NoteCreateRequest(noteId, "Title", "/", 0.0, 0.0, "");
                 Note note = Note.builder().id(noteId).createdBy(member).build();
 
-                given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+                given(memberRepository.findByIdWithLock(memberId)).willReturn(Optional.of(member));
+                given(noteRepository.countByCreatedBy_IdAndDeletedAtIsNull(memberId)).willReturn(0L);
                 given(noteRepository.existsById(noteId)).willReturn(false);
                 given(noteRepository.save(any(Note.class))).willReturn(note);
 
