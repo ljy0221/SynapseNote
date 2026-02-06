@@ -19,6 +19,9 @@ public interface MemberRepository extends JpaRepository<Member, UUID> {
     @Query("SELECT COUNT(u) > 0 FROM Member u WHERE u.email = :email AND u.deletedAt IS NULL")
     boolean existsByEmail(@Param("email") String email);
 
+    @Query("SELECT u.deletedAt IS NOT NULL FROM Member u WHERE u.email = :email")
+    boolean isDeleted(@Param("email") String email);
+
     @Query("SELECT u FROM Member u WHERE u.id = :id AND u.deletedAt IS NULL")
     Optional<Member> findById(@Param("id") UUID id);
 
