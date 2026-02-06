@@ -9,12 +9,14 @@ interface ThemeToggleProps {
   themeMode: ThemeMode; // 'light' | 'cookie' | 'dark' | 'deepblue'
   onToggle: () => void;
   className?: string;
+  tooltipPlacement?: 'top' | 'bottom' | 'left' | 'right' | 'bottom-start' | 'bottom-end';
 }
 
 const ThemeToggle: React.FC<ThemeToggleProps> = ({
   themeMode,
   onToggle,
-  className = ''
+  className = '',
+  tooltipPlacement = 'bottom'
 }) => {
   const getIcon = () => {
     switch (themeMode) {
@@ -38,7 +40,7 @@ const ThemeToggle: React.FC<ThemeToggleProps> = ({
   };
 
   return (
-    <Tooltip content={getTooltipContent()} placement="bottom">
+    <Tooltip content={getTooltipContent()} placement={tooltipPlacement}>
       <button
         onClick={onToggle}
         className={`theme-toggle-btn ${className}`}
