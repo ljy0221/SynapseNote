@@ -14,6 +14,7 @@ import BlockContextMenu from '../../common/contextMenu/BlockContextMenu';
 import './NoteMain.css';
 import { NoteMemberRole, NoteMemberItem } from '../../../types/note/GetNoteMembers'; // [New]
 import { MemberAvatarGroup } from '../../common/memberAvatarGroup/MemberAvatarGroup'; // [New]
+import { AwarenessUser } from '../../../hooks/useYjsStore'; // [New]
 
 interface NoteMainProps {
     title: string;
@@ -41,6 +42,7 @@ interface NoteMainProps {
     currentUserRole?: NoteMemberRole;
     showBlockBookmark?: boolean; // [New]
     members?: NoteMemberItem[]; // [New]
+    getBlockEditors?: (blockId: string) => AwarenessUser[]; // [New] Get users editing a block
 }
 
 const NoteMain: React.FC<NoteMainProps> = ({
@@ -68,6 +70,7 @@ const NoteMain: React.FC<NoteMainProps> = ({
     currentUserRole,
     showBlockBookmark = true, // [New]
     members = [], // [New]
+    getBlockEditors, // [New]
 }) => {
     const [isInviteModalOpen, setIsInviteModalOpen] = React.useState(false);
     const [isPermissionModalOpen, setIsPermissionModalOpen] = React.useState(false);
@@ -156,6 +159,7 @@ const NoteMain: React.FC<NoteMainProps> = ({
                         onFocus={() => onFocusBlock(block.id)}
                         onToggleBookmark={() => onToggleBookmark?.(block.id, bookmarkedBlockIds ? bookmarkedBlockIds.has(block.id.toString()) : false)}
                         showBookmark={showBlockBookmark} // [New]
+                        editors={getBlockEditors ? getBlockEditors(block.id.toString()) : []} // [New]
                     />
                 );
             case 'code':
@@ -177,6 +181,7 @@ const NoteMain: React.FC<NoteMainProps> = ({
                         onToggleBookmark={() => onToggleBookmark?.(block.id, bookmarkedBlockIds ? bookmarkedBlockIds.has(block.id.toString()) : false)}
                         onLanguageChange={onUpdateBlockLanguage}
                         showBookmark={showBlockBookmark} // [New]
+                        editors={getBlockEditors ? getBlockEditors(block.id.toString()) : []} // [New]
                     />
                 );
             default:
