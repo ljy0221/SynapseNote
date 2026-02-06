@@ -347,6 +347,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
             // onDragOver={onDragOver}
             // onDrop={onDrop}
             onContextMenu={onContextMenu} // [New]
+            onClick={(e) => e.stopPropagation()} // [Fix] Prevent clearing focus when clicking inside the block
         >
             <div className="block-controls">
                 <div

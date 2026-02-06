@@ -628,6 +628,7 @@ const Note: React.FC = () => {
                     tabIndex={-1}
                     onKeyDown={handleKeyDown}
                     style={{ outline: 'none' }}
+                    onClick={() => setFocusedBlockId(null)}
                 >
                     <NoteMain
                         noteId={noteId}
