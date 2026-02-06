@@ -182,30 +182,37 @@
     appearance: none;
     -webkit-appearance: none;
     background-color: transparent;
-    border: 1px solid var(--color-sub, #ddd);
+    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
+    /* [Modified] Use stricter border color */
     border-radius: 6px;
-    padding: 4px 24px 4px 8px;
-    font-size: 12px;
+    padding: 6px 28px 6px 10px;
+    /* [Modified] Adjust padding */
+    font-size: 13px;
+    /* [Modified] */
     color: var(--font-color);
     cursor: pointer;
     font-family: inherit;
     transition: all 0.2s;
+    min-width: 90px;
 }
 
 .role-select:hover {
+    background-color: var(--color-sub, rgba(0, 0, 0, 0.05));
+    /* [Modified] Add hover bg */
     border-color: var(--color-point);
 }
 
 .role-select:focus {
     outline: none;
     border-color: var(--color-point);
-    box-shadow: 0 0 0 2px rgba(var(--color-point-rgb), 0.2);
-    /* Requires point-rgb variable or similar */
+    box-shadow: 0 0 0 2px rgba(var(--color-point-rgb, 100, 100, 255), 0.2);
+    /* [Modified] Fallback RGB */
 }
 
 .role-select-icon {
     position: absolute;
-    right: 6px;
+    right: 8px;
+    /* [Modified] */
     top: 50%;
     transform: translateY(-50%);
     pointer-events: none;
