@@ -71,14 +71,16 @@ export const useCreateNote = () => {
             if (options?.onSuccess) {
                 options.onSuccess(noteId);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("노트 생성 실패:", error);
+
+            const errorMessage = error.response?.data?.error?.message || "노트를 생성하지 못했습니다.";
 
             // Rollback (에러 발생 시 처리용 콜백)
             if (options?.onError) {
                 options.onError(noteId);
             } else {
-                showToast("노트를 생성하지 못했습니다.", 'error');
+                showToast(errorMessage, 'error');
             }
         }
     };

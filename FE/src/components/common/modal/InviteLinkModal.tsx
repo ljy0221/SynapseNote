@@ -32,9 +32,10 @@ export const InviteLinkModal: React.FC<InviteLinkModalProps> = ({ isOpen, onClos
         try {
             const res = await createInvitationApi(noteId, role, expiration);
             setInviteUrl(res.invitationUrl);
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            setError('초대 링크를 생성할 수 없습니다.');
+            const msg = err.response?.data?.error?.message || '초대 링크를 생성할 수 없습니다.';
+            setError(msg);
         } finally {
             setIsLoading(false);
         }
