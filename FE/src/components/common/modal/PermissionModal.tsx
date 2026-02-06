@@ -232,7 +232,7 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
                                                         <User size={20} />
                                                     </div>
                                                     <div className="member-details">
-                                                        <span className="member-nickname">{member.name}</span>
+                                                        <span className="member-nickname">{member.name || member.memberName || '이름 없음'}</span>
                                                         <span className="member-email">{member.email}</span>
                                                     </div>
                                                 </div>
@@ -245,7 +245,7 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
                                                             <select
                                                                 className="role-select"
                                                                 value={member.role}
-                                                                onChange={(e) => handleRoleChange(member.memberId, e.target.value as NoteMemberRole)}
+                                                                onChange={(e) => handleRoleChange(member.memberId!, e.target.value as NoteMemberRole)}
                                                             >
                                                                 <option value="EDITOR">편집자</option>
                                                                 <option value="VIEWER">뷰어</option>
@@ -256,7 +256,7 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
                                                     {member.role !== 'OWNER' && (
                                                         <button
                                                             className="member-remove-btn"
-                                                            onClick={() => confirmRemoveMember(member.memberId)}
+                                                            onClick={() => confirmRemoveMember(member.memberId!)}
                                                             title="멤버 내보내기"
                                                         >
                                                             <Trash2 size={16} />
