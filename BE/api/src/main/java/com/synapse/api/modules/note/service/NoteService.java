@@ -52,8 +52,14 @@ public class NoteService {
     // =========================================================================
     @Transactional
     public NoteResponse createNote(UUID memberId, NoteCreateRequest request) {
-        Member member = memberRepository.findById(memberId)
+        // [락 & 검증] 내 노트 50개 제한
+        Member member = memberRepository.findByIdWithLock(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        long ownedNoteCount = noteRepository.countByCreatedBy_IdAndDeletedAtIsNull(memberId);
+        if (ownedNoteCount >= 50) {
+            throw new BusinessException(ErrorCode.NOTE_LIMIT_EXCEEDED);
+        }
 
         if (noteRepository.existsById(request.id())) {
             throw new BusinessException(ErrorCode.NOTE_ID_DUPLICATE);
