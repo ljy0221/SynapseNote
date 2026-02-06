@@ -309,7 +309,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     return (
         <div
             id={id.toString()}
-            className={`code-block-wrapper ${isFocused ? 'is-focused' : ''} ${bookmark ? 'is-bookmarked' : ''}`}
+            className={`code-block-wrapper ${isFocused ? 'is-focused' : ''} ${bookmark ? 'is-bookmarked' : ''} ${showBookmark ? 'has-bookmark' : ''}`}
             onContextMenu={onContextMenu}
             onClick={(e) => e.stopPropagation()} // [Fix] Prevent clearing focus when clicking inside the block
         >

@@ -1,9 +1,16 @@
 .block-editor-avatar-container {
     position: absolute;
     top: 8px;
-    right: 8px;
+    right: 48px;
+    /* Moved left to avoid bookmark button (32px width + 16px gap) */
     z-index: 10;
     pointer-events: none;
+}
+
+/* When bookmark is not shown, move avatar to the right edge */
+.text-block-wrapper:not(.has-bookmark) .block-editor-avatar-container,
+.code-block-wrapper:not(.has-bookmark) .block-editor-avatar-container {
+    right: 8px;
 }
 
 .block-editor-avatar {

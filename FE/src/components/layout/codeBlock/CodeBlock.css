@@ -8,6 +8,7 @@
     gap: 8px;
     /* gap between handle and block */
     position: relative;
+    /* For absolute positioning of avatar */
 }
 
 .code-block-main {
