@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, User, ChevronDown, Check, Ban, Trash2 } from 'lucide-react';
+import { X, User, ChevronDown, Check, Trash2 } from 'lucide-react';
 import './PermissionModal.css';
 
 import { getNoteMembersApi } from '../../../api/notes/GetNoteMembers.api';
@@ -146,16 +146,12 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
         }
     };
 
-    const handleAcceptRequest = async (invitationId: string, role: NoteMemberRole, memberId?: string) => {
+    const handleAcceptRequest = async (invitationId: string, role: NoteMemberRole) => {
         try {
-            // 1. 수락 요청 (API가 role을 무시할 수 있음)
+            // 1. 수락 요청 (API가 role을 무시할 수 있음 -> Invitation API가 role을 처리함)
             await approveInvitationApi(invitationId, role as 'EDITOR' | 'VIEWER');
 
-            // 2. 수락 후 권한 업데이트 (확실하게 적용)
-            if (memberId && noteId) {
-                // 약간의 딜레이를 주어 DB 반영 시간 확보 (필요 시)
-                await updateMemberRoleApi(noteId, memberId, role);
-            }
+            // 2. [Refactor] approveInvitationApi에서 권한을 이미 처리하므로 중복 호출 제거
 
             showToast("요청을 수락했습니다.", 'success');
             // Refresh list
@@ -297,7 +293,7 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
 
                                                 <button
                                                     className="action-btn accept"
-                                                    onClick={() => handleAcceptRequest(req.id, req.role, req.invitedMember?.id)}
+                                                    onClick={() => handleAcceptRequest(req.id, req.role)}
                                                     title="수락"
                                                 >
                                                     <Check size={16} />
