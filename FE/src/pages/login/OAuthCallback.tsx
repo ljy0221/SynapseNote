@@ -27,24 +27,14 @@ const OAuthCallback: React.FC = () => {
       return;
     }
 
-    // 4. State Parsing (Platform & Redirect URL)
+    // 4. State Parsing (Simple String)
+    // 이전 JSON 로직 제거 및 단순화 (502 에러 방지)
+    const state = searchParams.get('state');
+
+    // state가 'ELECTRON'이면 ELECTRON, 그 외엔 WEB으로 간주 (단, 안전을 위해 화이트리스트 체크)
     let statePlatform = 'WEB';
-    let stateRedirectUrl: string | null = null;
-    try {
-      if (state) {
-        if (state === 'ELECTRON' || state === 'WEB') {
-          statePlatform = state;
-        } else {
-          const parsed = JSON.parse(decodeURIComponent(state));
-          statePlatform = parsed.platform || 'WEB';
-          stateRedirectUrl = parsed.redirectUrl || null;
-          console.log('[OAuth] Parsed state:', parsed);
-        }
-      }
-    } catch (e) {
-      console.warn('[OAuth] Failed to parse state, defaulting to WEB:', e);
-      // Fallback for simple string state
-      if (state === 'ELECTRON') statePlatform = 'ELECTRON';
+    if (state === 'ELECTRON') {
+      statePlatform = 'ELECTRON';
     }
 
     // 1️⃣ Browser 환경 + Electron(상태) 요청인 경우 → Deep Link로 전달
@@ -78,9 +68,14 @@ const OAuthCallback: React.FC = () => {
         // Wait, socialLogin API sends 'platform' to backend, and backend selects redirect_uri to verify against.
         // So we MUST send the SAME platform as we used to generate the link.
 
-        console.log('[OAuth] Using Platform:', statePlatform);
+        // [Fix] Revert to original platform logic for API consistency
+        const isElectron = !!window.electronAPI;
+        const isDev = import.meta.env.DEV;
+        const platform = (isElectron && isDev) ? 'ELECTRON' : 'WEB';
 
-        const result = await socialLogin(provider, code, statePlatform);
+        console.log('[OAuth] Using Platform:', platform); // Log the actual platform being used
+
+        const result = await socialLogin(provider, code, platform);
 
         // ✅ login 하나로 책임 집중
         await login(result.accessToken);
@@ -89,7 +84,7 @@ const OAuthCallback: React.FC = () => {
 
         // [Modified] Priority: State > LocalStorage
         const localRedirectUrl = localStorage.getItem('loginRedirectUrl');
-        const redirectUrl = stateRedirectUrl || localRedirectUrl;
+        const redirectUrl = localRedirectUrl;
 
         console.log('[OAuth] Redirect Target:', redirectUrl);
 
@@ -148,17 +143,10 @@ const OAuthCallback: React.FC = () => {
   }, [provider, searchParams, navigate, login, showToast]);
 
   // 브라우저용 안내 화면 (Electron Callback인 경우)
-  // Re-parse state for render logic (duplicated but safe)
-  let renderStatePlatform = 'WEB';
-  try {
-    if (state && (state === 'ELECTRON' || state === 'WEB')) {
-      renderStatePlatform = state;
-    } else if (state) {
-      renderStatePlatform = JSON.parse(decodeURIComponent(state)).platform || 'WEB';
-    }
-  } catch { }
+  const state = searchParams.get('state');
 
-  if (!window.electronAPI && renderStatePlatform === 'ELECTRON') {
+  // 단순히 state가 ELECTRON인지 확인 (JSON 파싱 불필요)
+  if (!window.electronAPI && state === 'ELECTRON') {
     return (
       <div
         style={{
@@ -172,6 +160,24 @@ const OAuthCallback: React.FC = () => {
       >
         <h2>로그인 완료</h2>
         <p>앱으로 돌아갑니다.</p>
+        <button
+          onClick={() => {
+            const code = searchParams.get('code');
+            window.location.href = `synapse://auth/${provider}/callback?code=${code}`;
+          }}
+          style={{
+            marginTop: '20px',
+            padding: '10px 20px',
+            backgroundColor: 'var(--color-point)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            fontWeight: 'bold'
+          }}
+        >
+          앱 열기
+        </button>
         <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '10px' }}>
           * '항상 허용'을 체크하시면 다음부터는 자동으로 로그인됩니다.
         </p>

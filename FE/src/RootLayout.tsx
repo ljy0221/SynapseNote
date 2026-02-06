@@ -113,12 +113,37 @@ export default function RootLayout() {
                         useAuthStore.getState().login(token);
                     }
 
-                    // 2. 경로 이동 (토큰 파라미터 제거)
+                    // 2. 경로 이동
                     let path = url.replace('synapse://', '/');
-                    // 쿼리 스트링 제거 (미관상)
-                    if (path.includes('?')) {
-                        path = path.split('?')[0];
+
+                    // 토큰이 있었다면 URL에서 제거하여 깔끔하게 만듦 (단, 다른 파라미터는 유지해야 함)
+                    if (token) {
+                        try {
+                            const urlObj = new URL(url); // Re-parse or reuse
+                            urlObj.searchParams.delete('token');
+
+                            // synapse://host/pathname?query -> /host/pathname?query
+                            // urlObj.pathname includes /host/pathname part usually in browser, but custom protocol?
+                            // URL('synapse://home?q=1') -> host='home', pathname='/' ? No.
+                            // Chrome: new URL('synapse://home/foo?q=1') -> host='home', pathname='/foo'.
+                            // So path should be constructed from pathname + search.
+                            // But we need to be careful about 'home' being host or part of path.
+                            // Currently we used `url.replace('synapse://', '/')`.
+                            // synapse://home -> /home
+                            // synapse://auth/... -> /auth/...
+
+                            // If we use string replacement, we just need to reconstruct the query string without token.
+                            const searchString = urlObj.searchParams.toString();
+                            const basePath = url.replace('synapse://', '/').split('?')[0]; // /home
+
+                            path = searchString ? `${basePath}?${searchString}` : basePath;
+                        } catch (e) {
+                            // Fallback if URL manipulation fails
+                            path = url.replace('synapse://', '/');
+                        }
                     }
+                    // [Fix] 토큰이 없었다면(=Auth Callback 등), 쿼리 파라미터를 절대 제거하면 안 됨!
+
                     navigate(path);
                 } catch (error) {
                     console.error('[App] Deep link error:', error);
