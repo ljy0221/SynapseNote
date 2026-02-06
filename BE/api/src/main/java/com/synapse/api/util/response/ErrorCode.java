@@ -50,6 +50,9 @@ public enum ErrorCode {
     CANNOT_CHANGE_OWN_ROLE(HttpStatus.BAD_REQUEST, "NOTE_017", "자신의 권한은 변경할 수 없습니다"),
     CANNOT_REMOVE_SELF(HttpStatus.BAD_REQUEST, "NOTE_018", "자기 자신은 삭제할 수 없습니다"),
     INVITATION_ONLY_OWNER(HttpStatus.FORBIDDEN, "NOTE_019", "초대는 OWNER만 가능합니다"),
+    NOTE_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "NOTE_020", "노트 생성 제한(50개)을 초과했습니다"),
+    SHARED_NOTE_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "NOTE_021", "공유 노트 제한(10개)을 초과했습니다"),
+    NOTE_PARTICIPANT_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "NOTE_022", "노트 참가자 제한(6명)을 초과했습니다"),
 
     // Mindmap
     NOTE_NOT_IN_MINDMAP(HttpStatus.NOT_FOUND, "MINDMAP_001", "노트가 마인드맵에 존재하지않습니다."),

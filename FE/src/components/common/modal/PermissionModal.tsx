@@ -161,9 +161,10 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
             const membersRes = await getNoteMembersApi(noteId!);
             if (membersRes?.members) setMembers(membersRes.members);
 
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            showToast("요청 수락에 실패했습니다.", 'error');
+            const msg = error.response?.data?.error?.message || "요청 수락에 실패했습니다.";
+            showToast(msg, 'error');
         }
     };
 
