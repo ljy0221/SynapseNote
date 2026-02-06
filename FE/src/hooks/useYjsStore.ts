@@ -86,14 +86,14 @@ export const useYjsStore = (noteId: string | undefined) => {
     setIsSynced(false);
 
     // React 상태 업데이트 디바운스 (빠른 Yjs 변경 루프 방지)
-    const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    let updateTimeout: NodeJS.Timeout | null = null;
 
-    const updateBlocksState = useCallback(() => {
-      if (updateTimeoutRef.current) {
-        clearTimeout(updateTimeoutRef.current);
+    const updateBlocksState = () => {
+      if (updateTimeout) {
+        clearTimeout(updateTimeout);
       }
 
-      updateTimeoutRef.current = setTimeout(() => {
+      updateTimeout = setTimeout(() => {
         const currentBlocks = yBlocks
           .toArray()
           .map((yBlock: YBlockMap) => {
@@ -138,9 +138,9 @@ export const useYjsStore = (noteId: string | undefined) => {
         }
 
         setBlocks(uniqueBlocks);
-        updateTimeoutRef.current = null;
+        updateTimeout = null;
       }, 10); // 10ms debounce
-    }, []);
+    };
 
     // 동기화 이벤트 (y-websocket은 'sync'가 일반적)
     const onSync = (synced: boolean) => {
@@ -168,6 +168,9 @@ export const useYjsStore = (noteId: string | undefined) => {
 
     return () => {
       console.log(`[Yjs] Disconnecting from ${noteId}...`);
+      if (updateTimeout) {
+        clearTimeout(updateTimeout);
+      }
       try {
         yBlocks.unobserveDeep(onBlocksChanged);
       } catch {
