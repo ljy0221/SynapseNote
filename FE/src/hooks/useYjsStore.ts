@@ -37,6 +37,8 @@ function applyTextDiff(yText: Y.Text, oldText: string, newText: string): void {
 export const useYjsStore = (noteId: string | undefined) => {
   const [blocks, setBlocks] = useState<BlockData[]>([]);
   const [isSynced, setIsSynced] = useState(false);
+  const [isDataLoaded, setIsDataLoaded] = useState(false); // [New]
+  const [isInitialized, setIsInitialized] = useState(false); // [New]
 
   const docRef = useRef<Y.Doc>(new Y.Doc());
   const providerRef = useRef<WebsocketProvider | null>(null);
@@ -52,6 +54,7 @@ export const useYjsStore = (noteId: string | undefined) => {
     if (!noteId) {
       setBlocks([]);
       setIsSynced(false);
+      setIsDataLoaded(false); // [New]
       return;
     }
 
@@ -84,6 +87,7 @@ export const useYjsStore = (noteId: string | undefined) => {
     // 상태 초기화
     setBlocks([]);
     setIsSynced(false);
+    setIsDataLoaded(false); // [New]
 
     // React 상태 업데이트 디바운스 (빠른 Yjs 변경 루프 방지)
     let updateTimeout: NodeJS.Timeout | null = null;
@@ -138,6 +142,15 @@ export const useYjsStore = (noteId: string | undefined) => {
         }
 
         setBlocks(uniqueBlocks);
+        setIsDataLoaded(true);
+
+        // [New] Yjs 초기화 여부 체크
+        const yMeta = docRef.current?.getMap<boolean>('meta');
+        if (yMeta) {
+          const initStatus = yMeta.get('isInitialized') || false;
+          setIsInitialized(initStatus);
+        }
+
         updateTimeout = null;
       }, 10); // 10ms debounce
     };
@@ -189,6 +202,52 @@ export const useYjsStore = (noteId: string | undefined) => {
       setIsSynced(false);
     };
   }, [noteId, wsUrl, accessToken]); // 토큰 변경(리프레시) 시 재연결
+
+  // [New] 초기 데이터 주입 함수 (마커 설정 포함)
+  const initializeYjs = useCallback((initialBlocks: { type: BlockType; content: string, bookmark?: boolean }[]) => {
+    const doc = docRef.current;
+    if (!doc) return;
+    const yBlocks = doc.getArray<YBlockMap>('blocks');
+    const yMeta = doc.getMap<boolean>('meta');
+
+    doc.transact(() => {
+      // 트랜잭션 내부에서 더블 체크 (경합 방지)
+      if (yBlocks.length > 0 || yMeta.get('isInitialized')) {
+        console.warn('[Yjs] Initialization skipped: Already initialized.');
+        // 레거시 데이터 마이그레이션 (데이터는 있는데 마커는 없는 경우)
+        if (yBlocks.length > 0 && !yMeta.get('isInitialized')) {
+          yMeta.set('isInitialized', true);
+        }
+        return;
+      }
+
+      const mapsToInsert = initialBlocks.map(block => {
+        const newBlockMap = new Y.Map();
+        const newBlockId = crypto.randomUUID();
+
+        newBlockMap.set('blockId', newBlockId);
+        newBlockMap.set('noteId', noteId);
+        newBlockMap.set('_class', block.type);
+
+        const properties = new Y.Map();
+        if (block.type === 'code') {
+          properties.set('code', new Y.Text(''));
+          properties.set('language', 'javascript');
+          properties.set('version', '17');
+          properties.set('executionMode', 'local');
+        } else {
+          properties.set('content', new Y.Text(block.content));
+        }
+        properties.set('bookmark', block.bookmark || false);
+        newBlockMap.set('properties', properties);
+        return newBlockMap;
+      });
+
+      yBlocks.push(mapsToInsert);
+      yMeta.set('isInitialized', true); // 마커 설정
+      console.log('[Yjs] Initialized note with API data.');
+    }, 'local');
+  }, [noteId]);
 
   // 블록 추가
   const addBlock = useCallback((prevBlockId: number | string | null, type: BlockType, initialContent: string | undefined) => {
@@ -420,6 +479,9 @@ export const useYjsStore = (noteId: string | undefined) => {
   return {
     blocks,
     isSynced,
+    isDataLoaded,
+    isInitialized, // [New]
+    initializeYjs, // [New]
     addBlock,
     addBlocksBatch,
     updateBlock,

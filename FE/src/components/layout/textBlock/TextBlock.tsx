@@ -54,6 +54,7 @@ interface TextBlockProps {
     dragControls?: any; // DragControls type from framer-motion (using any to avoid deep imports if strictly needed)
     isFocused?: boolean; // [추가]
     onContextMenu?: (e: React.MouseEvent) => void; // [New]
+    readOnly?: boolean; // [New]
 }
 
 // 색상 팔레트
@@ -94,6 +95,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
     onContextMenu, // [New]
     bookmark = false,
     onToggleBookmark,
+    readOnly = false, // [New]
 }) => {
     const [isFocused, setIsFocused] = React.useState(false);
     const [showColorPicker, setShowColorPicker] = React.useState(false);
@@ -198,6 +200,13 @@ const TextBlock: React.FC<TextBlockProps> = ({
             editor.commands.focus();
         }
     }, [shouldFocus, editor]);
+
+    // [New] ReadOnly 상태 반영
+    useEffect(() => {
+        if (editor) {
+            editor.setEditable(!readOnly);
+        }
+    }, [editor, readOnly]);
 
     // 🔥 원격 변경사항 동기화 (깜빡임 방지)
     // const lastRemoteUpdate = useRef<string>('');
@@ -349,8 +358,8 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 </div>
             </div>
             <div className="text-block-editor-container">
-                {/* 포커스 시에만 툴바 표시 */}
-                {isFocused && (
+                {/* 포커스 시에만 툴바 표시 (ReadOnly일 때는 숨김) */}
+                {isFocused && !readOnly && (
                     <div className="editor-toolbar">
                         <div className="toolbar-group">
                             <button

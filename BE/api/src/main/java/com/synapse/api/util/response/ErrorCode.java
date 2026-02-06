@@ -22,6 +22,7 @@ public enum ErrorCode {
     HEADER_INVALID(HttpStatus.FORBIDDEN, "AUTH_005", "인증 헤더가 잘못되었습니다"),
     INVALID_REFRESH_TOKEN(HttpStatus.FORBIDDEN, "AUTH_006", "리프레시 토큰이 유효하지 않습니다"),
     NOT_FOUND_REFRESH(HttpStatus.FORBIDDEN, "AUTH_007", "리프레시 토큰이 존재하지 않습니다"),
+    DELETED_MEMBER(HttpStatus.FORBIDDEN, "AUTH_008", "이미 탈퇴한 회원은 30일 동안 재가입할 수 없습니다"),
 
     // Member
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "MEMBER_001", "사용자를 찾을 수 없습니다"),
@@ -50,6 +51,10 @@ public enum ErrorCode {
     CANNOT_CHANGE_OWN_ROLE(HttpStatus.BAD_REQUEST, "NOTE_017", "자신의 권한은 변경할 수 없습니다"),
     CANNOT_REMOVE_SELF(HttpStatus.BAD_REQUEST, "NOTE_018", "자기 자신은 삭제할 수 없습니다"),
     INVITATION_ONLY_OWNER(HttpStatus.FORBIDDEN, "NOTE_019", "초대는 OWNER만 가능합니다"),
+    NOTE_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "NOTE_020", "노트 생성 제한(50개)을 초과했습니다"),
+    SHARED_NOTE_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "NOTE_021", "공유 노트 제한(10개)을 초과했습니다"),
+    TARGET_SHARED_NOTE_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "NOTE_023", "상대방의 공유 노트 제한(10개)을 초과했습니다"),
+    NOTE_PARTICIPANT_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "NOTE_022", "노트 참가자 제한(6명)을 초과했습니다"),
 
     // Mindmap
     NOTE_NOT_IN_MINDMAP(HttpStatus.NOT_FOUND, "MINDMAP_001", "노트가 마인드맵에 존재하지않습니다."),

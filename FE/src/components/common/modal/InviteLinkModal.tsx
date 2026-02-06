@@ -16,24 +16,26 @@ export const InviteLinkModal: React.FC<InviteLinkModalProps> = ({ isOpen, onClos
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
 
-    const [expiration, setExpiration] = useState(604800);
+    const [role, setRole] = useState<'EDITOR' | 'VIEWER'>('EDITOR');
+    const [expiration, setExpiration] = useState(604800); // [Fix] Missing state restored
 
     useEffect(() => {
         if (isOpen && noteId) {
             fetchInivitation();
         }
-    }, [isOpen, noteId, expiration]); // expiration 변경 시 다시 호출
+    }, [isOpen, noteId, expiration, role]); // role 변경 시에도 다시 호출
 
     const fetchInivitation = async () => {
         if (!noteId) return;
         setIsLoading(true);
         setError('');
         try {
-            const res = await createInvitationApi(noteId, 'EDITOR', expiration);
+            const res = await createInvitationApi(noteId, role, expiration);
             setInviteUrl(res.invitationUrl);
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            setError('초대 링크를 생성할 수 없습니다.');
+            const msg = err.response?.data?.error?.message || '초대 링크를 생성할 수 없습니다.';
+            setError(msg);
         } finally {
             setIsLoading(false);
         }
@@ -70,6 +72,15 @@ export const InviteLinkModal: React.FC<InviteLinkModalProps> = ({ isOpen, onClos
                     </p>
 
                     <div className="invite-link-box">
+                        <select
+                            className="invite-role-select"
+                            value={role}
+                            onChange={(e) => setRole(e.target.value as 'EDITOR' | 'VIEWER')}
+                            disabled={isLoading}
+                        >
+                            <option value="EDITOR">편집자</option>
+                            <option value="VIEWER">뷰어</option>
+                        </select>
                         <select
                             className="invite-expiration-select"
                             value={expiration}

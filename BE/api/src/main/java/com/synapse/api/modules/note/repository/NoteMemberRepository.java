@@ -22,6 +22,8 @@ public interface NoteMemberRepository extends JpaRepository<NoteMember, NoteMemb
     @Query("SELECT nm FROM NoteMember nm WHERE nm.id.noteId = :noteId AND nm.deletedAt IS NULL")
     List<NoteMember> findByNoteId(@Param("noteId") UUID noteId);
 
+    long countByNoteIdAndDeletedAtIsNull(UUID noteId);
+
     @Query("SELECT nm FROM NoteMember nm WHERE nm.id.noteId = :noteId AND nm.id.memberId = :memberId AND nm.deletedAt IS NULL")
     Optional<NoteMember> findByNoteIdAndMemberId(@Param("noteId") UUID noteId, @Param("memberId") UUID memberId);
 
@@ -33,11 +35,11 @@ public interface NoteMemberRepository extends JpaRepository<NoteMember, NoteMemb
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
-        UPDATE NoteMember nm
-        SET nm.deletedAt = CURRENT_TIMESTAMP
-        WHERE nm.member.id = :memberId
-          AND nm.deletedAt IS NULL
-    """)
+                UPDATE NoteMember nm
+                SET nm.deletedAt = CURRENT_TIMESTAMP
+                WHERE nm.member.id = :memberId
+                  AND nm.deletedAt IS NULL
+            """)
     void softDeleteAllByMemberId(@Param("memberId") UUID memberId);
 
 }

@@ -50,44 +50,44 @@ export default function ContextMenu({
       document.removeEventListener('click', handleClickOutside);
     };
   }, [state.visible, onClose]);
-  
-  
-  
-  
+
+
+
+
   useLayoutEffect(() => {
     if (!state.visible || !menuRef.current) return;
-    
+
     const { x, y } = state;
 
     const MARGIN = 8;
-    
+
     const menu = menuRef.current;
     const menuHeight = menu.offsetHeight;
     const menuWidth = menu.offsetWidth;
-    
+
     let top = y;
     let left = x;
-    
+
     if (top + menuHeight + MARGIN > window.innerHeight) {
       top = window.innerHeight - menuHeight - MARGIN;
     }
-    
+
     if (left + menuWidth + MARGIN > window.innerWidth) {
       left = window.innerWidth - menuWidth - MARGIN;
     }
-    
+
     setPosition({
       top: Math.max(MARGIN, top),
       left: Math.max(MARGIN, left),
     });
   }, [state]);
-  
+
   if (!state.visible) return null;
-  
+
   return (
     <div
-    ref={menuRef}
-    className="context-menu"
+      ref={menuRef}
+      className="context-menu"
       style={{ top: position.top, left: position.left }}
       //  루트에서는 propagation만 차단 (preventDefault )
       onMouseDown={(e) => e.stopPropagation()}
@@ -109,7 +109,7 @@ export default function ContextMenu({
       )}
 
       {/*  노트 메뉴 */}
-      {state.type === 'NOTE' && state.targetId && (
+      {state.type === 'NOTE' && state.targetId && state.role !== 'VIEWER' && (
         <div
           className="context-menu-item"
           onMouseDown={(e) => {
@@ -120,9 +120,9 @@ export default function ContextMenu({
             e.preventDefault();
             e.stopPropagation();
 
-            if (state.targetId.startsWith('temp-')) return;
+            if (state.targetId!.startsWith('temp-')) return;
 
-            onRenameNote(state.targetId);
+            onRenameNote(state.targetId!);
             onClose();
           }}
         >
@@ -131,7 +131,7 @@ export default function ContextMenu({
         </div>
       )}
 
-      {state.type === 'NOTE' && state.targetId && (
+      {state.type === 'NOTE' && state.targetId && state.role !== 'VIEWER' && (
         <div
           className="context-menu-item"
           onMouseDown={(e) => {
@@ -153,7 +153,7 @@ export default function ContextMenu({
         </div>
       )}
       {/* 노트 위치 변경 */}
-      {state.type === 'NOTE' && state.targetId && (
+      {state.type === 'NOTE' && state.targetId && state.role !== 'VIEWER' && (
         <div
           className="context-menu-item"
           onMouseDown={(e) => {
@@ -164,9 +164,9 @@ export default function ContextMenu({
             e.preventDefault();
             e.stopPropagation();
 
-            if (state.targetId.startsWith('temp-')) return;
+            if (state.targetId!.startsWith('temp-')) return;
 
-            onMoveNote(state.targetId, state.directoryPath);
+            onMoveNote(state.targetId!, state.directoryPath!);
             onClose();
           }}
         >

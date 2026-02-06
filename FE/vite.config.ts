@@ -9,7 +9,7 @@ export default defineConfig(async ({ mode }) => {
 
   const plugins = [react()]
 
-  // Only add Electron plugin for Electron builds
+  // Only add Electron plugin for Electron builds.
   if (!isWebBuild) {
     plugins.push(
       await electron({
