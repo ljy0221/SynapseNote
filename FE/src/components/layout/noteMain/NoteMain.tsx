@@ -12,7 +12,8 @@ import { BlockData, BlockType } from '../../../types/note/Block';
 import type { SummaryStyle } from '../../../types/ai/NoteSummary';
 import BlockContextMenu from '../../common/contextMenu/BlockContextMenu';
 import './NoteMain.css';
-import { NoteMemberRole } from '../../../types/note/GetNoteMembers'; // [New]
+import { NoteMemberRole, NoteMemberItem } from '../../../types/note/GetNoteMembers'; // [New]
+import { MemberAvatarGroup } from '../../common/memberAvatarGroup/MemberAvatarGroup'; // [New]
 
 interface NoteMainProps {
     title: string;
@@ -39,6 +40,7 @@ interface NoteMainProps {
     readOnly?: boolean; // [New] 읽기 전용 모드
     currentUserRole?: NoteMemberRole;
     showBlockBookmark?: boolean; // [New]
+    members?: NoteMemberItem[]; // [New]
 }
 
 const NoteMain: React.FC<NoteMainProps> = ({
@@ -65,6 +67,7 @@ const NoteMain: React.FC<NoteMainProps> = ({
     readOnly = false, // 기본값 false
     currentUserRole,
     showBlockBookmark = true, // [New]
+    members = [], // [New]
 }) => {
     const [isInviteModalOpen, setIsInviteModalOpen] = React.useState(false);
     const [isPermissionModalOpen, setIsPermissionModalOpen] = React.useState(false);
@@ -213,6 +216,10 @@ const NoteMain: React.FC<NoteMainProps> = ({
                                     placeholder="제목 없음"
                                     disabled={readOnly} // [New]
                                 />
+                                {/* Member Avatars in Header */}
+                                <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
+                                    <MemberAvatarGroup members={members} />
+                                </div>
                             </header>
                             <div className="note-content-area">
                                 <NoteSummary

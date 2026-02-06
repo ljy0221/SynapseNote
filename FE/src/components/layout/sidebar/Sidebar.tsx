@@ -365,7 +365,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, showToggle =
           </div>
 
           {isLoading ? (
-            <div className="sidebar-loading">Loading...</div>
+            <div className="sidebar-loading">
+              <div className="spinner-small" />
+            </div>
           ) : (
             <div className={`sidebar-content ${isSharedTab ? 'shared-tab' : ''}`}>
               <NoteDirectory
