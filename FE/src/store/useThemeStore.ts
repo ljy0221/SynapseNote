@@ -34,7 +34,6 @@ export const useThemeStore = create<ThemeState>()(
                     await updateTheme(toBackendTheme(newMode));
                     set({ themeMode: newMode });
                 } catch (error) {
-                    console.error('Failed to update theme:', error);
                     // 에러가 발생해도 로컬 상태는 변경 (UX 우선)
                     set({ themeMode: newMode });
                 }
@@ -45,7 +44,6 @@ export const useThemeStore = create<ThemeState>()(
                     await updateTheme(toBackendTheme(mode));
                     set({ themeMode: mode });
                 } catch (error) {
-                    console.error('Failed to update theme:', error);
                     // 에러가 발생해도 로컬 상태는 변경 (UX 우선)
                     set({ themeMode: mode });
                 }
