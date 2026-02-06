@@ -92,7 +92,7 @@ const HexagonBackground: React.FC<HexagonBackgroundProps> = ({ color, level, isS
                 left: 0,
                 width: '100%',
                 height: '100%',
-                pointerEvents: 'none', // 클릭 통과
+                pointerEvents: 'auto', // 육각형 전체를 클릭 가능하게
                 zIndex: -1, // 컨텐츠 뒤로
                 overflow: 'visible' // 그림자 잘림 방지
             }}
