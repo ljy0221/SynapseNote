@@ -76,3 +76,11 @@ export const updateNickname = async (newNickname: string): Promise<UserInfo> => 
     memberId: data.id,
   };
 };
+
+/**
+ * 회원 탈퇴
+ * refreshToken은 쿠키로 자동 전송됨 (withCredentials: true)
+ */
+export const deleteAccount = async (): Promise<void> => {
+  await api.delete('/v1/members');
+};
