@@ -20,6 +20,8 @@ import { useCodeEditorStore } from '../../../store/useCodeEditorStore';
 import { useToastStore } from '../../../store/useToastStore';
 import { Tooltip } from '../../common/tooltip/Tooltip';
 import ConfirmModal from '../../common/modal/ConfirmModal';
+import { BlockEditorAvatar } from '../../common/blockEditorAvatar/BlockEditorAvatar'; // [New]
+import { AwarenessUser } from '../../../hooks/useYjsStore'; // [New]
 
 interface CodeBlockProps {
     id: number | string;
@@ -41,6 +43,7 @@ interface CodeBlockProps {
     onLanguageChange?: (id: number | string, language: string) => void;
     readOnly?: boolean; // [New]
     showBookmark?: boolean; // [New]
+    editors?: AwarenessUser[]; // [New] Users editing this block
 }
 
 function getDefaultVersion(language: Language): string {
@@ -70,6 +73,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     onToggleBookmark,
     readOnly = false, // [New]
     showBookmark = true, // [New]
+    editors = [], // [New]
 }) => {
     const [result, setResult] = useState<ExecutionResult | null>(null);
     const [loading, setLoading] = useState(false);
@@ -305,7 +309,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     return (
         <div
             id={id.toString()}
-            className={`code-block-wrapper ${isFocused ? 'is-focused' : ''} ${bookmark ? 'is-bookmarked' : ''}`}
+            className={`code-block-wrapper ${isFocused ? 'is-focused' : ''} ${bookmark ? 'is-bookmarked' : ''} ${showBookmark ? 'has-bookmark' : ''}`}
             onContextMenu={onContextMenu}
             onClick={(e) => e.stopPropagation()} // [Fix] Prevent clearing focus when clicking inside the block
         >
@@ -470,6 +474,11 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                 <div className="block-actions-right">
                     <BlockBookmarkButton isBookmarked={bookmark} onClick={handleBookmark} />
                 </div>
+            )}
+
+            {/* [New] Show editor avatar if someone else is editing */}
+            {editors.length > 0 && (
+                <BlockEditorAvatar editors={editors} />
             )}
 
             {/* Language Change Confirmation Modal */}
