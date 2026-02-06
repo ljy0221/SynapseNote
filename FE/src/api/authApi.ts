@@ -84,3 +84,11 @@ export const updateNickname = async (newNickname: string): Promise<UserInfo> => 
 export const deleteAccount = async (): Promise<void> => {
   await api.delete('/v1/members');
 };
+
+export type Theme = 'LIGHT' | 'DARK' | 'COOKIE' | 'DEEPBLUE';
+
+export const updateTheme = async (theme: Theme): Promise<void> => {
+  await api.patch('/v1/members/me/theme', {
+    theme,
+  });
+};
