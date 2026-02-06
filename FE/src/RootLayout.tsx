@@ -30,6 +30,12 @@ const SIDEBAR_ROUTES = ['/note', '/home'];
 const FIXED_SIDEBAR_ROUTES = ['/home', '/note', '/mindmap']; // [New] 항상 열림 처리할 경로
 const TOOLBAR_ROUTES = ['/note'];
 
+// Web Guard용 Whitelist
+const WEB_WHITELIST = ['/login', '/invite', '/notes/invitation', '/auth'];
+
+// New Import
+import { WebRestrictedOverlay } from './components/common/layout/WebRestrictedOverlay';
+
 export default function RootLayout() {
     const [isSidebarActive, setIsSidebarActive] = useState(false);
     const [isToolbarActive] = useState(true);
@@ -129,6 +135,22 @@ export default function RootLayout() {
             setIsSidebarActive(isSidebarAllowed);
         }
     }, [isSidebarAllowed, isFixedSidebar]);
+
+    // [New] Web Guard Logic
+    // 일렉트론이 아니고, 화이트리스트에 없는 경로라면 Overlay 표시
+    const isAllowedWebPath = WEB_WHITELIST.some(path => location.pathname.startsWith(path));
+    const showWebRestriction = !isElectron && !isAllowedWebPath;
+
+    // [Fix] URL을 /home으로 정리 (404나 이상한 경로 진입 시 주소창도 깔끔하게 /home으로 변경)
+    useEffect(() => {
+        if (showWebRestriction && location.pathname !== '/home') {
+            navigate('/home', { replace: true });
+        }
+    }, [showWebRestriction, location.pathname, navigate]);
+
+    if (showWebRestriction) {
+        return <WebRestrictedOverlay />;
+    }
 
     return (
         <div className="app-container">

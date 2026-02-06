@@ -11,6 +11,7 @@ import { adaptStreakDates } from '../../api/streak/Streak.adapter';
 
 import type { NoteListItem } from '../../types/note/GetNotes';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useNavigate } from 'react-router-dom'; // [New] Import
 
 import NoteBookmarkSection from '../../components/layout/noteBookmark/NoteBookmarkSection';
 import BlockBookmarkSection from '../../components/layout/blockBookmark/BlockBookmarkSection';
@@ -18,6 +19,7 @@ import BlockBookmarkSection from '../../components/layout/blockBookmark/BlockBoo
 const Home: React.FC = () => {
   const { userInfo, isLoading: userLoading } = useAuthStore();
   const memberId = userInfo?.memberId;
+  const navigate = useNavigate(); // [New] Hook
 
   const [recentNotes, setRecentNotes] = useState<NoteListItem[]>([]);
   const [streakDates, setStreakDates] = useState<string[]>([]);
@@ -46,6 +48,19 @@ const Home: React.FC = () => {
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
+
+  // [New] Auth Redirect Logic
+  useEffect(() => {
+    if (!userLoading && !userInfo) {
+      // 로그인 안되어있으면 로그인 페이지로 이동
+      // window.location.href = '/login'; // or navigate('/login') if available
+      // But wait, this is inside React Router context.
+      // However, `Home` is a page component so we can use `useNavigate` if imported.
+      // But wait, `useNavigate` is not imported.
+      // Let's modify imports first.
+      navigate('/login');
+    }
+  }, [userLoading, userInfo, navigate]);
 
   // 노트 변경 이벤트 리스너 추가
   useEffect(() => {
