@@ -10,12 +10,20 @@ const Login: React.FC = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+    // 에러 코드별 메시지 사전 (프론트엔드에서 관리)
+    const ERROR_MESSAGES: Record<string, string> = {
+        'DELETED_MEMBER': '탈퇴한 회원은 30일 동안 재가입할 수 없습니다.',
+        'MEMBER_ALREADY_EXISTS_ANOTHER_PROVIDER': '이 이메일은 다른 소셜 로그인으로 이미 가입되어 있습니다.',
+    };
+
     useEffect(() => {
-        const error = searchParams.get('error');
-        if (error) {
-            setErrorMessage(decodeURIComponent(error));
-            // URL에서 error 파라미터 제거
-            searchParams.delete('error');
+        const errorCode = searchParams.get('errorCode');
+        if (errorCode) {
+            // 에러 코드에 해당하는 메시지 표시
+            const message = ERROR_MESSAGES[errorCode] || '로그인에 실패했습니다.';
+            setErrorMessage(message);
+            // URL에서 errorCode 파라미터 제거
+            searchParams.delete('errorCode');
             setSearchParams(searchParams, { replace: true });
         }
     }, [searchParams, setSearchParams]);
