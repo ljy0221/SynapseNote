@@ -89,7 +89,7 @@ export const useAuthStore = create<AuthState>()(
                 }
             },
 
-            updateUserNickname: async (newNickname: string) => {
+            updateUserNickname: async (_newNickname: string) => {
                 const token = get().accessToken;
                 if (!token) {
                     useToastStore.getState().showToast('로그인이 필요합니다.', 'error');
