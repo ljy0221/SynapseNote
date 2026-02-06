@@ -92,3 +92,11 @@ export const updateTheme = async (theme: Theme): Promise<void> => {
     theme,
   });
 };
+
+/**
+ * 로그아웃
+ * refreshToken은 쿠키로 자동 전송됨 (withCredentials: true)
+ */
+export const logoutApi = async (): Promise<void> => {
+  await api.post('/v1/logout');
+};

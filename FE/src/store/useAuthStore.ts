@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { getUserInfo, UserInfo, updateNickname, deleteAccount } from '../api/authApi';
+import { getUserInfo, UserInfo, updateNickname, deleteAccount, logoutApi } from '../api/authApi';
 import { useToastStore } from './useToastStore';
 
 interface AuthState {
@@ -10,7 +10,7 @@ interface AuthState {
     isAuthenticated: boolean;
 
     login: (token: string) => Promise<void>;
-    logout: () => void;
+    logout: () => Promise<void>;
     setAccessToken: (token: string) => void; // [New] 토큰 갱신용 액션
     refreshUserInfo: () => Promise<void>;
     initializeAuth: () => Promise<void>;
@@ -47,10 +47,18 @@ export const useAuthStore = create<AuthState>()(
                 }
             },
 
-            logout: () => {
-                // persist가 로컬 스토리지도 함께 비워줍니다.
-                set({ accessToken: null, userInfo: null, isAuthenticated: false, isLoading: false });
-                useToastStore.getState().showToast('로그아웃 되었습니다.', 'info');
+            logout: async () => {
+                try {
+                    // 백엔드 로그아웃 API 호출
+                    await logoutApi();
+                } catch (error) {
+                    console.error('Logout API failed:', error);
+                    // API 실패해도 로컬 상태는 정리
+                } finally {
+                    // persist가 로컬 스토리지도 함께 비워줍니다.
+                    set({ accessToken: null, userInfo: null, isAuthenticated: false, isLoading: false });
+                    useToastStore.getState().showToast('로그아웃 되었습니다.', 'info');
+                }
             },
 
             setAccessToken: (token: string) => {
@@ -89,7 +97,7 @@ export const useAuthStore = create<AuthState>()(
                 }
             },
 
-            updateUserNickname: async (_newNickname: string) => {
+            updateUserNickname: async (newNickname: string) => {
                 const token = get().accessToken;
                 if (!token) {
                     useToastStore.getState().showToast('로그인이 필요합니다.', 'error');
