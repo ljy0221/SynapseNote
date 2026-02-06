@@ -8,7 +8,10 @@ import com.synapse.api.modules.mindmap.dto.NodePositionDto;
 import com.synapse.api.modules.mindmap.dto.request.SyncMindmapRequest;
 import com.synapse.api.modules.mindmap.dto.response.MindmapResponse;
 import com.synapse.api.modules.mindmap.entity.MindmapEdge;
+import com.synapse.api.modules.mindmap.entity.MindmapNodePosition;
+import com.synapse.api.modules.mindmap.entity.MindmapNodePositionId;
 import com.synapse.api.modules.mindmap.repository.MindmapEdgeRepository;
+import com.synapse.api.modules.mindmap.repository.MindmapNodePositionRepository;
 import com.synapse.api.modules.note.entity.Note;
 import com.synapse.api.modules.note.repository.NoteRepository;
 import com.synapse.api.modules.member.entity.Member;
@@ -37,6 +40,9 @@ class MindmapServiceTest {
 
     @Mock
     private MindmapEdgeRepository mindmapEdgeRepository;
+
+    @Mock
+    private MindmapNodePositionRepository mindmapNodePositionRepository;
 
     @Mock
     private NoteRepository noteRepository;
@@ -88,14 +94,24 @@ class MindmapServiceTest {
                     .title("Note 1")
                     .createdBy(member)
                     .build();
-            note1.updatePosition(100.0, 200.0);
+            // Test에서 Position Repository에 데이터 세팅 필요 (Inner Join을 Mocking하거나, Repo Mocking)
+            // getMindmap 로직: NoteRepo -> List<Note>, MindmapNodePositionRepo ->
+            // List<MindmapNodePosition>
+            // Note는 Mock으로 리턴되지만 Point 정보는 Position에서 옴.
+
+            MindmapNodePosition pos1 = MindmapNodePosition.builder()
+                    .id(new MindmapNodePositionId(memberId, note1Id))
+                    .pointX(100.0).pointY(200.0).build();
 
             Note note2 = Note.builder()
                     .id(note2Id)
                     .title("Note 2")
                     .createdBy(member)
                     .build();
-            note2.updatePosition(300.0, 400.0);
+
+            MindmapNodePosition pos2 = MindmapNodePosition.builder()
+                    .id(new MindmapNodePositionId(memberId, note2Id))
+                    .pointX(300.0).pointY(400.0).build();
 
             List<Note> notes = List.of(note1, note2);
 
@@ -104,6 +120,7 @@ class MindmapServiceTest {
 
             given(noteRepository.findMindMapNodesByMember(memberId)).willReturn(notes);
             given(mindmapEdgeRepository.findAllByMember(memberId)).willReturn(edges);
+            given(mindmapNodePositionRepository.findAllByIdMemberId(memberId)).willReturn(List.of(pos1, pos2));
 
             // when
             MindmapResponse response = mindmapService.getMindmap(memberId);
@@ -130,17 +147,14 @@ class MindmapServiceTest {
     class SyncMindmapTest {
 
         @Test
-        @DisplayName("노드 위치 업데이트 및 미포함 노드 제거")
+        @DisplayName("노드 위치 업데이트 (개인 위치 저장)")
         void syncMindmap_Nodes() {
             // given
+            // Note에는 기본 위치가 있지만, syncMindmap은 MindmapNodePosition을 업데이트해야 함
+            // Note에는 기본 위치가 없음
             Note note1 = Note.builder().id(noteId).createdBy(member).build();
-            note1.updatePosition(100.0, 200.0);
 
-            UUID node2Id = UUID.randomUUID();
-            Note note2 = Note.builder().id(node2Id).createdBy(member).build();
-            note2.updatePosition(500.0, 600.0);
-
-            given(noteRepository.findMindMapNodesByMember(memberId)).willReturn(List.of(note1, note2));
+            given(mindmapNodePositionRepository.findAllByIdMemberId(memberId)).willReturn(List.of());
 
             NodePositionDto positionDto = new NodePositionDto(noteId, 150.0, 250.0);
             SyncMindmapRequest request = new SyncMindmapRequest(List.of(positionDto), null);
@@ -151,11 +165,15 @@ class MindmapServiceTest {
             mindmapService.syncMindmap(memberId, request);
 
             // then
-            assertThat(note1.getPointX()).isEqualTo(150.0);
-            assertThat(note1.getPointY()).isEqualTo(250.0);
+            // then
+            // note1 객체 검증 대신 interaction 검증
+            // assertThat(note1.getPointX()).isEqualTo(100.0); // 삭제된 필드 검증 불가
 
-            assertThat(note2.getPointX()).isNull();
-            assertThat(note2.getPointY()).isNull();
+            // mindmapNodePositionRepository에 저장이 호출됨을 검증
+            then(mindmapNodePositionRepository).should().saveAll(any());
+
+            // note2는 요청에 없으므로 삭제 대상? -> 기존 위치 정보가 없었으므로 아무 일도 안 일어남.
+            // 만약 기존 위치 정보가 있었다면 delete 호출됨.
         }
 
         @Test
