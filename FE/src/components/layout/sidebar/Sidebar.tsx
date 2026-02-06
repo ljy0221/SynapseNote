@@ -88,7 +88,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, showToggle =
 
   const isSharedTab = activeTab === 'shared';
   const displayTree = isSharedTab
-    ? { name: 'root', path: '/', children: [], notes: notes.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)) }
+    ? { name: 'root', path: '/', children: [], notes: notes.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)) }
     : buildNoteTree(notes);
 
   /** -------------------------
