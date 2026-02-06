@@ -1,9 +1,11 @@
 package com.synapse.api.modules.note.repository;
 
 import com.synapse.api.modules.note.entity.Note;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -21,6 +23,20 @@ public interface NoteRepository extends JpaRepository<Note, UUID> {
     // findById 등 기본 메서드도 자동으로 삭제된 걸 걸러줍니다.
     // 없다면 아래처럼 명시적으로 만들어야 합니다.
     Optional<Note> findByIdAndDeletedAtIsNull(UUID id);
+
+    @Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT n FROM Note n WHERE n.id = :id AND n.deletedAt IS NULL")
+    Optional<Note> findByIdWithLock(@Param("id") UUID id);
+
+    long countByCreatedBy_IdAndDeletedAtIsNull(UUID memberId);
+
+    @Query("SELECT COUNT(n) FROM Note n " +
+            "JOIN NoteMember nm ON n.id = nm.note.id " +
+            "WHERE nm.member.id = :memberId " +
+            "AND nm.deletedAt IS NULL " +
+            "AND n.createdBy.id != :memberId " +
+            "AND n.deletedAt IS NULL")
+    long countSharedNotesByMemberId(@Param("memberId") UUID memberId);
 
     // 2. 내 노트 목록 조회 (특정 디렉토리 하위 조회 시 사용 가능)
     List<Note> findByCreatedByIdAndDeletedAtIsNull(UUID memberId);
