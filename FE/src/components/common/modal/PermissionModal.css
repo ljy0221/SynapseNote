@@ -181,14 +181,12 @@
 .role-select {
     appearance: none;
     -webkit-appearance: none;
-    background-color: transparent;
+    background-color: var(--color-bg, #ffffff);
+    /* [Fix] Explicit background */
     border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
-    /* [Modified] Use stricter border color */
     border-radius: 6px;
     padding: 6px 28px 6px 10px;
-    /* [Modified] Adjust padding */
     font-size: 13px;
-    /* [Modified] */
     color: var(--font-color);
     cursor: pointer;
     font-family: inherit;
@@ -197,26 +195,28 @@
 }
 
 .role-select:hover {
-    background-color: var(--color-sub, rgba(0, 0, 0, 0.05));
-    /* [Modified] Add hover bg */
     border-color: var(--color-point);
+    background-color: var(--color-sub, #f5f5f5);
 }
 
 .role-select:focus {
     outline: none;
     border-color: var(--color-point);
     box-shadow: 0 0 0 2px rgba(var(--color-point-rgb, 100, 100, 255), 0.2);
-    /* [Modified] Fallback RGB */
 }
 
 .role-select-icon {
     position: absolute;
     right: 8px;
-    /* [Modified] */
     top: 50%;
     transform: translateY(-50%);
     pointer-events: none;
     color: var(--font-color-sub);
+    z-index: 1;
+    /* [New] Ensure icon is above select background */
+    display: flex;
+    /* [New] Center icon */
+    align-items: center;
 }
 
 /* Requests Tab Styles */
@@ -290,4 +290,41 @@
 .action-btn.reject:hover {
     background-color: #dc3545;
     color: white;
+}
+
+/* [Fix] Add missing styles for member remove button */
+.member-remove-btn {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    /* [Fix] Override global button padding */
+    border-radius: 6px;
+    border: none;
+    background-color: transparent;
+    color: #888;
+    /* [Fix] Fallback color explicit */
+    color: var(--font-color-sub, #888);
+    display: flex;
+    /* Ensure flex context */
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-left: 8px;
+    /* Gap from dropdown */
+}
+
+.member-remove-btn svg {
+    /* [Fix] Enforce visibility */
+    display: block;
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+    stroke-width: 2px;
+    fill: none;
+}
+
+.member-remove-btn:hover {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
 }
