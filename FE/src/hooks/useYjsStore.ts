@@ -10,6 +10,7 @@ export interface AwarenessUser {
   memberId: string;
   memberName: string;
   profileImageUrl?: string;
+  role?: string; // [New] User role for tooltip display
   focusedBlockId: string | null;
 }
 

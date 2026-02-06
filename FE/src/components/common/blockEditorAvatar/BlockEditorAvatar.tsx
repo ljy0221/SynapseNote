@@ -1,6 +1,8 @@
 import React from 'react';
 import './BlockEditorAvatar.css';
+import './BlockEditorAvatarTooltip.css'; // [New] Smaller tooltip styling
 import { AwarenessUser } from '../../../hooks/useYjsStore';
+import { Tooltip } from '../tooltip/Tooltip'; // [New] Import Tooltip
 
 interface BlockEditorAvatarProps {
     editors: AwarenessUser[];
@@ -38,29 +40,33 @@ export const BlockEditorAvatar: React.FC<BlockEditorAvatarProps> = ({
     const bgColor = getColor(displayName);
 
     return (
-        <div className="block-editor-avatar-container">
-            <div
-                className="block-editor-avatar"
-                style={{
-                    width: size,
-                    height: size,
-                    backgroundColor: bgColor,
-                    color: '#fff'
-                }}
-                title={`${displayName} is editing`}
+        <div className="block-editor-avatar-container" style={{ right: '1px' }}>
+            <Tooltip
+                title={displayName}
+                placement="bottom"
             >
-                {editor.profileImageUrl ? (
-                    <img
-                        src={editor.profileImageUrl}
-                        alt={displayName}
-                        className="block-editor-avatar-img"
-                    />
-                ) : (
-                    <div className="block-editor-avatar-initials">
-                        {initials}
-                    </div>
-                )}
-            </div>
+                <div
+                    className="block-editor-avatar"
+                    style={{
+                        width: size,
+                        height: size,
+                        backgroundColor: bgColor,
+                        color: '#fff'
+                    }}
+                >
+                    {editor.profileImageUrl ? (
+                        <img
+                            src={editor.profileImageUrl}
+                            alt={displayName}
+                            className="block-editor-avatar-img"
+                        />
+                    ) : (
+                        <div className="block-editor-avatar-initials">
+                            {initials}
+                        </div>
+                    )}
+                </div>
+            </Tooltip>
         </div>
     );
 };
