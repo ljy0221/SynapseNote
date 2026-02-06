@@ -119,7 +119,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, showToggle =
     } finally {
       if (isInitial && !isSilent) setIsLoading(false);
     }
-  }, [activeTab]);
+  }, [activeTab, accessToken]);
 
   const loadMore = useCallback(() => {
     if (isLoading || !hasMore) return;

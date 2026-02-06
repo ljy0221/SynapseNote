@@ -27,10 +27,28 @@ const OAuthCallback: React.FC = () => {
       return;
     }
 
-    const state = searchParams.get('state');
+    // 4. State Parsing (Platform & Redirect URL)
+    let statePlatform = 'WEB';
+    let stateRedirectUrl: string | null = null;
+    try {
+      if (state) {
+        if (state === 'ELECTRON' || state === 'WEB') {
+          statePlatform = state;
+        } else {
+          const parsed = JSON.parse(decodeURIComponent(state));
+          statePlatform = parsed.platform || 'WEB';
+          stateRedirectUrl = parsed.redirectUrl || null;
+          console.log('[OAuth] Parsed state:', parsed);
+        }
+      }
+    } catch (e) {
+      console.warn('[OAuth] Failed to parse state, defaulting to WEB:', e);
+      // Fallback for simple string state
+      if (state === 'ELECTRON') statePlatform = 'ELECTRON';
+    }
 
-    // 1️⃣ Browser 환경 + Electron 요청인 경우 → Deep Link로 전달
-    if (!window.electronAPI && state === 'ELECTRON') {
+    // 1️⃣ Browser 환경 + Electron(상태) 요청인 경우 → Deep Link로 전달
+    if (!window.electronAPI && statePlatform === 'ELECTRON') {
       console.log('[OAuthCallback] Electron Login Request -> Redirecting to Deep Link');
 
       const deepLink = `synapse://auth/${provider}/callback?code=${code}`;
@@ -53,28 +71,28 @@ const OAuthCallback: React.FC = () => {
       try {
         console.log(`[OAuth] Processing login for ${provider} with code...`);
 
-        // state가 ELECTRON이면 ELECTRON, 아니면(WEB or undefined) WEB
-        // 단, 이미 위에서 ELECTRON인 경우 앱으로 리다이렉트했으므로, 여기 도달했다는 것은 WEB임.
-        // 하지만 Electron 앱 내부에서 실행된 경우(window.electronAPI 존재)는 ELECTRON임.
+        // [Modified] Use platform from state if available, otherwise infer
+        // This ensures mismatch between "Start on Electron -> Callback on Web" is handled if we wanted to support it,
+        // but mostly it ensures 'state' passed from Login matches here.
+        // However, backend redirect_uri matching depends on what we sent in 'state' NO, it depends on 'redirect_uri' param sent to provider.
+        // Wait, socialLogin API sends 'platform' to backend, and backend selects redirect_uri to verify against.
+        // So we MUST send the SAME platform as we used to generate the link.
 
-        // [Fix] Electron Production 빌드는 Web Redirect URI(https://i14b102...)를 사용하므로
-        // 백엔드 검증 시에도 'WEB'으로 처리되어야 Redirect URI가 일치함.
-        // 단, Dev 모드(localhost)에서는 'ELECTRON'으로 보낼 수도 있으나, 
-        // 확실한 건 'Web Bridge'를 탔으면 'WEB'으로 맞추는 것이 안전함.
-        const isElectron = !!window.electronAPI;
-        const isDev = import.meta.env.DEV;
+        console.log('[OAuth] Using Platform:', statePlatform);
 
-        // 개발 모드면 ELECTRON(localhost), 배포 모드면 WEB(https://domain)으로 플랫폼 전송
-        const platform = (isElectron && isDev) ? 'ELECTRON' : 'WEB';
-
-        const result = await socialLogin(provider, code, platform);
+        const result = await socialLogin(provider, code, statePlatform);
 
         // ✅ login 하나로 책임 집중
         await login(result.accessToken);
 
         console.log('[OAuth] Login success');
 
-        const redirectUrl = localStorage.getItem('loginRedirectUrl');
+        // [Modified] Priority: State > LocalStorage
+        const localRedirectUrl = localStorage.getItem('loginRedirectUrl');
+        const redirectUrl = stateRedirectUrl || localRedirectUrl;
+
+        console.log('[OAuth] Redirect Target:', redirectUrl);
+
         const pendingInviteCode = localStorage.getItem('pendingInviteCode'); // sessionStorage -> localStorage
 
         if (pendingInviteCode) {
@@ -83,7 +101,14 @@ const OAuthCallback: React.FC = () => {
           try {
             await acceptInvitationApi(pendingInviteCode);
             showToast('가입 요청이 전송되었습니다. 소유자의 승인을 기다려주세요.', 'success');
-            navigate('/home', { replace: true });
+            // If there is a redirectUrl (e.g. invitation page), go there, otherwise home
+            // But usually after accepting invite, we stay on invitation page or go home.
+            // Let's go to redirectUrl if it's the invitation page (which it usually is).
+            if (redirectUrl) {
+              navigate(redirectUrl, { replace: true });
+            } else {
+              navigate('/home', { replace: true });
+            }
           } catch (invitationError: any) {
             console.error('[OAuth] Failed to process pending invitation:', invitationError);
             const msg = invitationError.response?.data?.message || '로그인은 성공했으나 가입 요청 전송에 실패했습니다.';
@@ -94,7 +119,7 @@ const OAuthCallback: React.FC = () => {
             localStorage.removeItem('pendingInviteCode');
           }
         } else if (redirectUrl) {
-          localStorage.removeItem('loginRedirectUrl');
+          localStorage.removeItem('loginRedirectUrl'); // Clean up local storage backup
           navigate(redirectUrl, { replace: true });
         } else {
           navigate('/home', { replace: true });
@@ -123,9 +148,17 @@ const OAuthCallback: React.FC = () => {
   }, [provider, searchParams, navigate, login, showToast]);
 
   // 브라우저용 안내 화면 (Electron Callback인 경우)
-  const state = searchParams.get('state');
+  // Re-parse state for render logic (duplicated but safe)
+  let renderStatePlatform = 'WEB';
+  try {
+    if (state && (state === 'ELECTRON' || state === 'WEB')) {
+      renderStatePlatform = state;
+    } else if (state) {
+      renderStatePlatform = JSON.parse(decodeURIComponent(state)).platform || 'WEB';
+    }
+  } catch { }
 
-  if (!window.electronAPI && state === 'ELECTRON') {
+  if (!window.electronAPI && renderStatePlatform === 'ELECTRON') {
     return (
       <div
         style={{

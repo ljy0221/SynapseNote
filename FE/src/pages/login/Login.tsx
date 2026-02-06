@@ -110,7 +110,14 @@ const Login: React.FC = () => {
                                     redirectUri = import.meta.env.VITE_GITHUB_WEB_REDIRECT_URI;
                                 }
 
-                                const state = isElectron ? 'ELECTRON' : 'WEB';
+                                // [Modified] Pass redirectUrl in state for robustness
+                                const loginRedirectUrl = localStorage.getItem('loginRedirectUrl');
+                                const stateObj = {
+                                    platform: isElectron ? 'ELECTRON' : 'WEB',
+                                    redirectUrl: loginRedirectUrl
+                                };
+                                const state = encodeURIComponent(JSON.stringify(stateObj));
+
                                 const authUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email&state=${state}`;
                                 if (isElectron) {
                                     window.electronAPI.openExternal(authUrl);
@@ -135,7 +142,14 @@ const Login: React.FC = () => {
                                     redirectUri = import.meta.env.VITE_GOOGLE_WEB_REDIRECT_URI;
                                 }
 
-                                const state = isElectron ? 'ELECTRON' : 'WEB';
+                                // [Modified] Pass redirectUrl in state for robustness
+                                const loginRedirectUrl = localStorage.getItem('loginRedirectUrl');
+                                const stateObj = {
+                                    platform: isElectron ? 'ELECTRON' : 'WEB',
+                                    redirectUrl: loginRedirectUrl
+                                };
+                                const state = encodeURIComponent(JSON.stringify(stateObj));
+
                                 const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=email profile&state=${state}`;
                                 if (isElectron) {
                                     window.electronAPI.openExternal(authUrl);
