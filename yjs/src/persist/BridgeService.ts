@@ -253,8 +253,9 @@ class BridgeService {
         await Block.bulkWrite(bulkOps);
         console.log(`[Bridge] Sync Success for ${noteId}. Updates: ${bulkOps.length}`);
 
+        // Use noteId string directly (not Binary) since Note schema uses String _id
         await Note.updateOne(
-          { _id: queryNoteId },
+          { _id: noteId },
           { $set: { updatedAt: new Date() } }
         );
       }
