@@ -1,4 +1,3 @@
-// FE/src/components/layout/textBlock/TextBlock.tsx
 import React, { useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -55,6 +54,7 @@ interface TextBlockProps {
     isFocused?: boolean; // [추가]
     onContextMenu?: (e: React.MouseEvent) => void; // [New]
     readOnly?: boolean; // [New]
+    showBookmark?: boolean; // [New]
 }
 
 // 색상 팔레트
@@ -96,6 +96,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
     bookmark = false,
     onToggleBookmark,
     readOnly = false, // [New]
+    showBookmark = true, // [New]
 }) => {
     const [isFocused, setIsFocused] = React.useState(false);
     const [showColorPicker, setShowColorPicker] = React.useState(false);
@@ -611,9 +612,11 @@ const TextBlock: React.FC<TextBlockProps> = ({
             </div>
 
             {/* Right Actions (Bookmark) */}
-            <div className="block-actions-right">
-                <BlockBookmarkButton isBookmarked={bookmark} onClick={handleBookmark} />
-            </div>
+            {showBookmark && ( // [New]
+                <div className="block-actions-right">
+                    <BlockBookmarkButton isBookmarked={bookmark} onClick={handleBookmark} />
+                </div>
+            )}
 
         </div>
     );

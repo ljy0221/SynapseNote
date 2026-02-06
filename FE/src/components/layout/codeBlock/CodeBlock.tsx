@@ -39,6 +39,7 @@ interface CodeBlockProps {
     onAiReviewResult?: (htmlContent: string) => void;
     onLanguageChange?: (id: number | string, language: string) => void;
     readOnly?: boolean; // [New]
+    showBookmark?: boolean; // [New]
 }
 
 function getDefaultVersion(language: Language): string {
@@ -67,6 +68,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     bookmark = false,
     onToggleBookmark,
     readOnly = false, // [New]
+    showBookmark = true, // [New]
 }) => {
     const [result, setResult] = useState<ExecutionResult | null>(null);
     const [loading, setLoading] = useState(false);
@@ -445,9 +447,11 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
             </div>
 
             {/* 즐겨찾기 버튼 (블록 외부 우측) */}
-            <div className="block-actions-right">
-                <BlockBookmarkButton isBookmarked={bookmark} onClick={handleBookmark} />
-            </div>
+            {showBookmark && (
+                <div className="block-actions-right">
+                    <BlockBookmarkButton isBookmarked={bookmark} onClick={handleBookmark} />
+                </div>
+            )}
 
         </div>
     );
