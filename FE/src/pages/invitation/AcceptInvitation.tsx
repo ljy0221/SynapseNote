@@ -24,7 +24,7 @@ const AcceptInvitation: React.FC = () => {
         if (isLoading) return;
 
         if (!isAuthenticated) {
-            localStorage.setItem('loginRedirectUrl', `/invitation/${token}`);
+            localStorage.setItem('loginRedirectUrl', `/notes/invitation/${token}`);
             navigate('/login');
             return;
         }

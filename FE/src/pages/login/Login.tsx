@@ -1,11 +1,44 @@
 // src/pages/Login.tsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 // 1. SocialLoginButton 임포트 추가
 import { SocialLoginButton } from "../../components/common/socialLoginButton/SocialLoginButton";
 import { SynapseLogo } from "../../components/common/logo/SynapseLogo";
 import HomeButton from "../../components/common/homeButton/HomeButton.tsx";
 
 const Login: React.FC = () => {
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+    // 에러 코드별 메시지 사전 (프론트엔드에서 관리)
+    const ERROR_MESSAGES: Record<string, string> = {
+        'DELETED_MEMBER': '탈퇴한 회원은 30일 동안 재가입할 수 없습니다.',
+        'MEMBER_ALREADY_EXISTS_ANOTHER_PROVIDER': '이 이메일은 다른 소셜 로그인으로 이미 가입되어 있습니다.',
+    };
+
+    useEffect(() => {
+        const errorCode = searchParams.get('errorCode');
+        if (errorCode) {
+            // 에러 코드에 해당하는 메시지 표시
+            const message = ERROR_MESSAGES[errorCode] || '로그인에 실패했습니다.';
+            setErrorMessage(message);
+            // URL에서 errorCode 파라미터 제거
+            searchParams.delete('errorCode');
+            setSearchParams(searchParams, { replace: true });
+        }
+    }, [searchParams, setSearchParams]);
+
+    // 에러 메시지 자동 제거
+    useEffect(() => {
+        if (errorMessage) {
+            const timer = setTimeout(() => {
+                setErrorMessage(null);
+            }, 3000); // 3초로 변경
+
+            return () => clearTimeout(timer);
+        }
+    }, [errorMessage]);
+
     return (
         <div style={{ display: 'flex', width: '100vw', height: '100vh', position: 'relative' }}>
 
@@ -111,6 +144,31 @@ const Login: React.FC = () => {
                                 }
                             }}
                         />
+                    </div>
+
+                    {/* 에러 메시지 표시 영역 (고정 높이) */}
+                    <div style={{
+                        marginTop: '24px',
+                        height: '60px', // 정확한 고정 높이로 레이아웃 완전 고정
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                    }}>
+                        {errorMessage && (
+                            <div style={{
+                                width: '100%',
+                                padding: '12px 16px',
+                                backgroundColor: 'rgba(255, 77, 77, 0.1)',
+                                border: '1px solid #ff4d4d',
+                                borderRadius: '8px',
+                                color: '#ff4d4d',
+                                fontSize: '0.9rem',
+                                textAlign: 'center',
+                                lineHeight: '1.5',
+                                boxSizing: 'border-box',
+                            }}>
+                                {errorMessage}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

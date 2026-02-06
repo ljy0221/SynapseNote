@@ -35,7 +35,8 @@ public class WebConfig implements WebMvcConfigurer {
 
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:5173",
-                "http://127.0.0.1:5173"
+                "http://127.0.0.1:5173",
+                "https://i14b102.p.ssafy.io"
         ));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
