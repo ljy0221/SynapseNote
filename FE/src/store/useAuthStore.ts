@@ -97,7 +97,7 @@ export const useAuthStore = create<AuthState>()(
                 }
             },
 
-            updateUserNickname: async (_newNickname: string) => {
+            updateUserNickname: async (newNickname: string) => {
                 const token = get().accessToken;
                 if (!token) {
                     useToastStore.getState().showToast('로그인이 필요합니다.', 'error');
@@ -105,7 +105,7 @@ export const useAuthStore = create<AuthState>()(
                 }
 
                 try {
-                    const updatedInfo = await updateNickname(_newNickname);
+                    const updatedInfo = await updateNickname(newNickname);
                     set({ userInfo: updatedInfo });
                     useToastStore.getState().showToast('닉네임이 변경되었습니다.', 'success');
                 } catch (error) {

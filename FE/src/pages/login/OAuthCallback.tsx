@@ -98,11 +98,10 @@ const OAuthCallback: React.FC = () => {
         // 특정 에러 코드 처리
         const errorData = error?.response?.data?.error;
         const errorCode = errorData?.code;
-        const errorMessage = errorData?.message;
 
-        if ((errorCode === 'DELETED_MEMBER' || errorCode === 'MEMBER_ALREADY_EXISTS_ANOTHER_PROVIDER') && errorMessage) {
-          // 로그인 페이지로 에러 메시지 전달
-          navigate(`/login?error=${encodeURIComponent(errorMessage)}`, { replace: true });
+        if (errorCode === 'DELETED_MEMBER' || errorCode === 'MEMBER_ALREADY_EXISTS_ANOTHER_PROVIDER') {
+          // 에러 코드만 전달 (보안상 메시지는 프론트에서 관리)
+          navigate(`/login?errorCode=${errorCode}`, { replace: true });
         } else {
           showToast(
             `로그인 실패: ${error?.message ?? '알 수 없는 오류'}`,
