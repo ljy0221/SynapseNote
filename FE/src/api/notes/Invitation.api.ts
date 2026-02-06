@@ -27,6 +27,8 @@ export const getPendingInvitationsApi = (noteId: string): Promise<GetPendingInvi
     return request<GetPendingInvitationsResponse>('get', `/v1/notes/${noteId}/invitations`);
 };
 
-export const approveInvitationApi = (invitationId: string): Promise<void> => {
-    return request<void>('post', `/v1/notes/invitations/${invitationId}/approve`);
+export const approveInvitationApi = (invitationId: string, role?: 'EDITOR' | 'VIEWER'): Promise<void> => {
+    return request<void>('post', `/v1/notes/invitations/${invitationId}/approve`, {
+        body: { role }
+    });
 };
