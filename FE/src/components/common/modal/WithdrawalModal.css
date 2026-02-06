@@ -1,17 +1,18 @@
 /* src/components/common/modal/WithdrawalModal.css */
 
 .withdrawal-modal-overlay {
-    position: fixed;
+    position: absolute;
     top: 0;
     left: 0;
-    width: 100vw;
-    height: 100vh;
-    background-color: rgba(0, 0, 0, 0.7);
+    width: 100%;
+    height: 100%;
+    background-color: transparent;
+    /* 배경 제거 - 부모 모달 안에서 보이도록 */
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 2100;
-    /* UserProfileModal보다 위에 떠야 함 */
+    z-index: 10;
+    /* 부모 모달 내부에서만 위에 표시 */
     animation: fadeIn 0.2s ease-out;
 }
 
@@ -21,6 +22,7 @@
     border-radius: 16px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     width: 400px;
+    min-height: 450px;
     display: flex;
     flex-direction: column;
     align-items: center;
