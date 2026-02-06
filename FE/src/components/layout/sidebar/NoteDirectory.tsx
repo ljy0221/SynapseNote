@@ -123,9 +123,10 @@ export const NoteDirectory: React.FC<NoteDirectoryProps> = ({
                     type: 'NOTE',
                     targetId: note.noteId,
                     directoryPath: node.path,
+                    role: note.role, // [New]
                   });
                 }}
-                draggable={!isEditing && !isTempNote}
+                draggable={!isEditing && !isTempNote && note.role !== 'VIEWER'} // [Modified] VIEWER 권한 체크 추가
                 onDragStart={(e) => {
                   e.dataTransfer.setData('noteId', note.noteId);
                   e.dataTransfer.effectAllowed = 'move';

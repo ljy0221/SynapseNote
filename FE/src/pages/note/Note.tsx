@@ -62,7 +62,11 @@ const Note: React.FC = () => {
     const lastLoadedTitleRef = useRef<string>("제목 없는 노트");
     const [bookmarkedBlockIds, setBookmarkedBlockIds] = useState<Set<string>>(new Set());
 
-    const { blocks, isSynced, addBlock, addBlocksBatch, updateBlock, updateBlockLanguage, deleteBlock, moveBlock } = useYjsStore(noteId);
+    // [New] 권한 체크: VIEWER이면 읽기 전용
+    const currentNote = notes.find(n => n.noteId === noteId);
+    const isReadOnly = currentNote?.role === 'VIEWER';
+
+    const { blocks, isSynced, isDataLoaded, isInitialized, initializeYjs, addBlock, addBlocksBatch, updateBlock, updateBlockLanguage, deleteBlock, moveBlock } = useYjsStore(noteId);
 
     const fetchNoteDetail = useCallback(async (id: string) => {
         console.log(`[Note] fetchNoteDetail called for: ${id}`); // [Debug]
@@ -189,16 +193,19 @@ const Note: React.FC = () => {
 
     // Yjs 동기화 완료 시 초기 데이터 주입 (최초 1회, Batch 처리)
     useEffect(() => {
-        if (isSynced && blocks.length === 0 && pendingInitialDataRef.current && pendingInitialDataRef.current.length > 0) {
+        // [Modified] isInitialized 체크 추가: 마커가 없고, 데이터가 로드되었는데, 블록이 비어있을 때만 초기화
+        // Legacy Note 대응: !isInitialized && blocks.length > 0 인 경우는 useYjsStore에서 자동으로 마킹함
+        if (isSynced && isDataLoaded && !isInitialized && blocks.length === 0 && pendingInitialDataRef.current && pendingInitialDataRef.current.length > 0) {
+            console.log('[Note] Populating initial blocks from API...');
             const blocksToInsert = pendingInitialDataRef.current.map((b: any) => ({
                 type: b.type,
                 content: b.content,
                 bookmark: b.bookmark || false
             }));
-            addBlocksBatch(blocksToInsert);
+            initializeYjs(blocksToInsert); // [Modified] addBlocksBatch -> initializeYjs
             pendingInitialDataRef.current = null;
         }
-    }, [isSynced, blocks.length, addBlocksBatch]);
+    }, [isSynced, isDataLoaded, isInitialized, blocks.length, initializeYjs]);
 
     const handleToggleBookmark = async (blockId: number | string, currentStatus: boolean) => {
         if (!noteId) return;
@@ -532,6 +539,7 @@ const Note: React.FC = () => {
                 >
                     <NoteMain
                         noteId={noteId}
+                        readOnly={isReadOnly} // [New]
                         title={title}
                         onUpdateTitle={setTitle}
                         blocks={blocks}
@@ -560,6 +568,7 @@ const Note: React.FC = () => {
                         onToggleBookmark={handleToggleBookmark}
                         bookmarkedBlockIds={bookmarkedBlockIds}
                         onUpdateBlockLanguage={updateBlockLanguage}
+                        currentUserRole={currentNote?.role} // [New]
                     />
                 </div>
             )}

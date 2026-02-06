@@ -2,8 +2,8 @@ import React from 'react';
 import CodeBlock from '../codeBlock/CodeBlock';
 import TextBlock from '../textBlock/TextBlock';
 import { NoteSideNav } from './NoteSideNav';
-import { DraggableBlock } from './DraggableBlock'; // [New]
-import { Reorder } from 'framer-motion'; // [New]
+import { DraggableBlock } from './DraggableBlock';
+import { Reorder } from 'framer-motion';
 import { InviteLinkModal } from '../../common/modal/InviteLinkModal';
 import { PermissionModal } from '../../common/modal/PermissionModal';
 import { SummaryConfigModal } from '../../common/modal/SummaryConfigModal';
@@ -12,6 +12,7 @@ import { BlockData, BlockType } from '../../../types/note/Block';
 import type { SummaryStyle } from '../../../types/ai/NoteSummary';
 import BlockContextMenu from '../../common/contextMenu/BlockContextMenu';
 import './NoteMain.css';
+import { NoteMemberRole } from '../../../types/note/GetNoteMembers'; // [New]
 
 interface NoteMainProps {
     title: string;
@@ -35,6 +36,8 @@ interface NoteMainProps {
     onToggleBookmark?: (blockId: number | string, currentStatus: boolean) => void;
     bookmarkedBlockIds?: Set<string>; // [New] 로컬 북마크 상태
     onUpdateBlockLanguage?: (blockId: number | string, language: string) => void;
+    readOnly?: boolean; // [New] 읽기 전용 모드
+    currentUserRole?: NoteMemberRole; // [New]
 }
 
 const NoteMain: React.FC<NoteMainProps> = ({
@@ -57,7 +60,9 @@ const NoteMain: React.FC<NoteMainProps> = ({
     onGenerateSummary,
     onToggleBookmark,
     bookmarkedBlockIds,
-    onUpdateBlockLanguage
+    onUpdateBlockLanguage,
+    readOnly = false, // 기본값 false
+    currentUserRole, // [New]
 }) => {
     const [isInviteModalOpen, setIsInviteModalOpen] = React.useState(false);
     const [isPermissionModalOpen, setIsPermissionModalOpen] = React.useState(false);
@@ -140,6 +145,7 @@ const NoteMain: React.FC<NoteMainProps> = ({
                         id={block.id as any}
                         content={block.content}
                         bookmark={bookmarkedBlockIds ? bookmarkedBlockIds.has(block.id.toString()) : false}
+                        readOnly={readOnly} // [New]
                         onUpdate={onUpdateBlock as any}
                         onDelete={onDeleteBlock as any} // Still keeping it for safety, though UI removed
                         onFocus={() => onFocusBlock(block.id)}
@@ -156,6 +162,7 @@ const NoteMain: React.FC<NoteMainProps> = ({
                         language={(block.language as any) || 'javascript'}
                         code={block.content}
                         bookmark={bookmarkedBlockIds ? bookmarkedBlockIds.has(block.id.toString()) : false}
+                        readOnly={readOnly} // [New]
                         onDelete={onDeleteBlock as any}
                         onChange={onUpdateBlock as any}
                         onFocus={() => onFocusBlock(block.id)}
@@ -180,12 +187,14 @@ const NoteMain: React.FC<NoteMainProps> = ({
                     <div className="note-inner-layout">
                         {/* Left Gutter with Side Nav */}
                         <aside className="note-gutter left">
-                            <NoteSideNav
-                                onAddBlock={onAddBlockAtEnd}
-                                onInvite={() => setIsInviteModalOpen(true)}
-                                onPermission={() => setIsPermissionModalOpen(true)}
-                                onSummary={() => setIsSummaryModalOpen(true)}
-                            />
+                            {!readOnly && (
+                                <NoteSideNav
+                                    onAddBlock={onAddBlockAtEnd}
+                                    onInvite={() => setIsInviteModalOpen(true)}
+                                    onPermission={() => setIsPermissionModalOpen(true)}
+                                    onSummary={() => setIsSummaryModalOpen(true)}
+                                />
+                            )}
                         </aside>
 
                         {/* Center Content */}
@@ -197,6 +206,7 @@ const NoteMain: React.FC<NoteMainProps> = ({
                                     value={title}
                                     onChange={(e) => onUpdateTitle(e.target.value)}
                                     placeholder="제목 없음"
+                                    disabled={readOnly} // [New]
                                 />
                             </header>
                             <div className="note-content-area">
@@ -207,30 +217,36 @@ const NoteMain: React.FC<NoteMainProps> = ({
                                     isLoading={isSummaryLoading ?? false}
                                     onGenerateSummary={onGenerateSummary ?? (() => { })}
                                 />
-                                <Reorder.Group
-                                    values={localBlocks}
-                                    onReorder={(newOrder) => {
-                                        setLocalBlocks(newOrder); // Optimistic UI update
-                                    }}
-                                    as="div"
-                                    axis="y"
-                                >
-                                    {localBlocks.map((block, index) => (
-                                        <DraggableBlock
-                                            key={block.id}
-                                            block={block}
-                                            onDragStart={() => {
-                                                isDraggingRef.current = true;
-                                            }}
-                                            onDragEnd={() => {
-                                                isDraggingRef.current = false;
-                                                handleDragEnd(block.id);
-                                            }}
-                                        >
-                                            {(dragControls) => renderBlock(block, index, dragControls)}
-                                        </DraggableBlock>
-                                    ))}
-                                </Reorder.Group>
+                                {readOnly ? (
+                                    <div className="readonly-blocks-list">
+                                        {localBlocks.map((block, index) => renderBlock(block, index, null))}
+                                    </div>
+                                ) : (
+                                    <Reorder.Group
+                                        values={localBlocks}
+                                        onReorder={(newOrder) => {
+                                            setLocalBlocks(newOrder); // Optimistic UI update
+                                        }}
+                                        as="div"
+                                        axis="y"
+                                    >
+                                        {localBlocks.map((block, index) => (
+                                            <DraggableBlock
+                                                key={block.id}
+                                                block={block}
+                                                onDragStart={() => {
+                                                    isDraggingRef.current = true;
+                                                }}
+                                                onDragEnd={() => {
+                                                    isDraggingRef.current = false;
+                                                    handleDragEnd(block.id);
+                                                }}
+                                            >
+                                                {(dragControls) => renderBlock(block, index, dragControls)}
+                                            </DraggableBlock>
+                                        ))}
+                                    </Reorder.Group>
+                                )}
                                 <div className="note-bottom-spacer" style={{ height: '50px' }} />
                             </div>
                         </div>
@@ -258,6 +274,7 @@ const NoteMain: React.FC<NoteMainProps> = ({
                 isOpen={isPermissionModalOpen}
                 onClose={() => setIsPermissionModalOpen(false)}
                 noteId={noteId}
+                currentUserRole={currentUserRole} // [New]
             />
             {/* AI 요약 설정 모달 */}
             <SummaryConfigModal
