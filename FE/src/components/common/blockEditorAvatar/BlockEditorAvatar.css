@@ -1,17 +1,13 @@
 .block-editor-avatar-container {
     position: absolute;
     top: 8px;
-    right: 48px;
-    /* Moved left to avoid bookmark button (32px width + 16px gap) */
+    /* right position set via inline style for dynamic control */
     z-index: 10;
-    pointer-events: none;
+    cursor: pointer;
+    /* Enable cursor change for tooltip */
 }
 
-/* When bookmark is not shown, move avatar to the right edge */
-.text-block-wrapper:not(.has-bookmark) .block-editor-avatar-container,
-.code-block-wrapper:not(.has-bookmark) .block-editor-avatar-container {
-    right: 8px;
-}
+/* No conditional positioning needed - controlled via inline styles */
 
 .block-editor-avatar {
     border-radius: 50%;
