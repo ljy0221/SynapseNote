@@ -13,6 +13,7 @@ import { useNoteStore } from '../../store/useNoteStore';
 import { BlockType } from '../../types/note/Block';
 import { addBlockBookmarkApi, removeBlockBookmarkApi, getBlockBookmarksApi } from '../../api/bookmark/Bookmarks.api';
 import { getNoteMembersApi } from '../../api/notes/GetNoteMembers.api'; // [New]
+import { NoteMemberItem } from '../../types/note/GetNoteMembers'; // [New]
 import { Loading } from '../../components/common/loading/Loading';
 import './Note.css';
 
@@ -24,6 +25,7 @@ const Note: React.FC = () => {
     // [New] State declarations moved up to avoid TDZ
     const [myRole, setMyRole] = useState<'OWNER' | 'EDITOR' | 'VIEWER' | undefined>(undefined);
     const [lastId, setLastId] = useState<string | null>(null); // [New] For sync reset
+    const [noteMembers, setNoteMembers] = useState<NoteMemberItem[]>([]); // [New]
     const { userInfo } = useAuthStore();
 
     const [isEditing, setIsEditing] = useState(false);
@@ -81,7 +83,7 @@ const Note: React.FC = () => {
     // [New] 권한 체크: OWNER나 EDITOR가 아니면 전부 읽기 전용 (undefined 포함)
     const isReadOnly = myRole !== 'OWNER' && myRole !== 'EDITOR';
 
-    const { blocks, isSynced, isDataLoaded, isInitialized, initializeYjs, checkAndInitialize, addBlock, updateBlock, updateBlockLanguage, deleteBlock, moveBlock } = useYjsStore(noteId);
+    const { blocks, isSynced, checkAndInitialize, addBlock, updateBlock, updateBlockLanguage, deleteBlock, moveBlock } = useYjsStore(noteId);
 
     const fetchNoteDetail = useCallback(async (id: string) => {
         console.log(`[Note] fetchNoteDetail called for: ${id}, user: ${userInfo?.memberId}`);
@@ -126,6 +128,7 @@ const Note: React.FC = () => {
             let membersRes = { members: [] as any[] };
             try {
                 membersRes = await getNoteMembersApi(id);
+                setNoteMembers(membersRes.members || []); // [New]
             } catch (err) {
                 console.warn('[Note] Failed to fetch member list, using detail info only:', err);
             }
@@ -663,6 +666,7 @@ const Note: React.FC = () => {
                         onUpdateBlockLanguage={updateBlockLanguage}
                         currentUserRole={myRole}
                         showBlockBookmark={myRole === 'OWNER'} // [New]
+                        members={noteMembers} // [New]
                     />
                 </div>
             )}
