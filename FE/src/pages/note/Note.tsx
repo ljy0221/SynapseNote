@@ -446,6 +446,15 @@ const Note: React.FC = () => {
                 }
             }
 
+            if (detail?.type === 'UPDATE_MEMBERS' && detail.noteId === noteId) {
+                console.log('[Note] Refreshing members due to event');
+                getNoteMembersApi(noteId!).then(res => { // [Fix] Add non-null assertion
+                    if (res && res.members) {
+                        setNoteMembers(res.members);
+                    }
+                }).catch(err => console.error('[Note] Failed to refresh members:', err));
+            }
+
             if (detail?.type === 'DELETE_NOTE' && detail.noteId === noteId) {
                 navigate('/note');
             }
