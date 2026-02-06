@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, User, ChevronDown, Check, Ban, Trash2 } from 'lucide-react';
+import { X, User, ChevronDown, Check, Trash2 } from 'lucide-react';
 import './PermissionModal.css';
 
 // Removed unused Member interface

@@ -1,6 +1,6 @@
 // src/components/common/noteButton/NoteButton.tsx
 import React from 'react';
-import { Plus } from 'react-feather';
+import { Plus } from 'lucide-react';
 import './NoteButton.css';
 
 interface NoteButtonProps {
@@ -11,8 +11,8 @@ interface NoteButtonProps {
 const NoteButton: React.FC<NoteButtonProps> = ({ className = '', onClick }) => {
     // 내부 handleCreateNote 대신 props로 받은 onClick을 사용합니다.
     return (
-        <button 
-            className={`note-button active ${className}`} 
+        <button
+            className={`note-button active ${className}`}
             onClick={onClick} // 2. 여기서 부모의 setIsEditing(true)이 실행됩니다.
             title="새 노트 작성"
         >
