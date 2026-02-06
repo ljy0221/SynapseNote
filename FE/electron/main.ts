@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron' // ipcMain 추가
+import { app, BrowserWindow, ipcMain, shell } from 'electron' // ipcMain 추가, shell: 외부 브라우저 열기
 // import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
@@ -53,10 +53,15 @@ function createWindow() {
     }
     return { action: 'deny' };
   });
+
+  // [Fix] 윈도우 닫힘 시 참조 제거
+  win.on('closed', () => {
+    win = null;
+  });
 }
 
 // ==========================================
-// [중요] 창 제어 이벤트 리스너 (반드시 추가되어야 함)
+// [중요] 창 제어 이벤트 리스너
 // ==========================================
 ipcMain.on('window-minimize', () => {
   win?.minimize();
@@ -75,7 +80,6 @@ ipcMain.on('window-close', () => {
 });
 
 // 외부 브라우저 열기
-import { shell } from 'electron';
 ipcMain.on('open-external', (_, url: string) => {
   shell.openExternal(url);
 });
@@ -133,11 +137,13 @@ ipcMain.handle('docker:execute-single', async (_event, request) => {
   return await execService.executeSingle(request);
 });
 
-
 // Deep Link 설정
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
     app.setAsDefaultProtocolClient('synapse', process.execPath, [path.resolve(process.argv[1])])
+  } else {
+    // [Fix] argv[1]이 없는 경우 명시적으로 경로 지정 (Dev 모드 fallback)
+    app.setAsDefaultProtocolClient('synapse', process.execPath, [path.resolve(process.env.APP_ROOT, 'dist-electron/main.js')])
   }
 } else {
   app.setAsDefaultProtocolClient('synapse')
@@ -149,7 +155,11 @@ if (!gotTheLock) {
   app.quit()
 } else {
   app.on('second-instance', (_event, commandLine) => {
-    // 누군가 두 번째 인스턴스를 실행하려고 하면 메인 윈도우를 포커스
+    // 윈도우가 없으면 새로 생성 (타이밍 이슈가 있을 수 있음)
+    if (!win) {
+      createWindow();
+    }
+
     if (win) {
       if (win.isMinimized()) win.restore()
       win.focus()
@@ -157,7 +167,14 @@ if (!gotTheLock) {
       // Deep Link URL 찾기 (Windows/Linux)
       const url = commandLine.find((arg) => arg.startsWith('synapse://'));
       if (url) {
-        win.webContents.send('deep-link-url', url);
+        // [Fix] 윈도우가 로드될 때까지 기다리거나 바로 전송
+        if (win.webContents.isLoading()) {
+          win.webContents.once('did-finish-load', () => {
+            win?.webContents.send('deep-link-url', url);
+          });
+        } else {
+          win.webContents.send('deep-link-url', url);
+        }
       }
     }
   })
@@ -165,8 +182,24 @@ if (!gotTheLock) {
   // macOS용 open-url 이벤트
   app.on('open-url', (event, url) => {
     event.preventDefault();
+
+    // 윈도우가 없으면 생성
+    if (!win) {
+      createWindow();
+    }
+
     if (win) {
-      win.webContents.send('deep-link-url', url);
+      if (win.isMinimized()) win.restore();
+      win.focus();
+
+      // [Fix] 윈도우가 로드 중이면 기다림
+      if (win.webContents.isLoading()) {
+        win.webContents.once('did-finish-load', () => {
+          win?.webContents.send('deep-link-url', url);
+        });
+      } else {
+        win.webContents.send('deep-link-url', url);
+      }
     }
   });
 
