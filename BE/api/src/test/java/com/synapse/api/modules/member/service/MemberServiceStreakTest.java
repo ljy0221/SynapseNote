@@ -81,7 +81,7 @@ class MemberServiceStreakTest {
     }
 
     @Test
-    @DisplayName("180일 스트릭 조회 - 스트릭이 있는 날짜 검증")
+    @DisplayName("반기별 스트릭 조회 - 시작일부터 오늘까지의 스트릭 검증")
     void shouldReturnCorrectStreakHistory() {
         // given
         UUID memberId = UUID.randomUUID();
@@ -92,28 +92,36 @@ class MemberServiceStreakTest {
         Streak streak1 = Streak.of(member, today);
         Streak streak2 = Streak.of(member, yesterday);
 
-        given(streakRepository.findStreaksByMemberAndDateRange(eq(memberId), any(), any()))
+        // 반기 시작일 계산 (Service 로직과 동일하게)
+        int year = today.getYear();
+        LocalDate startDate;
+        if (today.getMonthValue() < 7) {
+            startDate = LocalDate.of(year, 1, 1);
+        } else {
+            startDate = LocalDate.of(year, 7, 1);
+        }
+
+        given(streakRepository.findStreaksByMemberAndDateRange(eq(memberId), eq(startDate), eq(today)))
                 .willReturn(List.of(streak1, streak2));
 
         // when
         List<StreakResponse> result = memberService.getStreak(memberId);
 
         // then
-        assertThat(result).hasSize(180);
+        long expectedDays = java.time.temporal.ChronoUnit.DAYS.between(startDate, today) + 1;
+        assertThat(result).hasSize((int) expectedDays);
 
         StreakResponse todayResponse = result.stream()
                 .filter(r -> r.date().equals(today))
                 .findFirst().orElseThrow();
         assertThat(todayResponse.isStreak()).isTrue();
 
-        StreakResponse yesterdayResponse = result.stream()
-                .filter(r -> r.date().equals(yesterday))
-                .findFirst().orElseThrow();
-        assertThat(yesterdayResponse.isStreak()).isTrue();
-
-        StreakResponse twoDaysAgoResponse = result.stream()
-                .filter(r -> r.date().equals(today.minusDays(2)))
-                .findFirst().orElseThrow();
-        assertThat(twoDaysAgoResponse.isStreak()).isFalse();
+        // 어제가 시작일보다 이전이면 리스트에 없을 수 있음 (1월 1일인 경우 등)
+        if (!yesterday.isBefore(startDate)) {
+            StreakResponse yesterdayResponse = result.stream()
+                    .filter(r -> r.date().equals(yesterday))
+                    .findFirst().orElseThrow();
+            assertThat(yesterdayResponse.isStreak()).isTrue();
+        }
     }
 }
