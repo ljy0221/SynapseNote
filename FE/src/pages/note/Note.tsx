@@ -83,7 +83,7 @@ const Note: React.FC = () => {
     // [New] 권한 체크: OWNER나 EDITOR가 아니면 전부 읽기 전용 (undefined 포함)
     const isReadOnly = myRole !== 'OWNER' && myRole !== 'EDITOR';
 
-    const { blocks, isSynced, checkAndInitialize, addBlock, updateBlock, updateBlockLanguage, deleteBlock, moveBlock } = useYjsStore(noteId);
+    const { blocks, isSynced, checkAndInitialize, addBlock, updateBlock, updateBlockLanguage, deleteBlock, moveBlock, setFocusedBlock, getBlockEditors } = useYjsStore(noteId);
 
     const fetchNoteDetail = useCallback(async (id: string) => {
         console.log(`[Note] fetchNoteDetail called for: ${id}, user: ${userInfo?.memberId}`);
@@ -640,7 +640,10 @@ const Note: React.FC = () => {
                     tabIndex={-1}
                     onKeyDown={handleKeyDown}
                     style={{ outline: 'none' }}
-                    onClick={() => setFocusedBlockId(null)}
+                    onClick={() => {
+                        setFocusedBlockId(null);
+                        setFocusedBlock(null); // [Fix] Clear awareness state when clicking outside blocks
+                    }}
                 >
                     <NoteMain
                         noteId={noteId}
@@ -657,7 +660,10 @@ const Note: React.FC = () => {
                             deleteBlock(id);
                             handleContentChange();
                         }}
-                        onFocusBlock={setFocusedBlockId}
+                        onFocusBlock={(blockId) => {
+                            setFocusedBlockId(blockId);
+                            setFocusedBlock(blockId ? blockId.toString() : null); // [New] Update awareness
+                        }}
                         focusedBlockId={focusedBlockId}
                         onMoveBlock={handleMoveBlock}
                         titleInputRef={titleInputRef}
@@ -676,6 +682,7 @@ const Note: React.FC = () => {
                         currentUserRole={myRole}
                         showBlockBookmark={myRole === 'OWNER'} // [New]
                         members={noteMembers} // [New]
+                        getBlockEditors={getBlockEditors} // [New] Pass awareness method
                     />
                 </div>
             )}
