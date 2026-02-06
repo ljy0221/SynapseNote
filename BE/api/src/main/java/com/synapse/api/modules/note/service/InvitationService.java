@@ -61,6 +61,12 @@ public class InvitationService {
             throw new BusinessException(ErrorCode.INVITATION_OWNER_NOT_ALLOWED);
         }
 
+        // [사전 검증] 노트 참가자 수 6명 제한 (초대 포함 미리 막기)
+        long currentMemberCount = noteMemberRepository.countByNoteIdAndDeletedAtIsNull(noteId);
+        if (currentMemberCount >= 6) {
+            throw new BusinessException(ErrorCode.NOTE_PARTICIPANT_LIMIT_EXCEEDED);
+        }
+
         // 4. 이미 멤버인지 확인 (이메일로 조회) - 이메일이 있는 경우만
         if (request.invitedEmail() != null) {
             Member existingMember = memberRepository.findByEmail(request.invitedEmail()).orElse(null);
@@ -68,6 +74,12 @@ public class InvitationService {
                 boolean isMember = noteMemberRepository.existsByNoteIdAndMemberId(noteId, existingMember.getId());
                 if (isMember) {
                     throw new BusinessException(ErrorCode.ALREADY_NOTE_MEMBER);
+                }
+
+                // [사전 검증] 상대방의 공유 노트 개수 10개 제한
+                long sharedNoteCount = noteRepository.countSharedNotesByMemberId(existingMember.getId());
+                if (sharedNoteCount >= 10) {
+                    throw new BusinessException(ErrorCode.TARGET_SHARED_NOTE_LIMIT_EXCEEDED);
                 }
             }
 
@@ -148,7 +160,27 @@ public class InvitationService {
             throw new BusinessException(ErrorCode.ALREADY_NOTE_MEMBER);
         }
 
-        // 7. NoteMember 생성
+        // 7. [최종 검증] 락 & 카운트 체크
+
+        // 7-1. 멤버 락 & 공유 노트 수 제한 (10개)
+        memberRepository.findByIdWithLock(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        long sharedNoteCount = noteRepository.countSharedNotesByMemberId(memberId);
+        if (sharedNoteCount >= 10) {
+            throw new BusinessException(ErrorCode.SHARED_NOTE_LIMIT_EXCEEDED);
+        }
+
+        // 7-2. 노트 락 & 참가자 수 제한 (6명)
+        noteRepository.findByIdWithLock(invitation.getNote().getId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
+
+        long currentMemberCount = noteMemberRepository.countByNoteIdAndDeletedAtIsNull(invitation.getNote().getId());
+        if (currentMemberCount >= 6) {
+            throw new BusinessException(ErrorCode.NOTE_PARTICIPANT_LIMIT_EXCEEDED);
+        }
+
+        // 8. NoteMember 생성
         NoteMemberId noteMemberId = new NoteMemberId(invitation.getNote().getId(), memberId);
         NoteMember noteMember = NoteMember.builder()
                 .id(noteMemberId)
@@ -158,7 +190,7 @@ public class InvitationService {
                 .build();
         noteMemberRepository.save(noteMember);
 
-        // 8. 초대 수락 처리
+        // 9. 초대 수락 처리
         invitation.accept(member);
 
         log.info("Member: {} accepted invitation: {} for note: {}",
@@ -201,6 +233,19 @@ public class InvitationService {
 
         if (alreadyRequested) {
             throw new BusinessException(ErrorCode.INVITATION_ALREADY_EXISTS);
+        }
+
+        // [사전 검증] 참가자 수 6명 제한
+        long currentMemberCount = noteMemberRepository
+                .countByNoteIdAndDeletedAtIsNull(linkInvitation.getNote().getId());
+        if (currentMemberCount >= 6) {
+            throw new BusinessException(ErrorCode.NOTE_PARTICIPANT_LIMIT_EXCEEDED);
+        }
+
+        // [사전 검증] 내 공유 노트 수 10개 제한
+        long sharedNoteCount = noteRepository.countSharedNotesByMemberId(memberId);
+        if (sharedNoteCount >= 10) {
+            throw new BusinessException(ErrorCode.SHARED_NOTE_LIMIT_EXCEEDED);
         }
 
         // 6. 가입 요청 생성 (REQUESTED)
@@ -257,6 +302,28 @@ public class InvitationService {
         }
 
         NoteMemberId noteMemberId = new NoteMemberId(invitation.getNote().getId(), member.getId());
+
+        // [최종 검증] 락 & 카운트
+        // 데드락 방지를 위해 Member -> Note 순서로 락 획득
+
+        // 1. 가입자 락 & 공유 노트 수 확인
+        memberRepository.findByIdWithLock(member.getId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        long sharedNoteCount = noteRepository.countSharedNotesByMemberId(member.getId());
+        if (sharedNoteCount >= 10) {
+            throw new BusinessException(ErrorCode.TARGET_SHARED_NOTE_LIMIT_EXCEEDED);
+        }
+
+        // 2. 노트 락 & 인원 확인
+        noteRepository.findByIdWithLock(invitation.getNote().getId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
+
+        long currentMemberCount = noteMemberRepository.countByNoteIdAndDeletedAtIsNull(invitation.getNote().getId());
+        if (currentMemberCount >= 6) {
+            throw new BusinessException(ErrorCode.NOTE_PARTICIPANT_LIMIT_EXCEEDED);
+        }
+
         NoteMember noteMember = NoteMember.builder()
                 .id(noteMemberId)
                 .note(invitation.getNote())

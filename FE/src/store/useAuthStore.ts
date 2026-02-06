@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { getUserInfo, UserInfo } from '../api/authApi';
+import { getUserInfo, UserInfo, updateNickname, deleteAccount } from '../api/authApi';
 import { useToastStore } from './useToastStore';
 
 interface AuthState {
@@ -15,6 +15,7 @@ interface AuthState {
     refreshUserInfo: () => Promise<void>;
     initializeAuth: () => Promise<void>;
     updateUserNickname: (newNickname: string) => Promise<void>;
+    withdrawAccount: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -90,8 +91,39 @@ export const useAuthStore = create<AuthState>()(
 
             updateUserNickname: async (_newNickname: string) => {
                 const token = get().accessToken;
-                if (!token) return;
-                // ... (기존 로직 동일)
+                if (!token) {
+                    useToastStore.getState().showToast('로그인이 필요합니다.', 'error');
+                    return;
+                }
+
+                try {
+                    const updatedInfo = await updateNickname(newNickname);
+                    set({ userInfo: updatedInfo });
+                    useToastStore.getState().showToast('닉네임이 변경되었습니다.', 'success');
+                } catch (error) {
+                    console.error('Update nickname failed:', error);
+                    useToastStore.getState().showToast('닉네임 변경에 실패했습니다.', 'error');
+                    throw error;
+                }
+            },
+
+            withdrawAccount: async () => {
+                const token = get().accessToken;
+                if (!token) {
+                    useToastStore.getState().showToast('로그인이 필요합니다.', 'error');
+                    return;
+                }
+
+                try {
+                    await deleteAccount();
+                    // 탈퇴 성공 시 로그아웃 처리
+                    get().logout();
+                    useToastStore.getState().showToast('회원 탈퇴가 완료되었습니다.', 'info');
+                } catch (error) {
+                    console.error('Account withdrawal failed:', error);
+                    useToastStore.getState().showToast('회원 탈퇴에 실패했습니다.', 'error');
+                    throw error;
+                }
             }
         }),
         {

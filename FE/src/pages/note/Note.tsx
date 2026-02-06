@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { NotebookPen } from 'lucide-react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useAuthStore } from '../../store/useAuthStore'; // [New]
 import NoteMain from "../../components/layout/noteMain/NoteMain";
 import { getNoteDetailApi } from '../../api/notes/GetNoteDetail.api';
 import { updateNoteApi } from '../../api/notes/UpdateNote.api';
@@ -18,6 +19,11 @@ import './Note.css';
 const Note: React.FC = () => {
     const { noteId } = useParams<{ noteId: string }>();
     const navigate = useNavigate();
+
+    // [New] State declarations moved up to avoid TDZ
+    const [myRole, setMyRole] = useState<'OWNER' | 'EDITOR' | 'VIEWER' | undefined>(undefined);
+    const { userInfo } = useAuthStore();
+
     const [isEditing, setIsEditing] = useState(false);
     const [title, setTitle] = useState("제목 없는 노트");
     const [focusedBlockId, setFocusedBlockId] = useState<number | string | null>(null);
@@ -58,21 +64,30 @@ const Note: React.FC = () => {
 
     // 데이터 로딩 추적용 (컴포넌트 인스턴스별)
     const lastFetchedIdRef = useRef<string | null>(null);
+    const lastFetchedUserRef = useRef<any>(undefined); // [New] userInfo 변경 감지용 (초기값 undefined)
     const pendingInitialDataRef = useRef<any>(null);
     const lastLoadedTitleRef = useRef<string>("제목 없는 노트");
     const [bookmarkedBlockIds, setBookmarkedBlockIds] = useState<Set<string>>(new Set());
 
-    const { blocks, isSynced, addBlock, addBlocksBatch, updateBlock, updateBlockLanguage, deleteBlock, moveBlock } = useYjsStore(noteId);
+    // [New] 권한 체크: VIEWER이면 읽기 전용
+    const isReadOnly = myRole === 'VIEWER'; // [Modified] Use myRole
+
+    const { blocks, isSynced, isDataLoaded, isInitialized, initializeYjs, addBlock, updateBlock, updateBlockLanguage, deleteBlock, moveBlock } = useYjsStore(noteId);
 
     const fetchNoteDetail = useCallback(async (id: string) => {
-        console.log(`[Note] fetchNoteDetail called for: ${id}`); // [Debug]
-        if (lastFetchedIdRef.current === id) {
-            console.log(`[Note] Skipping fetch, already loaded: ${id}`); // [Debug]
+        console.log(`[Note] fetchNoteDetail called for: ${id}, user: ${userInfo?.memberId}`);
+
+        // 유저 정보가 변경되었는지 확인 (로그인 수행 직후 등)
+        const isUserChanged = lastFetchedUserRef.current !== userInfo;
+
+        if (lastFetchedIdRef.current === id && !isUserChanged) {
+            console.log(`[Note] Skipping fetch, already loaded: ${id}`);
             return;
         }
 
         const cachedNote = notesRef.current.find(n => n.noteId === id);
-        if (cachedNote && cachedNote.summary !== undefined) {
+        // [Modified] 유저 정보가 변경되었으면 캐시를 무시하고 API를 다시 호출하여 권한을 재계산해야 함
+        if (!isUserChanged && cachedNote && cachedNote.summary !== undefined) {
             console.log('[Note] Loaded from Cache (Full Detail):', { title: cachedNote.title, directoryPath: cachedNote.directoryPath });
             setTitle(cachedNote.title);
             lastLoadedTitleRef.current = cachedNote.title;
@@ -83,6 +98,10 @@ const Note: React.FC = () => {
             setSummary(cachedNote.summary);
             setSummaryStyle(cachedNote.summaryStyle);
             setSummaryUpdatedAt(cachedNote.summaryUpdatedAt);
+
+            // [New] 캐시에서 role 설정
+            if (cachedNote.role) setMyRole(cachedNote.role);
+
             setIsEditing(true);
             lastFetchedIdRef.current = id;
             return;
@@ -92,7 +111,7 @@ const Note: React.FC = () => {
         setFetchingId(id, true);
 
         try {
-            console.log(`[Note] Requesting API for: ${id}`); // [Debug]
+            console.log(`[Note] Requesting API for: ${id}`);
             const noteRes = await getNoteDetailApi(id);
             if (noteRes) {
                 // [New] 사이드바 정보(목록)에서도 경로 확인 (API 상세 응답에 경로가 없을 경우 대비)
@@ -115,10 +134,28 @@ const Note: React.FC = () => {
                 setSummaryStyle(noteRes.summaryStyle);
                 setSummaryUpdatedAt(noteRes.summaryUpdatedAt);
 
+                // [New] Role Calculation
+                let calculatedRole: 'OWNER' | 'EDITOR' | 'VIEWER' = 'VIEWER';
+
+                const ownerId = String(noteRes.owner.memberId);
+                const currentMemberId = userInfo?.memberId ? String(userInfo.memberId) : null;
+
+                console.log('[Note] Role Check:', { ownerId, currentMemberId, userInfo: userInfo });
+
+                if (currentMemberId && ownerId === currentMemberId) {
+                    calculatedRole = 'OWNER';
+                } else if (currentMemberId) {
+                    const member = noteRes.members.find(m => String(m.memberId) === currentMemberId);
+                    if (member && member.role) calculatedRole = member.role;
+                }
+                console.log('[Note] Calculated Role Result:', calculatedRole);
+                setMyRole(calculatedRole);
+
                 updateNoteMetadata(id, {
                     summary: noteRes.summary,
                     summaryStyle: noteRes.summaryStyle,
-                    summaryUpdatedAt: noteRes.summaryUpdatedAt
+                    summaryUpdatedAt: noteRes.summaryUpdatedAt,
+                    role: calculatedRole // [New] Store 업데이트 시도
                 });
 
                 // [New] 노트 상세 조회 시 북마크 정보도 함께 초기화
@@ -131,6 +168,7 @@ const Note: React.FC = () => {
             }
             setIsEditing(true);
             lastFetchedIdRef.current = id;
+            lastFetchedUserRef.current = userInfo; // [New] Update last verified user
         } catch (error) {
             console.error("노트 상세 정보 로딩 실패:", error);
             if (cachedNote) {
@@ -138,12 +176,13 @@ const Note: React.FC = () => {
                 setTitle(cachedNote.title);
                 lastLoadedTitleRef.current = cachedNote.title;
                 currentDirectoryPathRef.current = cachedNote.directoryPath || "";
+                if (cachedNote.role) setMyRole(cachedNote.role); // [New]
                 setIsEditing(true);
             }
         } finally {
             setFetchingId(id, false);
         }
-    }, [updateNoteMetadata, setFetchingId]);
+    }, [updateNoteMetadata, setFetchingId, userInfo]);
 
     // [New] 노트 진입 시 즐겨찾기 상태 강제 동기화 (로컬 상태)
     useEffect(() => {
@@ -189,16 +228,19 @@ const Note: React.FC = () => {
 
     // Yjs 동기화 완료 시 초기 데이터 주입 (최초 1회, Batch 처리)
     useEffect(() => {
-        if (isSynced && blocks.length === 0 && pendingInitialDataRef.current && pendingInitialDataRef.current.length > 0) {
+        // [Modified] isInitialized 체크 추가: 마커가 없고, 데이터가 로드되었는데, 블록이 비어있을 때만 초기화
+        // Legacy Note 대응: !isInitialized && blocks.length > 0 인 경우는 useYjsStore에서 자동으로 마킹함
+        if (isSynced && isDataLoaded && !isInitialized && blocks.length === 0 && pendingInitialDataRef.current && pendingInitialDataRef.current.length > 0) {
+            console.log('[Note] Populating initial blocks from API...');
             const blocksToInsert = pendingInitialDataRef.current.map((b: any) => ({
                 type: b.type,
                 content: b.content,
                 bookmark: b.bookmark || false
             }));
-            addBlocksBatch(blocksToInsert);
+            initializeYjs(blocksToInsert); // [Modified] addBlocksBatch -> initializeYjs
             pendingInitialDataRef.current = null;
         }
-    }, [isSynced, blocks.length, addBlocksBatch]);
+    }, [isSynced, isDataLoaded, isInitialized, blocks.length, initializeYjs]);
 
     const handleToggleBookmark = async (blockId: number | string, currentStatus: boolean) => {
         if (!noteId) return;
@@ -532,6 +574,7 @@ const Note: React.FC = () => {
                 >
                     <NoteMain
                         noteId={noteId}
+                        readOnly={isReadOnly} // [New]
                         title={title}
                         onUpdateTitle={setTitle}
                         blocks={blocks}
@@ -560,6 +603,7 @@ const Note: React.FC = () => {
                         onToggleBookmark={handleToggleBookmark}
                         bookmarkedBlockIds={bookmarkedBlockIds}
                         onUpdateBlockLanguage={updateBlockLanguage}
+                        currentUserRole={myRole} // [New]
                     />
                 </div>
             )}

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { EditorView, basicSetup } from 'codemirror';
 import { EditorState, StateEffect } from '@codemirror/state';
+import { drawSelection } from '@codemirror/view'; // [New] Explicit import
 import { python } from '@codemirror/lang-python';
 import { javascript } from '@codemirror/lang-javascript';
 import { java } from '@codemirror/lang-java';
@@ -141,6 +142,10 @@ const createCustomTheme = (themeMode: ThemeMode) => {
         // Explicitly transparent when not focused to override defaults
         '.cm-activeLine': {
             backgroundColor: 'transparent',
+        },
+        // [New] Selection Color
+        '.cm-selectionBackground, .cm-content ::selection': {
+            backgroundColor: `${config.selection} !important`,
         },
         '.cm-gutters': {
             backgroundColor: config.gutterBackground,
@@ -310,6 +315,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
             doc: value,
             extensions: [
                 basicSetup,
+                drawSelection(), // [New] Explicitly add drawSelection
                 getLanguageExtension(language),
                 createCustomTheme(themeMode),
                 syntaxHighlighting(createHighlightStyle(themeMode)),
@@ -381,6 +387,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
             viewRef.current.dispatch({
                 effects: StateEffect.reconfigure.of([
                     basicSetup,
+                    drawSelection(), // [New] Explicitly add drawSelection
                     getLanguageExtension(language),
                     createCustomTheme(themeMode),
                     syntaxHighlighting(createHighlightStyle(themeMode)),

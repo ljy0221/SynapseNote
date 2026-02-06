@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import { X, User, ChevronDown, Check, Trash2 } from 'lucide-react';
 import './PermissionModal.css';
 
-// Removed unused Member interface
-
 import { getNoteMembersApi } from '../../../api/notes/GetNoteMembers.api';
 import { updateMemberRoleApi } from '../../../api/notes/UpdateMemberRole.api';
 import { deleteMemberApi } from '../../../api/notes/DeleteMember.api';
@@ -15,10 +13,12 @@ import { ToastNotification } from '../toast/ToastNotification';
 interface PermissionModalProps {
     isOpen: boolean;
     onClose: () => void;
-    noteId?: string; // Made optional to prevent errors if not passed yet, but strictly should be passed
+    noteId?: string;
+    currentUserRole?: NoteMemberRole; // [New]
 }
 
-export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClose, noteId }) => {
+export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClose, noteId, currentUserRole }) => {
+    console.log('PermissionModal Rendered', { isOpen, noteId, currentUserRole }); // [Debug]
     const [activeTab, setActiveTab] = useState<'MEMBERS' | 'REQUESTS'>('MEMBERS');
     const [members, setMembers] = useState<NoteMemberItem[]>([]);
     const [requests, setRequests] = useState<PendingInvitationItem[]>([]);
@@ -52,6 +52,8 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
                     setMembers(res.members);
                 }
             } else {
+                // If not owner, maybe don't fetch requests? 
+                // But let's fetch for now if they somehow got here, or just let it be.
                 const res = await getPendingInvitationsApi(noteId);
                 if (res && res.invitations) {
                     // Filter only REQUESTED status for this tab
@@ -145,19 +147,41 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
         }
     };
 
-    const handleAcceptRequest = async (invitationId: string) => {
+    const handleAcceptRequest = async (invitationId: string, role: NoteMemberRole) => {
         try {
-            await approveInvitationApi(invitationId);
+            // 요청 객체 찾기 (memberId 확보용)
+            const targetRequest = requests.find(r => r.id === invitationId);
+            const targetMemberId = targetRequest?.invitedMember?.id;
+
+            // 1. 수락 요청
+            await approveInvitationApi(invitationId, role as 'EDITOR' | 'VIEWER');
+
+            // 2. [Reliability Fix] 백엔드에서 role이 무시되는 버그가 있어, 수락 후 명시적으로 권한 업데이트 수행
+            if (targetMemberId && noteId) {
+                try {
+                    // 약간의 지연을 주어 트랜잭션 완료 보장 (필요시)
+                    await updateMemberRoleApi(noteId, targetMemberId, role);
+                    console.log(`[Permission] Force updated role for ${targetMemberId} to ${role}`);
+                } catch (roleError) {
+                    console.error('[Permission] Failed to force update role:', roleError);
+                    // 메인 로직(수락)은 성공했으므로 에러를 throw하지 않음
+                }
+            }
+
             showToast("요청을 수락했습니다.", 'success');
             // Refresh list
             setRequests(requests.filter(r => r.id !== invitationId));
-        } catch (error) {
+
+            // 멤버 목록 갱신
+            const membersRes = await getNoteMembersApi(noteId!);
+            if (membersRes?.members) setMembers(membersRes.members);
+
+        } catch (error: any) {
             console.error(error);
-            showToast("요청 수락에 실패했습니다.", 'error');
+            const msg = error.response?.data?.error?.message || "요청 수락에 실패했습니다.";
+            showToast(msg, 'error');
         }
     };
-
-
 
     return (
         <div className="permission-modal-overlay" onClick={onClose}>
@@ -176,12 +200,15 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
                     >
                         멤버 목록 ({members.length})
                     </button>
-                    <button
-                        className={`tab-btn ${activeTab === 'REQUESTS' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('REQUESTS')}
-                    >
-                        가입 신청 ({requests.length})
-                    </button>
+                    {/* [Modified] Show requests tab ONLY if owner */}
+                    {currentUserRole === 'OWNER' && (
+                        <button
+                            className={`tab-btn ${activeTab === 'REQUESTS' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('REQUESTS')}
+                        >
+                            가입 신청 ({requests.length})
+                        </button>
+                    )}
                 </div>
 
                 <div className="permission-modal-body">
@@ -197,46 +224,48 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
                                 ) : members.length === 0 ? (
                                     <div className="empty-state">멤버가 없습니다.</div>
                                 ) : (
-                                    members.map((member) => (
-                                        <div key={member.memberId} className="member-item">
-                                            <div className="member-info">
-                                                <div className="member-avatar">
-                                                    <User size={20} />
-                                                </div>
-                                                <div className="member-details">
-                                                    <span className="member-nickname">{member.name}</span>
-                                                    <span className="member-email">{member.email}</span>
-                                                </div>
-                                            </div>
-
-                                            <div className="member-role-action">
-                                                {member.role === 'OWNER' ? (
-                                                    <span className="role-badge owner">소유자</span>
-                                                ) : (
-                                                    <div className="role-select-wrapper">
-                                                        <select
-                                                            className="role-select"
-                                                            value={member.role}
-                                                            onChange={(e) => handleRoleChange(member.memberId, e.target.value as NoteMemberRole)}
-                                                        >
-                                                            <option value="EDITOR">편집자</option>
-                                                            <option value="VIEWER">뷰어</option>
-                                                        </select>
-                                                        <ChevronDown size={14} className="role-select-icon" />
+                                    members.map((member) => {
+                                        return (
+                                            <div key={member.memberId} className="member-item">
+                                                <div className="member-info">
+                                                    <div className="member-avatar">
+                                                        <User size={20} />
                                                     </div>
-                                                )}
-                                                {member.role !== 'OWNER' && (
-                                                    <button
-                                                        className="member-remove-btn"
-                                                        onClick={() => confirmRemoveMember(member.memberId)}
-                                                        title="멤버 내보내기"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                )}
+                                                    <div className="member-details">
+                                                        <span className="member-nickname">{member.name}</span>
+                                                        <span className="member-email">{member.email}</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="member-role-action">
+                                                    {member.role === 'OWNER' ? (
+                                                        <span className="role-badge owner">소유자</span>
+                                                    ) : (
+                                                        <div className="role-select-wrapper">
+                                                            <select
+                                                                className="role-select"
+                                                                value={member.role}
+                                                                onChange={(e) => handleRoleChange(member.memberId, e.target.value as NoteMemberRole)}
+                                                            >
+                                                                <option value="EDITOR">편집자</option>
+                                                                <option value="VIEWER">뷰어</option>
+                                                            </select>
+                                                            <ChevronDown size={14} className="role-select-icon" />
+                                                        </div>
+                                                    )}
+                                                    {member.role !== 'OWNER' && (
+                                                        <button
+                                                            className="member-remove-btn"
+                                                            onClick={() => confirmRemoveMember(member.memberId)}
+                                                            title="멤버 내보내기"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))
+                                        );
+                                    })
                                 )}
                             </div>
                         </>
@@ -250,33 +279,50 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
                                 {requests.length === 0 ? (
                                     <div className="empty-state">대기 중인 요청이 없습니다.</div>
                                 ) : (
-                                    requests.map((req) => (
-                                        <div key={req.id} className="request-item">
-                                            <div className="member-info">
-                                                <div className="member-avatar request">
-                                                    <User size={20} />
+                                    requests.map((req) => {
+                                        console.log('Rendering request:', req); // [Debug]
+                                        return (
+                                            <div key={req.id} className="request-item">
+                                                <div className="member-info">
+                                                    <div className="member-avatar request">
+                                                        <User size={20} />
+                                                    </div>
+                                                    <div className="member-details">
+                                                        <span className="member-nickname">{req.invitedMember?.name || 'Unknown'}</span>
+                                                        <span className="member-email">{req.invitedMember?.email || req.invitedEmail}</span>
+                                                    </div>
                                                 </div>
-                                                <div className="member-details">
-                                                    <span className="member-nickname">{req.invitedMember?.name || 'Unknown'}</span>
-                                                    <span className="member-email">{req.invitedMember?.email || req.invitedEmail}</span>
+
+                                                <div className="request-actions">
+                                                    <div className="role-select-wrapper">
+                                                        <select
+                                                            className="role-select"
+                                                            value={req.role}
+                                                            onChange={(e) => {
+                                                                const newRole = e.target.value as 'EDITOR' | 'VIEWER';
+                                                                setRequests(prev => prev.map(r =>
+                                                                    r.id === req.id ? { ...r, role: newRole } : r
+                                                                ));
+                                                            }}
+                                                        >
+                                                            <option value="EDITOR">편집자</option>
+                                                            <option value="VIEWER">뷰어</option>
+                                                        </select>
+                                                        <ChevronDown size={14} className="role-select-icon" />
+                                                    </div>
+
+                                                    <button
+                                                        className="action-btn accept"
+                                                        onClick={() => handleAcceptRequest(req.id, req.role)}
+                                                        title="수락"
+                                                    >
+                                                        <Check size={16} />
+                                                    </button>
+                                                    {/* Reject is not implemented yet in this iteration */}
                                                 </div>
                                             </div>
-
-                                            <div className="request-actions">
-                                                {/* Role selection is not yet supported in Approve API, currently defaults to Invite Role */}
-                                                <span className="role-text">{req.role === 'EDITOR' ? '편집자' : '뷰어'}</span>
-
-                                                <button
-                                                    className="action-btn accept"
-                                                    onClick={() => handleAcceptRequest(req.id)}
-                                                    title="수락"
-                                                >
-                                                    <Check size={16} />
-                                                </button>
-                                                {/* Reject is not implemented yet in this iteration */}
-                                            </div>
-                                        </div>
-                                    ))
+                                        );
+                                    })
                                 )}
                             </div>
                         </>
