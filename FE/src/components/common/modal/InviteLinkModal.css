@@ -106,6 +106,22 @@
     border-color: rgba(128, 128, 128, 0.4);
 }
 
+.invite-role-select {
+    padding: 8px;
+    border: 1px solid rgba(128, 128, 128, 0.2);
+    border-radius: 4px;
+    background: var(--color-sub);
+    color: var(--font-color);
+    font-size: 13px;
+    cursor: pointer;
+    outline: none;
+    min-width: 80px;
+}
+
+.invite-role-select:hover {
+    border-color: rgba(128, 128, 128, 0.4);
+}
+
 .invite-link-input {
     flex: 1;
     border: none;

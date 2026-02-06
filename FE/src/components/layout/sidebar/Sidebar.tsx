@@ -372,7 +372,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, showToggle =
                 editingNoteId={editingNoteId}
                 onSelectNote={handleSelectNote}
                 onToggleFavorite={handleToggleFavorite}
-                onContextMenu={setContextMenu}
+                onContextMenu={(menuState) => {
+                  if (activeTab === 'shared') return; // [Modified] Block context menu for shared notes
+                  setContextMenu(menuState);
+                }}
                 onConfirmRename={handleConfirmRename}
                 onCancelRename={() => setEditingNoteId(null)}
                 onMoveNote={handleMoveNote}
