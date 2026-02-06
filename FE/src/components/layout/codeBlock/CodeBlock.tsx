@@ -346,22 +346,28 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                             </Tooltip>
                         )}
 
-                        <BlockRunButton onClick={handleRun} disabled={loading} />
+                        <BlockRunButton onClick={handleRun} disabled={loading || readOnly} />
                         <BlockCopyButton onCopy={handleCopy} />
                         <VersionButton
                             onClick={() => {
+                                if (readOnly) return;
                                 if (!noteId) {
                                     alert('노트가 저장되어야 버전 관리를 사용할 수 있습니다.');
                                     return;
                                 }
                                 setShowCheckpoints(true);
                             }}
+                            disabled={readOnly}
                         />
                         <AiReviewButton
                             onClick={handleAiReview}
-                            disabled={loading}
+                            disabled={loading || readOnly}
                             loading={aiReviewLoading}
-                            disabledReason={!noteId ? '노트를 저장해야 사용할 수 있습니다' : undefined}
+                            disabledReason={
+                                readOnly
+                                    ? '읽기 전용 모드에서는 사용할 수 없습니다'
+                                    : (!noteId ? '노트를 저장해야 사용할 수 있습니다' : undefined)
+                            }
                         />
                     </div>
                 </div>
