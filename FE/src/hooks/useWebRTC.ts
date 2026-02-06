@@ -14,7 +14,7 @@ interface UseWebRTCOptions {
     onDisconnect?: () => void;
 }
 
-export const useWebRTC = ({ noteId, memberId, token, onConnect, onDisconnect }: UseWebRTCOptions) => {
+export const useWebRTC = ({ noteId, memberId, token, onConnect }: UseWebRTCOptions) => {
     const [status, setStatus] = useState<'disconnected' | 'connecting' | 'connected' | 'error'>('disconnected');
     const [participants, setParticipants] = useState<Participant[]>([]);
     const [isMuted, setIsMuted] = useState(false);
@@ -236,7 +236,7 @@ export const useWebRTC = ({ noteId, memberId, token, onConnect, onDisconnect }: 
             if (data.payload) {
                 try {
                     const initialMembers: { memberId: string, name: string, isMuted: boolean }[] = JSON.parse(data.payload);
-                    setParticipants(prev => {
+                    setParticipants(() => {
                         const newParticipants = initialMembers
                             .filter(m => m.memberId !== memberId)
                             .map(m => ({

@@ -1,7 +1,7 @@
 // src/components/common/homeButton/HomeButton.tsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home } from 'react-feather';
+import { Home } from 'lucide-react';
 import './HomeButton.css';
 
 interface HomeButtonProps {

@@ -18,6 +18,7 @@ interface CodeMirrorEditorProps {
     language: 'python' | 'javascript' | 'java';
     onChange: (value: string) => void;
     onFocus?: () => void;
+    onBlur?: () => void; // [Add]
     readOnly?: boolean;
     minHeight?: string;
     maxHeight?: string;
@@ -277,6 +278,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
     language,
     onChange,
     onFocus,
+    onBlur, // [Add]
     readOnly = false,
     minHeight = '150px',
     maxHeight = '800px',
@@ -334,6 +336,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
                 }),
                 EditorView.domEventHandlers({
                     focus: () => onFocus?.(),
+                    blur: () => onBlur?.(), // [Add] blur 핸들러 추가
                 }),
             ],
         });
@@ -403,6 +406,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
                     }),
                     EditorView.domEventHandlers({
                         focus: () => onFocus?.(),
+                        blur: () => onBlur?.(), // [Add]
                     }),
                 ]),
             });

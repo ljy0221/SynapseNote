@@ -1,5 +1,5 @@
 // FE/src/components/layout/textBlock/TextBlock.tsx
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
@@ -209,7 +209,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
     }, [editor, readOnly]);
 
     // 🔥 원격 변경사항 동기화 (깜빡임 방지)
-    const lastRemoteUpdate = useRef<string>('');
+    // const lastRemoteUpdate = useRef<string>('');
 
     useEffect(() => {
         // [Fix] IME Duplication & Content Disappearance
