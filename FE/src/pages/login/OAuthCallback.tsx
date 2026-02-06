@@ -95,17 +95,20 @@ const OAuthCallback: React.FC = () => {
       } catch (error: any) {
         console.error('[OAuth] Login failed:', error);
 
-        // DELETED_MEMBER 에러 코드 처리
-        const errorCode = error?.response?.data?.code;
-        if (errorCode === 'DELETED_MEMBER') {
-          showToast('30일 이내에 재가입할 수 없습니다.', 'error');
+        // 특정 에러 코드 처리
+        const errorData = error?.response?.data?.error;
+        const errorCode = errorData?.code;
+
+        if (errorCode === 'DELETED_MEMBER' || errorCode === 'MEMBER_ALREADY_EXISTS_ANOTHER_PROVIDER') {
+          // 에러 코드만 전달 (보안상 메시지는 프론트에서 관리)
+          navigate(`/login?errorCode=${errorCode}`, { replace: true });
         } else {
           showToast(
             `로그인 실패: ${error?.message ?? '알 수 없는 오류'}`,
             'error'
           );
+          navigate('/login', { replace: true });
         }
-        navigate('/login', { replace: true });
       }
     };
 
