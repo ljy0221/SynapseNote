@@ -7,6 +7,7 @@ export interface CodeReviewRequest {
   focusAreas: string[];
   includeContext: boolean;
   language: string;  // 현재 선택된 언어 (Yjs 동기화 지연 문제 해결)
+  codeContent: string; // [New] 코드 내용 추가
 }
 
 export interface ReviewItem {

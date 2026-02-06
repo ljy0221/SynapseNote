@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import { X, User, ChevronDown, Check, Ban, Trash2 } from 'lucide-react';
 import './PermissionModal.css';
 
-// Removed unused Member interface
-
 import { getNoteMembersApi } from '../../../api/notes/GetNoteMembers.api';
 import { updateMemberRoleApi } from '../../../api/notes/UpdateMemberRole.api';
 import { deleteMemberApi } from '../../../api/notes/DeleteMember.api';
@@ -15,10 +13,11 @@ import { ToastNotification } from '../toast/ToastNotification';
 interface PermissionModalProps {
     isOpen: boolean;
     onClose: () => void;
-    noteId?: string; // Made optional to prevent errors if not passed yet, but strictly should be passed
+    noteId?: string;
+    currentUserRole?: NoteMemberRole; // [New]
 }
 
-export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClose, noteId }) => {
+export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClose, noteId, currentUserRole }) => {
     const [activeTab, setActiveTab] = useState<'MEMBERS' | 'REQUESTS'>('MEMBERS');
     const [members, setMembers] = useState<NoteMemberItem[]>([]);
     const [requests, setRequests] = useState<PendingInvitationItem[]>([]);
@@ -52,6 +51,8 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
                     setMembers(res.members);
                 }
             } else {
+                // If not owner, maybe don't fetch requests? 
+                // But let's fetch for now if they somehow got here, or just let it be.
                 const res = await getPendingInvitationsApi(noteId);
                 if (res && res.invitations) {
                     // Filter only REQUESTED status for this tab
@@ -145,19 +146,30 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
         }
     };
 
-    const handleAcceptRequest = async (invitationId: string) => {
+    const handleAcceptRequest = async (invitationId: string, role: NoteMemberRole, memberId?: string) => {
         try {
-            await approveInvitationApi(invitationId);
+            // 1. 수락 요청 (API가 role을 무시할 수 있음)
+            await approveInvitationApi(invitationId, role as 'EDITOR' | 'VIEWER');
+
+            // 2. 수락 후 권한 업데이트 (확실하게 적용)
+            if (memberId && noteId) {
+                // 약간의 딜레이를 주어 DB 반영 시간 확보 (필요 시)
+                await updateMemberRoleApi(noteId, memberId, role);
+            }
+
             showToast("요청을 수락했습니다.", 'success');
             // Refresh list
             setRequests(requests.filter(r => r.id !== invitationId));
+
+            // 멤버 목록 갱신
+            const membersRes = await getNoteMembersApi(noteId!);
+            if (membersRes?.members) setMembers(membersRes.members);
+
         } catch (error) {
             console.error(error);
             showToast("요청 수락에 실패했습니다.", 'error');
         }
     };
-
-
 
     return (
         <div className="permission-modal-overlay" onClick={onClose}>
@@ -176,12 +188,15 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
                     >
                         멤버 목록 ({members.length})
                     </button>
-                    <button
-                        className={`tab-btn ${activeTab === 'REQUESTS' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('REQUESTS')}
-                    >
-                        가입 신청 ({requests.length})
-                    </button>
+                    {/* [Modified] Show requests tab ONLY if owner */}
+                    {currentUserRole === 'OWNER' && (
+                        <button
+                            className={`tab-btn ${activeTab === 'REQUESTS' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('REQUESTS')}
+                        >
+                            가입 신청 ({requests.length})
+                        </button>
+                    )}
                 </div>
 
                 <div className="permission-modal-body">
@@ -263,12 +278,26 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
                                             </div>
 
                                             <div className="request-actions">
-                                                {/* Role selection is not yet supported in Approve API, currently defaults to Invite Role */}
-                                                <span className="role-text">{req.role === 'EDITOR' ? '편집자' : '뷰어'}</span>
+                                                <div className="role-select-wrapper">
+                                                    <select
+                                                        className="role-select"
+                                                        value={req.role}
+                                                        onChange={(e) => {
+                                                            const newRole = e.target.value as 'EDITOR' | 'VIEWER';
+                                                            setRequests(prev => prev.map(r =>
+                                                                r.id === req.id ? { ...r, role: newRole } : r
+                                                            ));
+                                                        }}
+                                                    >
+                                                        <option value="EDITOR">편집자</option>
+                                                        <option value="VIEWER">뷰어</option>
+                                                    </select>
+                                                    <ChevronDown size={14} className="role-select-icon" />
+                                                </div>
 
                                                 <button
                                                     className="action-btn accept"
-                                                    onClick={() => handleAcceptRequest(req.id)}
+                                                    onClick={() => handleAcceptRequest(req.id, req.role, req.invitedMember?.id)}
                                                     title="수락"
                                                 >
                                                     <Check size={16} />
