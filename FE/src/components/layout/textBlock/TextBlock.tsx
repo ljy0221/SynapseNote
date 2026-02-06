@@ -34,6 +34,8 @@ import {
 import { useModalStore } from '../../../store/useModalStore';
 import './TextBlock.css';
 import { BlockBookmarkButton } from '../../common/blockBookmarkButton/BlockBookmarkButton';
+import { BlockEditorAvatar } from '../../common/blockEditorAvatar/BlockEditorAvatar'; // [New]
+import { AwarenessUser } from '../../../hooks/useYjsStore'; // [New]
 
 interface TextBlockProps {
     id: number | string;
@@ -55,6 +57,7 @@ interface TextBlockProps {
     onContextMenu?: (e: React.MouseEvent) => void; // [New]
     readOnly?: boolean; // [New]
     showBookmark?: boolean; // [New]
+    editors?: AwarenessUser[]; // [New] Users editing this block
 }
 
 // 색상 팔레트
@@ -97,6 +100,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
     onToggleBookmark,
     readOnly = false, // [New]
     showBookmark = true, // [New]
+    editors = [], // [New]
 }) => {
     const [isFocused, setIsFocused] = React.useState(false);
     const [showColorPicker, setShowColorPicker] = React.useState(false);
@@ -617,6 +621,11 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 <div className="block-actions-right">
                     <BlockBookmarkButton isBookmarked={bookmark} onClick={handleBookmark} />
                 </div>
+            )}
+
+            {/* [New] Show editor avatar if someone else is editing */}
+            {editors.length > 0 && (
+                <BlockEditorAvatar editors={editors} />
             )}
 
         </div>
