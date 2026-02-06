@@ -54,11 +54,7 @@ public class MemberService {
 
         OAuthUserInfo oAuthMemberInfo = getOAuthMemberInfo(request);
 
-        if (isDeletedMember(oAuthMemberInfo.getEmail())) {
-            throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
-        }
-
-        Optional<Member> optionalMember = memberRepository.findByEmail(oAuthMemberInfo.getEmail());
+        Optional<Member> optionalMember = memberRepository.findByEmailIgnoreDeletedAt(oAuthMemberInfo.getEmail());
 
         Member member;
         if (optionalMember.isPresent()) {
@@ -102,10 +98,6 @@ public class MemberService {
                 .response(response)
                 .refreshToken(refresh)
                 .build();
-    }
-
-    private boolean isDeletedMember(String email) {
-        return memberRepository.isDeleted(email);
     }
 
     private OAuthUserInfo getOAuthMemberInfo(LoginRequest request) {
