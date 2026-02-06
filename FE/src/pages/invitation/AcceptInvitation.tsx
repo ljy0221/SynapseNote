@@ -74,12 +74,12 @@ const AcceptInvitation: React.FC = () => {
                     <>
                         <div className="success-icon" style={{ fontSize: '4rem', color: '#4CAF50', marginBottom: '20px' }}>✓</div>
                         <h2 style={{ margin: '0 0 10px 0', fontSize: '1.5rem' }}>가입 요청 전송 완료</h2>
-                        <p style={{ color: '#666', marginBottom: '30px' }}>관리자가 승인하면 알림을 받게 됩니다.</p>
+                        <p style={{ color: 'var(--font-color-sub)', marginBottom: '30px' }}>관리자가 승인하면 알림을 받게 됩니다.</p>
 
                         {/* [Modified] Web 환경일 경우 앱 열기 안내 */}
                         {!window.electronAPI ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
-                                <p className="sub-text" style={{ fontSize: '1rem', color: '#333', fontWeight: 'bold' }}>
+                                <p className="sub-text" style={{ fontSize: '1rem', color: 'var(--font-color)', fontWeight: 'bold' }}>
                                     이제 데스크톱 앱에서 확인해주세요.
                                 </p>
                                 <button
@@ -87,19 +87,20 @@ const AcceptInvitation: React.FC = () => {
                                     style={{
                                         padding: '12px 24px',
                                         fontSize: '1.1rem',
-                                        backgroundColor: 'var(--color-main)',
-                                        color: 'white',
+                                        backgroundColor: 'var(--color-point)',
+                                        color: 'var(--node-bg)',
                                         border: 'none',
                                         borderRadius: '8px',
                                         cursor: 'pointer',
-                                        marginTop: '10px'
+                                        marginTop: '10px',
+                                        fontWeight: 'bold'
                                     }}
                                 >
                                     앱 열기
                                 </button>
                             </div>
                         ) : (
-                            <p className="sub-text" style={{ fontSize: '0.9rem', color: '#999' }}>잠시 후 홈으로 이동합니다.</p>
+                            <p className="sub-text" style={{ fontSize: '0.9rem', color: 'var(--font-color-sub)' }}>잠시 후 홈으로 이동합니다.</p>
                         )}
                     </>
                 )}
@@ -108,7 +109,7 @@ const AcceptInvitation: React.FC = () => {
                     <>
                         <div className="duplicate-icon" style={{ fontSize: '4rem', color: '#FF9800', marginBottom: '20px' }}>!</div>
                         <h2 style={{ margin: '0 0 10px 0', fontSize: '1.5rem' }}>이미 요청되었습니다</h2>
-                        <p style={{ color: '#666', marginBottom: '30px' }}>{errorMessage}</p>
+                        <p style={{ color: 'var(--font-color-sub)', marginBottom: '30px' }}>{errorMessage}</p>
 
                         {!window.electronAPI ? (
                             <button
@@ -116,11 +117,12 @@ const AcceptInvitation: React.FC = () => {
                                 style={{
                                     padding: '12px 24px',
                                     fontSize: '1.1rem',
-                                    backgroundColor: 'var(--color-main)',
-                                    color: 'white',
+                                    backgroundColor: 'var(--color-point)',
+                                    color: 'var(--node-bg)',
                                     border: 'none',
                                     borderRadius: '8px',
-                                    cursor: 'pointer'
+                                    cursor: 'pointer',
+                                    fontWeight: 'bold'
                                 }}
                             >
                                 앱으로 바로가기
@@ -130,11 +132,12 @@ const AcceptInvitation: React.FC = () => {
                                 onClick={() => navigate('/home')}
                                 style={{
                                     padding: '10px 20px',
-                                    backgroundColor: 'var(--color-main)',
-                                    color: 'white',
+                                    backgroundColor: 'var(--color-point)',
+                                    color: 'var(--node-bg)',
                                     border: 'none',
                                     borderRadius: '5px',
-                                    cursor: 'pointer'
+                                    cursor: 'pointer',
+                                    fontWeight: 'bold'
                                 }}
                             >
                                 홈으로 가기
@@ -146,7 +149,7 @@ const AcceptInvitation: React.FC = () => {
                     <>
                         <div className="error-icon" style={{ fontSize: '4rem', color: '#f44336', marginBottom: '20px' }}>!</div>
                         <h2 style={{ margin: '0 0 10px 0', fontSize: '1.5rem' }}>오류 발생</h2>
-                        <p className="error-text" style={{ color: '#666', marginBottom: '30px' }}>{errorMessage}</p>
+                        <p className="error-text" style={{ color: 'var(--font-color-sub)', marginBottom: '30px' }}>{errorMessage}</p>
 
                         {!window.electronAPI ? (
                             <button
@@ -154,11 +157,12 @@ const AcceptInvitation: React.FC = () => {
                                 style={{
                                     padding: '12px 24px',
                                     fontSize: '1.1rem',
-                                    backgroundColor: 'var(--color-main)',
-                                    color: 'white',
+                                    backgroundColor: 'var(--color-point)',
+                                    color: 'var(--node-bg)',
                                     border: 'none',
                                     borderRadius: '8px',
-                                    cursor: 'pointer'
+                                    cursor: 'pointer',
+                                    fontWeight: 'bold'
                                 }}
                             >
                                 앱으로 바로가기
@@ -168,11 +172,12 @@ const AcceptInvitation: React.FC = () => {
                                 onClick={() => navigate('/home')}
                                 style={{
                                     padding: '10px 20px',
-                                    backgroundColor: 'var(--color-main)',
-                                    color: 'white',
+                                    backgroundColor: 'var(--color-point)',
+                                    color: 'var(--node-bg)',
                                     border: 'none',
                                     borderRadius: '5px',
-                                    cursor: 'pointer'
+                                    cursor: 'pointer',
+                                    fontWeight: 'bold'
                                 }}
                             >
                                 홈으로 가기
