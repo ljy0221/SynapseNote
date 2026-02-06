@@ -100,12 +100,6 @@ const Login: React.FC = () => {
                     </div>
                 </div>
             </div>
-
-            {/* [임시] 개발 전용 홈 이동 버튼 */}
-            <div style={{ position: 'fixed', right: '30px', bottom: '30px', zIndex: 9999 }}>
-                <HomeButton />
-            </div>
-
         </div>
     );
 };

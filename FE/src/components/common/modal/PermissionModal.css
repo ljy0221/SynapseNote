@@ -248,6 +248,10 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    min-width: 40px;
+    /* [Modified] Ensure space for button */
+    flex-shrink: 0;
+    /* [Modified] Prevent shrinking */
 }
 
 .role-select-wrapper.small .role-select {
