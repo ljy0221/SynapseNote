@@ -631,7 +631,10 @@ const Note: React.FC = () => {
                     tabIndex={-1}
                     onKeyDown={handleKeyDown}
                     style={{ outline: 'none' }}
-                    onClick={() => setFocusedBlockId(null)}
+                    onClick={() => {
+                        setFocusedBlockId(null);
+                        setFocusedBlock(null); // [Fix] Clear awareness state when clicking outside blocks
+                    }}
                 >
                     <NoteMain
                         noteId={noteId}

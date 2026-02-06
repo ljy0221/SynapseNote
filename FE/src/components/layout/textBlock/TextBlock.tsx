@@ -347,7 +347,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
     return (
         <div
             id={id.toString()}
-            className={`text-block-wrapper ${isFocused || shouldFocus ? 'is-focused' : ''} ${bookmark ? 'is-bookmarked' : ''}`}
+            className={`text-block-wrapper ${isFocused || shouldFocus ? 'is-focused' : ''} ${bookmark ? 'is-bookmarked' : ''} ${showBookmark ? 'has-bookmark' : ''}`}
             // onDragOver={onDragOver}
             // onDrop={onDrop}
             onContextMenu={onContextMenu} // [New]
