@@ -47,14 +47,13 @@ public class MemberService {
     private final OAuthServiceFactory oAuthServiceFactory;
     private final JwtUtil jwtUtil;
 
-    private static final int STREAK_PERIOD_DAYS = 180;
-
     @Transactional
     public LoginResult login(LoginRequest request) {
 
         OAuthUserInfo oAuthMemberInfo = getOAuthMemberInfo(request);
 
-        Optional<Member> optionalMember = memberRepository.findByEmailIgnoreDeletedAt(oAuthMemberInfo.getEmail());
+        Optional<Member> optionalMember = memberRepository
+                .findByEmailIgnoreDeletedAt(oAuthMemberInfo.getEmail());
 
         Member member;
         if (optionalMember.isPresent()) {
@@ -202,7 +201,14 @@ public class MemberService {
 
     public List<StreakResponse> getStreak(UUID memberId) {
         LocalDate today = LocalDate.now();
-        LocalDate startDate = today.minusDays(STREAK_PERIOD_DAYS - 1);
+        int year = today.getYear();
+        LocalDate startDate;
+
+        if (today.getMonthValue() < 7) {
+            startDate = LocalDate.of(year, 1, 1);
+        } else {
+            startDate = LocalDate.of(year, 7, 1);
+        }
 
         List<Streak> streaks = streakRepository
                 .findStreaksByMemberAndDateRange(memberId, startDate, today);
@@ -212,12 +218,13 @@ public class MemberService {
                 .collect(java.util.stream.Collectors.toSet());
 
         List<StreakResponse> result = new java.util.ArrayList<>();
-        for (int i = 0; i < STREAK_PERIOD_DAYS; i++) {
-            LocalDate date = startDate.plusDays(i);
+        LocalDate current = startDate;
+        while (!current.isAfter(today)) {
             result.add(StreakResponse.builder()
-                    .date(date)
-                    .isStreak(streakDates.contains(date))
+                    .date(current)
+                    .isStreak(streakDates.contains(current))
                     .build());
+            current = current.plusDays(1);
         }
 
         return result;
