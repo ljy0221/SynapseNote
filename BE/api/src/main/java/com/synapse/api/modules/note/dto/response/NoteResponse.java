@@ -11,21 +11,16 @@ public record NoteResponse(
         UUID noteId,
         String title,
         String directoryPath,
-        Double pointX,
-        Double pointY,
         UUID createdBy,
         String createdByName,
         boolean bookmark,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt
-) {
+        LocalDateTime updatedAt) {
     public static NoteResponse from(Note note) {
         return NoteResponse.builder()
                 .noteId(note.getId())
                 .title(note.getTitle())
                 .directoryPath(note.getDirectoryPath())
-                .pointX(note.getPointX())
-                .pointY(note.getPointY())
                 .createdBy(note.getCreatedBy().getId())
                 .createdByName(note.getCreatedBy().getName())
                 .bookmark(note.isBookmark())
