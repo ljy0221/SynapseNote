@@ -31,7 +31,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   removeDeepLinkListener: (callback: (event: any, url: string) => void) => {
     ipcRenderer.removeListener('deep-link-url', callback);
-  }
+  },
+  // [New] 대기 중인 Deep Link 조회 (Pull 방식)
+  getDeepLink: () => ipcRenderer.invoke('docker:get-deep-link'),
 })
 
 // Docker API 노출
