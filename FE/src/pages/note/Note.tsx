@@ -300,7 +300,7 @@ const Note: React.FC = () => {
         } else {
             // 아직 DOM에 없을 경우 찾을 때까지 대기
             console.log(`[Note] Block not found yet, observing DOM for: ${blockId}`);
-            const observer = new MutationObserver((mutations, obs) => {
+            const observer = new MutationObserver((_mutations, obs) => {
                 const target = document.getElementById(blockId);
                 if (target) {
                     obs.disconnect();

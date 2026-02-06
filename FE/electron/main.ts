@@ -1,11 +1,11 @@
 import { app, BrowserWindow, ipcMain } from 'electron' // ipcMain 추가
-import { createRequire } from 'node:module'
+// import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { DockerHealthService } from './docker/DockerHealthService'
 import { DockerExecService } from './docker/DockerExecService'
 
-const require = createRequire(import.meta.url)
+// const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 process.env.APP_ROOT = path.join(__dirname, '..')
@@ -114,22 +114,22 @@ ipcMain.handle('docker:check-running', async () => {
 });
 
 // NEW: 통합 실행 핸들러
-ipcMain.handle('docker:execute', async (event, request) => {
+ipcMain.handle('docker:execute', async (_event, request) => {
   return await execService.execute(request);
 });
 
 // NEW: 세션 상태 조회
-ipcMain.handle('docker:get-session-status', async (event, noteId, language) => {
+ipcMain.handle('docker:get-session-status', async (_event, noteId, language) => {
   return execService.getSessionStatus(noteId, language);
 });
 
 // NEW: 세션 종료
-ipcMain.handle('docker:destroy-session', async (event, noteId, language) => {
+ipcMain.handle('docker:destroy-session', async (_event, noteId, language) => {
   return await execService.destroySession(noteId, language);
 });
 
 // 기존 호환성 유지
-ipcMain.handle('docker:execute-single', async (event, request) => {
+ipcMain.handle('docker:execute-single', async (_event, request) => {
   return await execService.executeSingle(request);
 });
 
@@ -148,7 +148,7 @@ const gotTheLock = app.requestSingleInstanceLock()
 if (!gotTheLock) {
   app.quit()
 } else {
-  app.on('second-instance', (event, commandLine, workingDirectory) => {
+  app.on('second-instance', (_event, commandLine) => {
     // 누군가 두 번째 인스턴스를 실행하려고 하면 메인 윈도우를 포커스
     if (win) {
       if (win.isMinimized()) win.restore()

@@ -1,6 +1,6 @@
 /* [공통] 모드에 상관없이 고정인 값들 (글꼴 등) */
 :root {
-    --font-family: 'Pretendard', sans-serif;
+    --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Pretendard", sans-serif;
 }
 
 /* [라이트 모드] 기본 상태 (데이터 속성이 없거나 light일 때) - 웜톤 베이스 */

@@ -28,3 +28,11 @@ export const createReviewRequest = (language: string, codeContent: string): Code
   language,
   codeContent,
 });
+
+export const DEFAULT_REVIEW_REQUEST: CodeReviewRequest = {
+  provider: 'OPENAI',
+  focusAreas: ['performance', 'security', 'readability', 'bestPractices'],
+  includeContext: false,
+  language: 'javascript',
+  codeContent: '',
+};

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { getUserInfo, UserInfo, updateNickname } from '../api/authApi';
+import { getUserInfo, UserInfo } from '../api/authApi';
 import { useToastStore } from './useToastStore';
 
 interface AuthState {
@@ -88,7 +88,7 @@ export const useAuthStore = create<AuthState>()(
                 }
             },
 
-            updateUserNickname: async (newNickname: string) => {
+            updateUserNickname: async (_newNickname: string) => {
                 const token = get().accessToken;
                 if (!token) return;
                 // ... (기존 로직 동일)
