@@ -475,6 +475,23 @@ export const useYjsStore = (noteId: string | undefined) => {
     }, 'local');
   }, [noteId]);
 
+  // [Fix] React State debounce로 인한 초기화 경합 방지를 위해 동기적으로 상태 체크 후 초기화
+  const checkAndInitialize = useCallback((initialBlocks: { type: BlockType; content: string, bookmark?: boolean }[]) => {
+    const doc = docRef.current;
+    if (!doc) return;
+    const yBlocks = doc.getArray<YBlockMap>('blocks');
+    const yMeta = doc.getMap<boolean>('meta');
+
+    // 동기적으로 실제 Yjs 데이터 확인 (트랜잭션 없이 읽기만)
+    if (yBlocks.length > 0 || yMeta.get('isInitialized')) {
+      console.log('[Yjs] checkAndInitialize: Already initialized, skipping.');
+      return;
+    }
+
+    // 초기화 진행
+    initializeYjs(initialBlocks);
+  }, [initializeYjs]);
+
 
   return {
     blocks,
@@ -482,6 +499,7 @@ export const useYjsStore = (noteId: string | undefined) => {
     isDataLoaded,
     isInitialized, // [New]
     initializeYjs, // [New]
+    checkAndInitialize, // [New]
     addBlock,
     addBlocksBatch,
     updateBlock,

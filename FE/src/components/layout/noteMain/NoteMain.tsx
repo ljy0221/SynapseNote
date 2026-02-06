@@ -37,7 +37,8 @@ interface NoteMainProps {
     bookmarkedBlockIds?: Set<string>; // [New] 로컬 북마크 상태
     onUpdateBlockLanguage?: (blockId: number | string, language: string) => void;
     readOnly?: boolean; // [New] 읽기 전용 모드
-    currentUserRole?: NoteMemberRole; // [New]
+    currentUserRole?: NoteMemberRole;
+    showBlockBookmark?: boolean; // [New]
 }
 
 const NoteMain: React.FC<NoteMainProps> = ({
@@ -62,7 +63,8 @@ const NoteMain: React.FC<NoteMainProps> = ({
     bookmarkedBlockIds,
     onUpdateBlockLanguage,
     readOnly = false, // 기본값 false
-    currentUserRole, // [New]
+    currentUserRole,
+    showBlockBookmark = true, // [New]
 }) => {
     const [isInviteModalOpen, setIsInviteModalOpen] = React.useState(false);
     const [isPermissionModalOpen, setIsPermissionModalOpen] = React.useState(false);
@@ -150,6 +152,7 @@ const NoteMain: React.FC<NoteMainProps> = ({
                         onDelete={onDeleteBlock as any} // Still keeping it for safety, though UI removed
                         onFocus={() => onFocusBlock(block.id)}
                         onToggleBookmark={() => onToggleBookmark?.(block.id, bookmarkedBlockIds ? bookmarkedBlockIds.has(block.id.toString()) : false)}
+                        showBookmark={showBlockBookmark} // [New]
                     />
                 );
             case 'code':
@@ -170,6 +173,7 @@ const NoteMain: React.FC<NoteMainProps> = ({
                         onAiReviewResult={handleAiReviewResult}
                         onToggleBookmark={() => onToggleBookmark?.(block.id, bookmarkedBlockIds ? bookmarkedBlockIds.has(block.id.toString()) : false)}
                         onLanguageChange={onUpdateBlockLanguage}
+                        showBookmark={showBlockBookmark} // [New]
                     />
                 );
             default:
@@ -193,6 +197,7 @@ const NoteMain: React.FC<NoteMainProps> = ({
                                     onInvite={() => setIsInviteModalOpen(true)}
                                     onPermission={() => setIsPermissionModalOpen(true)}
                                     onSummary={() => setIsSummaryModalOpen(true)}
+                                    role={currentUserRole}
                                 />
                             )}
                         </aside>
