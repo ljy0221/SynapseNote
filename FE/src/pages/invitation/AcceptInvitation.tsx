@@ -109,19 +109,37 @@ const AcceptInvitation: React.FC = () => {
                         <div className="duplicate-icon" style={{ fontSize: '4rem', color: '#FF9800', marginBottom: '20px' }}>!</div>
                         <h2 style={{ margin: '0 0 10px 0', fontSize: '1.5rem' }}>이미 요청되었습니다</h2>
                         <p style={{ color: '#666', marginBottom: '30px' }}>{errorMessage}</p>
-                        <button
-                            onClick={() => navigate('/home')}
-                            style={{
-                                padding: '10px 20px',
-                                backgroundColor: 'var(--color-main)',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '5px',
-                                cursor: 'pointer'
-                            }}
-                        >
-                            홈으로 가기
-                        </button>
+
+                        {!window.electronAPI ? (
+                            <button
+                                onClick={() => window.location.href = 'synapse://home'}
+                                style={{
+                                    padding: '12px 24px',
+                                    fontSize: '1.1rem',
+                                    backgroundColor: 'var(--color-main)',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                앱으로 바로가기
+                            </button>
+                        ) : (
+                            <button
+                                onClick={() => navigate('/home')}
+                                style={{
+                                    padding: '10px 20px',
+                                    backgroundColor: 'var(--color-main)',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '5px',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                홈으로 가기
+                            </button>
+                        )}
                     </>
                 )}
                 {status === 'error' && (
@@ -129,19 +147,37 @@ const AcceptInvitation: React.FC = () => {
                         <div className="error-icon" style={{ fontSize: '4rem', color: '#f44336', marginBottom: '20px' }}>!</div>
                         <h2 style={{ margin: '0 0 10px 0', fontSize: '1.5rem' }}>오류 발생</h2>
                         <p className="error-text" style={{ color: '#666', marginBottom: '30px' }}>{errorMessage}</p>
-                        <button
-                            onClick={() => navigate('/home')}
-                            style={{
-                                padding: '10px 20px',
-                                backgroundColor: 'var(--color-main)',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '5px',
-                                cursor: 'pointer'
-                            }}
-                        >
-                            홈으로 가기
-                        </button>
+
+                        {!window.electronAPI ? (
+                            <button
+                                onClick={() => window.location.href = 'synapse://home'}
+                                style={{
+                                    padding: '12px 24px',
+                                    fontSize: '1.1rem',
+                                    backgroundColor: 'var(--color-main)',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                앱으로 바로가기
+                            </button>
+                        ) : (
+                            <button
+                                onClick={() => navigate('/home')}
+                                style={{
+                                    padding: '10px 20px',
+                                    backgroundColor: 'var(--color-main)',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '5px',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                홈으로 가기
+                            </button>
+                        )}
                     </>
                 )}
             </div>
