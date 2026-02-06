@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { StickyNote, Clock, Hexagon, Route } from 'lucide-react';
+import { StickyNote, Clock, Hexagon } from 'lucide-react';
 import './RecentNotes.css';
 
 import type { NoteListItem } from '../../../types/note/GetNotes';
@@ -43,13 +43,8 @@ const RecentNotes: React.FC<RecentNotesProps> = ({ notes }) => {
               >
                 <h4 className="note-title">
                   <Hexagon size={14} className="note-icon" />
-                  {note.title}
+                  <span className="note-title-text" title={note.title}>{note.title}</span>
                 </h4>
-
-                <span className="note-path">
-                  <Route size={12} className="path-icon" style={{ marginRight: '4px' }} />
-                  {note.directoryPath}
-                </span>
 
                 <span className="note-date">
                   마지막 수정:{' '}
