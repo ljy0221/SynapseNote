@@ -22,6 +22,10 @@
   flex-direction: column;
 }
 
+.sidebar-content.shared-tab {
+  padding-top: 12px;
+}
+
 /* =========================
    Sidebar Wrapper
    (SideMenuBar 오른쪽에만 존재)

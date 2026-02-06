@@ -86,7 +86,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, showToggle =
     return p;
   };
 
-  const noteTree = buildNoteTree(notes);
+  const isSharedTab = activeTab === 'shared';
+  const displayTree = isSharedTab
+    ? { name: 'root', path: '/', children: [], notes: notes.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)) }
+    : buildNoteTree(notes);
 
   /** -------------------------
    * Sidebar 전체 로딩 (페이지네이션 제거)
@@ -364,21 +367,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, showToggle =
           {isLoading ? (
             <div className="sidebar-loading">Loading...</div>
           ) : (
-            <div className="sidebar-content">
+            <div className={`sidebar-content ${isSharedTab ? 'shared-tab' : ''}`}>
               <NoteDirectory
-                node={noteTree}
+                node={displayTree}
                 activeNoteId={activeNoteId}
                 favoriteNoteIds={favoriteNoteIds}
                 editingNoteId={editingNoteId}
                 onSelectNote={handleSelectNote}
                 onToggleFavorite={handleToggleFavorite}
                 onContextMenu={(menuState) => {
-                  if (activeTab === 'shared') return; // [Modified] Block context menu for shared notes
                   setContextMenu(menuState);
                 }}
                 onConfirmRename={handleConfirmRename}
                 onCancelRename={() => setEditingNoteId(null)}
                 onMoveNote={handleMoveNote}
+                disableContextMenu={isSharedTab}
+                hideFavorite={isSharedTab} // [New]
               />
               <div ref={observerTarget} style={{ height: '20px' }} />
             </div>
