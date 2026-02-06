@@ -8,7 +8,6 @@ import com.synapse.api.modules.member.service.MemberService;
 import com.synapse.api.modules.mindmap.service.MindmapService;
 import com.synapse.api.modules.note.dto.request.ExecutionHistoryRequest;
 import com.synapse.api.modules.note.dto.request.NoteCreateRequest;
-import com.synapse.api.modules.note.dto.request.NotePositionUpdateRequest;
 import com.synapse.api.modules.note.dto.request.NoteUpdateRequest;
 import com.synapse.api.modules.note.dto.response.ExecutionHistoryResponse;
 import com.synapse.api.modules.note.dto.response.NoteDetailResponse;
@@ -65,8 +64,6 @@ public class NoteService {
                 .id(request.id())
                 .title(request.title())
                 .directoryPath(request.directoryPath())
-                .pointX(request.pointX())
-                .pointY(request.pointY())
                 .createdBy(member)
                 .build();
         Note savedNote = noteRepository.save(note);
@@ -152,19 +149,6 @@ public class NoteService {
         return NoteResponse.from(note);
     }
 
-    /**
-     * [요청하신 메소드] 노트 좌표 수정 (Canvas View)
-     */
-    @Transactional
-    public void updatePosition(UUID noteId, UUID memberId, NotePositionUpdateRequest request) {
-        Note note = noteRepository.findById(noteId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
-
-        noteValidator.validateEditPermission(noteId, memberId);
-
-        note.updatePosition(request.pointX(), request.pointY());
-    }
-
     // =========================================================================
     // 4. 노트 삭제 (Delete)
     // =========================================================================
@@ -182,8 +166,8 @@ public class NoteService {
         // RDB Soft Delete (deletedAt 설정)
         note.delete();
 
-        // [Delegation] 마인드맵 엣지 삭제 (MindmapService에 위임)
-        mindmapService.deleteEdgesByNoteId(noteId);
+        // [Delegation] 마인드맵 엣지 및 위치 정보 삭제 (MindmapService에 위임)
+        mindmapService.deleteMindmapDataByNoteId(noteId);
 
         // MongoDB 블록도 Soft Delete
         blockService.softDeleteBlocksByNoteId(noteId);

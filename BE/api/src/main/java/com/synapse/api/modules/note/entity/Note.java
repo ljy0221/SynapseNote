@@ -35,13 +35,6 @@ public class Note implements Persistable<UUID> {
     // 디렉토리 경로 (예: /work/projects)
     private String directoryPath;
 
-    // Canvas 뷰일 때 좌표 (없으면 null)
-    @Column(name = "point_x")
-    private Double pointX;
-
-    @Column(name = "point_y")
-    private Double pointY;
-
     @Column
     private boolean bookmark;
 
@@ -90,11 +83,6 @@ public class Note implements Persistable<UUID> {
         this.directoryPath = path;
     }
 
-    public void updatePosition(Double x, Double y) {
-        this.pointX = x;
-        this.pointY = y;
-    }
-
     public void delete() {
         this.deletedAt = LocalDateTime.now();
     }
@@ -102,11 +90,6 @@ public class Note implements Persistable<UUID> {
     // 복구 기능이 있다면
     public void restore() {
         this.deletedAt = null;
-    }
-
-    public void deleteNode() {
-        this.pointX = null;
-        this.pointY = null;
     }
 
     public void setBookmark() {
