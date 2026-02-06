@@ -13,6 +13,8 @@ export const BlockEditorAvatar: React.FC<BlockEditorAvatarProps> = ({
     editors,
     size = 24
 }) => {
+    const [imageError, setImageError] = React.useState(false);
+
     if (editors.length === 0) return null;
 
     // Helper to get initials from name
@@ -54,11 +56,12 @@ export const BlockEditorAvatar: React.FC<BlockEditorAvatarProps> = ({
                         color: '#fff'
                     }}
                 >
-                    {editor.profileImageUrl ? (
+                    {editor.profileImageUrl && !imageError ? (
                         <img
                             src={editor.profileImageUrl}
                             alt={displayName}
                             className="block-editor-avatar-img"
+                            onError={() => setImageError(true)}
                         />
                     ) : (
                         <div className="block-editor-avatar-initials">

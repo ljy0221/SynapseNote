@@ -205,7 +205,23 @@ export const useYjsStore = (noteId: string | undefined) => {
         }
       });
 
-      setEditingUsers(users);
+      // [Optimization] Only update state if there are actual changes
+      setEditingUsers(prevUsers => {
+        // Check if the new map is different from the previous one
+        if (prevUsers.size !== users.size) return users;
+
+        let hasChanges = false;
+        users.forEach((user, clientId) => {
+          const prevUser = prevUsers.get(clientId);
+          if (!prevUser ||
+            prevUser.focusedBlockId !== user.focusedBlockId ||
+            prevUser.memberId !== user.memberId) {
+            hasChanges = true;
+          }
+        });
+
+        return hasChanges ? users : prevUsers;
+      });
     };
 
     awareness.on('change', onAwarenessChange);
