@@ -1,15 +1,19 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { socialLogin } from '../../api/authApi';
 import { acceptInvitationApi } from '../../api/notes/AcceptInvitation.api';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useToastStore } from '../../store/useToastStore';
 
+// Module-level set to track processed codes (prevents double-execution in StrictMode)
+const processedCodes = new Set<string>();
+
 const OAuthCallback: React.FC = () => {
   const { provider } = useParams<{ provider: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const processedRef = useRef(false);
+  // processedRef is insufficient for StrictMode unmount/remount, using module-level Set instead
+  // const processedRef = useRef(false);
 
   const login = useAuthStore((state) => state.login);
   const showToast = useToastStore((state) => state.showToast);
@@ -39,8 +43,11 @@ const OAuthCallback: React.FC = () => {
     }
 
     // 2️⃣ Electron 환경 → 실제 로그인 처리
-    if (processedRef.current) return;
-    processedRef.current = true;
+    if (processedCodes.has(code)) {
+      console.log('[OAuth] Code already processed, skipping:', code);
+      return;
+    }
+    processedCodes.add(code);
 
     const handleLogin = async () => {
       try {
