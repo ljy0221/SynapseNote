@@ -7,6 +7,7 @@ import './App.css';
 
 // Zustand Stores
 import { useThemeStore } from './store/useThemeStore';
+import { useAuthStore } from './store/useAuthStore';
 import { useToastStore } from './store/useToastStore';
 
 // 레이아웃 컴포넌트 (Lazy Loading)
@@ -96,11 +97,35 @@ export default function RootLayout() {
     useEffect(() => {
         if (!isElectron || !window.ipcRenderer) return;
 
-        const handleDeepLink = (_event: any, url: any) => {
+        const handleDeepLink = (_event: any, url: string) => {
             console.log('[App] Received deep link:', url);
             if (typeof url === 'string' && url.startsWith('synapse://')) {
-                const path = url.replace('synapse://', '/');
-                navigate(path);
+                try {
+                    // 1. 토큰 추출 및 자동 로그인
+                    // URL 파싱을 위해 임시로 http 프로토콜 사용 (custom protocol 파싱 이슈 방지)
+                    // 또는 단순히 문자열 파싱
+                    const urlObj = new URL(url);
+                    const token = urlObj.searchParams.get('token');
+
+                    if (token) {
+                        console.log('[App] Auto-login detected from deep link');
+                        // Zustand Store 직접 접근하여 로그인 처리
+                        useAuthStore.getState().login(token);
+                    }
+
+                    // 2. 경로 이동 (토큰 파라미터 제거)
+                    let path = url.replace('synapse://', '/');
+                    // 쿼리 스트링 제거 (미관상)
+                    if (path.includes('?')) {
+                        path = path.split('?')[0];
+                    }
+                    navigate(path);
+                } catch (error) {
+                    console.error('[App] Deep link error:', error);
+                    // Fallback
+                    const path = url.replace('synapse://', '/').split('?')[0];
+                    navigate(path);
+                }
             }
         };
 

@@ -11,7 +11,7 @@ const AcceptInvitation: React.FC = () => {
     const [status, setStatus] = useState<'loading' | 'success' | 'duplicate' | 'error'>('loading');
     const [errorMessage, setErrorMessage] = useState('');
 
-    const { isAuthenticated, isLoading } = useAuthStore();
+    const { isAuthenticated, isLoading, accessToken } = useAuthStore();
 
     useEffect(() => {
         if (!token) {
@@ -83,7 +83,7 @@ const AcceptInvitation: React.FC = () => {
                                     이제 데스크톱 앱에서 확인해주세요.
                                 </p>
                                 <button
-                                    onClick={() => window.location.href = 'synapse://home'}
+                                    onClick={() => window.location.href = `synapse://home${accessToken ? `?token=${accessToken}` : ''}`}
                                     style={{
                                         padding: '12px 24px',
                                         fontSize: '1.1rem',
@@ -113,7 +113,7 @@ const AcceptInvitation: React.FC = () => {
 
                         {!window.electronAPI ? (
                             <button
-                                onClick={() => window.location.href = 'synapse://home'}
+                                onClick={() => window.location.href = `synapse://home${accessToken ? `?token=${accessToken}` : ''}`}
                                 style={{
                                     padding: '12px 24px',
                                     fontSize: '1.1rem',
@@ -153,7 +153,7 @@ const AcceptInvitation: React.FC = () => {
 
                         {!window.electronAPI ? (
                             <button
-                                onClick={() => window.location.href = 'synapse://home'}
+                                onClick={() => window.location.href = `synapse://home${accessToken ? `?token=${accessToken}` : ''}`}
                                 style={{
                                     padding: '12px 24px',
                                     fontSize: '1.1rem',
