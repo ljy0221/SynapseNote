@@ -22,7 +22,7 @@ export class SessionManager {
   private sessions: Map<string, SessionState> = new Map();
   // 세션 중복 생성 방지를 위한 생성 중인 Promise 맵
   private creatingSessions: Map<string, Promise<SessionInfo>> = new Map();
-  
+
   private readonly IDLE_TIMEOUT = 30 * 60 * 1000;
   private readonly CLEANUP_INTERVAL = 5 * 60 * 1000;
   private cleanupTimer?: NodeJS.Timeout;
@@ -64,9 +64,9 @@ export class SessionManager {
       try {
         const sessionId = randomUUID();
         console.log(`[Session LOG] Creating session ${sessionId} for ${key}`);
-        
-        const containerId = await this.startContainer(language, version);
-        const process = await this.attachToContainer(containerId, language);
+
+        const containerId = await this.startContainer(language);
+        const process = await this.attachToContainer(containerId);
 
         const sessionInfo: SessionInfo = {
           sessionId, noteId, language, version, containerId,
@@ -83,7 +83,7 @@ export class SessionManager {
 
         this.setupOutputListener(sessionState);
         this.sessions.set(key, sessionState);
-        
+
         return sessionInfo;
       } finally {
         this.creatingSessions.delete(key);
@@ -147,7 +147,7 @@ export class SessionManager {
       if (session.outputBuffer.includes(task.endMarker)) {
         clearTimeout(timeoutId);
         clearInterval(checkInterval);
-        
+
         const rawOutput = session.outputBuffer;
         session.isWaitingForOutput = false;
         session.executionQueue.shift();
@@ -175,14 +175,14 @@ export class SessionManager {
     return `${code}\nprint("${endMarker}")`;
   }
 
-  private async startContainer(language: Language, version: string): Promise<string> {
+  private async startContainer(language: Language): Promise<string> {
     const config = DOCKER_SECURITY_CONFIG[language];
     const args = [
       'run', '-d', '-i',
       '--cpus', config.cpus, '--memory', config.memory,
       '--network', 'none', '--security-opt', 'no-new-privileges',
       '--tmpfs', '/tmp:size=64m', '--tmpfs', '/root:size=16m',
-      config.image, 
+      config.image,
       // -i 옵션으로 REPL 강제 실행
       language === 'python' ? 'python' : 'node',
       ...(language === 'javascript' ? ['-i'] : ['-i', '-u'])
@@ -195,7 +195,7 @@ export class SessionManager {
     });
   }
 
-  private async attachToContainer(containerId: string, language: Language): Promise<ChildProcess> {
+  private async attachToContainer(containerId: string): Promise<ChildProcess> {
     const child = spawn('docker', ['attach', '--sig-proxy=false', containerId], {
       shell: false, windowsHide: true
     });
@@ -226,7 +226,7 @@ export class SessionManager {
   }
 
   private detectError(output: string, language: Language): boolean {
-    return language === 'python' 
+    return language === 'python'
       ? /Traceback/i.test(output) || /Error:/m.test(output)
       : /Error:/m.test(output) || /at .+:\d+:\d+/.test(output);
   }

@@ -1,0 +1,716 @@
+{
+  "$schema": "https://raw.githubusercontent.com/dineug/erd-editor/main/json-schema/schema.json",
+  "version": "3.0.0",
+  "settings": {
+    "width": 2500,
+    "height": 2000,
+    "scrollTop": -676.69,
+    "scrollLeft": -841.43,
+    "zoomLevel": 0.75,
+    "show": 495,
+    "database": 16,
+    "databaseName": "synapse_hybrid_db",
+    "canvasType": "ERD",
+    "language": 1,
+    "tableNameCase": 4,
+    "columnNameCase": 2,
+    "bracketType": 1,
+    "relationshipDataTypeSync": true,
+    "relationshipOptimization": false,
+    "columnOrder": [
+      1,
+      2,
+      4,
+      8,
+      16,
+      32,
+      64
+    ],
+    "maxWidthComment": -1,
+    "ignoreSaveSettings": 0
+  },
+  "doc": {
+    "tableIds": [
+      "table-m",
+      "table-n",
+      "table-nm",
+      "table-i",
+      "table-b",
+      "table-h"
+    ],
+    "relationshipIds": [
+      "rel-1",
+      "rel-2",
+      "rel-3",
+      "rel-4",
+      "rel-5",
+      "rel-6",
+      "rel-7"
+    ],
+    "indexIds": [],
+    "memoIds": []
+  },
+  "collections": {
+    "tableEntities": {
+      "table-m": {
+        "id": "table-m",
+        "name": "members",
+        "comment": "회원 정보(PG)",
+        "columnIds": [
+          "col-m-id",
+          "col-m-email"
+        ],
+        "seqColumnIds": [],
+        "ui": {
+          "x": 1325.4317862692264,
+          "y": 1366.7094349185056,
+          "zIndex": 2,
+          "widthName": 60,
+          "widthComment": 75,
+          "color": ""
+        },
+        "meta": {
+          "updateAt": 1770094656167,
+          "createAt": 1770094647526
+        }
+      },
+      "table-n": {
+        "id": "table-n",
+        "name": "notes",
+        "comment": "노트 메타데이터(PG)",
+        "columnIds": [
+          "col-n-id",
+          "col-n-title",
+          "col-n-owner"
+        ],
+        "seqColumnIds": [],
+        "ui": {
+          "x": 1445.5263129859936,
+          "y": 917.0040735518526,
+          "zIndex": 2,
+          "widthName": 60,
+          "widthComment": 111,
+          "color": ""
+        },
+        "meta": {
+          "updateAt": 1770094656167,
+          "createAt": 1770094647526
+        }
+      },
+      "table-nm": {
+        "id": "table-nm",
+        "name": "note_members",
+        "comment": "협업 권한(PG)",
+        "columnIds": [
+          "col-nm-note",
+          "col-nm-member",
+          "col-nm-role"
+        ],
+        "seqColumnIds": [],
+        "ui": {
+          "x": 1122.3134804918961,
+          "y": 589.055603065621,
+          "zIndex": 2,
+          "widthName": 81,
+          "widthComment": 75,
+          "color": ""
+        },
+        "meta": {
+          "updateAt": 1770094656167,
+          "createAt": 1770094647526
+        }
+      },
+      "table-i": {
+        "id": "table-i",
+        "name": "invitations",
+        "comment": "초대(PG)",
+        "columnIds": [
+          "col-i-id",
+          "col-i-note",
+          "col-i-inviter"
+        ],
+        "seqColumnIds": [],
+        "ui": {
+          "x": 993.1634458665553,
+          "y": 1033.4072619116996,
+          "zIndex": 2,
+          "widthName": 60,
+          "widthComment": 60,
+          "color": ""
+        },
+        "meta": {
+          "updateAt": 1770094656167,
+          "createAt": 1770094647526
+        }
+      },
+      "table-b": {
+        "id": "table-b",
+        "name": "blocks",
+        "comment": "컨텐츠(Mongo)",
+        "columnIds": [
+          "col-b-id",
+          "col-b-note",
+          "col-b-type"
+        ],
+        "seqColumnIds": [],
+        "ui": {
+          "x": 1890.9131402425555,
+          "y": 775.8676643781027,
+          "zIndex": 2,
+          "widthName": 60,
+          "widthComment": 84,
+          "color": "#16a085"
+        },
+        "meta": {
+          "updateAt": 1770094656167,
+          "createAt": 1770094647526
+        }
+      },
+      "table-h": {
+        "id": "table-h",
+        "name": "block_histories",
+        "comment": "히스토리(Mongo)",
+        "columnIds": [
+          "col-h-id",
+          "col-h-block"
+        ],
+        "seqColumnIds": [],
+        "ui": {
+          "x": 1801.6198309829833,
+          "y": 1227.2410800069779,
+          "zIndex": 2,
+          "widthName": 80,
+          "widthComment": 96,
+          "color": "#16a085"
+        },
+        "meta": {
+          "updateAt": 1770094656167,
+          "createAt": 1770094647526
+        }
+      }
+    },
+    "tableColumnEntities": {
+      "col-m-id": {
+        "id": "col-m-id",
+        "tableId": "table-m",
+        "name": "id",
+        "comment": "",
+        "dataType": "uuid",
+        "default": "",
+        "options": 3,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1770094647526,
+          "createAt": 1770094647526
+        }
+      },
+      "col-m-email": {
+        "id": "col-m-email",
+        "tableId": "table-m",
+        "name": "email",
+        "comment": "",
+        "dataType": "varchar",
+        "default": "",
+        "options": 6,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1770094647526,
+          "createAt": 1770094647526
+        }
+      },
+      "col-n-id": {
+        "id": "col-n-id",
+        "tableId": "table-n",
+        "name": "id",
+        "comment": "",
+        "dataType": "uuid",
+        "default": "",
+        "options": 3,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1770094647526,
+          "createAt": 1770094647526
+        }
+      },
+      "col-n-title": {
+        "id": "col-n-title",
+        "tableId": "table-n",
+        "name": "title",
+        "comment": "",
+        "dataType": "varchar",
+        "default": "",
+        "options": 2,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1770094647526,
+          "createAt": 1770094647526
+        }
+      },
+      "col-n-owner": {
+        "id": "col-n-owner",
+        "tableId": "table-n",
+        "name": "created_by_id",
+        "comment": "",
+        "dataType": "uuid",
+        "default": "",
+        "options": 2,
+        "ui": {
+          "keys": 2,
+          "widthName": 74,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1770094647526,
+          "createAt": 1770094647526
+        }
+      },
+      "col-nm-note": {
+        "id": "col-nm-note",
+        "tableId": "table-nm",
+        "name": "note_id",
+        "comment": "",
+        "dataType": "uuid",
+        "default": "",
+        "options": 3,
+        "ui": {
+          "keys": 2,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1770094647526,
+          "createAt": 1770094647526
+        }
+      },
+      "col-nm-member": {
+        "id": "col-nm-member",
+        "tableId": "table-nm",
+        "name": "member_id",
+        "comment": "",
+        "dataType": "uuid",
+        "default": "",
+        "options": 3,
+        "ui": {
+          "keys": 2,
+          "widthName": 61,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1770094647526,
+          "createAt": 1770094647526
+        }
+      },
+      "col-nm-role": {
+        "id": "col-nm-role",
+        "tableId": "table-nm",
+        "name": "role",
+        "comment": "",
+        "dataType": "varchar",
+        "default": "",
+        "options": 2,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1770094647526,
+          "createAt": 1770094647526
+        }
+      },
+      "col-i-id": {
+        "id": "col-i-id",
+        "tableId": "table-i",
+        "name": "id",
+        "comment": "",
+        "dataType": "uuid",
+        "default": "",
+        "options": 3,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1770094647526,
+          "createAt": 1770094647526
+        }
+      },
+      "col-i-note": {
+        "id": "col-i-note",
+        "tableId": "table-i",
+        "name": "note_id",
+        "comment": "",
+        "dataType": "uuid",
+        "default": "",
+        "options": 2,
+        "ui": {
+          "keys": 2,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1770094647527,
+          "createAt": 1770094647527
+        }
+      },
+      "col-i-inviter": {
+        "id": "col-i-inviter",
+        "tableId": "table-i",
+        "name": "invited_by_id",
+        "comment": "",
+        "dataType": "uuid",
+        "default": "",
+        "options": 2,
+        "ui": {
+          "keys": 2,
+          "widthName": 71,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1770094647527,
+          "createAt": 1770094647527
+        }
+      },
+      "col-b-id": {
+        "id": "col-b-id",
+        "tableId": "table-b",
+        "name": "_id",
+        "comment": "",
+        "dataType": "string",
+        "default": "",
+        "options": 3,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1770094647527,
+          "createAt": 1770094647527
+        }
+      },
+      "col-b-note": {
+        "id": "col-b-note",
+        "tableId": "table-b",
+        "name": "note_id",
+        "comment": "",
+        "dataType": "uuid",
+        "default": "",
+        "options": 2,
+        "ui": {
+          "keys": 2,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1770094647527,
+          "createAt": 1770094647527
+        }
+      },
+      "col-b-type": {
+        "id": "col-b-type",
+        "tableId": "table-b",
+        "name": "type",
+        "comment": "",
+        "dataType": "string",
+        "default": "",
+        "options": 2,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1770094647527,
+          "createAt": 1770094647527
+        }
+      },
+      "col-h-id": {
+        "id": "col-h-id",
+        "tableId": "table-h",
+        "name": "_id",
+        "comment": "",
+        "dataType": "string",
+        "default": "",
+        "options": 3,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1770094647527,
+          "createAt": 1770094647527
+        }
+      },
+      "col-h-block": {
+        "id": "col-h-block",
+        "tableId": "table-h",
+        "name": "block_id",
+        "comment": "",
+        "dataType": "string",
+        "default": "",
+        "options": 2,
+        "ui": {
+          "keys": 2,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1770094647527,
+          "createAt": 1770094647527
+        }
+      }
+    },
+    "relationshipEntities": {
+      "rel-1": {
+        "id": "rel-1",
+        "identification": true,
+        "relationshipType": 4,
+        "startRelationshipType": 1,
+        "start": {
+          "tableId": "table-m",
+          "columnIds": [
+            "col-m-id"
+          ],
+          "x": 1621.6817862692264,
+          "y": 1366.7094349185056,
+          "direction": 4
+        },
+        "end": {
+          "tableId": "table-n",
+          "columnIds": [
+            "col-n-owner"
+          ],
+          "x": 1650.0263129859936,
+          "y": 1045.0040735518526,
+          "direction": 8
+        },
+        "meta": {
+          "updateAt": 1770094647527,
+          "createAt": 1770094647527
+        }
+      },
+      "rel-2": {
+        "id": "rel-2",
+        "identification": true,
+        "relationshipType": 4,
+        "startRelationshipType": 1,
+        "start": {
+          "tableId": "table-n",
+          "columnIds": [
+            "col-n-id"
+          ],
+          "x": 1445.5263129859936,
+          "y": 949.0040735518526,
+          "direction": 1
+        },
+        "end": {
+          "tableId": "table-nm",
+          "columnIds": [
+            "col-nm-note"
+          ],
+          "x": 1419.3134804918961,
+          "y": 717.055603065621,
+          "direction": 8
+        },
+        "meta": {
+          "updateAt": 1770094647527,
+          "createAt": 1770094647527
+        }
+      },
+      "rel-3": {
+        "id": "rel-3",
+        "identification": true,
+        "relationshipType": 4,
+        "startRelationshipType": 1,
+        "start": {
+          "tableId": "table-m",
+          "columnIds": [
+            "col-m-id"
+          ],
+          "x": 1424.1817862692264,
+          "y": 1366.7094349185056,
+          "direction": 4
+        },
+        "end": {
+          "tableId": "table-nm",
+          "columnIds": [
+            "col-nm-member"
+          ],
+          "x": 1221.3134804918961,
+          "y": 717.055603065621,
+          "direction": 8
+        },
+        "meta": {
+          "updateAt": 1770094647527,
+          "createAt": 1770094647527
+        }
+      },
+      "rel-4": {
+        "id": "rel-4",
+        "identification": true,
+        "relationshipType": 4,
+        "startRelationshipType": 1,
+        "start": {
+          "tableId": "table-n",
+          "columnIds": [
+            "col-n-id"
+          ],
+          "x": 1445.5263129859936,
+          "y": 1013.0040735518526,
+          "direction": 1
+        },
+        "end": {
+          "tableId": "table-i",
+          "columnIds": [
+            "col-i-note"
+          ],
+          "x": 1399.1634458665553,
+          "y": 1097.4072619116996,
+          "direction": 2
+        },
+        "meta": {
+          "updateAt": 1770094647527,
+          "createAt": 1770094647527
+        }
+      },
+      "rel-5": {
+        "id": "rel-5",
+        "identification": true,
+        "relationshipType": 4,
+        "startRelationshipType": 1,
+        "start": {
+          "tableId": "table-m",
+          "columnIds": [
+            "col-m-id"
+          ],
+          "x": 1325.4317862692264,
+          "y": 1418.7094349185056,
+          "direction": 1
+        },
+        "end": {
+          "tableId": "table-i",
+          "columnIds": [
+            "col-i-inviter"
+          ],
+          "x": 1196.1634458665553,
+          "y": 1161.4072619116996,
+          "direction": 8
+        },
+        "meta": {
+          "updateAt": 1770094647527,
+          "createAt": 1770094647527
+        }
+      },
+      "rel-6": {
+        "id": "rel-6",
+        "identification": true,
+        "relationshipType": 4,
+        "startRelationshipType": 1,
+        "start": {
+          "tableId": "table-n",
+          "columnIds": [
+            "col-n-id"
+          ],
+          "x": 1854.5263129859936,
+          "y": 981.0040735518526,
+          "direction": 2
+        },
+        "end": {
+          "tableId": "table-b",
+          "columnIds": [
+            "col-b-note"
+          ],
+          "x": 1890.9131402425555,
+          "y": 839.8676643781027,
+          "direction": 1
+        },
+        "meta": {
+          "updateAt": 1770094647527,
+          "createAt": 1770094647527
+        }
+      },
+      "rel-7": {
+        "id": "rel-7",
+        "identification": true,
+        "relationshipType": 4,
+        "startRelationshipType": 1,
+        "start": {
+          "tableId": "table-b",
+          "columnIds": [
+            "col-b-id"
+          ],
+          "x": 2088.4131402425555,
+          "y": 903.8676643781027,
+          "direction": 8
+        },
+        "end": {
+          "tableId": "table-h",
+          "columnIds": [
+            "col-h-block"
+          ],
+          "x": 1999.1198309829833,
+          "y": 1227.2410800069779,
+          "direction": 4
+        },
+        "meta": {
+          "updateAt": 1770094647527,
+          "createAt": 1770094647527
+        }
+      }
+    },
+    "indexEntities": {},
+    "indexColumnEntities": {},
+    "memoEntities": {}
+  }
+}

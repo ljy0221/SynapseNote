@@ -11,6 +11,7 @@ export interface CreateNoteRequest {
 
 export interface CreateNoteResponse {
   noteId: string;
+  memberId: string;
   title: string;
   directoryPath: string;
   pointX: number;

@@ -261,6 +261,27 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
         }
     };
 
+    // 로컬 에디터 포커스 상태 추적 (타이핑 중 업데이트 방지용)
+    const [isEditorFocused, setIsEditorFocused] = useState(false);
+
+    // [핵심 수정] 외부 변경사항(Yjs)을 로컬 상태에 동기화
+    // 단, 사용자가 타이핑 중(포커스 상태)일 때는 무시하여 충돌 및 루프 방지
+    useEffect(() => {
+        if (!isEditorFocused && code !== editedCode) {
+            // console.log(`[CodeBlock] Remote update applied - ID: ${id}`);
+            setEditedCode(code);
+        }
+    }, [code, isEditorFocused]);
+
+    const handleEditorFocus = () => {
+        setIsEditorFocused(true);
+        onFocus();
+    };
+
+    const handleEditorBlur = () => {
+        setIsEditorFocused(false);
+    };
+
     return (
         <div
             id={id.toString()}
@@ -382,8 +403,9 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                             setEditedCode(value);
                             onChange(id, value);
                         }}
-                        onFocus={onFocus}
-                        readOnly={loading || readOnly} // [Modified]
+                        onFocus={handleEditorFocus}
+                        onBlur={handleEditorBlur}
+                        readOnly={loading}
                         minHeight="auto"
                         maxHeight="800px"
                     />
