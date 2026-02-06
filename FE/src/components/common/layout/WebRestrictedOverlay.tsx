@@ -1,13 +1,16 @@
 import React from 'react';
 import { SynapseLogo } from '../logo/SynapseLogo';
+import { useThemeStore } from '../../../store/useThemeStore';
+import ThemeToggle from '../themeToggle/ThemeToggle';
+
 
 export const WebRestrictedOverlay: React.FC = () => {
+    const { themeMode, toggleTheme } = useThemeStore();
+
     const handleDownload = () => {
-        // TODO: Replace with actual download link when available
-        const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-        const downloadUrl = isMac
-            ? 'https://github.com/S14P11B102/Synapse-Desktop/releases/latest'
-            : 'https://github.com/S14P11B102/Synapse-Desktop/releases/latest';
+        // [Refactor] OS별 링크 분기는 나중에 필요하면 navigator.userAgent로 구현
+        // 현재는 GitHub Release 페이지로 통합
+        const downloadUrl = 'https://github.com/S14P11B102/Synapse-Desktop/releases/latest';
         window.open(downloadUrl, '_blank');
     };
 
@@ -32,6 +35,15 @@ export const WebRestrictedOverlay: React.FC = () => {
             left: 0,
             zIndex: 9999
         }}>
+            {/* Theme Toggle (Top Left) */}
+            <div style={{ position: 'absolute', top: '32px', left: '32px', zIndex: 10 }}>
+                <ThemeToggle
+                    themeMode={themeMode}
+                    onToggle={toggleTheme}
+                    tooltipPlacement="right"
+                />
+            </div>
+
             <div style={{ marginBottom: '40px' }}>
                 <SynapseLogo width={120} height={120} />
             </div>
