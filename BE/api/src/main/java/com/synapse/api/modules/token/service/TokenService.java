@@ -72,7 +72,7 @@ public class TokenService {
     public void addRefreshTokenToCookie(HttpServletResponse response, String refreshToken) {
         ResponseCookie cookie = ResponseCookie.from(REFRESH_COOKIE_NAME, refreshToken)
                 .httpOnly(true)
-                .secure(false)
+                .secure(true)
                 .sameSite("None")
                 .path("/")
                 .maxAge(REFRESH_COOKIE_DURATION)
