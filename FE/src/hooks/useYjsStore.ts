@@ -167,6 +167,7 @@ export const useYjsStore = (noteId: string | undefined) => {
               language = properties.get('language');
             } else {
               const contentText = properties.get('content');
+              // [Fix] Convert Y.XmlFragment or Y.Text to string
               content = contentText ? contentText.toString() : '';
             }
 
@@ -326,12 +327,12 @@ export const useYjsStore = (noteId: string | undefined) => {
 
         const properties = new Y.Map();
         if (block.type === 'code') {
-          properties.set('code', new Y.Text(''));
+          properties.set('code', block.content || '');
           properties.set('language', 'javascript');
           properties.set('version', '17');
           properties.set('executionMode', 'local');
         } else {
-          properties.set('content', new Y.Text(block.content));
+          properties.set('content', new Y.XmlFragment());
         }
         properties.set('bookmark', block.bookmark || false);
         newBlockMap.set('properties', properties);
@@ -366,7 +367,7 @@ export const useYjsStore = (noteId: string | undefined) => {
         properties.set('version', '17');
         properties.set('executionMode', 'local');
       } else {
-        properties.set('content', new Y.Text(initialContent));
+        properties.set('content', new Y.XmlFragment());
       }
       properties.set('bookmark', false);
       newBlockMap.set('properties', properties);
@@ -414,21 +415,36 @@ export const useYjsStore = (noteId: string | undefined) => {
       }
 
       const key = 'content';
-      let yText = properties.get(key) as any;
+      let yContent = properties.get(key) as any;
 
-      // [Fix] Self-healing for corrupted data (if yText is a string or missing methods)
-      if (yText && typeof yText.insert !== 'function') {
-        console.warn(`[Yjs] Corrupted Y.Text detected for block ${blockId}. Repairing...`);
-        const strContent = yText.toString(); // Works for string or objects with toString
-        yText = new Y.Text(strContent);
-        properties.set(key, yText);
+      // [Fix] Self-healing for corrupted data (if yContent is a string or missing methods)
+      // For text blocks, we must use Y.XmlFragment for Tiptap.
+      const isXmlFragment = yContent && (yContent.constructor?.name === 'YXmlFragment');
+
+      if (yContent && !isXmlFragment && typeof yContent.insert !== 'function') {
+        console.warn(`[Yjs] Corrupted content detected for block ${blockId}. Repairing...`);
+        const strContent = yContent.toString();
+        // Return to Y.XmlFragment
+        const newFragment = new Y.XmlFragment();
+        const paragraph = new Y.XmlElement('paragraph');
+        const textNode = new Y.XmlText(strContent);
+        paragraph.insert(0, [textNode]);
+        newFragment.insert(0, [paragraph]);
+        properties.set(key, newFragment);
+        yContent = newFragment;
       }
 
-      if (!yText) return;
+      if (!yContent) return;
 
-      const currentStr = yText.toString();
+      const currentStr = yContent.toString();
       if (currentStr !== newContent) {
-        applyTextDiff(yText, currentStr, newContent);
+        // [Note] Manual update for XmlFragment via diffing is complex.
+        // For TextBlocks using Collaboration extension, this updateBlock call
+        // might be redundant or only used for initial/external data sync.
+        // If it's a TextBlock, we rely on the editor/extension.
+        if (type !== 'text') {
+          applyTextDiff(yContent, currentStr, newContent);
+        }
       }
     }, 'local'); // ← 로컬 변경 마커
   }, []);
@@ -518,14 +534,30 @@ export const useYjsStore = (noteId: string | undefined) => {
 
       if (oldProperties) {
         oldProperties.forEach((value, key) => {
-          // [Fix] Explicitly handle Y.Text fields by key name to verify/clone correctly
-          // relying on 'instanceof' can be flaky with different Yjs bundles
-          if (key === 'content' || key === 'code') {
-            newProperties.set(key, new Y.Text(value.toString()));
-          } else if (value instanceof Y.Text) {
-            // Fallback for other potential text fields
-            newProperties.set(key, new Y.Text(value.toString()));
+          if (key === 'content') {
+            const fragment = new Y.XmlFragment();
+            // If we have content, try to preserve it as plain text/XML string.
+            // Tiptap will re-parse it in the new block.
+            if (value && typeof value.toString === 'function') {
+              const str = value.toString();
+              if (str) {
+                // [Fix] Initialize as plain string/value from DB.
+                // Clients will handle migration to specific Yjs types (e.g. Text -> XmlFragment).
+                // This avoids redundant wrapping and technical tags leaking into DB incorrectly.
+                // For moveBlock, we want to preserve the content as-is, and let the migration logic
+                // in getYTextForBlock handle the conversion to XmlFragment if needed.
+                // So, we set it as a plain string here.
+                newProperties.set(key, str);
+              } else {
+                newProperties.set(key, fragment); // Empty fragment if no content
+              }
+            } else {
+              newProperties.set(key, fragment); // If value is not a string or has no toString, use empty fragment
+            }
+          } else if (key === 'code' && value !== undefined) {
+            newProperties.set(key, value.toString());
           } else {
+            // Primitive or simple object
             newProperties.set(key, value);
           }
         });
@@ -562,12 +594,12 @@ export const useYjsStore = (noteId: string | undefined) => {
 
         const properties = new Y.Map();
         if (block.type === 'code') {
-          properties.set('code', new Y.Text(''));
+          properties.set('code', block.content || '');
           properties.set('language', 'javascript');
           properties.set('version', '17');
           properties.set('executionMode', 'local');
         } else {
-          properties.set('content', new Y.Text(block.content));
+          properties.set('content', new Y.XmlFragment());
         }
         properties.set('bookmark', block.bookmark || false);
         newBlockMap.set('properties', properties);
@@ -689,7 +721,64 @@ export const useYjsStore = (noteId: string | undefined) => {
       }
 
       const key = 'content';
-      return properties.get(key) as Y.Text | null;
+      let fragment = properties.get(key);
+
+      // [Migration/Self-Healing] Robust type detection
+      // Check if it's a shared type and specifically if it's a Fragment-like structure
+      const isSharedType = !!(fragment && typeof (fragment as any).observe === 'function');
+      const hasToArray = !!(fragment && typeof (fragment as any).toArray === 'function');
+      // Tiptap Collaboration extension (y-prosemirror) requires a Fragment for rich text
+      const isXmlFragment = !!(fragment && hasToArray && (fragment as any).constructor?.name?.includes('XmlFragment'));
+
+      const needsMigration = !fragment || !isSharedType || !hasToArray || !isXmlFragment;
+
+      if (needsMigration) {
+        const initialContent = fragment ? fragment.toString() : '';
+        console.warn(`[Yjs] Migrating block ${blockId} to Y.XmlFragment. Content length: ${initialContent.length}`);
+
+        doc.transact(() => {
+          const newFragment = new Y.XmlFragment();
+
+          if (initialContent && initialContent !== '[object Object]') {
+            // [CRITICAL FIX] Always populate the fragment immediately.
+            // Tiptap Collaboration extension does NOT use the 'content' prop when a fragment exists.
+            // We must parse and populate the Y.XmlFragment ourselves.
+
+            // Simple HTML parser for <p> tags
+            if (initialContent.includes('<p>') || initialContent.includes('</p>')) {
+              // Parse HTML paragraphs
+              const paragraphs = initialContent.split(/<\/?p>/g).filter((text: string) => text.trim());
+              paragraphs.forEach((text: string) => {
+                const paragraph = new Y.XmlElement('paragraph');
+                const textNode = new Y.XmlText(text);
+                paragraph.insert(0, [textNode]);
+                newFragment.insert(newFragment.length, [paragraph]);
+              });
+            } else {
+              // Plain text -> wrap in paragraph(s) by newline
+              const lines = initialContent.split('\n');
+              lines.forEach((line: string, idx: number) => {
+                if (line.trim() || idx === 0) {
+                  const paragraph = new Y.XmlElement('paragraph');
+                  const textNode = new Y.XmlText(line);
+                  paragraph.insert(0, [textNode]);
+                  newFragment.insert(newFragment.length, [paragraph]);
+                }
+              });
+            }
+          }
+
+          properties.set(key, newFragment);
+          fragment = newFragment;
+        }, 'local');
+      }
+
+      console.log(`[getYTextForBlock] Result for ${blockId}:`, {
+        type: fragment?.constructor?.name,
+        hasToArray: typeof (fragment as any)?.toArray === 'function'
+      });
+
+      return fragment as Y.XmlFragment | null;
     },
   };
 };
