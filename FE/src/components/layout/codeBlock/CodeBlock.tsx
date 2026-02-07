@@ -472,11 +472,11 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
             </div>
 
             {/* Right Actions (Bookmark) */}
-            {showBookmark && (
-                <div className="block-actions-right">
+            <div className="block-actions-right">
+                {showBookmark && (
                     <BlockBookmarkButton isBookmarked={bookmark} onClick={handleBookmark} />
-                </div>
-            )}
+                )}
+            </div>
 
             {/* [New] Show editor avatar if someone else is editing */}
             {editors.length > 0 && (
