@@ -34,48 +34,40 @@ import {
 import { useModalStore } from '../../../store/useModalStore';
 import './TextBlock.css';
 import { BlockBookmarkButton } from '../../common/blockBookmarkButton/BlockBookmarkButton';
-import { BlockEditorAvatar } from '../../common/blockEditorAvatar/BlockEditorAvatar'; // [New]
+import { BlockEditorAvatar } from '../../common/blockEditorAvatar/BlockEditorAvatar';
 import { AwarenessUser, useYjsStore } from '../../../hooks/useYjsStore';
 import Collaboration from '@tiptap/extension-collaboration';
-// [Changed] Added useYjsStore
+import { api } from '../../../api/axios';
 
-// [New] Div Node for Layout
+// Div Node for Layout
 const DivNode = Node.create({
     name: 'div',
     group: 'block',
     content: 'block+',
     parseHTML() {
-        return [
-            { tag: 'div' },
-        ]
+        return [{ tag: 'div' }];
     },
     renderHTML({ HTMLAttributes }) {
-        return ['div', HTMLAttributes, 0]
+        return ['div', HTMLAttributes, 0];
     },
 });
 
 interface TextBlockProps {
     id: number | string;
-    noteId: string; // [New] For Y.Doc access
-    content?: string; // [Keep] Optional - used for initial Y.Text population
+    noteId: string;
+    content?: string;
     bookmark?: boolean;
-    onUpdate?: (id: number | string, content: string) => void; // [Changed] Optional
+    onUpdate?: (id: number | string, content: string) => void;
     onFocus: () => void;
     onDelete: (id: number | string) => void;
     onToggleBookmark?: () => void;
-    // Native DnD props removed
-    // draggable?: boolean;
-    // onDragStart?: (e: React.DragEvent) => void;
-    // onDragOver?: (e: React.DragEvent) => void;
-    // onDrop?: (e: React.DragEvent) => void;
-
     // Framer Motion controls
-    dragControls?: any; // DragControls type from framer-motion (using any to avoid deep imports if strictly needed)
-    isFocused?: boolean; // [추가]
-    onContextMenu?: (e: React.MouseEvent) => void; // [New]
-    readOnly?: boolean; // [New]
-    showBookmark?: boolean; // [New]
-    editors?: AwarenessUser[]; // [New] Users editing this block
+    dragControls?: any;
+    isFocused?: boolean;
+    onContextMenu?: (e: React.MouseEvent) => void;
+    readOnly?: boolean;
+    showBookmark?: boolean;
+    editors?: AwarenessUser[];
 }
 
 // 색상 팔레트
@@ -103,28 +95,23 @@ const TabHandler = Extension.create({
 
 const TextBlock: React.FC<TextBlockProps> = ({
     id,
-    noteId, // [New]
+    noteId,
     content,
     onUpdate,
     onFocus,
     onDelete: _onDelete,
-    // draggable,
-    // draggable,
-    // onDragStart,
-    // onDragOver,
-    // onDrop,
     dragControls,
-    isFocused: shouldFocus, // [추가] prop 이름 충돌 방지를 위해 별칭 사용
-    onContextMenu, // [New]
+    isFocused: shouldFocus, // prop 이름 충돌 방지를 위해 별칭 사용
+    onContextMenu,
     bookmark = false,
     onToggleBookmark,
-    readOnly = false, // [New]
-    showBookmark = true, // [New]
-    editors = [], // [New]
+    readOnly = false,
+    showBookmark = true,
+    editors = [],
 }) => {
     const [isFocused, setIsFocused] = useState(false);
     const [showColorPicker, setShowColorPicker] = useState(false);
-    const { openModal } = useModalStore(); // [New] Modal Store
+    const { openModal } = useModalStore();
 
     const handleBookmark = () => {
         onToggleBookmark?.();
@@ -133,78 +120,55 @@ const TextBlock: React.FC<TextBlockProps> = ({
     // 링크 모달 상태
     const [showLinkModal, setShowLinkModal] = useState(false);
     const [linkUrl, setLinkUrl] = useState('');
-    const [linkText, setLinkText] = useState(''); // [New] 링크 텍스트 상태
+    const [linkText, setLinkText] = useState('');
 
     // Force update trigger
     const [, setUpdateTrigger] = useState(0);
 
-    // [Removed] manual sync refs
-
     // 이미지 업로드 상태
     const [isUploading, setIsUploading] = useState(false);
 
-    // [New] Get Y.Doc and Y.Text for Collaboration
+    // Get Y.Doc and Y.Text for Collaboration
     const { getYDoc, getYTextForBlock } = useYjsStore(noteId);
     const yDoc = getYDoc();
     const yText = getYTextForBlock(id);
 
-    // [Debug] Log Y.Text status and check for inconsistencies
-    console.log(`[TextBlock ${id}] yDoc:`, !!yDoc, 'yText:', !!yText);
-
-    // [Defensive] Warn if yText exists but yDoc doesn't (should never happen)
     if (yText && !yDoc) {
-        console.error(`[TextBlock ${id}] Invalid state: yText exists but yDoc is null. Collaboration disabled.`);
+        if (process.env.NODE_ENV === 'development') {
+            console.error(`[TextBlock ${id}] Invalid state: yText exists but yDoc is null. Collaboration disabled.`);
+        }
     }
+
     const editor = useEditor({
         extensions: [
             StarterKit.configure({
-                heading: {
-                    levels: [1, 2, 3],
-                },
-                // @ts-ignore - Collaboration extension handles history
+                heading: { levels: [1, 2, 3] },
                 history: false,
-                // @ts-ignore - Some versions include these, some don't. Explicitly disable to avoid duplicates.
                 link: false,
-                // @ts-ignore
                 underline: false,
-                // @ts-ignore - Disable Gapcursor/Dropcursor to prevent "ghost lines"
                 gapcursor: false,
-                // @ts-ignore
                 dropcursor: false,
-                // @ts-ignore
                 bulletList: false,
-                // @ts-ignore
                 orderedList: false,
             }),
-            // [Removed] Collaboration extension - using manual Y.Text sync instead
             Image,
             TextStyle,
             Color,
-            Placeholder.configure({
-                placeholder: '빈 블록',
-            }),
+            Placeholder.configure({ placeholder: '빈 블록' }),
             Link.configure({
                 openOnClick: false,
-                HTMLAttributes: {
-                    class: 'custom-link',
-                },
+                HTMLAttributes: { class: 'custom-link' },
             }),
             Underline,
-            Highlight.configure({
-                multicolor: true,
-            }),
-            TextAlign.configure({
-                types: ['heading', 'paragraph'],
-            }),
+            Highlight.configure({ multicolor: true }),
+            TextAlign.configure({ types: ['heading', 'paragraph'] }),
             TabHandler,
             ...(yDoc && yText ? [Collaboration.configure({
                 document: yDoc,
                 fragment: yText as any,
             })] : []),
         ],
-        // [Fix] Only use Yjs state if it's properly initialized (has content).
-        // Check fragment length instead of toString() to avoid issues with XML representation.
-        // If fragment is empty (length === 0), provide initial content and let Tiptap populate it.
+        // Only use Yjs state if it's properly initialized (has content).
         content: (yText && (yText as any).length > 0) ? undefined : (content || ''),
         editorProps: {
             attributes: {
@@ -214,7 +178,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 const attrs = view.state.doc.resolve(pos).marks().find(mark => mark.type.name === 'link')?.attrs;
                 const link = attrs?.href;
 
-                if (link && event.target instanceof HTMLAnchorElement) { // [Check] a 태그 클릭 시에만 동작
+                if (link && event.target instanceof HTMLAnchorElement) {
                     // 링크 클릭 시 외부 링크 경고 모달 표시
                     openModal('EXTERNAL_LINK_WARNING', {
                         url: link,
@@ -222,22 +186,15 @@ const TextBlock: React.FC<TextBlockProps> = ({
                             window.open(link, '_blank');
                         }
                     });
-                    return true; // 이벤트 전파 중단
+                    return true;
                 }
                 return false;
             }
         },
         onSelectionUpdate: () => {
-            // 확실하게 상태 업데이트를 트리거하기 위해 forceUpdate 패턴 사용
-            // 여기서는 간단히 editor 상태가 변경되었음을 알림
-            // 그러나 useEditor는 내부적으로 상태 관리를 함.
-            // 문제는 isActive 체크가 렌더링 사이클에 반영되지 않는 것.
-            // setState를 호출하여 컴포넌트 리렌더링 유도
             setUpdateTrigger(prev => prev + 1);
         },
         onUpdate: ({ editor }) => {
-            // Collaboration handles Yjs sync automatically.
-            // We only call onUpdate to notify parent if needed for summary/metadata.
             const html = editor.getHTML();
             onUpdate?.(id, html);
         },
@@ -249,20 +206,15 @@ const TextBlock: React.FC<TextBlockProps> = ({
             setIsFocused(false);
         },
     }, [yDoc, yText, noteId, id]);
-    // [New] Re-create editor when Y.Text becomes available
 
-    // [Removed] Remote update observer (handled by Collaboration extension)
-
-    // [Removed] Initial Y.Text population useEffect - now handled by Collaboration extension and server-side init
-
-    // [추가] 외부에서 포커스 요청 시 에디터 포커스
+    // 외부에서 포커스 요청 시 에디터 포커스
     useEffect(() => {
         if (shouldFocus && editor && !editor.isFocused) {
             editor.commands.focus();
         }
     }, [shouldFocus, editor]);
 
-    // [New] ReadOnly 상태 반영
+    // ReadOnly 상태 반영
     useEffect(() => {
         if (editor) {
             editor.setEditable(!readOnly);
@@ -270,11 +222,13 @@ const TextBlock: React.FC<TextBlockProps> = ({
     }, [editor, readOnly]);
 
     // 🔥 원격 변경사항 동기화 (깜빡임 방지)
-    // [Removed] manual props sync - Collaboration handles this
     if (!editor) {
         return null;
     }
 
+    // ========================================
+    // 이미지 업로드 (백엔드 업로드 방식)
+    // ========================================
     // ========================================
     // 이미지 업로드 (백엔드 업로드 방식)
     // ========================================
@@ -287,42 +241,59 @@ const TextBlock: React.FC<TextBlockProps> = ({
             const file = (e.target as HTMLInputElement).files?.[0];
             if (!file) return;
 
+            // [Validation] 파일 유효성 검사
+            const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+            const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
+            if (!ALLOWED_TYPES.includes(file.type)) {
+                alert('지원하지 않는 파일 형식입니다. (jpg, jpeg, png, gif, webp)');
+                return;
+            }
+
+            if (file.size > MAX_FILE_SIZE) {
+                alert('파일 크기는 5MB 이하여야 합니다.');
+                return;
+            }
+
             setIsUploading(true);
 
             try {
-                // 1. 백엔드에서 업로드 URL 요청
-                const uploadUrlResponse = await fetch('/api/images/upload-url', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        fileName: file.name,
-                        fileType: file.type,
-                    }),
+                // 1. 백엔드에서 업로드 URL 요청 (Presigned URL 발급)
+                const uploadResponse = await api.post('/v1/images/upload-url', {
+                    originalFileName: file.name,
+                    contentType: file.type,
                 });
 
-                if (!uploadUrlResponse.ok) {
-                    throw new Error('업로드 URL을 받지 못했습니다.');
-                }
+                const { putUrl, key } = uploadResponse.data.data;
 
-                const { uploadUrl, imageUrl } = await uploadUrlResponse.json();
-
-                // 2. 해당 URL로 파일 업로드
-                const uploadResponse = await fetch(uploadUrl, {
+                // 2. 해당 URL로 파일 업로드 (S3에 직접 PUT)
+                // Note: Use native fetch here to avoid sending App Auth headers to S3
+                const s3UploadResponse = await fetch(putUrl, {
                     method: 'PUT',
                     body: file,
                     headers: { 'Content-Type': file.type },
                 });
 
-                if (!uploadResponse.ok) {
+                if (!s3UploadResponse.ok) {
                     throw new Error('이미지 업로드에 실패했습니다.');
                 }
 
-                // 3. 에디터에 이미지 삽입
-                editor.chain().focus().setImage({ src: imageUrl }).run();
+                // 3. 이미지 조회 URL 요청
+                // [WARNING] 현재 발급받는 URL은 Presigned URL로 유효기간이 있습니다.
+                // 만료 후에는 이미지가 보이지 않을 수 있으므로, 장기적으로는
+                // 백엔드 프록시 API 또는 Public Read 설정이 필요합니다.
+                const readResponse = await api.get('/v1/images/read-url', {
+                    params: { key },
+                });
+
+                const { getUrl } = readResponse.data.data;
+
+                // 4. 에디터에 이미지 삽입
+                editor.chain().focus().setImage({ src: getUrl }).run();
 
             } catch (error) {
                 console.error('이미지 업로드 실패:', error);
-                // alert('이미지 업로드에 실패했습니다.');
+                alert('이미지 업로드 중 오류가 발생했습니다.');
             } finally {
                 setIsUploading(false);
                 setTimeout(() => {
@@ -344,17 +315,15 @@ const TextBlock: React.FC<TextBlockProps> = ({
         const selectedText = editor.state.doc.textBetween(from, to, ' ');
 
         setLinkUrl(previousUrl);
-        setLinkText(selectedText); // 선택된 텍스트 설정
+        setLinkText(selectedText);
         setShowLinkModal(true);
     };
 
     // 링크 적용
     const applyLink = () => {
         if (linkUrl.trim() === '') {
-            // URL이 비어있으면 링크 제거
             editor.chain().focus().extendMarkRange('link').unsetLink().run();
         } else {
-            // 텍스트와 URL 적용
             if (linkText) {
                 editor
                     .chain()
@@ -374,7 +343,6 @@ const TextBlock: React.FC<TextBlockProps> = ({
                     })
                     .run();
             } else {
-                // 텍스트가 없으면 그냥 링크만 설정 (기본 동작)
                 editor.chain().focus().extendMarkRange('link').setLink({ href: linkUrl }).run();
             }
         }
@@ -395,17 +363,15 @@ const TextBlock: React.FC<TextBlockProps> = ({
         <div
             id={id.toString()}
             className={`text-block-wrapper ${isFocused || shouldFocus ? 'is-focused' : ''} ${bookmark ? 'is-bookmarked' : ''} ${showBookmark ? 'has-bookmark' : ''}`}
-            // onDragOver={onDragOver}
-            // onDrop={onDrop}
-            onContextMenu={onContextMenu} // [New]
-            onClick={(e) => e.stopPropagation()} // [Fix] Prevent clearing focus when clicking inside the block
+            onContextMenu={onContextMenu}
+            onClick={(e) => e.stopPropagation()}
         >
             <div className="block-controls">
                 <div
                     className="drag-handle-icon"
                     onPointerDown={(e) => dragControls?.start(e)}
                     title="드래그하여 이동"
-                    style={{ touchAction: 'none' }} // Framer motion recommendation for touch devices
+                    style={{ touchAction: 'none' }}
                 >
                     ⋮⋮
                 </div>
@@ -673,7 +639,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 )}
             </div>
 
-            {/* [New] Show editor avatar if someone else is editing */}
+            {/* Show editor avatar if someone else is editing */}
             {editors.length > 0 && (
                 <BlockEditorAvatar editors={editors} />
             )}
