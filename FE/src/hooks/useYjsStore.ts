@@ -773,12 +773,80 @@ export const useYjsStore = (noteId: string | undefined) => {
         }, 'local');
       }
 
+
       console.log(`[getYTextForBlock] Result for ${blockId}:`, {
         type: fragment?.constructor?.name,
         hasToArray: typeof (fragment as any)?.toArray === 'function'
       });
 
       return fragment as Y.XmlFragment | null;
+    },
+
+    // [New] Get Y.Text for CodeBlock - similar to getYTextForBlock but for code
+    getYTextForCodeBlock: (blockId: string | number): Y.Text | null => {
+      const doc = docRef.current;
+      if (!doc) {
+        console.warn('[getYTextForCodeBlock] No Yjs document available');
+        return null;
+      }
+
+      const yBlocks = doc.getArray<YBlockMap>('blocks');
+      let yBlock: YBlockMap | undefined;
+
+      // Find block by ID
+      for (const block of yBlocks) {
+        const bid = block.get('id');
+        if (bid === blockId || String(bid) === String(blockId)) {
+          yBlock = block;
+          break;
+        }
+      }
+
+      if (!yBlock) {
+        console.warn(`[getYTextForCodeBlock] Block ${blockId} not found`);
+        return null;
+      }
+
+      const properties = yBlock.get('properties');
+      if (!(properties instanceof Y.Map)) {
+        console.warn(`[getYTextForCodeBlock] Block ${blockId} has no properties map`);
+        return null;
+      }
+
+      let yText = properties.get('code');
+
+      // Feature-based detection for Y.Text
+      const isSharedType = yText && typeof yText === 'object';
+      const hasInsert = isSharedType && typeof (yText as any).insert === 'function';
+      const hasDelete = isSharedType && typeof (yText as any).delete === 'function';
+      const hasToString = isSharedType && typeof (yText as any).toString === 'function';
+      const isYText = hasInsert && hasDelete && hasToString;
+
+      const needsMigration = !yText || !isYText;
+
+      if (needsMigration) {
+        const initialCode = typeof yText === 'string' ? yText : '';
+        console.warn(`[Yjs] Migrating CodeBlock ${blockId} to Y.Text. Code length: ${initialCode.length}`);
+
+        doc.transact(() => {
+          const newYText = new Y.Text();
+
+          if (initialCode) {
+            newYText.insert(0, initialCode);
+          }
+
+          properties.set('code', newYText);
+          yText = newYText;
+        }, 'local');
+      }
+
+      console.log(`[getYTextForCodeBlock] Result for ${blockId}:`, {
+        type: yText?.constructor?.name,
+        hasInsert: typeof (yText as any)?.insert === 'function',
+        length: (yText as Y.Text)?.length
+      });
+
+      return yText as Y.Text | null;
     },
   };
 };

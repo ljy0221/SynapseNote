@@ -11,6 +11,8 @@ import { autocompletion } from '@codemirror/autocomplete';
 import { useCodeEditorStore } from '../../../store/useCodeEditorStore';
 import { useThemeStore } from '../../../store/useThemeStore';
 import type { ThemeMode } from '../../../store/useThemeStore';
+import * as Y from 'yjs'; // [New] Yjs import
+import { yCollab } from 'y-codemirror.next'; // [New] y-codemirror binding
 import './CodeMirrorEditor.css';
 
 interface CodeMirrorEditorProps {
@@ -22,6 +24,7 @@ interface CodeMirrorEditorProps {
     readOnly?: boolean;
     minHeight?: string;
     maxHeight?: string;
+    yText?: Y.Text | null; // [New] Optional Y.Text for collaborative editing
 }
 
 const getLanguageExtension = (language: string) => {
@@ -280,6 +283,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
     onFocus,
     onBlur, // [Add]
     readOnly = false,
+    yText, // [New]
     minHeight = '150px',
     maxHeight = '800px',
 }) => {
@@ -311,34 +315,48 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
     useEffect(() => {
         if (!editorRef.current) return;
 
-        const state = EditorState.create({
-            doc: value,
-            extensions: [
-                basicSetup,
-                drawSelection(), // [New] Explicitly add drawSelection
-                getLanguageExtension(language),
-                createCustomTheme(themeMode),
-                syntaxHighlighting(createHighlightStyle(themeMode)),
-                autocompletion({
-                    activateOnTyping: true,
-                    override: [],
-                }),
-                autoHeightTheme,
-                EditorState.readOnly.of(readOnly),
-                EditorState.tabSize.of(settings.tabSize),
-                EditorView.lineWrapping,
+        // [New] Build extensions array conditionally
+        const extensions = [
+            basicSetup,
+            drawSelection(), // [New] Explicitly add drawSelection
+            getLanguageExtension(language),
+            createCustomTheme(themeMode),
+            syntaxHighlighting(createHighlightStyle(themeMode)),
+            autocompletion({
+                activateOnTyping: true,
+                override: [],
+            }),
+            autoHeightTheme,
+            EditorState.readOnly.of(readOnly),
+            EditorState.tabSize.of(settings.tabSize),
+            EditorView.lineWrapping,
+            EditorView.domEventHandlers({
+                focus: () => onFocus?.(),
+                blur: () => onBlur?.(), // [Add] blur 핸들러 추가
+            }),
+        ];
+
+        // [New] Add yCollab if Y.Text is provided for collaborative editing
+        if (yText) {
+            // yCollab requires (ytext, awareness, options)
+            // We pass null for awareness since we're not implementing cursor sharing yet
+            extensions.push(yCollab(yText, null));
+        } else {
+            // [Original] Only add onChange listener if not using Y.Text
+            extensions.push(
                 EditorView.updateListener.of((update) => {
                     // 사용자가 직접 타이핑했을 때만 onChange 호출 (무한 루프 방지)
                     // programmatic update 중에는 호출 안 함
                     if (update.docChanged && !isDispatchingRef.current) {
                         onChange(update.state.doc.toString());
                     }
-                }),
-                EditorView.domEventHandlers({
-                    focus: () => onFocus?.(),
-                    blur: () => onBlur?.(), // [Add] blur 핸들러 추가
-                }),
-            ],
+                })
+            );
+        }
+
+        const state = EditorState.create({
+            doc: yText ? yText.toString() : value, // [New] Use Y.Text content if available
+            extensions,
         });
 
         const view = new EditorView({

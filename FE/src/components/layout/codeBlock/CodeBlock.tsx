@@ -21,7 +21,7 @@ import { useToastStore } from '../../../store/useToastStore';
 import { Tooltip } from '../../common/tooltip/Tooltip';
 import ConfirmModal from '../../common/modal/ConfirmModal';
 import { BlockEditorAvatar } from '../../common/blockEditorAvatar/BlockEditorAvatar';
-import { AwarenessUser } from '../../../hooks/useYjsStore';
+import { AwarenessUser, useYjsStore } from '../../../hooks/useYjsStore'; // [New] Import useYjsStore
 
 interface CodeBlockProps {
     id: number | string;
@@ -105,7 +105,11 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     // [New] Track the last value sent to the parent to prevent stale prop overwrites
     const lastSentValueRef = useRef<string>(code);
 
-    // CodeBlock uses LWW with plain string, so yDoc/yText not used for direct sync here
+    // [New] Get Y.Text for collaborative editing
+    const { getYTextForCodeBlock } = useYjsStore(noteId);
+    const yText = noteId ? getYTextForCodeBlock(id) : null;
+
+    // CodeBlock now uses Y.Text for real-time collaboration
     const handleBookmark = () => {
         onToggleBookmark?.();
     };
@@ -418,7 +422,6 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                     </div>
                 </div>
 
-                {/* 메인 코드 영역 */}
                 <div className="code-content-container">
                     <CodeMirrorEditor
                         value={editedCode}
@@ -434,6 +437,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                         readOnly={loading}
                         minHeight="auto"
                         maxHeight="800px"
+                        yText={yText} // [New] Pass Y.Text for collaborative editing
                     />
                 </div>
 
