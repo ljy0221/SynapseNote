@@ -98,8 +98,8 @@ class BridgeService {
           if (block.properties) {
             const props = new Y.Map();
             Object.entries(block.properties).forEach(([k, v]) => {
-              // [Fix] Create Y.Text for content and code fields
-              if ((k === 'content' || k === 'code') && typeof v === 'string') {
+              // [Fix] Create Y.Text for content field (TextBlock), keep string for code (CodeBlock LWW)
+              if (k === 'content' && typeof v === 'string') {
                 const yText = new Y.Text();
                 yText.insert(0, v);
                 props.set(k, yText);

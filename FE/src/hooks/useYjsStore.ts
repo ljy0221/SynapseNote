@@ -57,7 +57,6 @@ export const useYjsStore = (noteId: string | undefined) => {
 
   // [New] Simple tracking for delayed remote updates
   const focusedBlockIdRef = useRef<string | null>(null);
-  const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastLocalUpdateRef = useRef<Map<string, number>>(new Map());
 
   // Zustand store에서 토큰 가져오기 (persist 복원 포함)
@@ -96,7 +95,7 @@ export const useYjsStore = (noteId: string | undefined) => {
 
     // WebSocket Provider 설정
     const provider = new WebsocketProvider(wsUrl, noteId, doc, {
-      params: { token: accessToken },
+      params: { token: accessToken || '' },
     });
 
     providerRef.current = provider;
@@ -163,8 +162,8 @@ export const useYjsStore = (noteId: string | undefined) => {
             const bookmark = properties.get('bookmark') || false;
 
             if (type === 'code') {
-              const codeText = properties.get('code');
-              content = codeText ? codeText.toString() : '';
+              const rawCode = properties.get('code');
+              content = rawCode ? rawCode.toString() : ''; // Handles both Y.Text and string
               language = properties.get('language');
             } else {
               const contentText = properties.get('content');
@@ -362,7 +361,7 @@ export const useYjsStore = (noteId: string | undefined) => {
 
       const properties = new Y.Map();
       if (type === 'code') {
-        properties.set('code', new Y.Text(''));
+        properties.set('code', initialContent || ''); // Plain string for LWW
         properties.set('language', 'javascript');
         properties.set('version', '17');
         properties.set('executionMode', 'local');
@@ -406,7 +405,15 @@ export const useYjsStore = (noteId: string | undefined) => {
 
     // 🔥 Transaction origin 'local' 추가: 로컬 변경임을 표시
     doc.transact(() => {
-      const key = type === 'code' ? 'code' : 'content';
+      if (type === 'code') {
+        // LWW Strategy: Direct set
+        if (properties.get('code') !== newContent) {
+          properties.set('code', newContent);
+        }
+        return;
+      }
+
+      const key = 'content';
       let yText = properties.get(key) as any;
 
       // [Fix] Self-healing for corrupted data (if yText is a string or missing methods)
@@ -675,8 +682,13 @@ export const useYjsStore = (noteId: string | undefined) => {
 
       const properties = targetBlock.get('properties') as Y.Map<any>;
       const type = targetBlock.get('_class');
-      const key = type === 'code' ? 'code' : 'content';
 
+      // Code blocks now use plain string (LWW), so getYTextForBlock should return null
+      if (type === 'code') {
+        return null;
+      }
+
+      const key = 'content';
       return properties.get(key) as Y.Text | null;
     },
   };
