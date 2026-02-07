@@ -21,7 +21,7 @@ type YBlockMap = Y.Map<any>;
  * CRDT-safe 텍스트 diff 적용 함수
  * 전체 삭제/재삽입 대신 변경된 부분만 계산하여 Y.Text에 반영
  */
-function applyTextDiff(yText: Y.Text, oldText: string, newText: string): void {
+export function applyTextDiff(yText: Y.Text, oldText: string, newText: string): void {
   let prefixLen = 0;
   const minLen = Math.min(oldText.length, newText.length);
   while (prefixLen < minLen && oldText[prefixLen] === newText[prefixLen]) {
