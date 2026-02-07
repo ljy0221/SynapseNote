@@ -103,11 +103,13 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 
     // [New] Sync language prop changes from Yjs (real-time collaboration)
     useEffect(() => {
+        // Always sync prop to state when prop changes (remote user changed language)
+        console.log(`[CodeBlock ${id}] Prop language: ${initialLanguage}, State language: ${language}`);
         if (initialLanguage !== language) {
-            console.log(`[CodeBlock ${id}] Language changed from Yjs: ${language} -> ${initialLanguage}`);
+            console.log(`[CodeBlock ${id}] Syncing language from Yjs: ${language} -> ${initialLanguage}`);
             setLanguage(initialLanguage);
         }
-    }, [initialLanguage]);
+    }, [initialLanguage, id]); // Include id for logging, but main trigger is initialLanguage
 
     // [New] AI Review Alert Modal State
     const [isAlertOpen, setIsAlertOpen] = useState(false);
@@ -345,6 +347,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                 <div className="code-block-header">
                     <div className="code-left-controls"></div>
                     <LanguageSelector
+                        key={`lang-${id}-${language}`}
                         value={language}
                         onChange={handleLanguageChange}
                         disabled={loading || readOnly}
