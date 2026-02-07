@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
@@ -35,7 +35,8 @@ import { useModalStore } from '../../../store/useModalStore';
 import './TextBlock.css';
 import { BlockBookmarkButton } from '../../common/blockBookmarkButton/BlockBookmarkButton';
 import { BlockEditorAvatar } from '../../common/blockEditorAvatar/BlockEditorAvatar'; // [New]
-import { AwarenessUser, useYjsStore, applyTextDiff } from '../../../hooks/useYjsStore';
+import { AwarenessUser, useYjsStore } from '../../../hooks/useYjsStore';
+import Collaboration from '@tiptap/extension-collaboration';
 // [Changed] Added useYjsStore
 
 interface TextBlockProps {
@@ -105,8 +106,8 @@ const TextBlock: React.FC<TextBlockProps> = ({
     showBookmark = true, // [New]
     editors = [], // [New]
 }) => {
-    const [isFocused, setIsFocused] = React.useState(false);
-    const [showColorPicker, setShowColorPicker] = React.useState(false);
+    const [isFocused, setIsFocused] = useState(false);
+    const [showColorPicker, setShowColorPicker] = useState(false);
     const { openModal } = useModalStore(); // [New] Modal Store
 
     const handleBookmark = () => {
@@ -114,18 +115,17 @@ const TextBlock: React.FC<TextBlockProps> = ({
     };
 
     // 링크 모달 상태
-    const [showLinkModal, setShowLinkModal] = React.useState(false);
-    const [linkUrl, setLinkUrl] = React.useState('');
-    const [linkText, setLinkText] = React.useState(''); // [New] 링크 텍스트 상태
+    const [showLinkModal, setShowLinkModal] = useState(false);
+    const [linkUrl, setLinkUrl] = useState('');
+    const [linkText, setLinkText] = useState(''); // [New] 링크 텍스트 상태
 
     // Force update trigger
-    const [updateTrigger, setUpdateTrigger] = useState<number>(0);
+    const [, setUpdateTrigger] = useState(0);
 
-    // [New] Reference to track the last content sent to Yjs to calculate accurate diffs
-    const prevContentRef = useRef<string>(content || '');
+    // [Removed] manual sync refs
 
     // 이미지 업로드 상태
-    const [isUploading, setIsUploading] = React.useState(false);
+    const [isUploading, setIsUploading] = useState(false);
 
     // [New] Get Y.Doc and Y.Text for Collaboration
     const { getYDoc, getYTextForBlock } = useYjsStore(noteId);
@@ -176,8 +176,11 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 types: ['heading', 'paragraph'],
             }),
             TabHandler,
+            Collaboration.configure({
+                fragment: yText as any,
+            }),
         ],
-        content: yText?.toString() || '',
+        content: yText ? undefined : (content || ''), // If yText exists, Collaboration will populate from it
         editorProps: {
             attributes: {
                 class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl focus:outline-none',
@@ -205,27 +208,12 @@ const TextBlock: React.FC<TextBlockProps> = ({
             // 그러나 useEditor는 내부적으로 상태 관리를 함.
             // 문제는 isActive 체크가 렌더링 사이클에 반영되지 않는 것.
             // setState를 호출하여 컴포넌트 리렌더링 유도
-            setUpdateTrigger((prev: number) => prev + 1);
+            setUpdateTrigger(prev => prev + 1);
         },
         onUpdate: ({ editor }) => {
+            // Collaboration handles Yjs sync automatically.
+            // We only call onUpdate to notify parent if needed for summary/metadata.
             const html = editor.getHTML();
-            console.log(`[TextBlock ${id}] onUpdate called! HTML length:`, html.length);
-
-            // [New] Manual Y.Text synchronization with Incremental Diff
-            if (yDoc && yText) {
-                yDoc.transact(() => {
-                    const localBase = prevContentRef.current;
-                    if (localBase !== html) {
-                        applyTextDiff(yText, localBase, html);
-                        prevContentRef.current = html;
-                    }
-                }, 'local');
-            }
-            else {
-                console.log(`[TextBlock ${id}] No yDoc/yText available for sync`);
-            }
-
-            // Optional call to parent
             onUpdate?.(id, html);
         },
         onFocus: () => {
@@ -234,43 +222,11 @@ const TextBlock: React.FC<TextBlockProps> = ({
         },
         onBlur: () => {
             setIsFocused(false);
-
-            // [New] Ensure editor matches Y.Text when focus out
-            if (editor && yText) {
-                const yContent = yText.toString();
-                const editorContent = editor.getHTML();
-                if (yContent !== editorContent) {
-                    console.log(`[TextBlock ${id}] Blurred. Syncing from Yjs to Editor.`);
-                    editor.commands.setContent(yContent, { emitUpdate: false }); // Correct options object
-                    prevContentRef.current = yContent;
-                }
-            }
         },
-    }, [yDoc, yText, noteId, id]); // [New] Re-create editor when Y.Text becomes available
+    }, [yDoc, yText, noteId, id]);
+    // [New] Re-create editor when Y.Text becomes available
 
-    // [New] Y.Text observer to handle incoming changes
-    useEffect(() => {
-        if (!yText || !editor) return;
-
-        const handleUpdate = () => {
-            // Only update if not focused to avoid cursor jumping
-            // If focused, we rely on onBlur to sync later
-            if (!editor.isFocused) {
-                const yContent = yText.toString();
-                const editorContent = editor.getHTML();
-                if (yContent !== editorContent) {
-                    console.log(`[TextBlock ${id}] Remote update detected. Updating editor.`);
-                    editor.commands.setContent(yContent, { emitUpdate: false });
-                    prevContentRef.current = yContent; // Update base for next local change
-                }
-            }
-        };
-
-        yText.observe(handleUpdate);
-        return () => {
-            yText.unobserve(handleUpdate);
-        };
-    }, [yText, editor]);
+    // [Removed] Remote update observer (handled by Collaboration extension)
 
     // [New] Initialize Y.Text with existing content if it's empty
     useEffect(() => {
@@ -308,21 +264,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
     }, [editor, readOnly]);
 
     // 🔥 원격 변경사항 동기화 (깜빡임 방지)
-    // const lastRemoteUpdate = useRef<string>('');
-
-    useEffect(() => {
-        // [Fix] IME Duplication & Content Disappearance
-        // Check editor.isFocused directly from the Tiptap instance. 
-        // This is the source of truth. If the editor has focus, DO NOT touch the content
-        // based on external props. The user is typing.
-        if (editor && editor.isFocused) return;
-
-        // 실제로 다른 경우에만 업데이트
-        if (editor && (content || '') !== editor.getHTML()) {
-            // emitUpdate: false로 불필요한 onUpdate 이벤트 방지하여 무한 루프 차단
-            editor.commands.setContent(content || '', { emitUpdate: false });
-        }
-    }, [content, editor]);
+    // [Removed] manual props sync - Collaboration handles this
     if (!editor) {
         return null;
     }
