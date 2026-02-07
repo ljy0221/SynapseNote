@@ -101,6 +101,14 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const [pendingLanguage, setPendingLanguage] = useState<Language | null>(null);
 
+    // [New] Sync language prop changes from Yjs (real-time collaboration)
+    useEffect(() => {
+        if (initialLanguage !== language) {
+            console.log(`[CodeBlock ${id}] Language changed from Yjs: ${language} -> ${initialLanguage}`);
+            setLanguage(initialLanguage);
+        }
+    }, [initialLanguage]);
+
     // [New] AI Review Alert Modal State
     const [isAlertOpen, setIsAlertOpen] = useState(false);
     const [alertMessage, setAlertMessage] = useState('');
