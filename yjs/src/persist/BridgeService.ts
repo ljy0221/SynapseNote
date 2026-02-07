@@ -4,6 +4,8 @@ import { Note } from '../models/Note';
 import { Binary } from 'mongodb';
 import * as _ from 'lodash';
 import * as crypto from 'crypto';
+import * as htmlparser2 from 'htmlparser2';
+import { DomHandler, Element, Text as DomText } from 'domhandler';
 
 // UUID 유틸리티
 function uuidToBuffer(uuid: string): Binary | string {
@@ -36,10 +38,221 @@ function generateUuidV7(): string {
   return crypto.randomUUID(); // Fallback to v4 if v7 not explicitly needed, or use proper v7 impl if strict
 }
 
+
+/**
+ * Convert HTML string to Yjs XmlFragment using htmlparser2
+ * This properly handles complex nested HTML structures
+ */
+function htmlToXmlFragment(html: string): Y.XmlFragment {
+  const fragment = new Y.XmlFragment();
+
+  if (!html || !html.trim()) {
+    return fragment;
+  }
+
+  // Parse HTML using htmlparser2
+  const handler = new DomHandler();
+  const parser = new htmlparser2.Parser(handler);
+  parser.write(html);
+  parser.end();
+
+  // Convert DOM nodes to Yjs XmlElements
+  const convertNode = (node: any, parent: Y.XmlFragment | Y.XmlElement) => {
+    if (node.type === 'text') {
+      // Text node
+      const textNode = node as DomText;
+      if (textNode.data) {
+        const yText = new Y.XmlText(textNode.data);
+        parent.push([yText]);
+      }
+    } else if (node.type === 'tag') {
+      // Element node
+      const element = node as Element;
+      const yElement = new Y.XmlElement(element.name);
+
+      // Copy attributes
+      if (element.attribs) {
+        Object.entries(element.attribs).forEach(([key, value]) => {
+          yElement.setAttribute(key, value);
+        });
+      }
+
+      // Recursively convert children
+      if (element.children && element.children.length > 0) {
+        element.children.forEach(child => convertNode(child, yElement));
+      }
+
+      parent.push([yElement]);
+    }
+  };
+
+  // Convert all root nodes
+  handler.dom.forEach(node => convertNode(node, fragment));
+
+  return fragment;
+}
+
 interface UserContext {
   userId: string;
   name: string;
 }
+
+/**
+ * Convert Y.XmlFragment to HTML string, preserving all tags
+ * This is crucial for saving AI review results with proper formatting
+ */
+function xmlFragmentToHtml(fragment: Y.XmlFragment): string {
+  const parts: string[] = [];
+
+  fragment.forEach((item: any) => {
+    if (item instanceof Y.XmlElement) {
+      parts.push(xmlElementToHtml(item));
+    } else if (item instanceof Y.XmlText) {
+      parts.push(item.toString());
+    }
+  });
+
+  return parts.join('');
+}
+
+/**
+ * Convert Y.XmlElement to HTML string recursively
+ * Maps TipTap internal node names to standard HTML tags
+ */
+function xmlElementToHtml(element: Y.XmlElement): string {
+  let tagName = element.nodeName;
+
+  // Map TipTap node names to standard HTML tags
+  const nodeToHtmlMap: Record<string, string> = {
+    'paragraph': 'p',
+    'heading': 'h1', // Will be overridden by level attribute
+    'bulletList': 'ul',
+    'orderedList': 'ol',
+    'listItem': 'li',
+    'blockquote': 'blockquote',
+    'codeBlock': 'pre',
+    'horizontalRule': 'hr',
+    'hardBreak': 'br',
+    'bold': 'strong',
+    'italic': 'em',
+    'strike': 's',
+    'underline': 'u',
+    'link': 'a',
+    'highlight': 'mark',  // TipTap highlight -> HTML mark
+    'textStyle': 'span',  // TipTap textStyle -> HTML span
+  };
+
+  // Convert TipTap node name to HTML tag
+  if (nodeToHtmlMap[tagName]) {
+    const originalTag = tagName;
+    tagName = nodeToHtmlMap[tagName];
+    console.log(`[Bridge] Converting node: ${originalTag} -> ${tagName}`);
+  } else {
+    console.warn(`[Bridge] Unknown TipTap node: ${tagName}, keeping as-is`);
+  }
+
+  // Collect attributes
+  const attributes: string[] = [];
+
+  // [New] For heading nodes, check level attribute (1-6)
+  if (element.nodeName === 'heading') {
+    try {
+      // TipTap heading nodes have a level attribute (1-6)
+      // Try to access it safely
+      const attrs: any = element.getAttributes ? element.getAttributes() : null;
+      if (attrs) {
+        const level = typeof attrs.get === 'function' ? attrs.get('level') : attrs.level;
+        if (level && level >= 1 && level <= 6) {
+          tagName = `h${level}`;
+        }
+      }
+    } catch (e) {
+      // Fallback to h1 if attribute reading fails
+      console.warn('[Bridge] Failed to read heading level, defaulting to h1:', e);
+      tagName = 'h1';
+    }
+  }
+
+  // [New] For highlight nodes, preserve color attribute
+  if (element.nodeName === 'highlight') {
+    try {
+      const attrs: any = element.getAttributes ? element.getAttributes() : null;
+      if (attrs) {
+        const color = typeof attrs.get === 'function' ? attrs.get('color') : attrs.color;
+        if (color) {
+          attributes.push(`style="background-color: ${color}"`);
+        }
+      }
+    } catch (e) {
+      console.warn('[Bridge] Failed to read highlight color:', e);
+    }
+  }
+
+  // [New] For textStyle nodes, preserve color attribute
+  if (element.nodeName === 'textStyle') {
+    try {
+      const attrs: any = element.getAttributes ? element.getAttributes() : null;
+      if (attrs) {
+        const color = typeof attrs.get === 'function' ? attrs.get('color') : attrs.color;
+        if (color) {
+          attributes.push(`style="color: ${color}"`);
+        }
+      }
+    } catch (e) {
+      console.warn('[Bridge] Failed to read textStyle color:', e);
+    }
+  }
+
+  // Get children content
+  const children: string[] = [];
+  element.forEach((child: any) => {
+    if (child instanceof Y.XmlElement) {
+      children.push(xmlElementToHtml(child));
+    } else if (child instanceof Y.XmlText) {
+      // [Fix] TipTap's Collaboration extension stores marks as formatting on XmlText
+      // We need to read these formatting attributes and wrap the text with appropriate HTML tags
+      let text = child.toString();
+
+      // Get formatting attributes (marks) from XmlText
+      const formatting = child.getAttributes ? child.getAttributes() : {};
+
+      // Wrap text with HTML tags based on formatting
+      // Order matters: innermost tags first
+      if (formatting.code) text = `<code>${text}</code>`;
+      if (formatting.link) text = `<a href="${formatting.link.href}">${text}</a>`;
+      if (formatting.bold) text = `<strong>${text}</strong>`;
+      if (formatting.italic) text = `<em>${text}</em>`;
+      if (formatting.strike) text = `<s>${text}</s>`;
+      if (formatting.underline) text = `<u>${text}</u>`;
+      if (formatting.highlight) {
+        const color = formatting.highlight.color || '#fef08a';
+        text = `<mark style="background-color: ${color}">${text}</mark>`;
+      }
+      if (formatting.textStyle && formatting.textStyle.color) {
+        text = `<span style="color: ${formatting.textStyle.color}">${text}</span>`;
+      }
+
+      children.push(text);
+    }
+  });
+
+  const content = children.join('');
+  const attrString = attributes.length > 0 ? ' ' + attributes.join(' ') : '';
+
+  // Self-closing tags
+  if (['br', 'hr', 'img'].includes(tagName)) {
+    return `<${tagName}>`;
+  }
+
+  // [Modified] Skip empty paragraphs to avoid unnecessary <p><br></p>
+  // Only keep them if they're intentionally placed between content blocks
+  if (tagName === 'p' && !content.trim()) {
+    return ''; // Remove empty paragraphs
+  }
+
+  return `<${tagName}${attrString}>${content}</${tagName}>`;
+}
+
 
 class BridgeService {
   private debounceTimers: Map<string, NodeJS.Timeout> = new Map();
@@ -98,6 +311,16 @@ class BridgeService {
           if (block.properties) {
             const props = new Y.Map();
             Object.entries(block.properties).forEach(([k, v]) => {
+              // [Fix] For text blocks, convert HTML string to XmlFragment
+              if (block._class === 'text' && k === 'content' && typeof v === 'string') {
+                const fragment = htmlToXmlFragment(v);
+                props.set('content', fragment);
+                props.set('_initialHtml', v);
+                props.set('rawHtml', v);
+                console.log(`[Bridge] Converted HTML to XmlFragment for text block, HTML length: ${v.length}, Fragment length: ${fragment.length}`);
+                return; // Skip the default props.set below
+              }
+
               // [Fix] Initialize as plain string/value from DB.
               // Clients will handle migration to specific Yjs types (e.g. Text -> XmlFragment).
               // This avoids server-side type mismatches and complex XML parsing.
@@ -194,23 +417,18 @@ class BridgeService {
 
         if (yProperties instanceof Y.Map) {
           yProperties.forEach((val, key) => {
+            // [Fix] Skip XmlFragment conversion for rawHtml - it should remain as plain HTML string
+            if (key === 'rawHtml' && typeof val === 'string') {
+              cleanProps[key] = val;
+              return;
+            }
+
             if (val instanceof Y.XmlFragment) {
-              // [Fix] Extract plain text from XmlFragment for clean DB storage
-              // Convert <paragraph>text</paragraph> structure to plain text with newlines
-              const paragraphs: string[] = [];
-              val.forEach((item: any) => {
-                if (item instanceof Y.XmlElement && item.nodeName === 'paragraph') {
-                  // Extract text from paragraph
-                  let text = '';
-                  item.forEach((child: any) => {
-                    if (child instanceof Y.XmlText) {
-                      text += child.toString();
-                    }
-                  });
-                  paragraphs.push(text);
-                }
-              });
-              cleanProps[key] = paragraphs.join('\n');
+              // [Fix] Convert XmlFragment to HTML to preserve all tags (h1, h2, strong, etc.)
+              // This is essential for AI review results and formatted content
+              const htmlContent = xmlFragmentToHtml(val);
+              cleanProps[key] = htmlContent;
+              console.log(`[Bridge] Converted XmlFragment to HTML for key "${key}", length: ${htmlContent.length}`);
             } else if (val instanceof Y.Text || val instanceof Y.XmlElement) {
               // For other Yjs types, use toString
               cleanProps[key] = val.toString();
@@ -220,6 +438,14 @@ class BridgeService {
               cleanProps[key] = val;
             }
           });
+
+          // [New] If rawHtml exists and has content, use it as the content source for text blocks
+          // rawHtml contains properly formatted HTML (e.g., <strong><s>text</s></strong>)
+          // while XmlFragment conversion may produce TipTap node names (e.g., <bold><strike>text</strike></bold>)
+          if (cleanProps.rawHtml && cleanProps.rawHtml.trim() && springClass === 'text') {
+            cleanProps.content = cleanProps.rawHtml;
+            console.log(`[Bridge] Using rawHtml as content for text block, length: ${cleanProps.rawHtml.length}`);
+          }
         }
 
         const rootFields: any = {

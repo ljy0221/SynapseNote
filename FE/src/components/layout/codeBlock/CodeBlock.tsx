@@ -250,7 +250,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
         onChange(id, code);
     };
 
-    // [핵심 수정] AI 리뷰 핸들러: 저장 후 요청, 결과 부모 전달
+    // [핵심 수정] AI 리뷰 핸들러: Yjs에만 저장, MongoDB에는 저장하지 않음
     const handleAiReview = async () => {
         if (!noteId) return;
 
@@ -259,16 +259,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
         setAiReviewLoading(true);
 
         try {
-            // 1. 현재 편집된 코드와 언어를 백엔드에 즉시 동기화 (언어 미반영 문제 해결)
-            await saveExecutionToBackend(noteId, id.toString(), {
-                blockId: id.toString(),
-                status: 'success',
-                output: editedCode,
-                executionTime: 0,
-                exitCode: 0
-            } as any);
-
-            // 2. AI 리뷰 API 호출 (현재 선택된 언어 전달)
+            // AI 리뷰 API 호출 (현재 선택된 언어 전달)
             const response = await requestCodeReview(
                 noteId,
                 id.toString(),
@@ -276,7 +267,8 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                 aiReviewAbortRef.current.signal
             );
 
-            // 3. 리뷰 결과를 HTML로 변환하여 새 블록으로 추가 또는 기존 블록 업데이트
+            // 리뷰 결과를 HTML로 변환하여 새 블록으로 추가 또는 기존 블록 업데이트
+            // Yjs를 통해 실시간 동기화되지만 MongoDB에는 저장되지 않음
             if (onAiReviewResult) {
                 const htmlContent = formatReviewAsHtml(response);
                 onAiReviewResult(htmlContent);
