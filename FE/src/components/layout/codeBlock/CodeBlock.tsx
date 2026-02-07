@@ -432,7 +432,6 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                             onChange(id, value); // LWW: always send changes to parent
                         }}
                         onFocus={handleEditorFocus}
-                        onBlur={handleEditorBlur}
                         readOnly={loading}
                         minHeight="auto"
                         maxHeight="800px"

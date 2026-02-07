@@ -129,7 +129,7 @@
     display: flex;
     align-items: center;
     gap: 1px;
-    padding: 2px 4px;
+    padding: 8px 4px;
     background: var(--color-sub, #f7f2e8);
     border-bottom: 1px solid var(--color-border, #e7e5e4);
     flex-wrap: wrap;
@@ -540,11 +540,11 @@
 }
 
 /* Bookmark Button Container */
-.block-actions-right {
+.text-block-wrapper .block-actions-right {
     display: flex;
     align-items: center;
-    padding-top: 8px;
-    /* Slightly adjust alignment */
+    padding-top: 42px;
+    /* Align with editor-content (white body area, below beige toolbar) */
     opacity: 0;
     transition: opacity 0.2s ease;
 }
