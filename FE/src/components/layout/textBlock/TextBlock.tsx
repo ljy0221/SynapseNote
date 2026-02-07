@@ -4,7 +4,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
-import { Extension } from '@tiptap/core';
+import { Extension, Node } from '@tiptap/core';
 import Placeholder from '@tiptap/extension-placeholder';
 import Underline from '@tiptap/extension-underline';
 import Highlight from '@tiptap/extension-highlight';
@@ -34,6 +34,21 @@ import {
 import { useModalStore } from '../../../store/useModalStore';
 import './TextBlock.css';
 import { BlockBookmarkButton } from '../../common/blockBookmarkButton/BlockBookmarkButton';
+
+// [New] Div Node for Layout
+const DivNode = Node.create({
+    name: 'div',
+    group: 'block',
+    content: 'block+',
+    parseHTML() {
+        return [
+            { tag: 'div' },
+        ]
+    },
+    renderHTML({ HTMLAttributes }) {
+        return ['div', HTMLAttributes, 0]
+    },
+});
 
 interface TextBlockProps {
     id: number | string;
@@ -79,6 +94,7 @@ const TabHandler = Extension.create({
         };
     },
 });
+
 const TextBlock: React.FC<TextBlockProps> = ({
     id,
     content,
@@ -131,6 +147,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 // @ts-ignore
                 dropcursor: false,
             }),
+            DivNode, // [New] Add Div support
             Image,
             TextStyle,
             Color,
@@ -152,6 +169,29 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 },
             }),
             TabHandler,
+            // [New] Allow style attributes for AI Review formatting
+            Extension.create({
+                name: 'styleAttribute',
+                addGlobalAttributes() {
+                    return [
+                        {
+                            types: ['paragraph', 'heading', 'bulletList', 'orderedList', 'listItem', 'blockquote', 'textStyle', 'div', 'code', 'pre', 'codeBlock'], // Added 'code' and 'pre'
+                            attributes: {
+                                style: {
+                                    default: null,
+                                    parseHTML: element => element.getAttribute('style'),
+                                    renderHTML: attributes => {
+                                        if (!attributes.style) {
+                                            return {}
+                                        }
+                                        return { style: attributes.style }
+                                    },
+                                },
+                            },
+                        },
+                    ]
+                },
+            }),
         ],
         content: content,
         // onTransaction removed for performance optimization.
@@ -225,9 +265,11 @@ const TextBlock: React.FC<TextBlockProps> = ({
             editor.commands.setContent(content, { emitUpdate: false });
         }
     }, [content, editor]);
+
     if (!editor) {
         return null;
     }
+
     // ========================================
     // 이미지 업로드 (백엔드 업로드 방식)
     // ========================================
@@ -287,6 +329,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
 
         input.click();
     };
+
     // ========================================
     // 링크 모달 열기
     // ========================================
@@ -299,6 +342,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
         setLinkText(selectedText); // 선택된 텍스트 설정
         setShowLinkModal(true);
     };
+
     // 링크 적용
     const applyLink = () => {
         if (linkUrl.trim() === '') {
@@ -333,6 +377,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
         setLinkUrl('');
         setLinkText('');
     };
+
     // 링크 모달 닫기
     const closeLinkModal = () => {
         setShowLinkModal(false);
@@ -340,6 +385,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
         setLinkText('');
         editor.commands.focus();
     };
+
     return (
         <div
             id={id.toString()}
@@ -359,6 +405,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                     ⋮⋮
                 </div>
             </div>
+
             <div className="text-block-editor-container">
                 {/* 포커스 시에만 툴바 표시 (ReadOnly일 때는 숨김) */}
                 {isFocused && !readOnly && (
@@ -555,6 +602,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                     </div>
                 )}
                 <EditorContent editor={editor} className="editor-content" />
+
                 {/* 링크 입력 모달 */}
                 {showLinkModal && (
                     <div className="link-modal-overlay" onClick={closeLinkModal}>
@@ -604,6 +652,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                         </div>
                     </div>
                 )}
+
                 {/* 업로드 중 표시 */}
                 {isUploading && (
                     <div className="upload-overlay">
@@ -622,4 +671,5 @@ const TextBlock: React.FC<TextBlockProps> = ({
         </div>
     );
 };
+
 export default TextBlock;
