@@ -196,10 +196,10 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 fragment: yText as any,
             })] : []),
         ],
-        // [Fix] Only use Yjs state if it's non-empty.
-        // During migration, yText will be an empty XmlFragment.
-        // By providing initial content here, Tiptap will populate the empty fragment for us.
-        content: (yText && yText.toString() !== "") ? undefined : (content || ''),
+        // [Fix] Only use Yjs state if it's properly initialized (has content).
+        // Check fragment length instead of toString() to avoid issues with XML representation.
+        // If fragment is empty (length === 0), provide initial content and let Tiptap populate it.
+        content: (yText && (yText as any).length > 0) ? undefined : (content || ''),
         editorProps: {
             attributes: {
                 class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl focus:outline-none',
