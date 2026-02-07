@@ -22,7 +22,7 @@ export const requestCodeReview = async (
 
 // 언어를 포함한 리뷰 요청 생성 함수
 export const createReviewRequest = (language: string, codeContent: string): CodeReviewRequest => ({
-  provider: 'OPENAI',
+  provider: 'ANTHROPIC',
   focusAreas: ['performance', 'security', 'readability', 'bestPractices'],
   includeContext: false,
   language,
@@ -30,7 +30,7 @@ export const createReviewRequest = (language: string, codeContent: string): Code
 });
 
 export const DEFAULT_REVIEW_REQUEST: CodeReviewRequest = {
-  provider: 'OPENAI',
+  provider: 'ANTHROPIC',
   focusAreas: ['performance', 'security', 'readability', 'bestPractices'],
   includeContext: false,
   language: 'javascript',
