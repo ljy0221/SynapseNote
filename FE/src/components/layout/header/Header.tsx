@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom'; // 1. useNavigate 추가
+import { useAuthStore } from '../../../store/useAuthStore';
 import './Header.css';
 import { ThemeManager } from '../../features/theme/ThemeManager';
 import SearchBar from '../../common/searchBar/searchBar.tsx';
@@ -55,6 +56,7 @@ export const Header: React.FC<HeaderProps> = () => {
               query={searchQuery}
               results={searchResults}
               isLoading={isSearching}
+              currentMemberId={useAuthStore.getState().userInfo?.memberId}
               onClose={() => setSearchQuery(null)}
               onSelectNote={(noteId) => {
                 console.log('선택한 노트:', noteId);
