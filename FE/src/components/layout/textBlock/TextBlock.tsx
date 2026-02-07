@@ -176,11 +176,14 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 types: ['heading', 'paragraph'],
             }),
             TabHandler,
-            Collaboration.configure({
+            ...(yText ? [Collaboration.configure({
                 fragment: yText as any,
-            }),
+            })] : []),
         ],
-        content: yText ? undefined : (content || ''), // If yText exists, Collaboration will populate from it
+        // [Fix] Only use Yjs state if it's non-empty.
+        // During migration, yText will be an empty XmlFragment.
+        // By providing initial content here, Tiptap will populate the empty fragment for us.
+        content: (yText && yText.toString() !== "") ? undefined : (content || ''),
         editorProps: {
             attributes: {
                 class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl focus:outline-none',
@@ -228,26 +231,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
 
     // [Removed] Remote update observer (handled by Collaboration extension)
 
-    // [New] Initialize Y.Text with existing content if it's empty
-    useEffect(() => {
-        console.log(`[TextBlock ${id}] Init check - editor:`, !!editor, 'yText:', !!yText, 'content:', content?.substring(0, 50));
-
-        if (!editor || !yText || !content) {
-            console.log(`[TextBlock ${id}] Skipping init - missing dependency`);
-            return;
-        }
-
-        const yTextContent = yText.toString();
-        console.log(`[TextBlock ${id}] Y.Text length:`, yTextContent.length, 'content length:', content.trim().length);
-
-        if (yTextContent.length === 0 && content.trim().length > 0) {
-            console.log(`[TextBlock ${id}] Initializing Y.Text with existing content:`, content.substring(0, 50));
-            // Set initial content in Tiptap, which will sync to Y.Text
-            editor.commands.setContent(content || '');
-        } else {
-            console.log(`[TextBlock ${id}] Skipping init - Y.Text not empty or content empty`);
-        }
-    }, [editor, yText, content, id]);
+    // [Removed] Initial Y.Text population useEffect - now handled by Collaboration extension and server-side init
 
     // [추가] 외부에서 포커스 요청 시 에디터 포커스
     useEffect(() => {
