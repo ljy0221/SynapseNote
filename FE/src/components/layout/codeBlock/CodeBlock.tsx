@@ -481,7 +481,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 
             {/* [New] Show editor avatar if someone else is editing */}
             {editors.length > 0 && (
-                <BlockEditorAvatar editors={editors.slice(-1)} />
+                <BlockEditorAvatar editors={editors.slice(0, 1)} />
             )}
 
             {/* Language Change Confirmation Modal */}
