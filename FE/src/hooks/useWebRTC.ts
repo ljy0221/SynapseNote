@@ -60,8 +60,11 @@ export const useWebRTC = ({ noteId, memberId, token, onConnect }: UseWebRTCOptio
 
         const pc = new RTCPeerConnection({
             iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' }
+                {
+                    urls: import.meta.env.VITE_TURN_URL || 'turn:13.125.39.11:3478',
+                    username: import.meta.env.VITE_TURN_USERNAME || 'synapse',
+                    credential: import.meta.env.VITE_TURN_CREDENTIAL || 'eoWhszn123'
+                }
             ]
         });
 
