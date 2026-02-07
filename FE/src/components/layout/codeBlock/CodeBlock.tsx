@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import VersionButton from '../../common/versionButton/VersionButton';
 import { DragControls } from 'framer-motion';
 import BlockRunButton from '../../common/blockRunButton/BlockRunButton';
@@ -21,7 +21,7 @@ import { useToastStore } from '../../../store/useToastStore';
 import { Tooltip } from '../../common/tooltip/Tooltip';
 import ConfirmModal from '../../common/modal/ConfirmModal';
 import { BlockEditorAvatar } from '../../common/blockEditorAvatar/BlockEditorAvatar';
-import { AwarenessUser, useYjsStore } from '../../../hooks/useYjsStore'; // [New] Import useYjsStore
+import { AwarenessUser } from '../../../hooks/useYjsStore.ts';
 
 interface CodeBlockProps {
     id: number | string;
@@ -105,24 +105,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     // [New] Track the last value sent to the parent to prevent stale prop overwrites
     const lastSentValueRef = useRef<string>(code);
 
-    // [New] Get Y.Text for collaborative editing - memoized to prevent infinite rerenders
-    const { getYTextForCodeBlock } = useYjsStore(noteId);
-    const yText = useMemo(() => {
-        return noteId ? getYTextForCodeBlock(id) : null;
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [id, noteId]); // getYTextForCodeBlock is stable, don't include it
-
-    // [DEBUG] Log Y.Text status
-    useEffect(() => {
-        console.log(`[CodeBlock ${id}] Y.Text status:`, {
-            noteId,
-            hasYText: !!yText,
-            yTextType: yText?.constructor?.name,
-            yTextLength: yText?.length
-        });
-    }, [id, noteId, yText]);
-
-    // CodeBlock now uses Y.Text for real-time collaboration
+    // CodeBlock uses LWW (Last-Write-Wins) synchronization
     const handleBookmark = () => {
         onToggleBookmark?.();
     };
@@ -440,22 +423,16 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                         value={editedCode}
                         language={language}
                         onChange={(value) => {
-                            // [CRITICAL] When Y.Text is active, yCollab handles ALL sync
-                            // Don't call onChange at all - it triggers updateBlock which conflicts with CRDT
-                            if (yText) return;
-
-                            // Only for non-collaborative mode (no noteId or Y.Text unavailable)
                             if (readOnly) return;
                             setEditedCode(value);
                             lastSentValueRef.current = value;
-                            onChange(id, value);
+                            onChange(id, value); // LWW: always send changes to parent
                         }}
                         onFocus={handleEditorFocus}
                         onBlur={handleEditorBlur}
                         readOnly={loading}
                         minHeight="auto"
                         maxHeight="800px"
-                        yText={yText} // [New] Pass Y.Text for collaborative editing
                     />
                 </div>
 
