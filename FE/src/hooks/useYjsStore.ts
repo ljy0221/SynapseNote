@@ -634,35 +634,11 @@ export const useYjsStore = (noteId: string | undefined) => {
         const needsMigration = !fragment || !isSharedType || !hasToArray || !isXmlFragment;
 
         if (needsMigration) {
-          const initialContent = fragment ? fragment.toString() : '';
-          console.warn(`[Yjs] Migrating block ${idx} to Y.XmlFragment. Content length: ${initialContent.length}`);
+          console.warn(`[Yjs] Migrating block ${idx} to Y.XmlFragment (empty). Tiptap will initialize it.`);
 
+          // [Fix] Create empty Y.XmlFragment and let Tiptap initialize it with the content.
+          // Don't manually create the structure as it might not match Tiptap's schema.
           const newFragment = new Y.XmlFragment();
-
-          if (initialContent && initialContent !== '[object Object]') {
-            // Simple HTML parser for <p> tags
-            if (initialContent.includes('<p>') || initialContent.includes('</p>')) {
-              const paragraphs = initialContent.split(/<\/?p>/g).filter((text: string) => text.trim());
-              paragraphs.forEach((text: string) => {
-                const paragraph = new Y.XmlElement('paragraph');
-                const textNode = new Y.XmlText(text);
-                paragraph.insert(0, [textNode]);
-                newFragment.insert(newFragment.length, [paragraph]);
-              });
-            } else {
-              // Plain text -> wrap in paragraph(s) by newline
-              const lines = initialContent.split('\n');
-              lines.forEach((line: string, idx: number) => {
-                if (line.trim() || idx === 0) {
-                  const paragraph = new Y.XmlElement('paragraph');
-                  const textNode = new Y.XmlText(line);
-                  paragraph.insert(0, [textNode]);
-                  newFragment.insert(newFragment.length, [paragraph]);
-                }
-              });
-            }
-          }
-
           properties.set(key, newFragment);
         }
       });
