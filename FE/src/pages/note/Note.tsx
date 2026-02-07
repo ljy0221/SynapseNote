@@ -83,7 +83,7 @@ const Note: React.FC = () => {
     // [New] 권한 체크: OWNER나 EDITOR가 아니면 전부 읽기 전용 (undefined 포함)
     const isReadOnly = myRole !== 'OWNER' && myRole !== 'EDITOR';
 
-    const { blocks, isSynced, checkAndInitialize, addBlock, updateBlock, updateBlockLanguage, deleteBlock, moveBlock, setFocusedBlock, getBlockEditors } = useYjsStore(noteId);
+    const { blocks, isSynced, checkAndInitialize, addBlock, updateBlockLanguage, deleteBlock, moveBlock, setFocusedBlock, getBlockEditors } = useYjsStore(noteId);
 
     const fetchNoteDetail = useCallback(async (id: string) => {
         console.log(`[Note] fetchNoteDetail called for: ${id}, user: ${userInfo?.memberId}`);
@@ -651,8 +651,8 @@ const Note: React.FC = () => {
                         title={title}
                         onUpdateTitle={setTitle}
                         blocks={blocks}
-                        onUpdateBlock={(id, content) => {
-                            updateBlock(id, content);
+                        onUpdateBlock={() => {
+                            // updateBlock call removed - Collaboration handles Y.Text
                             handleContentChange();
                         }}
                         onAddBlockAtEnd={handleAddBlockAtEnd}
