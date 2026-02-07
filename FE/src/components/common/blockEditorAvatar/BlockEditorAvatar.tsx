@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './BlockEditorAvatar.css';
 import './BlockEditorAvatarTooltip.css'; // [New] Smaller tooltip styling
 import { AwarenessUser } from '../../../hooks/useYjsStore';
@@ -13,7 +13,7 @@ export const BlockEditorAvatar: React.FC<BlockEditorAvatarProps> = ({
     editors,
     size = 24
 }) => {
-    const [imageError, setImageError] = React.useState(false);
+    const [imageErrors, setImageErrors] = useState<{[key: string]: boolean}>({});
 
     if (editors.length === 0) return null;
 
@@ -35,39 +35,112 @@ export const BlockEditorAvatar: React.FC<BlockEditorAvatarProps> = ({
         return colors[Math.abs(hash) % colors.length];
     };
 
-    // Show only the first editor (or we could show multiple with overlap)
-    const editor = editors[0];
-    const displayName = editor.memberName;
+    const handleImageError = (memberId: string) => {
+        setImageErrors(prev => ({ ...prev, [memberId]: true }));
+    };
+
+    // Only one editor
+    if (editors.length === 1) {
+        const editor = editors[0];
+        const displayName = editor.memberName;
+        const initials = getInitials(displayName);
+        const bgColor = getColor(displayName);
+
+        return (
+            <div className="block-editor-avatar-container" style={{ right: '1px' }}>
+                <Tooltip
+                    title={displayName}
+                    placement="bottom"
+                >
+                    <div
+                        className="block-editor-avatar"
+                        style={{
+                            width: size,
+                            height: size,
+                            backgroundColor: bgColor,
+                            color: '#fff'
+                        }}
+                    >
+                        {editor.profileImageUrl && !imageErrors[editor.memberId] ? (
+                            <img
+                                src={editor.profileImageUrl}
+                                alt={displayName}
+                                className="block-editor-avatar-img"
+                                onError={() => handleImageError(editor.memberId)}
+                            />
+                        ) : (
+                            <div className="block-editor-avatar-initials">
+                                {initials}
+                            </div>
+                        )}
+                    </div>
+                </Tooltip>
+            </div>
+        );
+    }
+
+    // Multiple editors: show first avatar + overlapped circle
+    const firstEditor = editors[0];
+    const displayName = firstEditor.memberName;
     const initials = getInitials(displayName);
     const bgColor = getColor(displayName);
 
+    // Tooltip content: all editor names
+    const tooltipContent = (
+        <div className="block-editor-tooltip-content">
+            {editors.map((editor, index) => (
+                <div key={editor.memberId || index} className="block-editor-tooltip-name">
+                    {editor.memberName}
+                </div>
+            ))}
+        </div>
+    );
+
     return (
-        <div className="block-editor-avatar-container" style={{ right: '1px' }}>
+        <div className="block-editor-avatar-container block-editor-avatar-multiple" style={{ right: '1px' }}>
             <Tooltip
-                title={displayName}
+                title={tooltipContent}
                 placement="bottom"
             >
-                <div
-                    className="block-editor-avatar"
-                    style={{
-                        width: size,
-                        height: size,
-                        backgroundColor: bgColor,
-                        color: '#fff'
-                    }}
-                >
-                    {editor.profileImageUrl && !imageError ? (
-                        <img
-                            src={editor.profileImageUrl}
-                            alt={displayName}
-                            className="block-editor-avatar-img"
-                            onError={() => setImageError(true)}
-                        />
-                    ) : (
+                <div className="block-editor-avatar-group">
+                    {/* First editor avatar */}
+                    <div
+                        className="block-editor-avatar block-editor-avatar-first"
+                        style={{
+                            width: size,
+                            height: size,
+                            backgroundColor: bgColor,
+                            color: '#fff'
+                        }}
+                    >
+                        {firstEditor.profileImageUrl && !imageErrors[firstEditor.memberId] ? (
+                            <img
+                                src={firstEditor.profileImageUrl}
+                                alt={displayName}
+                                className="block-editor-avatar-img"
+                                onError={() => handleImageError(firstEditor.memberId)}
+                            />
+                        ) : (
+                            <div className="block-editor-avatar-initials">
+                                {initials}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Overlapped circle for remaining editors */}
+                    <div
+                        className="block-editor-avatar block-editor-avatar-overlap"
+                        style={{
+                            width: size,
+                            height: size,
+                            backgroundColor: '#9ca3af',
+                            color: '#fff'
+                        }}
+                    >
                         <div className="block-editor-avatar-initials">
-                            {initials}
+                            +{editors.length - 1}
                         </div>
-                    )}
+                    </div>
                 </div>
             </Tooltip>
         </div>
