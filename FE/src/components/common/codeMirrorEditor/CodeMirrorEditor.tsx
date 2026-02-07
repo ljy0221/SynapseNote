@@ -275,13 +275,13 @@ const createHighlightStyle = (themeMode: ThemeMode) => {
 
 const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
     value,
-    language,
     onChange,
     onFocus,
     onBlur, // [Add]
+    language = 'javascript',
     readOnly = false,
-    minHeight = '150px',
-    maxHeight = '800px',
+    minHeight = '100px',
+    maxHeight = '500px',
 }) => {
     const editorRef = useRef<HTMLDivElement>(null);
     const viewRef = useRef<EditorView | null>(null);
@@ -291,6 +291,15 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
 
     // 앱 테마 가져오기
     const themeMode = useThemeStore((state) => state.themeMode);
+
+    // [Fix] Use refs to always access latest handlers
+    const onFocusRef = useRef(onFocus);
+    const onBlurRef = useRef(onBlur);
+
+    useEffect(() => {
+        onFocusRef.current = onFocus;
+        onBlurRef.current = onBlur;
+    }, [onFocus, onBlur]);
 
     // 자동 높이 조절 테마
     const autoHeightTheme = EditorView.theme({
@@ -311,34 +320,41 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
     useEffect(() => {
         if (!editorRef.current) return;
 
+        // [New] Build extensions array conditionally
+        const extensions = [
+            basicSetup,
+            drawSelection(), // [New] Explicitly add drawSelection
+            getLanguageExtension(language),
+            createCustomTheme(themeMode),
+            syntaxHighlighting(createHighlightStyle(themeMode)),
+            autocompletion({
+                activateOnTyping: true,
+                override: [],
+            }),
+            autoHeightTheme,
+            EditorState.readOnly.of(readOnly),
+            EditorState.tabSize.of(settings.tabSize),
+            EditorView.lineWrapping,
+            EditorView.domEventHandlers({
+                focus: () => onFocusRef.current?.(),
+                blur: () => onBlurRef.current?.(), // [Fix] Use ref to get latest handler
+            }),
+        ];
+
+        // [New] Add yCollab if Y.Text is provided for collaborative editing
+        extensions.push(
+            EditorView.updateListener.of((update) => {
+                // 사용자가 직접 타이핑했을 때만 onChange 호출 (무한 루프 방지)
+                // programmatic update 중에는 호출 안 함
+                if (update.docChanged && !isDispatchingRef.current) {
+                    onChange(update.state.doc.toString());
+                }
+            })
+        );
+
         const state = EditorState.create({
-            doc: value,
-            extensions: [
-                basicSetup,
-                drawSelection(), // [New] Explicitly add drawSelection
-                getLanguageExtension(language),
-                createCustomTheme(themeMode),
-                syntaxHighlighting(createHighlightStyle(themeMode)),
-                autocompletion({
-                    activateOnTyping: true,
-                    override: [],
-                }),
-                autoHeightTheme,
-                EditorState.readOnly.of(readOnly),
-                EditorState.tabSize.of(settings.tabSize),
-                EditorView.lineWrapping,
-                EditorView.updateListener.of((update) => {
-                    // 사용자가 직접 타이핑했을 때만 onChange 호출 (무한 루프 방지)
-                    // programmatic update 중에는 호출 안 함
-                    if (update.docChanged && !isDispatchingRef.current) {
-                        onChange(update.state.doc.toString());
-                    }
-                }),
-                EditorView.domEventHandlers({
-                    focus: () => onFocus?.(),
-                    blur: () => onBlur?.(), // [Add] blur 핸들러 추가
-                }),
-            ],
+            doc: value, // [New] Use Y.Text content if available
+            extensions,
         });
 
         const view = new EditorView({
@@ -352,10 +368,13 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
             view.destroy();
             viewRef.current = null;
         };
-    }, []); // 초기 마운트 시에만 실행
+    }, []); // [CRITICAL] Recreate editor when yText changes to ensure proper yCollab binding
 
     // value prop 변경 시 에디터 업데이트 (커서 위치 보존)
     useEffect(() => {
+        // [CRITICAL] Skip value updates when Y.Text is active
+        // yCollab handles all synchronization automatically
+
         if (viewRef.current && value !== undefined) {
             const currentValue = viewRef.current.state.doc.toString();
             if (currentValue !== value) {
@@ -405,8 +424,8 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
                         }
                     }),
                     EditorView.domEventHandlers({
-                        focus: () => onFocus?.(),
-                        blur: () => onBlur?.(), // [Add]
+                        focus: () => onFocusRef.current?.(),
+                        blur: () => onBlurRef.current?.(), // [Fix] Use ref to get latest handler
                     }),
                 ]),
             });
