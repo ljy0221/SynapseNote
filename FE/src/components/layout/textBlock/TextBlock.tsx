@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
@@ -35,7 +35,8 @@ import { useModalStore } from '../../../store/useModalStore';
 import './TextBlock.css';
 import { BlockBookmarkButton } from '../../common/blockBookmarkButton/BlockBookmarkButton';
 import { BlockEditorAvatar } from '../../common/blockEditorAvatar/BlockEditorAvatar'; // [New]
-import { AwarenessUser, useYjsStore } from '../../../hooks/useYjsStore'; // [Changed] Added useYjsStore
+import { AwarenessUser, useYjsStore, applyTextDiff } from '../../../hooks/useYjsStore';
+// [Changed] Added useYjsStore
 
 interface TextBlockProps {
     id: number | string;
@@ -118,7 +119,10 @@ const TextBlock: React.FC<TextBlockProps> = ({
     const [linkText, setLinkText] = React.useState(''); // [New] 링크 텍스트 상태
 
     // Force update trigger
-    const [, setUpdateTrigger] = React.useState(0);
+    const [updateTrigger, setUpdateTrigger] = useState<number>(0);
+
+    // [New] Reference to track the last content sent to Yjs to calculate accurate diffs
+    const prevContentRef = useRef<string>(content || '');
 
     // 이미지 업로드 상태
     const [isUploading, setIsUploading] = React.useState(false);
@@ -201,26 +205,23 @@ const TextBlock: React.FC<TextBlockProps> = ({
             // 그러나 useEditor는 내부적으로 상태 관리를 함.
             // 문제는 isActive 체크가 렌더링 사이클에 반영되지 않는 것.
             // setState를 호출하여 컴포넌트 리렌더링 유도
-            setUpdateTrigger(prev => prev + 1);
+            setUpdateTrigger((prev: number) => prev + 1);
         },
         onUpdate: ({ editor }) => {
             const html = editor.getHTML();
             console.log(`[TextBlock ${id}] onUpdate called! HTML length:`, html.length);
 
-            // [New] Manual Y.Text synchronization
+            // [New] Manual Y.Text synchronization with Incremental Diff
             if (yDoc && yText) {
-                console.log(`[TextBlock ${id}] Syncing to Y.Text...`);
                 yDoc.transact(() => {
-                    const currentContent = yText.toString();
-                    if (currentContent !== html) {
-                        console.log(`[TextBlock ${id}] Y.Text updated! Old length: ${currentContent.length}, New length: ${html.length}`);
-                        yText.delete(0, yText.length);
-                        yText.insert(0, html);
-                    } else {
-                        console.log(`[TextBlock ${id}] Y.Text unchanged`);
+                    const localBase = prevContentRef.current;
+                    if (localBase !== html) {
+                        applyTextDiff(yText, localBase, html);
+                        prevContentRef.current = html;
                     }
-                });
-            } else {
+                }, 'local');
+            }
+            else {
                 console.log(`[TextBlock ${id}] No yDoc/yText available for sync`);
             }
 
@@ -241,6 +242,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 if (yContent !== editorContent) {
                     console.log(`[TextBlock ${id}] Blurred. Syncing from Yjs to Editor.`);
                     editor.commands.setContent(yContent, { emitUpdate: false }); // Correct options object
+                    prevContentRef.current = yContent;
                 }
             }
         },
@@ -259,6 +261,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 if (yContent !== editorContent) {
                     console.log(`[TextBlock ${id}] Remote update detected. Updating editor.`);
                     editor.commands.setContent(yContent, { emitUpdate: false });
+                    prevContentRef.current = yContent; // Update base for next local change
                 }
             }
         };
@@ -461,7 +464,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                         <div className="toolbar-group">
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => { editor.chain().focus().toggleHeading({ level: 1 }).run(); setUpdateTrigger(prev => prev + 1); }}
+                                onClick={() => { editor.chain().focus().toggleHeading({ level: 1 }).run(); setUpdateTrigger((prev: number) => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive('heading', { level: 1 }) ? 'is-active' : ''}`}
                                 title="제목 1"
                             >
@@ -469,7 +472,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                             </button>
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => { editor.chain().focus().toggleHeading({ level: 2 }).run(); setUpdateTrigger(prev => prev + 1); }}
+                                onClick={() => { editor.chain().focus().toggleHeading({ level: 2 }).run(); setUpdateTrigger((prev: number) => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive('heading', { level: 2 }) ? 'is-active' : ''}`}
                                 title="제목 2"
                             >
@@ -477,7 +480,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                             </button>
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => { editor.chain().focus().toggleHeading({ level: 3 }).run(); setUpdateTrigger(prev => prev + 1); }}
+                                onClick={() => { editor.chain().focus().toggleHeading({ level: 3 }).run(); setUpdateTrigger((prev: number) => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive('heading', { level: 3 }) ? 'is-active' : ''}`}
                                 title="제목 3"
                             >
@@ -488,7 +491,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                         <div className="toolbar-group">
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => { editor.chain().focus().toggleBold().run(); setUpdateTrigger(prev => prev + 1); }}
+                                onClick={() => { editor.chain().focus().toggleBold().run(); setUpdateTrigger((prev: number) => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive('bold') ? 'is-active' : ''}`}
                                 title="굵게 (Ctrl+B)"
                             >
@@ -496,7 +499,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                             </button>
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => { editor.chain().focus().toggleItalic().run(); setUpdateTrigger(prev => prev + 1); }}
+                                onClick={() => { editor.chain().focus().toggleItalic().run(); setUpdateTrigger((prev: number) => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive('italic') ? 'is-active' : ''}`}
                                 title="기울임 (Ctrl+I)"
                             >
@@ -504,7 +507,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                             </button>
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => { editor.chain().focus().toggleStrike().run(); setUpdateTrigger(prev => prev + 1); }}
+                                onClick={() => { editor.chain().focus().toggleStrike().run(); setUpdateTrigger((prev: number) => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive('strike') ? 'is-active' : ''}`}
                                 title="취소선"
                             >
@@ -512,7 +515,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                             </button>
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => { editor.chain().focus().toggleUnderline().run(); setUpdateTrigger(prev => prev + 1); }}
+                                onClick={() => { editor.chain().focus().toggleUnderline().run(); setUpdateTrigger((prev: number) => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive('underline') ? 'is-active' : ''}`}
                                 title="밑줄 (Ctrl+U)"
                             >
@@ -523,7 +526,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                         <div className="toolbar-group">
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => { editor.chain().focus().toggleHighlight({ color: '#fef08a' }).run(); setUpdateTrigger(prev => prev + 1); }}
+                                onClick={() => { editor.chain().focus().toggleHighlight({ color: '#fef08a' }).run(); setUpdateTrigger((prev: number) => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive('highlight') ? 'is-active' : ''}`}
                                 title="형광펜"
                             >
@@ -550,7 +553,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                                                 onClick={() => {
                                                     editor.chain().focus().setColor(color).run();
                                                     setShowColorPicker(false);
-                                                    setUpdateTrigger(prev => prev + 1);
+                                                    setUpdateTrigger((prev: number) => prev + 1);
                                                 }}
                                             />
                                         ))}
@@ -562,7 +565,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                         <div className="toolbar-group">
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => { editor.chain().focus().setTextAlign('left').run(); setUpdateTrigger(prev => prev + 1); }}
+                                onClick={() => { editor.chain().focus().setTextAlign('left').run(); setUpdateTrigger((prev: number) => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive({ textAlign: 'left' }) ? 'is-active' : ''}`}
                                 title="왼쪽 정렬"
                             >
@@ -570,7 +573,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                             </button>
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => { editor.chain().focus().setTextAlign('center').run(); setUpdateTrigger(prev => prev + 1); }}
+                                onClick={() => { editor.chain().focus().setTextAlign('center').run(); setUpdateTrigger((prev: number) => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive({ textAlign: 'center' }) ? 'is-active' : ''}`}
                                 title="가운데 정렬"
                             >
@@ -578,7 +581,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                             </button>
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => { editor.chain().focus().setTextAlign('right').run(); setUpdateTrigger(prev => prev + 1); }}
+                                onClick={() => { editor.chain().focus().setTextAlign('right').run(); setUpdateTrigger((prev: number) => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive({ textAlign: 'right' }) ? 'is-active' : ''}`}
                                 title="오른쪽 정렬"
                             >
@@ -586,7 +589,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                             </button>
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => { editor.chain().focus().setTextAlign('justify').run(); setUpdateTrigger(prev => prev + 1); }}
+                                onClick={() => { editor.chain().focus().setTextAlign('justify').run(); setUpdateTrigger((prev: number) => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive({ textAlign: 'justify' }) ? 'is-active' : ''}`}
                                 title="양쪽 정렬"
                             >
@@ -597,7 +600,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                         <div className="toolbar-group">
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => { editor.chain().focus().toggleBulletList().run(); setUpdateTrigger(prev => prev + 1); }}
+                                onClick={() => { editor.chain().focus().toggleBulletList().run(); setUpdateTrigger((prev: number) => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive('bulletList') ? 'is-active' : ''}`}
                                 title="글머리 기호 목록"
                             >
@@ -605,7 +608,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                             </button>
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => { editor.chain().focus().toggleOrderedList().run(); setUpdateTrigger(prev => prev + 1); }}
+                                onClick={() => { editor.chain().focus().toggleOrderedList().run(); setUpdateTrigger((prev: number) => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive('orderedList') ? 'is-active' : ''}`}
                                 title="번호 목록"
                             >
@@ -613,7 +616,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                             </button>
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => { editor.chain().focus().toggleBlockquote().run(); setUpdateTrigger(prev => prev + 1); }}
+                                onClick={() => { editor.chain().focus().toggleBlockquote().run(); setUpdateTrigger((prev: number) => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive('blockquote') ? 'is-active' : ''}`}
                                 title="인용구"
                             >
