@@ -618,5 +618,25 @@ export const useYjsStore = (noteId: string | undefined) => {
     setFocusedBlock, // [New]
     getBlockEditors, // [New]
     editingUsers, // [New]
+    // [New] Expose Y.Doc and Y.Text for Tiptap Collaboration
+    getYDoc: () => docRef.current,
+    getYTextForBlock: (blockId: string | number) => {
+      const doc = docRef.current;
+      if (!doc) return null;
+
+      const yBlocks = doc.getArray<YBlockMap>('blocks');
+      const targetBlock = yBlocks.toArray().find(block => {
+        const id = block.get('blockId');
+        return id?.toString() === blockId.toString();
+      });
+
+      if (!targetBlock) return null;
+
+      const properties = targetBlock.get('properties') as Y.Map<any>;
+      const type = targetBlock.get('_class');
+      const key = type === 'code' ? 'code' : 'content';
+
+      return properties.get(key) as Y.Text | null;
+    },
   };
 };

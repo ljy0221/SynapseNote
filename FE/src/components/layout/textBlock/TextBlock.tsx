@@ -10,6 +10,7 @@ import Underline from '@tiptap/extension-underline';
 import Highlight from '@tiptap/extension-highlight';
 import TextAlign from '@tiptap/extension-text-align';
 import Link from '@tiptap/extension-link';
+import Collaboration from '@tiptap/extension-collaboration'; // [New]
 import {
     Heading1,
     Heading2,
@@ -35,13 +36,14 @@ import { useModalStore } from '../../../store/useModalStore';
 import './TextBlock.css';
 import { BlockBookmarkButton } from '../../common/blockBookmarkButton/BlockBookmarkButton';
 import { BlockEditorAvatar } from '../../common/blockEditorAvatar/BlockEditorAvatar'; // [New]
-import { AwarenessUser } from '../../../hooks/useYjsStore'; // [New]
+import { AwarenessUser, useYjsStore } from '../../../hooks/useYjsStore'; // [Changed] Added useYjsStore
 
 interface TextBlockProps {
     id: number | string;
-    content: string;
+    noteId: string; // [New] For Y.Doc access
+    content?: string; // [Changed] Optional - Y.Text is primary source
     bookmark?: boolean;
-    onUpdate: (id: number | string, content: string) => void;
+    onUpdate?: (id: number | string, content: string) => void; // [Changed] Optional
     onFocus: () => void;
     onDelete: (id: number | string) => void;
     onToggleBookmark?: () => void;
@@ -84,6 +86,7 @@ const TabHandler = Extension.create({
 });
 const TextBlock: React.FC<TextBlockProps> = ({
     id,
+    noteId, // [New]
     content,
     onUpdate,
     onFocus,
@@ -120,6 +123,12 @@ const TextBlock: React.FC<TextBlockProps> = ({
 
     // 이미지 업로드 상태
     const [isUploading, setIsUploading] = React.useState(false);
+
+    // [New] Get Y.Doc and Y.Text for Collaboration
+    const { getYDoc, getYTextForBlock } = useYjsStore(noteId);
+    const yDoc = getYDoc();
+    const yText = getYTextForBlock(id);
+
     const editor = useEditor({
         extensions: [
             StarterKit.configure({
@@ -135,6 +144,11 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 // @ts-ignore
                 dropcursor: false,
             }),
+            // [New] Collaboration extension for Y.Text binding
+            ...(yDoc && yText ? [Collaboration.configure({
+                document: yDoc,
+                field: yText,
+            })] : []),
             Image,
             TextStyle,
             Color,
@@ -157,7 +171,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
             }),
             TabHandler,
         ],
-        content: content,
+        // content prop removed - Y.Text is the source of truth
         // onTransaction removed for performance optimization.
         // We now rely on explicit onClick triggers for button state updates
         // and onSelectionUpdate for cursor updates.
@@ -188,7 +202,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
             setUpdateTrigger(prev => prev + 1);
         },
         onUpdate: ({ editor }) => {
-            onUpdate(id, editor.getHTML());
+            onUpdate?.(id, editor.getHTML()); // Optional call
         },
         onFocus: () => {
             setIsFocused(true);

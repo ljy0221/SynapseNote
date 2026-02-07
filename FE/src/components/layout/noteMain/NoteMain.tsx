@@ -151,7 +151,8 @@ const NoteMain: React.FC<NoteMainProps> = ({
                         key={block.id}
                         {...commonProps}
                         id={block.id as any}
-                        content={block.content}
+                        noteId={noteId!} // [New] For Y.Text access
+                        // content prop removed - Y.Text is the source
                         bookmark={bookmarkedBlockIds ? bookmarkedBlockIds.has(block.id.toString()) : false}
                         readOnly={readOnly} // [New]
                         onUpdate={onUpdateBlock as any}
