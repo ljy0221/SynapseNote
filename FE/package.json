@@ -26,6 +26,7 @@
     "@fortawesome/react-fontawesome": "^3.1.1",
     "@stomp/stompjs": "^7.3.0",
     "@tiptap/extension-bubble-menu": "^3.18.0",
+    "@tiptap/extension-collaboration": "^3.18.0",
     "@tiptap/extension-color": "^3.18.0",
     "@tiptap/extension-floating-menu": "^3.18.0",
     "@tiptap/extension-highlight": "^3.18.0",
@@ -55,6 +56,8 @@
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.12.0",
     "reactflow": "^11.11.4",
+    "y-codemirror.next": "^0.3.5",
+    "y-monaco": "^0.1.6",
     "y-websocket": "^3.0.0",
     "yjs": "^13.6.29",
     "zustand": "^5.0.11"

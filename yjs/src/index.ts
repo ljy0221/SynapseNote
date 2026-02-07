@@ -8,10 +8,14 @@ const env = loadEnv();
 mongoose
   .connect(env.MONGO_URI)
   .then(() => {
-    console.log("[DB] Connected to MongoDB");
+    const maskedUri = env.MONGO_URI.replace(/\/\/([^:]+):([^@]+)@/, '//$1:****@');
+    console.log('[DB] Connected to MongoDB');
+    console.log('[DB] Connection URI:', maskedUri);
+    console.log('[DB] Database name:', mongoose.connection.db?.databaseName || 'unknown');
   })
   .catch((err) => {
-    console.error("[DB] Connection error:", err);
+    console.error('[DB] Connection error:', err);
+    process.exit(1);
   });
 
 createWSServer({

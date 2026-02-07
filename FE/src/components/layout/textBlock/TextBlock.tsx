@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
@@ -8,8 +8,8 @@ import { Extension, Node } from '@tiptap/core';
 import Placeholder from '@tiptap/extension-placeholder';
 import Underline from '@tiptap/extension-underline';
 import Highlight from '@tiptap/extension-highlight';
-import TextAlign from '@tiptap/extension-text-align';
 import Link from '@tiptap/extension-link';
+import TextAlign from '@tiptap/extension-text-align';
 import {
     Heading1,
     Heading2,
@@ -35,7 +35,9 @@ import { useModalStore } from '../../../store/useModalStore';
 import './TextBlock.css';
 import { BlockBookmarkButton } from '../../common/blockBookmarkButton/BlockBookmarkButton';
 import { BlockEditorAvatar } from '../../common/blockEditorAvatar/BlockEditorAvatar'; // [New]
-import { AwarenessUser } from '../../../hooks/useYjsStore'; // [New]
+import { AwarenessUser, useYjsStore } from '../../../hooks/useYjsStore';
+import Collaboration from '@tiptap/extension-collaboration';
+// [Changed] Added useYjsStore
 
 // [New] Div Node for Layout
 const DivNode = Node.create({
@@ -54,9 +56,10 @@ const DivNode = Node.create({
 
 interface TextBlockProps {
     id: number | string;
-    content: string;
+    noteId: string; // [New] For Y.Doc access
+    content?: string; // [Keep] Optional - used for initial Y.Text population
     bookmark?: boolean;
-    onUpdate: (id: number | string, content: string) => void;
+    onUpdate?: (id: number | string, content: string) => void; // [Changed] Optional
     onFocus: () => void;
     onDelete: (id: number | string) => void;
     onToggleBookmark?: () => void;
@@ -100,6 +103,7 @@ const TabHandler = Extension.create({
 
 const TextBlock: React.FC<TextBlockProps> = ({
     id,
+    noteId, // [New]
     content,
     onUpdate,
     onFocus,
@@ -118,8 +122,8 @@ const TextBlock: React.FC<TextBlockProps> = ({
     showBookmark = true, // [New]
     editors = [], // [New]
 }) => {
-    const [isFocused, setIsFocused] = React.useState(false);
-    const [showColorPicker, setShowColorPicker] = React.useState(false);
+    const [isFocused, setIsFocused] = useState(false);
+    const [showColorPicker, setShowColorPicker] = useState(false);
     const { openModal } = useModalStore(); // [New] Modal Store
 
     const handleBookmark = () => {
@@ -127,21 +131,33 @@ const TextBlock: React.FC<TextBlockProps> = ({
     };
 
     // 링크 모달 상태
-    const [showLinkModal, setShowLinkModal] = React.useState(false);
-    const [linkUrl, setLinkUrl] = React.useState('');
-    const [linkText, setLinkText] = React.useState(''); // [New] 링크 텍스트 상태
+    const [showLinkModal, setShowLinkModal] = useState(false);
+    const [linkUrl, setLinkUrl] = useState('');
+    const [linkText, setLinkText] = useState(''); // [New] 링크 텍스트 상태
 
     // Force update trigger
-    const [, setUpdateTrigger] = React.useState(0);
+    const [, setUpdateTrigger] = useState(0);
+
+    // [Removed] manual sync refs
 
     // 이미지 업로드 상태
-    const [isUploading, setIsUploading] = React.useState(false);
+    const [isUploading, setIsUploading] = useState(false);
+
+    // [New] Get Y.Doc and Y.Text for Collaboration
+    const { getYDoc, getYTextForBlock } = useYjsStore(noteId);
+    const yDoc = getYDoc();
+    const yText = getYTextForBlock(id);
+
+    // [Debug] Log Y.Text status
+    console.log(`[TextBlock ${id}] yDoc:`, !!yDoc, 'yText:', !!yText, 'yText content:', yText?.toString());
     const editor = useEditor({
         extensions: [
             StarterKit.configure({
                 heading: {
                     levels: [1, 2, 3],
                 },
+                // @ts-ignore - Collaboration extension handles history
+                history: false,
                 // @ts-ignore - Some versions include these, some don't. Explicitly disable to avoid duplicates.
                 link: false,
                 // @ts-ignore
@@ -150,13 +166,23 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 gapcursor: false,
                 // @ts-ignore
                 dropcursor: false,
+                // @ts-ignore
+                bulletList: false,
+                // @ts-ignore
+                orderedList: false,
             }),
-            DivNode, // [New] Add Div support
+            // [Removed] Collaboration extension - using manual Y.Text sync instead
             Image,
             TextStyle,
             Color,
             Placeholder.configure({
                 placeholder: '빈 블록',
+            }),
+            Link.configure({
+                openOnClick: false,
+                HTMLAttributes: {
+                    class: 'custom-link',
+                },
             }),
             Underline,
             Highlight.configure({
@@ -165,43 +191,19 @@ const TextBlock: React.FC<TextBlockProps> = ({
             TextAlign.configure({
                 types: ['heading', 'paragraph'],
             }),
-            Link.configure({
-                openOnClick: false, // [Change] 직접 핸들링을 위해 false로 설정
-                HTMLAttributes: {
-                    target: '_blank',
-                    rel: 'noopener noreferrer',
-                },
-            }),
             TabHandler,
-            // [New] Allow style attributes for AI Review formatting
-            Extension.create({
-                name: 'styleAttribute',
-                addGlobalAttributes() {
-                    return [
-                        {
-                            types: ['paragraph', 'heading', 'bulletList', 'orderedList', 'listItem', 'blockquote', 'textStyle', 'div', 'code', 'pre', 'codeBlock'], // Added 'code' and 'pre'
-                            attributes: {
-                                style: {
-                                    default: null,
-                                    parseHTML: element => element.getAttribute('style'),
-                                    renderHTML: attributes => {
-                                        if (!attributes.style) {
-                                            return {}
-                                        }
-                                        return { style: attributes.style }
-                                    },
-                                },
-                            },
-                        },
-                    ]
-                },
-            }),
+            ...(yText ? [Collaboration.configure({
+                fragment: yText as any,
+            })] : []),
         ],
-        content: content,
-        // onTransaction removed for performance optimization.
-        // We now rely on explicit onClick triggers for button state updates
-        // and onSelectionUpdate for cursor updates.
+        // [Fix] Only use Yjs state if it's properly initialized (has content).
+        // Check fragment length instead of toString() to avoid issues with XML representation.
+        // If fragment is empty (length === 0), provide initial content and let Tiptap populate it.
+        content: (yText && (yText as any).length > 0) ? undefined : (content || ''),
         editorProps: {
+            attributes: {
+                class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl focus:outline-none',
+            },
             handleClick: (view, pos, event) => {
                 const attrs = view.state.doc.resolve(pos).marks().find(mark => mark.type.name === 'link')?.attrs;
                 const link = attrs?.href;
@@ -228,7 +230,10 @@ const TextBlock: React.FC<TextBlockProps> = ({
             setUpdateTrigger(prev => prev + 1);
         },
         onUpdate: ({ editor }) => {
-            onUpdate(id, editor.getHTML());
+            // Collaboration handles Yjs sync automatically.
+            // We only call onUpdate to notify parent if needed for summary/metadata.
+            const html = editor.getHTML();
+            onUpdate?.(id, html);
         },
         onFocus: () => {
             setIsFocused(true);
@@ -237,7 +242,12 @@ const TextBlock: React.FC<TextBlockProps> = ({
         onBlur: () => {
             setIsFocused(false);
         },
-    });
+    }, [yDoc, yText, noteId, id]);
+    // [New] Re-create editor when Y.Text becomes available
+
+    // [Removed] Remote update observer (handled by Collaboration extension)
+
+    // [Removed] Initial Y.Text population useEffect - now handled by Collaboration extension and server-side init
 
     // [추가] 외부에서 포커스 요청 시 에디터 포커스
     useEffect(() => {
@@ -254,22 +264,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
     }, [editor, readOnly]);
 
     // 🔥 원격 변경사항 동기화 (깜빡임 방지)
-    // const lastRemoteUpdate = useRef<string>('');
-
-    useEffect(() => {
-        // [Fix] IME Duplication & Content Disappearance
-        // Check editor.isFocused directly from the Tiptap instance. 
-        // This is the source of truth. If the editor has focus, DO NOT touch the content
-        // based on external props. The user is typing.
-        if (editor && editor.isFocused) return;
-
-        // 실제로 다른 경우에만 업데이트
-        if (editor && content !== editor.getHTML()) {
-            // emitUpdate: false로 불필요한 onUpdate 이벤트 방지하여 무한 루프 차단
-            editor.commands.setContent(content, { emitUpdate: false });
-        }
-    }, [content, editor]);
-
+    // [Removed] manual props sync - Collaboration handles this
     if (!editor) {
         return null;
     }
@@ -417,7 +412,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                         <div className="toolbar-group">
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => { editor.chain().focus().toggleHeading({ level: 1 }).run(); setUpdateTrigger(prev => prev + 1); }}
+                                onClick={() => { editor.chain().focus().toggleHeading({ level: 1 }).run(); setUpdateTrigger((prev: number) => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive('heading', { level: 1 }) ? 'is-active' : ''}`}
                                 title="제목 1"
                             >
@@ -425,7 +420,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                             </button>
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => { editor.chain().focus().toggleHeading({ level: 2 }).run(); setUpdateTrigger(prev => prev + 1); }}
+                                onClick={() => { editor.chain().focus().toggleHeading({ level: 2 }).run(); setUpdateTrigger((prev: number) => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive('heading', { level: 2 }) ? 'is-active' : ''}`}
                                 title="제목 2"
                             >
@@ -433,7 +428,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                             </button>
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => { editor.chain().focus().toggleHeading({ level: 3 }).run(); setUpdateTrigger(prev => prev + 1); }}
+                                onClick={() => { editor.chain().focus().toggleHeading({ level: 3 }).run(); setUpdateTrigger((prev: number) => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive('heading', { level: 3 }) ? 'is-active' : ''}`}
                                 title="제목 3"
                             >
@@ -444,7 +439,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                         <div className="toolbar-group">
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => { editor.chain().focus().toggleBold().run(); setUpdateTrigger(prev => prev + 1); }}
+                                onClick={() => { editor.chain().focus().toggleBold().run(); setUpdateTrigger((prev: number) => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive('bold') ? 'is-active' : ''}`}
                                 title="굵게 (Ctrl+B)"
                             >
@@ -452,7 +447,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                             </button>
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => { editor.chain().focus().toggleItalic().run(); setUpdateTrigger(prev => prev + 1); }}
+                                onClick={() => { editor.chain().focus().toggleItalic().run(); setUpdateTrigger((prev: number) => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive('italic') ? 'is-active' : ''}`}
                                 title="기울임 (Ctrl+I)"
                             >
@@ -460,7 +455,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                             </button>
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => { editor.chain().focus().toggleStrike().run(); setUpdateTrigger(prev => prev + 1); }}
+                                onClick={() => { editor.chain().focus().toggleStrike().run(); setUpdateTrigger((prev: number) => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive('strike') ? 'is-active' : ''}`}
                                 title="취소선"
                             >
@@ -468,7 +463,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                             </button>
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => { editor.chain().focus().toggleUnderline().run(); setUpdateTrigger(prev => prev + 1); }}
+                                onClick={() => { editor.chain().focus().toggleUnderline().run(); setUpdateTrigger((prev: number) => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive('underline') ? 'is-active' : ''}`}
                                 title="밑줄 (Ctrl+U)"
                             >
@@ -479,7 +474,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                         <div className="toolbar-group">
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => { editor.chain().focus().toggleHighlight({ color: '#fef08a' }).run(); setUpdateTrigger(prev => prev + 1); }}
+                                onClick={() => { editor.chain().focus().toggleHighlight({ color: '#fef08a' }).run(); setUpdateTrigger((prev: number) => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive('highlight') ? 'is-active' : ''}`}
                                 title="형광펜"
                             >
@@ -506,7 +501,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                                                 onClick={() => {
                                                     editor.chain().focus().setColor(color).run();
                                                     setShowColorPicker(false);
-                                                    setUpdateTrigger(prev => prev + 1);
+                                                    setUpdateTrigger((prev: number) => prev + 1);
                                                 }}
                                             />
                                         ))}
@@ -518,7 +513,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                         <div className="toolbar-group">
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => { editor.chain().focus().setTextAlign('left').run(); setUpdateTrigger(prev => prev + 1); }}
+                                onClick={() => { editor.chain().focus().setTextAlign('left').run(); setUpdateTrigger((prev: number) => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive({ textAlign: 'left' }) ? 'is-active' : ''}`}
                                 title="왼쪽 정렬"
                             >
@@ -526,7 +521,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                             </button>
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => { editor.chain().focus().setTextAlign('center').run(); setUpdateTrigger(prev => prev + 1); }}
+                                onClick={() => { editor.chain().focus().setTextAlign('center').run(); setUpdateTrigger((prev: number) => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive({ textAlign: 'center' }) ? 'is-active' : ''}`}
                                 title="가운데 정렬"
                             >
@@ -534,7 +529,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                             </button>
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => { editor.chain().focus().setTextAlign('right').run(); setUpdateTrigger(prev => prev + 1); }}
+                                onClick={() => { editor.chain().focus().setTextAlign('right').run(); setUpdateTrigger((prev: number) => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive({ textAlign: 'right' }) ? 'is-active' : ''}`}
                                 title="오른쪽 정렬"
                             >
@@ -542,7 +537,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                             </button>
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => { editor.chain().focus().setTextAlign('justify').run(); setUpdateTrigger(prev => prev + 1); }}
+                                onClick={() => { editor.chain().focus().setTextAlign('justify').run(); setUpdateTrigger((prev: number) => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive({ textAlign: 'justify' }) ? 'is-active' : ''}`}
                                 title="양쪽 정렬"
                             >
@@ -553,7 +548,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                         <div className="toolbar-group">
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => { editor.chain().focus().toggleBulletList().run(); setUpdateTrigger(prev => prev + 1); }}
+                                onClick={() => { editor.chain().focus().toggleBulletList().run(); setUpdateTrigger((prev: number) => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive('bulletList') ? 'is-active' : ''}`}
                                 title="글머리 기호 목록"
                             >
@@ -561,7 +556,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                             </button>
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => { editor.chain().focus().toggleOrderedList().run(); setUpdateTrigger(prev => prev + 1); }}
+                                onClick={() => { editor.chain().focus().toggleOrderedList().run(); setUpdateTrigger((prev: number) => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive('orderedList') ? 'is-active' : ''}`}
                                 title="번호 목록"
                             >
@@ -569,7 +564,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                             </button>
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => { editor.chain().focus().toggleBlockquote().run(); setUpdateTrigger(prev => prev + 1); }}
+                                onClick={() => { editor.chain().focus().toggleBlockquote().run(); setUpdateTrigger((prev: number) => prev + 1); }}
                                 className={`toolbar-btn ${editor.isActive('blockquote') ? 'is-active' : ''}`}
                                 title="인용구"
                             >
@@ -666,11 +661,11 @@ const TextBlock: React.FC<TextBlockProps> = ({
             </div>
 
             {/* Right Actions (Bookmark) */}
-            {showBookmark && ( // [New]
-                <div className="block-actions-right">
+            <div className="block-actions-right">
+                {showBookmark && (
                     <BlockBookmarkButton isBookmarked={bookmark} onClick={handleBookmark} />
-                </div>
-            )}
+                )}
+            </div>
 
             {/* [New] Show editor avatar if someone else is editing */}
             {editors.length > 0 && (
