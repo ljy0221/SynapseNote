@@ -374,6 +374,10 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
 
     // value prop 변경 시 에디터 업데이트 (커서 위치 보존)
     useEffect(() => {
+        // [CRITICAL] Skip value updates when Y.Text is active
+        // yCollab handles all synchronization automatically
+        if (yText) return;
+
         if (viewRef.current && value !== undefined) {
             const currentValue = viewRef.current.state.doc.toString();
             if (currentValue !== value) {
@@ -397,7 +401,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
                 isDispatchingRef.current = false;
             }
         }
-    }, [value]);
+    }, [value, yText]); // [New] Add yText to dependencies
 
     // 언어, 테마, 설정 변경 시 재구성
     useEffect(() => {
