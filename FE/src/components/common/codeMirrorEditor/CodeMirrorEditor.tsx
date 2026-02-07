@@ -374,71 +374,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
             view.destroy();
             viewRef.current = null;
         };
-    }, []); // Only create once on mount
-
-    // [New] Dynamically update extensions when yText becomes available
-    useEffect(() => {
-        if (!viewRef.current) return;
-
-        // Rebuild extensions array
-        const extensions = [
-            basicSetup,
-            drawSelection(),
-            getLanguageExtension(language),
-            createCustomTheme(themeMode),
-            syntaxHighlighting(createHighlightStyle(themeMode)),
-            autocompletion({
-                activateOnTyping: true,
-                override: [],
-            }),
-            autoHeightTheme,
-            EditorState.readOnly.of(readOnly),
-            EditorState.tabSize.of(settings.tabSize),
-            EditorView.lineWrapping,
-            EditorView.domEventHandlers({
-                focus: () => onFocus?.(),
-                blur: () => onBlur?.(),
-            }),
-        ];
-
-        if (yText) {
-            console.log('[CodeMirrorEditor] Reconfiguring with yCollab extension');
-
-            // [CRITICAL] Sync current editor content to Y.Text before activating yCollab
-            const currentContent = viewRef.current.state.doc.toString();
-            const yTextContent = yText.toString();
-
-            if (currentContent !== yTextContent) {
-                console.log('[CodeMirrorEditor] Syncing editor content to Y.Text', {
-                    editorLength: currentContent.length,
-                    yTextLength: yTextContent.length
-                });
-
-                // Clear Y.Text and insert current editor content
-                if (yTextContent.length > 0) {
-                    yText.delete(0, yTextContent.length);
-                }
-                if (currentContent.length > 0) {
-                    yText.insert(0, currentContent);
-                }
-            }
-
-            extensions.push(yCollab(yText, null));
-        } else {
-            extensions.push(
-                EditorView.updateListener.of((update) => {
-                    if (update.docChanged && !isDispatchingRef.current) {
-                        onChange(update.state.doc.toString());
-                    }
-                })
-            );
-        }
-
-        // Reconfigure editor with new extensions
-        viewRef.current.dispatch({
-            effects: StateEffect.reconfigure.of(extensions)
-        });
-    }, [yText]); // Reconfigure when yText changes
+    }, [yText]); // [CRITICAL] Recreate editor when yText changes to ensure proper yCollab binding
 
     // value prop 변경 시 에디터 업데이트 (커서 위치 보존)
     useEffect(() => {
