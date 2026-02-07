@@ -237,11 +237,11 @@
 }
 
 /* Bookmark Button Container */
-.block-actions-right {
+.code-block-wrapper .block-actions-right {
     display: flex;
     align-items: center;
-    padding-top: 8px;
-    /* Slightly adjust alignment */
+    padding-top: 24px;
+    /* Align with code-content-container (white body area, below beige header) */
     opacity: 0;
     transition: opacity 0.2s ease;
 }
