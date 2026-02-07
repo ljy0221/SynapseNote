@@ -41,6 +41,10 @@
     cursor: grab;
     opacity: 0;
     transition: opacity 0.2s;
+    width: 32px;
+    /* Match CodeBlock */
+    flex-shrink: 0;
+    /* Match CodeBlock */
 }
 
 .text-block-wrapper:hover .block-controls {

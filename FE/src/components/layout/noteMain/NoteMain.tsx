@@ -177,7 +177,6 @@ const NoteMain: React.FC<NoteMainProps> = ({
                         onDelete={onDeleteBlock as any}
                         onChange={onUpdateBlock as any}
                         onFocus={() => onFocusBlock(block.id)}
-                        onBlur={() => onFocusBlock(null as any)} // [New] Clear awareness on blur
                         onAddBlockAfter={(content: string) => onAddBlockAfter(block.id, 'text', content)}
                         onAiReviewResult={handleAiReviewResult}
                         onToggleBookmark={() => onToggleBookmark?.(block.id, bookmarkedBlockIds ? bookmarkedBlockIds.has(block.id.toString()) : false)}

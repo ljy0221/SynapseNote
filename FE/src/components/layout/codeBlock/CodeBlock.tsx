@@ -472,18 +472,16 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                 )}
             </div>
 
-            {/* 즐겨찾기 버튼 (블록 외부 우측) */}
+            {/* Right Actions (Bookmark) */}
             {showBookmark && (
                 <div className="block-actions-right">
                     <BlockBookmarkButton isBookmarked={bookmark} onClick={handleBookmark} />
                 </div>
             )}
 
-            {/* 편집 중인 사용자 아바타 (즐겨찾기 오른쪽) */}
+            {/* [New] Show editor avatar if someone else is editing */}
             {editors.length > 0 && (
-                <div className="block-editor-avatar-container">
-                    <BlockEditorAvatar editors={editors} />
-                </div>
+                <BlockEditorAvatar editors={editors} />
             )}
 
             {/* Language Change Confirmation Modal */}
