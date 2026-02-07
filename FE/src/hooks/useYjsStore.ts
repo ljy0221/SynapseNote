@@ -611,6 +611,66 @@ export const useYjsStore = (noteId: string | undefined) => {
   }, [noteId]);
 
   // [Fix] React State debounce로 인한 초기화 경합 방지를 위해 동기적으로 상태 체크 후 초기화
+  // [New] Migrate text blocks to Y.XmlFragment if needed (one-time migration)
+  const migrateBlocksToXmlFragment = useCallback(() => {
+    const doc = docRef.current;
+    if (!doc) return;
+    const yBlocks = doc.getArray<YBlockMap>('blocks');
+
+    doc.transact(() => {
+      yBlocks.forEach((block, idx) => {
+        const type = block.get('_class');
+        if (type !== 'text') return; // Only migrate text blocks
+
+        const properties = block.get('properties') as Y.Map<any>;
+        const key = 'content';
+        let fragment = properties.get(key);
+
+        // Check if migration needed
+        const isSharedType = !!(fragment && typeof (fragment as any).observe === 'function');
+        const hasToArray = !!(fragment && typeof (fragment as any).toArray === 'function');
+        const isXmlFragment = !!(fragment && hasToArray && (fragment as any).constructor?.name?.includes('XmlFragment'));
+
+        const needsMigration = !fragment || !isSharedType || !hasToArray || !isXmlFragment;
+
+        if (needsMigration) {
+          const initialContent = fragment ? fragment.toString() : '';
+          console.warn(`[Yjs] Migrating block ${idx} to Y.XmlFragment. Content length: ${initialContent.length}`);
+
+          const newFragment = new Y.XmlFragment();
+
+          if (initialContent && initialContent !== '[object Object]') {
+            // Simple HTML parser for <p> tags
+            if (initialContent.includes('<p>') || initialContent.includes('</p>')) {
+              const paragraphs = initialContent.split(/<\/?p>/g).filter((text: string) => text.trim());
+              paragraphs.forEach((text: string) => {
+                const paragraph = new Y.XmlElement('paragraph');
+                const textNode = new Y.XmlText(text);
+                paragraph.insert(0, [textNode]);
+                newFragment.insert(newFragment.length, [paragraph]);
+              });
+            } else {
+              // Plain text -> wrap in paragraph(s) by newline
+              const lines = initialContent.split('\n');
+              lines.forEach((line: string, idx: number) => {
+                if (line.trim() || idx === 0) {
+                  const paragraph = new Y.XmlElement('paragraph');
+                  const textNode = new Y.XmlText(line);
+                  paragraph.insert(0, [textNode]);
+                  newFragment.insert(newFragment.length, [paragraph]);
+                }
+              });
+            }
+          }
+
+          properties.set(key, newFragment);
+        }
+      });
+    }, 'local');
+
+    console.log('[Yjs] Block migration to XmlFragment completed.');
+  }, []);
+
   const checkAndInitialize = useCallback((initialBlocks: { type: BlockType; content: string, bookmark?: boolean }[]) => {
     const doc = docRef.current;
     if (!doc) return;
@@ -620,12 +680,14 @@ export const useYjsStore = (noteId: string | undefined) => {
     // 동기적으로 실제 Yjs 데이터 확인 (트랜잭션 없이 읽기만)
     if (yBlocks.length > 0 || yMeta.get('isInitialized')) {
       console.log('[Yjs] checkAndInitialize: Already initialized, skipping.');
+      // [New] Run migration for existing data
+      migrateBlocksToXmlFragment();
       return;
     }
 
     // 초기화 진행
     initializeYjs(initialBlocks);
-  }, [initializeYjs]);
+  }, [initializeYjs, migrateBlocksToXmlFragment]);
 
   // [New] Update focused block in awareness
   const setFocusedBlock = useCallback((blockId: string | null) => {
@@ -694,17 +756,10 @@ export const useYjsStore = (noteId: string | undefined) => {
       const allBlocks = yBlocks.toArray();
 
       console.log('[getYTextForBlock] Looking for blockId:', blockId, 'type:', typeof blockId);
-      console.log('[getYTextForBlock] Available blocks:', allBlocks.map(b => ({
-        id: b.get('blockId'),
-        type: typeof b.get('blockId'),
-        class: b.get('_class')
-      })));
 
       const targetBlock = allBlocks.find(block => {
         const id = block.get('blockId');
-        const match = id?.toString() === blockId.toString();
-        console.log('[getYTextForBlock] Comparing:', id, '===', blockId, '?', match);
-        return match;
+        return id?.toString() === blockId.toString();
       });
 
       if (!targetBlock) {
@@ -715,70 +770,20 @@ export const useYjsStore = (noteId: string | undefined) => {
       const properties = targetBlock.get('properties') as Y.Map<any>;
       const type = targetBlock.get('_class');
 
-      // Code blocks now use plain string (LWW), so getYTextForBlock should return null
+      // Code blocks use plain string (LWW), so getYTextForBlock returns null
       if (type === 'code') {
         return null;
       }
 
       const key = 'content';
-      let fragment = properties.get(key);
-
-      // [Migration/Self-Healing] Robust type detection
-      // Check if it's a shared type and specifically if it's a Fragment-like structure
-      const isSharedType = !!(fragment && typeof (fragment as any).observe === 'function');
-      const hasToArray = !!(fragment && typeof (fragment as any).toArray === 'function');
-      // Tiptap Collaboration extension (y-prosemirror) requires a Fragment for rich text
-      const isXmlFragment = !!(fragment && hasToArray && (fragment as any).constructor?.name?.includes('XmlFragment'));
-
-      const needsMigration = !fragment || !isSharedType || !hasToArray || !isXmlFragment;
-
-      if (needsMigration) {
-        const initialContent = fragment ? fragment.toString() : '';
-        console.warn(`[Yjs] Migrating block ${blockId} to Y.XmlFragment. Content length: ${initialContent.length}`);
-
-        doc.transact(() => {
-          const newFragment = new Y.XmlFragment();
-
-          if (initialContent && initialContent !== '[object Object]') {
-            // [CRITICAL FIX] Always populate the fragment immediately.
-            // Tiptap Collaboration extension does NOT use the 'content' prop when a fragment exists.
-            // We must parse and populate the Y.XmlFragment ourselves.
-
-            // Simple HTML parser for <p> tags
-            if (initialContent.includes('<p>') || initialContent.includes('</p>')) {
-              // Parse HTML paragraphs
-              const paragraphs = initialContent.split(/<\/?p>/g).filter((text: string) => text.trim());
-              paragraphs.forEach((text: string) => {
-                const paragraph = new Y.XmlElement('paragraph');
-                const textNode = new Y.XmlText(text);
-                paragraph.insert(0, [textNode]);
-                newFragment.insert(newFragment.length, [paragraph]);
-              });
-            } else {
-              // Plain text -> wrap in paragraph(s) by newline
-              const lines = initialContent.split('\n');
-              lines.forEach((line: string, idx: number) => {
-                if (line.trim() || idx === 0) {
-                  const paragraph = new Y.XmlElement('paragraph');
-                  const textNode = new Y.XmlText(line);
-                  paragraph.insert(0, [textNode]);
-                  newFragment.insert(newFragment.length, [paragraph]);
-                }
-              });
-            }
-          }
-
-          properties.set(key, newFragment);
-          fragment = newFragment;
-        }, 'local');
-      }
-
+      const fragment = properties.get(key);
 
       console.log(`[getYTextForBlock] Result for ${blockId}:`, {
         type: fragment?.constructor?.name,
         hasToArray: typeof (fragment as any)?.toArray === 'function'
       });
 
+      // [Fix] Pure getter - no side effects. Migration handled in checkAndInitialize.
       return fragment as Y.XmlFragment | null;
     },
 
