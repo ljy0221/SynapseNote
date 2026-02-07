@@ -99,5 +99,10 @@ export function formatReviewAsHtml(response: CodeReviewResponse): string {
     }
 
     const rawHtml = parts.join('');
-    return DOMPurify.sanitize(rawHtml);
+    return DOMPurify.sanitize(rawHtml, {
+        ALLOWED_TAGS: ['h1', 'h2', 'h3', 'p', 'div', 'span', 'blockquote', 'pre', 'code', 'ul', 'li', 'br', 'strong', 'em'],
+        ALLOWED_ATTR: ['style', 'class'],
+        FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'link', 'style'],
+        FORBID_ATTR: ['onerror', 'onload', 'onclick'],
+    });
 }
