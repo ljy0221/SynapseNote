@@ -148,8 +148,13 @@ const TextBlock: React.FC<TextBlockProps> = ({
     const yDoc = getYDoc();
     const yText = getYTextForBlock(id);
 
-    // [Debug] Log Y.Text status
-    console.log(`[TextBlock ${id}] yDoc:`, !!yDoc, 'yText:', !!yText, 'yText content:', yText?.toString());
+    // [Debug] Log Y.Text status and check for inconsistencies
+    console.log(`[TextBlock ${id}] yDoc:`, !!yDoc, 'yText:', !!yText);
+
+    // [Defensive] Warn if yText exists but yDoc doesn't (should never happen)
+    if (yText && !yDoc) {
+        console.error(`[TextBlock ${id}] Invalid state: yText exists but yDoc is null. Collaboration disabled.`);
+    }
     const editor = useEditor({
         extensions: [
             StarterKit.configure({
@@ -192,7 +197,8 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 types: ['heading', 'paragraph'],
             }),
             TabHandler,
-            ...(yText ? [Collaboration.configure({
+            ...(yDoc && yText ? [Collaboration.configure({
+                document: yDoc,
                 fragment: yText as any,
             })] : []),
         ],
