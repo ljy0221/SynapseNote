@@ -94,12 +94,32 @@ export const useYjsStore = (noteId: string | undefined) => {
     const doc = new Y.Doc();
     docRef.current = doc;
 
-    // Provider 생성 (token params 포함)
+    // WebSocket Provider 설정
     const provider = new WebsocketProvider(wsUrl, noteId, doc, {
-      params: { token: accessToken || '' },
+      params: { token: accessToken },
     });
 
-    // [New] Get awareness from provider
+    providerRef.current = provider;
+
+    provider.on('status', ({ status }: { status: string }) => {
+      console.log(`[Yjs] WebSocket status: ${status}`);
+    });
+
+    provider.on('sync', (isSynced: boolean) => {
+      console.log(`[Yjs] sync: ${isSynced}`);
+      setIsSynced(isSynced);
+    });
+
+    // [New] Add Y.Doc update observer for debugging
+    const updateHandler = (update: Uint8Array, origin: any) => {
+      console.log(`[Yjs Frontend] Y.Doc update detected! Size: ${update.length}, Origin:`, origin);
+      const yBlocks = doc.getArray('blocks');
+      console.log(`[Yjs Frontend] Current blocks count: ${yBlocks.length}`);
+    };
+
+    doc.on('update', updateHandler);
+
+    // Awareness 설정
     const awareness = provider.awareness;
     awarenessRef.current = awareness;
 
@@ -266,9 +286,13 @@ export const useYjsStore = (noteId: string | undefined) => {
       } catch {
         // off 미지원/에러 가능성 대비
       }
-      provider.destroy();
-      doc.destroy();
-      providerRef.current = null;
+
+      // [Fix] Add delay to prevent disconnection during React Strict Mode remount
+      setTimeout(() => {
+        provider.destroy();
+        doc.destroy();
+        providerRef.current = null;
+      }, 100);
 
       setBlocks([]);
       setIsSynced(false);
@@ -622,15 +646,32 @@ export const useYjsStore = (noteId: string | undefined) => {
     getYDoc: () => docRef.current,
     getYTextForBlock: (blockId: string | number) => {
       const doc = docRef.current;
-      if (!doc) return null;
+      if (!doc) {
+        console.log('[getYTextForBlock] No doc available');
+        return null;
+      }
 
       const yBlocks = doc.getArray<YBlockMap>('blocks');
-      const targetBlock = yBlocks.toArray().find(block => {
+      const allBlocks = yBlocks.toArray();
+
+      console.log('[getYTextForBlock] Looking for blockId:', blockId, 'type:', typeof blockId);
+      console.log('[getYTextForBlock] Available blocks:', allBlocks.map(b => ({
+        id: b.get('blockId'),
+        type: typeof b.get('blockId'),
+        class: b.get('_class')
+      })));
+
+      const targetBlock = allBlocks.find(block => {
         const id = block.get('blockId');
-        return id?.toString() === blockId.toString();
+        const match = id?.toString() === blockId.toString();
+        console.log('[getYTextForBlock] Comparing:', id, '===', blockId, '?', match);
+        return match;
       });
 
-      if (!targetBlock) return null;
+      if (!targetBlock) {
+        console.log('[getYTextForBlock] Block not found for:', blockId);
+        return null;
+      }
 
       const properties = targetBlock.get('properties') as Y.Map<any>;
       const type = targetBlock.get('_class');

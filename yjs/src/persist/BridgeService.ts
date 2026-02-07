@@ -98,20 +98,23 @@ class BridgeService {
           if (block.properties) {
             const props = new Y.Map();
             Object.entries(block.properties).forEach(([k, v]) => {
-              props.set(k, v);
+              // [Fix] Create Y.Text for content and code fields
+              if ((k === 'content' || k === 'code') && typeof v === 'string') {
+                const yText = new Y.Text();
+                yText.insert(0, v);
+                props.set(k, yText);
+              } else {
+                props.set(k, v);
+              }
             });
-            blockMap.set('properties', props); // Note: Yjs expects properties to be a Map if you want to sync deeply? 
-            // Actually typically Yjs stores properties as a JS object inside the Map if they are not collaborative themselves. 
-            // But looking at syncToDB, it reads yBlock.properties.
-            // Let's assume blockMap structure matches what syncToDB expects.
-            // syncToDB: const cleanProps = ... Object.entries(yBlock.properties)
+            blockMap.set('properties', props);
           }
 
-          // Other fields
+          // Root-level fields
           if (block.bookmark !== undefined) blockMap.set('bookmark', block.bookmark);
+          if (block.outputHistory) blockMap.set('outputHistory', block.outputHistory);
           if (block.lastOutput) blockMap.set('lastOutput', block.lastOutput);
           if (block.lastExecutedAt) blockMap.set('lastExecutedAt', block.lastExecutedAt);
-          if (block.outputHistory) blockMap.set('outputHistory', block.outputHistory);
 
           return blockMap;
         });
@@ -137,6 +140,13 @@ class BridgeService {
     try {
       const yArray = yDoc.getArray<any>('blocks');
       const currentBlocks = yArray.toJSON();
+
+      console.log(`[Bridge] syncToDB called for ${noteId}`);
+      console.log(`[Bridge] Current blocks count: ${currentBlocks?.length || 0}`);
+
+      if (currentBlocks && currentBlocks.length > 0) {
+        console.log(`[Bridge] First block sample:`, JSON.stringify(currentBlocks[0], null, 2));
+      }
 
       if (!currentBlocks || currentBlocks.length === 0) {
         console.log(`[Bridge] No blocks to sync for ${noteId}.`);
@@ -184,7 +194,12 @@ class BridgeService {
         const cleanProps: any = {};
         if (yBlock.properties) {
           Object.entries(yBlock.properties).forEach(([key, val]) => {
-            cleanProps[key] = val;
+            // [Fix] Convert Y.Text to string
+            if (val instanceof Y.Text) {
+              cleanProps[key] = val.toString();
+            } else {
+              cleanProps[key] = val;
+            }
           });
         }
 
@@ -245,20 +260,25 @@ class BridgeService {
           }
         }));
 
-      if (toDeleteOps.length > 0) {
-        bulkOps.push(...toDeleteOps);
-      }
+      bulkOps.push(...toDeleteOps);
+
+      console.log(`[Bridge] BulkOps count: ${bulkOps.length} (inserts/updates: ${bulkOps.length - toDeleteOps.length}, deletes: ${toDeleteOps.length})`);
 
       if (bulkOps.length > 0) {
-        await Block.bulkWrite(bulkOps);
-        console.log(`[Bridge] Sync Success for ${noteId}. Updates: ${bulkOps.length}`);
+        console.log(`[Bridge] Writing to MongoDB - Database: ${Block.db.name}, Collection: ${Block.collection.name}`);
+        console.log(`[Bridge] Sample operation:`, JSON.stringify(bulkOps[0], null, 2));
 
-        // Use noteId string directly (not Binary) since Note schema uses String _id
-        await Note.updateOne(
-          { _id: noteId },
-          { $set: { updatedAt: new Date() } }
-        );
+        const result = await Block.bulkWrite(bulkOps);
+        console.log(`[Bridge] Sync Success for ${noteId}. Updates: ${result.modifiedCount}, Inserts: ${result.insertedCount}, Deletes: ${result.deletedCount}`);
+      } else {
+        console.log(`[Bridge] No changes to sync for ${noteId}`);
       }
+
+      // Use noteId string directly (not Binary) since Note schema uses String _id
+      await Note.updateOne(
+        { _id: noteId },
+        { $set: { updatedAt: new Date() } }
+      );
     } catch (error) {
       console.error(`[Bridge Error] syncToDB failed for ${noteId}:`, error);
     }

@@ -41,7 +41,7 @@ import { AwarenessUser, useYjsStore } from '../../../hooks/useYjsStore'; // [Cha
 interface TextBlockProps {
     id: number | string;
     noteId: string; // [New] For Y.Doc access
-    content?: string; // [Changed] Optional - Y.Text is primary source
+    content?: string; // [Keep] Optional - used for initial Y.Text population
     bookmark?: boolean;
     onUpdate?: (id: number | string, content: string) => void; // [Changed] Optional
     onFocus: () => void;
@@ -129,12 +129,16 @@ const TextBlock: React.FC<TextBlockProps> = ({
     const yDoc = getYDoc();
     const yText = getYTextForBlock(id);
 
+    // [Debug] Log Y.Text status
+    console.log(`[TextBlock ${id}] yDoc:`, !!yDoc, 'yText:', !!yText, 'yText content:', yText?.toString());
     const editor = useEditor({
         extensions: [
             StarterKit.configure({
                 heading: {
                     levels: [1, 2, 3],
                 },
+                // @ts-ignore - Collaboration extension handles history
+                history: false,
                 // @ts-ignore - Some versions include these, some don't. Explicitly disable to avoid duplicates.
                 link: false,
                 // @ts-ignore
@@ -144,38 +148,29 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 // @ts-ignore
                 dropcursor: false,
             }),
-            // [New] Collaboration extension for Y.Text binding
-            ...(yDoc && yText ? [Collaboration.configure({
-                document: yDoc,
-                field: yText,
-            })] : []),
+            // [Removed] Collaboration extension - using manual Y.Text sync instead
             Image,
             TextStyle,
             Color,
             Placeholder.configure({
                 placeholder: '빈 블록',
             }),
+            Link.configure({
+                openOnClick: false,
+                HTMLAttributes: {
+                    class: 'custom-link',
+                },
+            }),
             Underline,
             Highlight.configure({
                 multicolor: true,
             }),
-            TextAlign.configure({
-                types: ['heading', 'paragraph'],
-            }),
-            Link.configure({
-                openOnClick: false, // [Change] 직접 핸들링을 위해 false로 설정
-                HTMLAttributes: {
-                    target: '_blank',
-                    rel: 'noopener noreferrer',
-                },
-            }),
-            TabHandler,
         ],
-        // content prop removed - Y.Text is the source of truth
-        // onTransaction removed for performance optimization.
-        // We now rely on explicit onClick triggers for button state updates
-        // and onSelectionUpdate for cursor updates.
+        content: yText?.toString() || '',
         editorProps: {
+            attributes: {
+                class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl focus:outline-none',
+            },
             handleClick: (view, pos, event) => {
                 const attrs = view.state.doc.resolve(pos).marks().find(mark => mark.type.name === 'link')?.attrs;
                 const link = attrs?.href;
@@ -202,7 +197,28 @@ const TextBlock: React.FC<TextBlockProps> = ({
             setUpdateTrigger(prev => prev + 1);
         },
         onUpdate: ({ editor }) => {
-            onUpdate?.(id, editor.getHTML()); // Optional call
+            const html = editor.getHTML();
+            console.log(`[TextBlock ${id}] onUpdate called! HTML length:`, html.length);
+
+            // [New] Manual Y.Text synchronization
+            if (yDoc && yText) {
+                console.log(`[TextBlock ${id}] Syncing to Y.Text...`);
+                yDoc.transact(() => {
+                    const currentContent = yText.toString();
+                    if (currentContent !== html) {
+                        console.log(`[TextBlock ${id}] Y.Text updated! Old length: ${currentContent.length}, New length: ${html.length}`);
+                        yText.delete(0, yText.length);
+                        yText.insert(0, html);
+                    } else {
+                        console.log(`[TextBlock ${id}] Y.Text unchanged`);
+                    }
+                });
+            } else {
+                console.log(`[TextBlock ${id}] No yDoc/yText available for sync`);
+            }
+
+            // Optional call to parent
+            onUpdate?.(id, html);
         },
         onFocus: () => {
             setIsFocused(true);
@@ -211,7 +227,28 @@ const TextBlock: React.FC<TextBlockProps> = ({
         onBlur: () => {
             setIsFocused(false);
         },
-    });
+    }, [yDoc, yText, noteId, id]); // [New] Re-create editor when Y.Text becomes available
+
+    // [New] Initialize Y.Text with existing content if it's empty
+    useEffect(() => {
+        console.log(`[TextBlock ${id}] Init check - editor:`, !!editor, 'yText:', !!yText, 'content:', content?.substring(0, 50));
+
+        if (!editor || !yText || !content) {
+            console.log(`[TextBlock ${id}] Skipping init - missing dependency`);
+            return;
+        }
+
+        const yTextContent = yText.toString();
+        console.log(`[TextBlock ${id}] Y.Text length:`, yTextContent.length, 'content length:', content.trim().length);
+
+        if (yTextContent.length === 0 && content.trim().length > 0) {
+            console.log(`[TextBlock ${id}] Initializing Y.Text with existing content:`, content.substring(0, 50));
+            // Set initial content in Tiptap, which will sync to Y.Text
+            editor.commands.setContent(content);
+        } else {
+            console.log(`[TextBlock ${id}] Skipping init - Y.Text not empty or content empty`);
+        }
+    }, [editor, yText, content, id]);
 
     // [추가] 외부에서 포커스 요청 시 에디터 포커스
     useEffect(() => {
