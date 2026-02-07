@@ -107,10 +107,10 @@ const AiReviewSection: React.FC<Props> = ({
                 </div>
               )}
 
-              {/* 베스트 프랙티스 */}
+              {/* 개선 방향 */}
               {result.bestPractices.length > 0 && (
                 <div className="best-practices">
-                  <h4>베스트 프랙티스</h4>
+                  <h4>개선 방향</h4>
                   <ul>
                     {result.bestPractices.map((practice, idx) => (
                       <li key={idx}>

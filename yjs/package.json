@@ -12,6 +12,7 @@
   "dependencies": {
     "@types/lodash": "^4.17.23",
     "dotenv": "^17.2.3",
+    "htmlparser2": "^10.1.0",
     "lodash": "^4.17.23",
     "mongoose": "^9.1.5",
     "ws": "^8.19.0",

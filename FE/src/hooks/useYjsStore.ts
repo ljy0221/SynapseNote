@@ -75,10 +75,6 @@ export const useYjsStore = (noteId: string | undefined) => {
       return;
     }
 
-    console.log(`[Yjs] Effect triggered. noteId: ${noteId}, wsUrl: ${wsUrl}, token: ${accessToken ? accessToken.substring(0, 10) + '...' : 'null'}`);
-
-    console.log(`[Yjs] Connecting to ${wsUrl} for note: ${noteId}`);
-    console.log(`[Yjs] Using accessToken? ${accessToken ? 'YES' : 'NO'}`);
 
     // 이전 provider/doc 정리 (중복 연결/리스너 누수 방지)
     if (providerRef.current) {
@@ -100,23 +96,10 @@ export const useYjsStore = (noteId: string | undefined) => {
 
     providerRef.current = provider;
 
-    provider.on('status', ({ status }: { status: string }) => {
-      console.log(`[Yjs] WebSocket status: ${status}`);
-    });
-
     provider.on('sync', (isSynced: boolean) => {
-      console.log(`[Yjs] sync: ${isSynced}`);
       setIsSynced(isSynced);
     });
 
-    // [New] Add Y.Doc update observer for debugging
-    const updateHandler = (update: Uint8Array, origin: any) => {
-      console.log(`[Yjs Frontend] Y.Doc update detected! Size: ${update.length}, Origin:`, origin);
-      const yBlocks = doc.getArray('blocks');
-      console.log(`[Yjs Frontend] Current blocks count: ${yBlocks.length}`);
-    };
-
-    doc.on('update', updateHandler);
 
     // Awareness 설정
     const awareness = provider.awareness;
@@ -159,6 +142,7 @@ export const useYjsStore = (noteId: string | undefined) => {
 
             let content = '';
             let language: string | undefined = undefined;
+            let rawHtml: string | undefined = undefined;
             const bookmark = properties.get('bookmark') || false;
 
             if (type === 'code') {
@@ -166,9 +150,18 @@ export const useYjsStore = (noteId: string | undefined) => {
               content = rawCode ? rawCode.toString() : ''; // Handles both Y.Text and string
               language = properties.get('language');
             } else {
-              const contentText = properties.get('content');
-              // [Fix] Convert Y.XmlFragment or Y.Text to string
-              content = contentText ? contentText.toString() : '';
+              // [Fix] For text blocks, use rawHtml to preserve all formatting
+              // rawHtml contains the latest HTML from TipTap editor
+              const rawHtmlValue = properties.get('rawHtml');
+              if (rawHtmlValue) {
+                content = rawHtmlValue;
+              } else {
+                // Fallback to _initialHtml if rawHtml is not available
+                const initialHtml = properties.get('_initialHtml');
+                content = initialHtml || '';
+              }
+              // [New] Read rawHtml for preserving original HTML formatting
+              rawHtml = properties.get('rawHtml');
             }
 
             return {
@@ -177,6 +170,7 @@ export const useYjsStore = (noteId: string | undefined) => {
               content,
               language,
               bookmark,
+              rawHtml,
             } as BlockData;
           })
           .filter(Boolean) as BlockData[];
@@ -209,7 +203,6 @@ export const useYjsStore = (noteId: string | undefined) => {
 
     // 동기화 이벤트 (y-websocket은 'sync'가 일반적)
     const onSync = (synced: boolean) => {
-      console.log('[Yjs] sync:', synced);
       setIsSynced(synced);
       if (synced) updateBlocksState();
     };
@@ -253,10 +246,7 @@ export const useYjsStore = (noteId: string | undefined) => {
 
     // 블록 배열 변경 관찰 (실시간 반영 핵심)
     // 🔥 Immediate CRDT merging for proper collaboration
-    const onBlocksChanged = (_events: Y.YEvent<any>[], transaction: Y.Transaction) => {
-      const origin = transaction.origin || 'remote';
-      console.log(`[Yjs] Blocks changed, origin: ${origin}`);
-
+    const onBlocksChanged = () => {
       // Always update state immediately for proper CRDT merging
       updateBlocksState();
     };
@@ -267,7 +257,6 @@ export const useYjsStore = (noteId: string | undefined) => {
     updateBlocksState();
 
     return () => {
-      console.log(`[Yjs] Disconnecting from ${noteId}...`);
       if (updateTimeout) {
         clearTimeout(updateTimeout);
       }
@@ -333,6 +322,12 @@ export const useYjsStore = (noteId: string | undefined) => {
           properties.set('executionMode', 'local');
         } else {
           properties.set('content', new Y.XmlFragment());
+          // [New] Store initial HTML content temporarily for TipTap to parse
+          if (block.content) {
+            properties.set('_initialHtml', block.content);
+            // [New] Store raw HTML permanently for formatted content (e.g., AI reviews)
+            properties.set('rawHtml', block.content);
+          }
         }
         properties.set('bookmark', block.bookmark || false);
         newBlockMap.set('properties', properties);
@@ -368,6 +363,12 @@ export const useYjsStore = (noteId: string | undefined) => {
         properties.set('executionMode', 'local');
       } else {
         properties.set('content', new Y.XmlFragment());
+        // [New] Store initial HTML content temporarily for TipTap to parse
+        if (initialContent) {
+          properties.set('_initialHtml', initialContent);
+          // [New] Store raw HTML permanently for formatted content (e.g., AI reviews)
+          properties.set('rawHtml', initialContent);
+        }
       }
       properties.set('bookmark', false);
       newBlockMap.set('properties', properties);
@@ -412,6 +413,13 @@ export const useYjsStore = (noteId: string | undefined) => {
           properties.set('code', newContent);
         }
         return;
+      }
+
+      // [Fix] For text blocks, always save the HTML from TipTap to rawHtml
+      // This ensures that formatting is preserved when saving to MongoDB
+      if (type === 'text' && newContent) {
+        properties.set('rawHtml', newContent);
+        console.log(`[Yjs] Updated rawHtml for block ${blockId}, length: ${newContent.length}`);
       }
 
       const key = 'content';
@@ -600,6 +608,12 @@ export const useYjsStore = (noteId: string | undefined) => {
           properties.set('executionMode', 'local');
         } else {
           properties.set('content', new Y.XmlFragment());
+          // [New] Store initial HTML content temporarily for TipTap to parse
+          if (block.content) {
+            properties.set('_initialHtml', block.content);
+            // [New] Store raw HTML permanently for formatted content (e.g., AI reviews)
+            properties.set('rawHtml', block.content);
+          }
         }
         properties.set('bookmark', block.bookmark || false);
         newBlockMap.set('properties', properties);
@@ -640,6 +654,41 @@ export const useYjsStore = (noteId: string | undefined) => {
           // Don't manually create the structure as it might not match Tiptap's schema.
           const newFragment = new Y.XmlFragment();
           properties.set(key, newFragment);
+          fragment = newFragment;
+        }
+
+        // [Fix] Check if XmlFragment contains malformed content (text with invalid HTML tags)
+        // This happens when content like "<bold>text</bold>" was stored as plain text
+        if (fragment && isXmlFragment) {
+          const xmlString = (fragment as any).toString();
+
+          // Check if the XML string contains TipTap schema tags (like <bold>) or other invalid tags
+          // These indicate the content was stored as plain text instead of proper nodes
+          const hasMalformedTags = /<bold>|<\/bold>|<italic>|<\/italic>|<underline>|<\/underline>/i.test(xmlString);
+
+          if (hasMalformedTags) {
+            console.warn(`[Yjs] Detected malformed XmlFragment in block ${idx} - has invalid tags like <bold>`);
+
+            // Clear the malformed fragment
+            const children = (fragment as any).toArray();
+            if (children.length > 0) {
+              (fragment as any).delete(0, children.length);
+            }
+
+            // Convert TipTap schema tags to proper HTML for re-parsing
+            const htmlContent = xmlString
+              .replace(/<paragraph>/g, '<p>')
+              .replace(/<\/paragraph>/g, '</p>')
+              .replace(/<bold>/g, '<strong>')
+              .replace(/<\/bold>/g, '</strong>')
+              .replace(/<italic>/g, '<em>')
+              .replace(/<\/italic>/g, '</em>')
+              .replace(/<underline>/g, '<u>')
+              .replace(/<\/underline>/g, '</u>');
+
+            properties.set('_initialHtml', htmlContent);
+            console.log(`[Yjs] Stored malformed content as _initialHtml for re-parsing`);
+          }
         }
       });
     }, 'local');
@@ -724,14 +773,11 @@ export const useYjsStore = (noteId: string | undefined) => {
     getYTextForBlock: (blockId: string | number) => {
       const doc = docRef.current;
       if (!doc) {
-        console.log('[getYTextForBlock] No doc available');
         return null;
       }
 
       const yBlocks = doc.getArray<YBlockMap>('blocks');
       const allBlocks = yBlocks.toArray();
-
-      console.log('[getYTextForBlock] Looking for blockId:', blockId, 'type:', typeof blockId);
 
       const targetBlock = allBlocks.find(block => {
         const id = block.get('blockId');
@@ -739,7 +785,6 @@ export const useYjsStore = (noteId: string | undefined) => {
       });
 
       if (!targetBlock) {
-        console.log('[getYTextForBlock] Block not found for:', blockId);
         return null;
       }
 
@@ -752,15 +797,23 @@ export const useYjsStore = (noteId: string | undefined) => {
       }
 
       const key = 'content';
-      const fragment = properties.get(key);
+      let fragment = properties.get(key);
 
-      console.log(`[getYTextForBlock] Result for ${blockId}:`, {
-        type: fragment?.constructor?.name,
-        hasToArray: typeof (fragment as any)?.toArray === 'function'
-      });
+      // Check if it's actually an XmlFragment
+      const isSharedType = fragment && typeof fragment === 'object';
+      const hasToArray = isSharedType && typeof (fragment as any).toArray === 'function';
+      const isXmlFragment = hasToArray && (fragment as any).constructor?.name?.includes('XmlFragment');
 
-      // [Fix] Pure getter - no side effects. Migration handled in checkAndInitialize.
-      return fragment as Y.XmlFragment | null;
+      // [New] Auto-migrate: Create XmlFragment if it doesn't exist or is wrong type
+      if (!isXmlFragment) {
+        doc.transact(() => {
+          const newFragment = new Y.XmlFragment();
+          properties.set(key, newFragment);
+          fragment = newFragment;
+        }, 'local');
+      }
+
+      return fragment as Y.XmlFragment;
     },
 
     // [New] Get Y.Text for CodeBlock - similar to getYTextForBlock but for code

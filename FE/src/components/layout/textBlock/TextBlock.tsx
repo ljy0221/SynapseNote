@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
@@ -109,6 +109,14 @@ const TextBlock: React.FC<TextBlockProps> = ({
     showBookmark = true,
     editors = [],
 }) => {
+    console.log(`[TextBlock ${id}] Component rendered with props:`, {
+        id,
+        noteId,
+        content,
+        contentType: typeof content,
+        contentLength: content ? content.length : 0
+    });
+
     const [isFocused, setIsFocused] = useState(false);
     const [showColorPicker, setShowColorPicker] = useState(false);
     const { openModal } = useModalStore();
@@ -128,6 +136,9 @@ const TextBlock: React.FC<TextBlockProps> = ({
     // 이미지 업로드 상태
     const [isUploading, setIsUploading] = useState(false);
 
+    // [Fix] Track if content has been converted to prevent re-running
+    const hasConvertedRef = useRef(false);
+
     // Get Y.Doc and Y.Text for Collaboration
     const { getYDoc, getYTextForBlock } = useYjsStore(noteId);
     const yDoc = getYDoc();
@@ -143,13 +154,8 @@ const TextBlock: React.FC<TextBlockProps> = ({
         extensions: [
             StarterKit.configure({
                 heading: { levels: [1, 2, 3] },
-                history: false,
-                link: false,
-                underline: false,
                 gapcursor: false,
                 dropcursor: false,
-                bulletList: false,
-                orderedList: false,
             }),
             Image,
             TextStyle,
@@ -163,13 +169,15 @@ const TextBlock: React.FC<TextBlockProps> = ({
             Highlight.configure({ multicolor: true }),
             TextAlign.configure({ types: ['heading', 'paragraph'] }),
             TabHandler,
+            // [Fix] Always enable Collaboration
             ...(yDoc && yText ? [Collaboration.configure({
                 document: yDoc,
                 fragment: yText as any,
             })] : []),
         ],
-        // Only use Yjs state if it's properly initialized (has content).
-        content: (yText && (yText as any).length > 0) ? undefined : (content || ''),
+        // [Fix] Always use content if it's a string (from MongoDB)
+        // TipTap will parse HTML and Collaboration will sync to Yjs
+        content: (typeof content === 'string' && content.trim()) ? content : '',
         editorProps: {
             attributes: {
                 class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl focus:outline-none',
@@ -189,6 +197,19 @@ const TextBlock: React.FC<TextBlockProps> = ({
                     return true;
                 }
                 return false;
+            }
+        },
+        onCreate: ({ editor }) => {
+            // [Fix] Parse HTML content if XmlFragment is empty
+            if (yText && typeof content === 'string' && content.trim()) {
+                const fragmentLength = (yText as any).length || 0;
+                // [TEMP FIX] Always parse HTML to fix escaped HTML issue
+                // TODO: Remove this after all data is migrated
+                console.log(`[TextBlock ${id}] onCreate: Forcing HTML parsing (XmlFragment length: ${fragmentLength}, content length: ${content.length})`);
+                console.log(`[TextBlock ${id}] onCreate: Content value:`, content);
+                // [Fix] Use emitUpdate: true to force Yjs synchronization
+                editor.commands.setContent(content, { emitUpdate: true });
+                console.log(`[TextBlock ${id}] onCreate: After setContent, XmlFragment length: ${(yText as any).length || 0}`);
             }
         },
         onSelectionUpdate: () => {
@@ -220,6 +241,40 @@ const TextBlock: React.FC<TextBlockProps> = ({
             editor.setEditable(!readOnly);
         }
     }, [editor, readOnly]);
+
+    // [Fix] Convert string content to XmlFragment for TipTap (only once)
+    // When content is loaded from MongoDB as HTML string, convert it to XmlFragment
+    useEffect(() => {
+        console.log(`[TextBlock ${id}] Content conversion useEffect:`, {
+            editor: !!editor,
+            yDoc: !!yDoc,
+            yText: !!yText,
+            content: content,
+            contentType: typeof content,
+            hasConverted: hasConvertedRef.current
+        });
+
+        if (!editor || !yDoc || !yText || !content || hasConvertedRef.current) return;
+
+        // Check if content is a string (from MongoDB)
+        if (typeof content === 'string' && content.trim()) {
+            // Check if XmlFragment is empty
+            const fragmentLength = (yText as any).length || 0;
+            if (fragmentLength === 0) {
+                console.log(`[TextBlock ${id}] Converting string content to XmlFragment, length: ${content.length}`);
+
+                // Use TipTap to parse HTML and populate XmlFragment
+                editor.commands.setContent(content);
+                hasConvertedRef.current = true; // Mark as converted
+
+                console.log(`[TextBlock ${id}] Conversion complete, XmlFragment length: ${(yText as any).length}`);
+            } else {
+                // XmlFragment already has data, skip conversion
+                hasConvertedRef.current = true;
+                console.log(`[TextBlock ${id}] XmlFragment already populated (length: ${fragmentLength}), skipping conversion`);
+            }
+        }
+    }, [editor, yDoc, yText, content, id]);
 
     // 🔥 원격 변경사항 동기화 (깜빡임 방지)
     if (!editor) {

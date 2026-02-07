@@ -102,13 +102,9 @@ const NoteMain: React.FC<NoteMainProps> = ({
         const newIndex = localBlocks.findIndex(b => b.id === draggedBlockId);
 
         if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-            console.log(`[Reorder] Moved block ${draggedBlockId} from ${oldIndex} to ${newIndex}`);
             onMoveBlock(oldIndex, newIndex);
         }
     };
-
-    // 디버깅: 실제 렌더링되는 블록 데이터 확인
-    console.log("[NoteMain] Current blocks for rendering:", blocks);
 
     const handleContextMenu = (e: React.MouseEvent, blockId: string | number) => {
         e.preventDefault();
