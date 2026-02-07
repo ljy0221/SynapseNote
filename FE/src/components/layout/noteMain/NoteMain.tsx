@@ -43,6 +43,7 @@ interface NoteMainProps {
     showBlockBookmark?: boolean; // [New]
     members?: NoteMemberItem[]; // [New]
     getBlockEditors?: (blockId: string) => AwarenessUser[]; // [New] Get users editing a block
+    pendingInvitesCount?: number; // [New]
 }
 
 const NoteMain: React.FC<NoteMainProps> = ({
@@ -71,6 +72,7 @@ const NoteMain: React.FC<NoteMainProps> = ({
     showBlockBookmark = true, // [New]
     members = [], // [New]
     getBlockEditors, // [New]
+    pendingInvitesCount, // [New]
 }) => {
     const [isInviteModalOpen, setIsInviteModalOpen] = React.useState(false);
     const [isPermissionModalOpen, setIsPermissionModalOpen] = React.useState(false);
@@ -207,6 +209,7 @@ const NoteMain: React.FC<NoteMainProps> = ({
                                     onPermission={() => setIsPermissionModalOpen(true)}
                                     onSummary={() => setIsSummaryModalOpen(true)}
                                     role={currentUserRole}
+                                    pendingInvitesCount={pendingInvitesCount} // [New]
                                 />
                             )}
                         </aside>

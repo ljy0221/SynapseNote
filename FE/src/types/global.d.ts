@@ -23,6 +23,7 @@ declare global {
       openExternal: (url: string) => void;
       onDeepLinkUrl: (callback: (event: any, url: string) => void) => void;
       removeDeepLinkListener: (callback: (event: any, url: string) => void) => void;
+      platform?: string;
     };
   }
 }

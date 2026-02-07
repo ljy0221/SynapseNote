@@ -41,38 +41,44 @@ public class CodeAssistantService {
     @Transactional(readOnly = true)
     public CodeReviewResponse reviewCode(UUID noteId, UUID blockId,
             UUID userId, CodeReviewRequest request) {
-        // 편집 권한 검증
+
+        // 1. 편집 권한 검증
         noteValidator.validateEditPermission(noteId, userId);
 
-        // 블록 조회
+        // 2. 블록 조회 및 검증
         BaseBlock baseBlock = blockRepository.findByBlockIdAndDeletedAtIsNull(blockId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CODE_BLOCK_NOT_FOUND));
 
-        // 노트 소유권 확인
         if (!baseBlock.getNoteId().equals(noteId)) {
             throw new BusinessException(ErrorCode.NOTE_ACCESS_DENIED);
         }
 
-        // CodeBlock 타입 확인
         if (!(baseBlock instanceof CodeBlock codeBlock)) {
             throw new BusinessException(ErrorCode.INVALID_BLOCK_TYPE);
         }
 
-        // 코드 길이 검증
-        String code = (request.codeContent() != null) ? request.codeContent() : codeBlock.getProperties().getCode();
+        // 3. 코드 컨텐츠 확인
+        String code = ((CodeBlock) baseBlock).getProperties().getCode();
+        if (code == null || code.trim().isEmpty()) {
+            throw new BusinessException(ErrorCode.AI_INVALID_REQUEST, "코드가 비어있습니다.");
+        }
+
+        // 4. 코드 길이 검증
         if (code.length() > MAX_CODE_LENGTH) {
             throw new BusinessException(ErrorCode.AI_INVALID_REQUEST,
                     "Code too large for review (max 5000 characters)");
         }
 
-        // 언어 설정: 요청 파라미터 우선, 없으면 DB 저장값 사용
-        String language = (request.language() != null && !request.language().isEmpty())
-                ? request.language()
-                : codeBlock.getProperties().getLanguage();
+        // 5. 언어 설정
+        String language = ((CodeBlock) baseBlock).getProperties().getLanguage();
+        if (language == null || language.isEmpty()) {
+            language = "text";
+        }
+
         String systemPrompt = buildCodeReviewSystemPrompt(language);
 
-        // 세션 모드: 전체 블록 컨텍스트 포함
-        List<CodeBlock> contextBlocks = null;
+        // 6. 컨텍스트 블록 조회 (옵션)
+        List<CodeBlock> contextBlocks = new ArrayList<>();
         if (Boolean.TRUE.equals(request.includeContext())) {
             contextBlocks = blockRepository.findByNoteIdAndDeletedAtIsNullOrderByOrderAsc(noteId).stream()
                     .filter(block -> block instanceof CodeBlock)
@@ -91,29 +97,26 @@ public class CodeAssistantService {
         AiService aiService = aiServiceFactory.getService(provider);
         String aiResponse = aiService.complete(systemPrompt, userPrompt);
 
-        log.info("Code review completed: noteId={}, blockId={}, provider={}, contextBlocks={}",
-                noteId, blockId, provider, contextBlocks != null ? contextBlocks.size() : 0);
+        log.info("Code review completed: noteId={}, blockId={}, provider={}",
+                noteId, blockId, provider);
 
         return parseCodeReviewResponse(blockId, language, code, aiResponse);
     }
 
     private String buildCodeReviewSystemPrompt(String language) {
         return """
-                당신은 %s 언어 전문 코드 리뷰어입니다.
-                다음 관점에서 코드를 분석하세요:
-                - 보안 취약점
-                - 성능 이슈
-                - 코드 품질 및 가독성
-                - 모범 사례
+                당신은 %s 언어 전문 시니어 개발자이자 코드 리뷰어입니다.
+                주니어 개발자가 작성한 코드를 리뷰하고 피드백을 제공하는 역할을 맡았습니다.
 
-                다음 내용을 포함한 구조화된 피드백을 제공하세요:
-                1. 구체적인 문제점 (심각도: error, warning, info)
-                2. 모범 사례 권장사항
-                3. 전체 요약
+                다음 원칙을 반드시 준수하세요:
+                1. **전문적이고 객관적인 어조 유지**: 이모지는 절대 사용하지 마세요. 비격식적인 표현을 피하고 정중하고 명확하게 작성하세요.
+                2. **구체적이고 건설적인 피드백**: '왜' 문제가 되는지 설명하고 '어떻게' 개선할 수 있는지 설명하세요.
+                3. **핵심에 집중**: 사소한 스타일 문제보다는 보안, 성능, 아키텍처, 잠재적 버그 등 중요한 문제에 집중하세요.
+                4. **현재 코드에 집중**: "실무에서는...", "프로덕션 환경이라면..." 같은 일반론적인 가정보다는, **현재 작성된 코드의 문맥 내에서** 직접적인 개선점을 제시하세요. 과도한 가정에 기반한 피드백은 지양하세요.
 
-                간결하면서도 실행 가능한 조언을 제공하세요.
-                응답은 반드시 유효한 JSON 형식으로만 작성하세요. 마크다운 코드 블록은 사용하지 마세요.
-                """.formatted(language);
+                응답은 반드시 유효한 JSON 형식으로만 작성하세요. 마크다운 코드 블록(```json 등)은 사용하지 마세요.
+                """
+                .formatted(language);
     }
 
     private String buildCodeReviewUserPrompt(String code, String language,
@@ -123,43 +126,45 @@ public class CodeAssistantService {
 
         // 컨텍스트 블록이 있으면 먼저 추가
         if (contextBlocks != null && !contextBlocks.isEmpty()) {
-            prompt.append("## 참고: 이 노트의 다른 코드 블록들\n\n");
+            prompt.append("## 참고: 이 노트의 다른 코드 블록들\\n\\n");
             for (int i = 0; i < contextBlocks.size(); i++) {
                 CodeBlock ctx = contextBlocks.get(i);
                 prompt.append("### 컨텍스트 블록 ").append(i + 1)
-                        .append(" (").append(ctx.getProperties().getLanguage()).append(")\n");
-                prompt.append("```").append(ctx.getProperties().getLanguage()).append("\n");
-                prompt.append(ctx.getProperties().getCode()).append("\n```\n\n");
+                        .append(" (").append(ctx.getProperties().getLanguage()).append(")\\n");
+                prompt.append("```").append(ctx.getProperties().getLanguage()).append("\\n");
+                prompt.append(ctx.getProperties().getCode()).append("\\n```\\n\\n");
             }
-            prompt.append("---\n\n");
+            prompt.append("---\\n\\n");
         }
 
         // 리뷰 대상 코드
-        prompt.append("## 리뷰 대상 코드\n\n");
-        prompt.append("다음 ").append(language).append(" 코드를 리뷰해주세요:\n\n");
-        prompt.append("```").append(language).append("\n");
-        prompt.append(code).append("\n```\n\n");
+        prompt.append("## 리뷰 대상 코드\\n\\n");
+        prompt.append("다음 ").append(language).append(" 코드를 리뷰해주세요:\\n\\n");
+        prompt.append("```").append(language).append("\\n");
+        prompt.append(code).append("\\n```\\n\\n");
 
         if (focusAreas != null && !focusAreas.isEmpty()) {
-            prompt.append("집중 검토 영역: ").append(String.join(", ", focusAreas)).append("\n\n");
+            prompt.append("집중 검토 영역: ").append(String.join(", ", focusAreas)).append("\\n\\n");
         }
 
-        prompt.append("""
-                다음 JSON 형식으로 리뷰를 제공하세요:
-                {
-                  "reviews": [
-                    {
-                      "severity": "error|warning|info",
-                      "category": "security|performance|style|logic",
-                      "issue": "문제점 설명",
-                      "suggestion": "개선 방법",
-                      "lineNumber": null
-                    }
-                  ],
-                  "bestPractices": ["모범 사례 1", "모범 사례 2"],
-                  "summary": "전체 평가 요약"
-                }
-                """);
+        prompt.append(
+                """
+                        다음 JSON 형식으로 리뷰를 제공하세요:
+                        {
+                          "reviews": [
+                            {
+                              "severity": "error|warning|info",
+                              "category": "security|performance|style|logic",
+                              "issue": "문제점 설명(전문적인 용어 사용)",
+                              "suggestion": "구체적인 개선 방안 설명 (코드는 제외)",
+                              "suggestionCode": "개선된 코드 (필요한 경우에만 작성, 마크다운 없이 순수 코드만)",
+                              "lineNumber": null
+                            }
+                          ],
+                          "bestPractices": ["모범 사례 1", "모범 사례 2"],
+                          "summary": "전체적인 총평. 다음 구조로 작성하되, 마크다운 기호(**, -, #)는 사용하지 마세요:\\n\\n[강점]\\n(내용)\\n\\n[개선점]\\n(내용)\\n\\n[총평]\\n(내용)\\n\\n각 문장은 간결하게 작성하고, 문장 끝에는 마침표를 확실히 찍으세요. 이모지는 절대 사용하지 마세요."
+                        }
+                        """);
 
         return prompt.toString();
     }
@@ -215,6 +220,7 @@ public class CodeAssistantService {
                     item.path("category").asText("style"),
                     item.path("issue").asText(),
                     item.path("suggestion").asText(),
+                    item.path("suggestionCode").asText(null),
                     item.path("lineNumber").isNull() ? null : item.path("lineNumber").asInt()));
         }
         return items;

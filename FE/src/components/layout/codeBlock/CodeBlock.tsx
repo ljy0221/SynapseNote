@@ -20,8 +20,9 @@ import { useCodeEditorStore } from '../../../store/useCodeEditorStore';
 import { useToastStore } from '../../../store/useToastStore';
 import { Tooltip } from '../../common/tooltip/Tooltip';
 import ConfirmModal from '../../common/modal/ConfirmModal';
-import { BlockEditorAvatar } from '../../common/blockEditorAvatar/BlockEditorAvatar';
-import { AwarenessUser } from '../../../hooks/useYjsStore.ts';
+import AlertModal from '../../common/modal/AlertModal'; // [New]
+import { BlockEditorAvatar } from '../../common/blockEditorAvatar/BlockEditorAvatar'; // [New]
+import { AwarenessUser } from '../../../hooks/useYjsStore'; // [New]
 
 interface CodeBlockProps {
     id: number | string;
@@ -99,6 +100,10 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     // [New] Language Change Modal State
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const [pendingLanguage, setPendingLanguage] = useState<Language | null>(null);
+
+    // [New] AI Review Alert Modal State
+    const [isAlertOpen, setIsAlertOpen] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
 
     // AI 리뷰 관련 상태
     const [aiReviewLoading, setAiReviewLoading] = useState(false);
@@ -281,7 +286,8 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
             }
         } catch (error: any) {
             if (error.name !== 'AbortError') {
-                alert(error.message || 'AI 리뷰 요청에 실패했습니다.');
+                setAlertMessage(error.message || 'AI 리뷰 요청에 실패했습니다.');
+                setIsAlertOpen(true);
             }
         } finally {
             setAiReviewLoading(false);
@@ -490,6 +496,13 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                 message="언어를 변경하면 작성된 코드가 초기화되고 기본 템플릿이 적용됩니다. 계속하시겠습니까?"
                 onConfirm={handleConfirmLanguageChange}
                 onCancel={handleCancelLanguageChange}
+            />
+
+            {/* AI Review Failure Alert Modal */}
+            <AlertModal
+                isOpen={isAlertOpen}
+                message={alertMessage}
+                onClose={() => setIsAlertOpen(false)}
             />
 
         </div>
