@@ -92,7 +92,9 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
         return langs.size > 1;
     });
 
-    const [language, setLanguage] = useState<Language>(initialLanguage);
+    // [Fix] Use prop as source of truth for language (managed by Yjs)
+    // Only maintain local state for pending changes during confirmation
+    const language = initialLanguage;
     const [executionMode, setExecutionMode] = useState<ExecutionMode>('single');
     const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
     const [showCheckpoints, setShowCheckpoints] = useState(false);
@@ -100,16 +102,6 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     // [New] Language Change Modal State
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const [pendingLanguage, setPendingLanguage] = useState<Language | null>(null);
-
-    // [New] Sync language prop changes from Yjs (real-time collaboration)
-    useEffect(() => {
-        // Always sync prop to state when prop changes (remote user changed language)
-        console.log(`[CodeBlock ${id}] Prop language: ${initialLanguage}, State language: ${language}`);
-        if (initialLanguage !== language) {
-            console.log(`[CodeBlock ${id}] Syncing language from Yjs: ${language} -> ${initialLanguage}`);
-            setLanguage(initialLanguage);
-        }
-    }, [initialLanguage, id]); // Include id for logging, but main trigger is initialLanguage
 
     // [New] AI Review Alert Modal State
     const [isAlertOpen, setIsAlertOpen] = useState(false);
@@ -237,7 +229,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
         const template = getLanguageTemplate(newLanguage);
         setEditedCode(template);
         onChange(id, template);
-        setLanguage(newLanguage);
+        // Language state is now managed by parent via Yjs, just notify parent
         if (noteId) setNoteLanguage(noteId, newLanguage);
         if (onLanguageChange) onLanguageChange(id, newLanguage);
     };
@@ -347,7 +339,6 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                 <div className="code-block-header">
                     <div className="code-left-controls"></div>
                     <LanguageSelector
-                        key={`lang-${id}-${language}`}
                         value={language}
                         onChange={handleLanguageChange}
                         disabled={loading || readOnly}
