@@ -21,7 +21,7 @@ type YBlockMap = Y.Map<any>;
  * CRDT-safe 텍스트 diff 적용 함수
  * 전체 삭제/재삽입 대신 변경된 부분만 계산하여 Y.Text에 반영
  */
-function applyTextDiff(yText: Y.Text, oldText: string, newText: string): void {
+export function applyTextDiff(yText: Y.Text, oldText: string, newText: string): void {
   let prefixLen = 0;
   const minLen = Math.min(oldText.length, newText.length);
   while (prefixLen < minLen && oldText[prefixLen] === newText[prefixLen]) {
@@ -54,6 +54,10 @@ export const useYjsStore = (noteId: string | undefined) => {
   const docRef = useRef<Y.Doc>(new Y.Doc());
   const providerRef = useRef<WebsocketProvider | null>(null);
   const awarenessRef = useRef<Awareness | null>(null); // [New]
+
+  // [New] Simple tracking for delayed remote updates
+  const focusedBlockIdRef = useRef<string | null>(null);
+  const lastLocalUpdateRef = useRef<Map<string, number>>(new Map());
 
   // Zustand store에서 토큰 가져오기 (persist 복원 포함)
   const accessToken = useAuthStore((state) => state.accessToken);
@@ -89,12 +93,32 @@ export const useYjsStore = (noteId: string | undefined) => {
     const doc = new Y.Doc();
     docRef.current = doc;
 
-    // Provider 생성 (token params 포함)
+    // WebSocket Provider 설정
     const provider = new WebsocketProvider(wsUrl, noteId, doc, {
       params: { token: accessToken || '' },
     });
 
-    // [New] Get awareness from provider
+    providerRef.current = provider;
+
+    provider.on('status', ({ status }: { status: string }) => {
+      console.log(`[Yjs] WebSocket status: ${status}`);
+    });
+
+    provider.on('sync', (isSynced: boolean) => {
+      console.log(`[Yjs] sync: ${isSynced}`);
+      setIsSynced(isSynced);
+    });
+
+    // [New] Add Y.Doc update observer for debugging
+    const updateHandler = (update: Uint8Array, origin: any) => {
+      console.log(`[Yjs Frontend] Y.Doc update detected! Size: ${update.length}, Origin:`, origin);
+      const yBlocks = doc.getArray('blocks');
+      console.log(`[Yjs Frontend] Current blocks count: ${yBlocks.length}`);
+    };
+
+    doc.on('update', updateHandler);
+
+    // Awareness 설정
     const awareness = provider.awareness;
     awarenessRef.current = awareness;
 
@@ -138,11 +162,12 @@ export const useYjsStore = (noteId: string | undefined) => {
             const bookmark = properties.get('bookmark') || false;
 
             if (type === 'code') {
-              const codeText = properties.get('code');
-              content = codeText ? codeText.toString() : '';
+              const rawCode = properties.get('code');
+              content = rawCode ? rawCode.toString() : ''; // Handles both Y.Text and string
               language = properties.get('language');
             } else {
               const contentText = properties.get('content');
+              // [Fix] Convert Y.XmlFragment or Y.Text to string
               content = contentText ? contentText.toString() : '';
             }
 
@@ -227,13 +252,12 @@ export const useYjsStore = (noteId: string | undefined) => {
     awareness.on('change', onAwarenessChange);
 
     // 블록 배열 변경 관찰 (실시간 반영 핵심)
-    // 🔥 로컬/원격 모두 React 상태 업데이트 필요
-    // 무한 루프는 이미 컴포넌트 레벨에서 방지됨 (useEffect 제거)
+    // 🔥 Immediate CRDT merging for proper collaboration
     const onBlocksChanged = (_events: Y.YEvent<any>[], transaction: Y.Transaction) => {
       const origin = transaction.origin || 'remote';
       console.log(`[Yjs] Blocks changed, origin: ${origin}`);
 
-      // 로컬/원격 모두 상태 업데이트 (블록 추가/삭제/이동 시 필수)
+      // Always update state immediately for proper CRDT merging
       updateBlocksState();
     };
     yBlocks.observeDeep(onBlocksChanged);
@@ -262,9 +286,13 @@ export const useYjsStore = (noteId: string | undefined) => {
       } catch {
         // off 미지원/에러 가능성 대비
       }
-      provider.destroy();
-      doc.destroy();
-      providerRef.current = null;
+
+      // [Fix] Add delay to prevent disconnection during React Strict Mode remount
+      setTimeout(() => {
+        provider.destroy();
+        doc.destroy();
+        providerRef.current = null;
+      }, 100);
 
       setBlocks([]);
       setIsSynced(false);
@@ -299,12 +327,12 @@ export const useYjsStore = (noteId: string | undefined) => {
 
         const properties = new Y.Map();
         if (block.type === 'code') {
-          properties.set('code', new Y.Text(''));
+          properties.set('code', block.content || '');
           properties.set('language', 'javascript');
           properties.set('version', '17');
           properties.set('executionMode', 'local');
         } else {
-          properties.set('content', new Y.Text(block.content));
+          properties.set('content', new Y.XmlFragment());
         }
         properties.set('bookmark', block.bookmark || false);
         newBlockMap.set('properties', properties);
@@ -334,12 +362,12 @@ export const useYjsStore = (noteId: string | undefined) => {
 
       const properties = new Y.Map();
       if (type === 'code') {
-        properties.set('code', new Y.Text(''));
+        properties.set('code', initialContent || ''); // Plain string for LWW
         properties.set('language', 'javascript');
         properties.set('version', '17');
         properties.set('executionMode', 'local');
       } else {
-        properties.set('content', new Y.Text(initialContent));
+        properties.set('content', new Y.XmlFragment());
       }
       properties.set('bookmark', false);
       newBlockMap.set('properties', properties);
@@ -378,22 +406,45 @@ export const useYjsStore = (noteId: string | undefined) => {
 
     // 🔥 Transaction origin 'local' 추가: 로컬 변경임을 표시
     doc.transact(() => {
-      const key = type === 'code' ? 'code' : 'content';
-      let yText = properties.get(key) as any;
-
-      // [Fix] Self-healing for corrupted data (if yText is a string or missing methods)
-      if (yText && typeof yText.insert !== 'function') {
-        console.warn(`[Yjs] Corrupted Y.Text detected for block ${blockId}. Repairing...`);
-        const strContent = yText.toString(); // Works for string or objects with toString
-        yText = new Y.Text(strContent);
-        properties.set(key, yText);
+      if (type === 'code') {
+        // LWW Strategy: Direct set
+        if (properties.get('code') !== newContent) {
+          properties.set('code', newContent);
+        }
+        return;
       }
 
-      if (!yText) return;
+      const key = 'content';
+      let yContent = properties.get(key) as any;
 
-      const currentStr = yText.toString();
+      // [Fix] Self-healing for corrupted data (if yContent is a string or missing methods)
+      // For text blocks, we must use Y.XmlFragment for Tiptap.
+      const isXmlFragment = yContent && (yContent.constructor?.name === 'YXmlFragment');
+
+      if (yContent && !isXmlFragment && typeof yContent.insert !== 'function') {
+        console.warn(`[Yjs] Corrupted content detected for block ${blockId}. Repairing...`);
+        const strContent = yContent.toString();
+        // Return to Y.XmlFragment
+        const newFragment = new Y.XmlFragment();
+        const paragraph = new Y.XmlElement('paragraph');
+        const textNode = new Y.XmlText(strContent);
+        paragraph.insert(0, [textNode]);
+        newFragment.insert(0, [paragraph]);
+        properties.set(key, newFragment);
+        yContent = newFragment;
+      }
+
+      if (!yContent) return;
+
+      const currentStr = yContent.toString();
       if (currentStr !== newContent) {
-        applyTextDiff(yText, currentStr, newContent);
+        // [Note] Manual update for XmlFragment via diffing is complex.
+        // For TextBlocks using Collaboration extension, this updateBlock call
+        // might be redundant or only used for initial/external data sync.
+        // If it's a TextBlock, we rely on the editor/extension.
+        if (type !== 'text') {
+          applyTextDiff(yContent, currentStr, newContent);
+        }
       }
     }, 'local'); // ← 로컬 변경 마커
   }, []);
@@ -483,14 +534,30 @@ export const useYjsStore = (noteId: string | undefined) => {
 
       if (oldProperties) {
         oldProperties.forEach((value, key) => {
-          // [Fix] Explicitly handle Y.Text fields by key name to verify/clone correctly
-          // relying on 'instanceof' can be flaky with different Yjs bundles
-          if (key === 'content' || key === 'code') {
-            newProperties.set(key, new Y.Text(value.toString()));
-          } else if (value instanceof Y.Text) {
-            // Fallback for other potential text fields
-            newProperties.set(key, new Y.Text(value.toString()));
+          if (key === 'content') {
+            const fragment = new Y.XmlFragment();
+            // If we have content, try to preserve it as plain text/XML string.
+            // Tiptap will re-parse it in the new block.
+            if (value && typeof value.toString === 'function') {
+              const str = value.toString();
+              if (str) {
+                // [Fix] Initialize as plain string/value from DB.
+                // Clients will handle migration to specific Yjs types (e.g. Text -> XmlFragment).
+                // This avoids redundant wrapping and technical tags leaking into DB incorrectly.
+                // For moveBlock, we want to preserve the content as-is, and let the migration logic
+                // in getYTextForBlock handle the conversion to XmlFragment if needed.
+                // So, we set it as a plain string here.
+                newProperties.set(key, str);
+              } else {
+                newProperties.set(key, fragment); // Empty fragment if no content
+              }
+            } else {
+              newProperties.set(key, fragment); // If value is not a string or has no toString, use empty fragment
+            }
+          } else if (key === 'code' && value !== undefined) {
+            newProperties.set(key, value.toString());
           } else {
+            // Primitive or simple object
             newProperties.set(key, value);
           }
         });
@@ -527,12 +594,12 @@ export const useYjsStore = (noteId: string | undefined) => {
 
         const properties = new Y.Map();
         if (block.type === 'code') {
-          properties.set('code', new Y.Text(''));
+          properties.set('code', block.content || '');
           properties.set('language', 'javascript');
           properties.set('version', '17');
           properties.set('executionMode', 'local');
         } else {
-          properties.set('content', new Y.Text(block.content));
+          properties.set('content', new Y.XmlFragment());
         }
         properties.set('bookmark', block.bookmark || false);
         newBlockMap.set('properties', properties);
@@ -544,6 +611,42 @@ export const useYjsStore = (noteId: string | undefined) => {
   }, [noteId]);
 
   // [Fix] React State debounce로 인한 초기화 경합 방지를 위해 동기적으로 상태 체크 후 초기화
+  // [New] Migrate text blocks to Y.XmlFragment if needed (one-time migration)
+  const migrateBlocksToXmlFragment = useCallback(() => {
+    const doc = docRef.current;
+    if (!doc) return;
+    const yBlocks = doc.getArray<YBlockMap>('blocks');
+
+    doc.transact(() => {
+      yBlocks.forEach((block, idx) => {
+        const type = block.get('_class');
+        if (type !== 'text') return; // Only migrate text blocks
+
+        const properties = block.get('properties') as Y.Map<any>;
+        const key = 'content';
+        let fragment = properties.get(key);
+
+        // Check if migration needed
+        const isSharedType = !!(fragment && typeof (fragment as any).observe === 'function');
+        const hasToArray = !!(fragment && typeof (fragment as any).toArray === 'function');
+        const isXmlFragment = !!(fragment && hasToArray && (fragment as any).constructor?.name?.includes('XmlFragment'));
+
+        const needsMigration = !fragment || !isSharedType || !hasToArray || !isXmlFragment;
+
+        if (needsMigration) {
+          console.warn(`[Yjs] Migrating block ${idx} to Y.XmlFragment (empty). Tiptap will initialize it.`);
+
+          // [Fix] Create empty Y.XmlFragment and let Tiptap initialize it with the content.
+          // Don't manually create the structure as it might not match Tiptap's schema.
+          const newFragment = new Y.XmlFragment();
+          properties.set(key, newFragment);
+        }
+      });
+    }, 'local');
+
+    console.log('[Yjs] Block migration to XmlFragment completed.');
+  }, []);
+
   const checkAndInitialize = useCallback((initialBlocks: { type: BlockType; content: string, bookmark?: boolean }[]) => {
     const doc = docRef.current;
     if (!doc) return;
@@ -553,15 +656,28 @@ export const useYjsStore = (noteId: string | undefined) => {
     // 동기적으로 실제 Yjs 데이터 확인 (트랜잭션 없이 읽기만)
     if (yBlocks.length > 0 || yMeta.get('isInitialized')) {
       console.log('[Yjs] checkAndInitialize: Already initialized, skipping.');
+      // [New] Run migration for existing data
+      migrateBlocksToXmlFragment();
       return;
     }
 
     // 초기화 진행
     initializeYjs(initialBlocks);
-  }, [initializeYjs]);
+  }, [initializeYjs, migrateBlocksToXmlFragment]);
 
   // [New] Update focused block in awareness
   const setFocusedBlock = useCallback((blockId: string | null) => {
+    const previousId = focusedBlockIdRef.current;
+
+    // [New] On blur: clear timestamp so remote updates can come through
+    if (previousId && previousId !== blockId) {
+      lastLocalUpdateRef.current.delete(previousId);
+      console.log(`[Yjs] Blur from block ${previousId} - clearing timestamp`);
+    }
+
+    // Update focused block ref
+    focusedBlockIdRef.current = blockId;
+
     const awareness = awarenessRef.current;
     if (!awareness || !userInfo) return;
 
@@ -603,5 +719,115 @@ export const useYjsStore = (noteId: string | undefined) => {
     setFocusedBlock, // [New]
     getBlockEditors, // [New]
     editingUsers, // [New]
+    // [New] Expose Y.Doc and Y.Text for Tiptap Collaboration
+    getYDoc: () => docRef.current,
+    getYTextForBlock: (blockId: string | number) => {
+      const doc = docRef.current;
+      if (!doc) {
+        console.log('[getYTextForBlock] No doc available');
+        return null;
+      }
+
+      const yBlocks = doc.getArray<YBlockMap>('blocks');
+      const allBlocks = yBlocks.toArray();
+
+      console.log('[getYTextForBlock] Looking for blockId:', blockId, 'type:', typeof blockId);
+
+      const targetBlock = allBlocks.find(block => {
+        const id = block.get('blockId');
+        return id?.toString() === blockId.toString();
+      });
+
+      if (!targetBlock) {
+        console.log('[getYTextForBlock] Block not found for:', blockId);
+        return null;
+      }
+
+      const properties = targetBlock.get('properties') as Y.Map<any>;
+      const type = targetBlock.get('_class');
+
+      // Code blocks use plain string (LWW), so getYTextForBlock returns null
+      if (type === 'code') {
+        return null;
+      }
+
+      const key = 'content';
+      const fragment = properties.get(key);
+
+      console.log(`[getYTextForBlock] Result for ${blockId}:`, {
+        type: fragment?.constructor?.name,
+        hasToArray: typeof (fragment as any)?.toArray === 'function'
+      });
+
+      // [Fix] Pure getter - no side effects. Migration handled in checkAndInitialize.
+      return fragment as Y.XmlFragment | null;
+    },
+
+    // [New] Get Y.Text for CodeBlock - similar to getYTextForBlock but for code
+    getYTextForCodeBlock: (blockId: string | number): Y.Text | null => {
+      const doc = docRef.current;
+      if (!doc) {
+        console.warn('[getYTextForCodeBlock] No Yjs document available');
+        return null;
+      }
+
+      const yBlocks = doc.getArray<YBlockMap>('blocks');
+      let yBlock: YBlockMap | undefined;
+
+      // Find block by ID - use 'blockId' key to match how blocks are stored
+      for (const block of yBlocks) {
+        const bid = block.get('blockId'); // [FIX] Changed from 'id' to 'blockId'
+        if (bid === blockId || String(bid) === String(blockId)) {
+          yBlock = block;
+          break;
+        }
+      }
+
+      if (!yBlock) {
+        console.warn(`[getYTextForCodeBlock] Block ${blockId} not found`);
+        return null;
+      }
+
+      const properties = yBlock.get('properties');
+      if (!(properties instanceof Y.Map)) {
+        console.warn(`[getYTextForCodeBlock] Block ${blockId} has no properties map`);
+        return null;
+      }
+
+      let yText = properties.get('code');
+
+      // Feature-based detection for Y.Text
+      const isSharedType = yText && typeof yText === 'object';
+      const hasInsert = isSharedType && typeof (yText as any).insert === 'function';
+      const hasDelete = isSharedType && typeof (yText as any).delete === 'function';
+      const hasToString = isSharedType && typeof (yText as any).toString === 'function';
+      const isYText = hasInsert && hasDelete && hasToString;
+
+      const needsMigration = !yText || !isYText;
+
+      if (needsMigration) {
+        const initialCode = typeof yText === 'string' ? yText : '';
+        console.warn(`[Yjs] Migrating CodeBlock ${blockId} to Y.Text. Code length: ${initialCode.length}`);
+
+        doc.transact(() => {
+          const newYText = new Y.Text();
+
+          if (initialCode) {
+            newYText.insert(0, initialCode);
+          }
+
+          properties.set('code', newYText);
+          yText = newYText;
+        }, 'local');
+      }
+
+      console.log(`[getYTextForCodeBlock] Result for ${blockId}:`, {
+        type: yText?.constructor?.name,
+        hasInsert: typeof (yText as any)?.insert === 'function',
+        length: (yText as Y.Text)?.length
+      });
+
+      return yText as Y.Text | null;
+    },
   };
 };

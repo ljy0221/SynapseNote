@@ -35,3 +35,32 @@
     align-items: center;
     justify-content: center;
 }
+
+/* Multiple editors styling */
+.block-editor-avatar-group {
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.block-editor-avatar-first {
+    z-index: 2;
+}
+
+.block-editor-avatar-overlap {
+    z-index: 1;
+    margin-left: -18px; /* Heavily overlap - only 6px visible (24px - 18px) */
+    font-size: 10px; /* Smaller font for +N */
+}
+
+/* Tooltip content styling */
+.block-editor-tooltip-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.block-editor-tooltip-name {
+    white-space: nowrap;
+    font-size: 12px;
+}

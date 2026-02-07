@@ -98,20 +98,19 @@ class BridgeService {
           if (block.properties) {
             const props = new Y.Map();
             Object.entries(block.properties).forEach(([k, v]) => {
+              // [Fix] Initialize as plain string/value from DB.
+              // Clients will handle migration to specific Yjs types (e.g. Text -> XmlFragment).
+              // This avoids server-side type mismatches and complex XML parsing.
               props.set(k, v);
             });
-            blockMap.set('properties', props); // Note: Yjs expects properties to be a Map if you want to sync deeply? 
-            // Actually typically Yjs stores properties as a JS object inside the Map if they are not collaborative themselves. 
-            // But looking at syncToDB, it reads yBlock.properties.
-            // Let's assume blockMap structure matches what syncToDB expects.
-            // syncToDB: const cleanProps = ... Object.entries(yBlock.properties)
+            blockMap.set('properties', props);
           }
 
-          // Other fields
+          // Root-level fields
           if (block.bookmark !== undefined) blockMap.set('bookmark', block.bookmark);
+          if (block.outputHistory) blockMap.set('outputHistory', block.outputHistory);
           if (block.lastOutput) blockMap.set('lastOutput', block.lastOutput);
           if (block.lastExecutedAt) blockMap.set('lastExecutedAt', block.lastExecutedAt);
-          if (block.outputHistory) blockMap.set('outputHistory', block.outputHistory);
 
           return blockMap;
         });
@@ -128,15 +127,23 @@ class BridgeService {
       console.log(`[Bridge] Initialized ${dbBlocks.length} blocks from DB for ${noteId}`);
 
     } catch (error) {
-      console.error(`[Bridge Error] initDocFromDB failed for ${noteId}:`, error);
+      console.error(`[Bridge Error] initDocFromDB failed for ${noteId}: `, error);
       throw error;
     }
   }
 
   private async syncToDB(noteId: string, yDoc: Y.Doc, userContext?: UserContext): Promise<void> {
     try {
-      const yArray = yDoc.getArray<any>('blocks');
-      const currentBlocks = yArray.toJSON();
+      const yArray = yDoc.getArray<Y.Map<any>>('blocks');
+      // [Fix] Do NOT use toJSON() here as it strips XML tags from XmlFragment
+      const currentBlocks = yArray.toArray();
+
+      console.log(`[Bridge] syncToDB called for ${noteId}`);
+      console.log(`[Bridge] Current blocks count: ${currentBlocks?.length || 0} `);
+
+      if (currentBlocks && currentBlocks.length > 0) {
+        console.log(`[Bridge] First block sample: `, JSON.stringify(currentBlocks[0], null, 2));
+      }
 
       if (!currentBlocks || currentBlocks.length === 0) {
         console.log(`[Bridge] No blocks to sync for ${noteId}.`);
@@ -159,18 +166,20 @@ class BridgeService {
 
       for (let i = 0; i < currentBlocks.length; i++) {
         const yBlock = currentBlocks[i];
+        const blockId = yBlock.get('blockId');
+        const springClass = yBlock.get('_class');
 
         // Ensure blockId exists
-        if (!yBlock.blockId) {
-          const newId = generateUuidV7();
-          // We can't modify yArray here easily without transaction or knowing index reliably if changed.
-          // ideally frontend should have generated it.
-          // But here, we just assign to the object to proceed with DB save.
-          yBlock.blockId = newId;
+        let validBlockId = blockId;
+        if (!validBlockId) {
+          validBlockId = generateUuidV7();
+          yDoc.transact(() => {
+            yBlock.set('blockId', validBlockId);
+          });
         }
 
-        const validBlockId = toUuidString(yBlock.blockId);
-        const blockIdHex = normalizeToHex(validBlockId);
+        const blockIdStr = toUuidString(validBlockId);
+        const blockIdHex = normalizeToHex(blockIdStr);
         currentBlockIds.add(blockIdHex);
 
         if (processedBlockIds.has(blockIdHex)) {
@@ -178,29 +187,56 @@ class BridgeService {
         }
         processedBlockIds.add(blockIdHex);
 
-        const springClass = yBlock._class;
         const existingBlock = dbBlocksMap.get(blockIdHex);
 
         const cleanProps: any = {};
-        if (yBlock.properties) {
-          Object.entries(yBlock.properties).forEach(([key, val]) => {
-            cleanProps[key] = val;
+        const yProperties = yBlock.get('properties');
+
+        if (yProperties instanceof Y.Map) {
+          yProperties.forEach((val, key) => {
+            if (val instanceof Y.XmlFragment) {
+              // [Fix] Extract plain text from XmlFragment for clean DB storage
+              // Convert <paragraph>text</paragraph> structure to plain text with newlines
+              const paragraphs: string[] = [];
+              val.forEach((item: any) => {
+                if (item instanceof Y.XmlElement && item.nodeName === 'paragraph') {
+                  // Extract text from paragraph
+                  let text = '';
+                  item.forEach((child: any) => {
+                    if (child instanceof Y.XmlText) {
+                      text += child.toString();
+                    }
+                  });
+                  paragraphs.push(text);
+                }
+              });
+              cleanProps[key] = paragraphs.join('\n');
+            } else if (val instanceof Y.Text || val instanceof Y.XmlElement) {
+              // For other Yjs types, use toString
+              cleanProps[key] = val.toString();
+            } else if (val && typeof val.toJSON === 'function') {
+              cleanProps[key] = val.toJSON();
+            } else {
+              cleanProps[key] = val;
+            }
           });
         }
 
         const rootFields: any = {
-          outputHistory: yBlock.outputHistory || (springClass === 'code' ? [] : undefined)
+          outputHistory: yBlock.get('outputHistory') || (springClass === 'code' ? [] : undefined)
         };
 
         if (springClass === 'code') {
-          if (yBlock.lastOutput) rootFields.lastOutput = yBlock.lastOutput;
-          if (yBlock.lastExecutedAt) rootFields.lastExecutedAt = yBlock.lastExecutedAt;
+          const lastOutput = yBlock.get('lastOutput');
+          const lastExecutedAt = yBlock.get('lastExecutedAt');
+          if (lastOutput) rootFields.lastOutput = lastOutput;
+          if (lastExecutedAt) rootFields.lastExecutedAt = lastExecutedAt;
         }
 
         if (existingBlock) {
           const isPropsChanged = !_.isEqual(existingBlock.properties, cleanProps);
           const isMetadataChanged = existingBlock._class !== springClass ||
-            (existingBlock as any).bookmark !== (yBlock.bookmark ?? false);
+            (existingBlock as any).bookmark !== (yBlock.get('bookmark') ?? false);
 
           if (isPropsChanged || isMetadataChanged || existingBlock.order !== i) {
             bulkOps.push({
@@ -211,7 +247,7 @@ class BridgeService {
                     blockId: uuidToBuffer(validBlockId),
                     _class: springClass,
                     properties: cleanProps,
-                    bookmark: yBlock.bookmark ?? false,
+                    bookmark: yBlock.get('bookmark') ?? false,
                     order: i,
                     ...rootFields
                   }
@@ -227,7 +263,7 @@ class BridgeService {
                 noteId: queryNoteId,
                 blockId: uuidToBuffer(validBlockId),
                 properties: cleanProps,
-                bookmark: yBlock.bookmark ?? false,
+                bookmark: yBlock.get('bookmark') ?? false,
                 order: i,
                 ...rootFields
               }
@@ -245,22 +281,27 @@ class BridgeService {
           }
         }));
 
-      if (toDeleteOps.length > 0) {
-        bulkOps.push(...toDeleteOps);
-      }
+      bulkOps.push(...toDeleteOps);
+
+      console.log(`[Bridge] BulkOps count: ${bulkOps.length} (inserts / updates: ${bulkOps.length - toDeleteOps.length}, deletes: ${toDeleteOps.length})`);
 
       if (bulkOps.length > 0) {
-        await Block.bulkWrite(bulkOps);
-        console.log(`[Bridge] Sync Success for ${noteId}. Updates: ${bulkOps.length}`);
+        console.log(`[Bridge] Writing to MongoDB - Database: ${Block.db.name}, Collection: ${Block.collection.name} `);
+        console.log(`[Bridge] Sample operation: `, JSON.stringify(bulkOps[0], null, 2));
 
-        // Use noteId string directly (not Binary) since Note schema uses String _id
-        await Note.updateOne(
-          { _id: noteId },
-          { $set: { updatedAt: new Date() } }
-        );
+        const result = await Block.bulkWrite(bulkOps);
+        console.log(`[Bridge] Sync Success for ${noteId}.Updates: ${result.modifiedCount}, Inserts: ${result.insertedCount}, Deletes: ${result.deletedCount} `);
+      } else {
+        console.log(`[Bridge] No changes to sync for ${noteId}`);
       }
+
+      // Use noteId string directly (not Binary) since Note schema uses String _id
+      await Note.updateOne(
+        { _id: noteId },
+        { $set: { updatedAt: new Date() } }
+      );
     } catch (error) {
-      console.error(`[Bridge Error] syncToDB failed for ${noteId}:`, error);
+      console.error(`[Bridge Error] syncToDB failed for ${noteId}: `, error);
     }
   }
 }
