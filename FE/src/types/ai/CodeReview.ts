@@ -15,6 +15,7 @@ export interface ReviewItem {
   category: string;
   issue: string;
   suggestion: string;
+  suggestionCode?: string;
   lineNumber: number | null;
 }
 
