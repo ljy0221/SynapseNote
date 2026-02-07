@@ -14,6 +14,7 @@ import { BlockType } from '../../types/note/Block';
 import { addBlockBookmarkApi, removeBlockBookmarkApi, getBlockBookmarksApi } from '../../api/bookmark/Bookmarks.api';
 import { getNoteMembersApi } from '../../api/notes/GetNoteMembers.api'; // [New]
 import { NoteMemberItem } from '../../types/note/GetNoteMembers'; // [New]
+import { getPendingInvitationsApi } from '../../api/notes/Invitation.api'; // [New]
 import { Loading } from '../../components/common/loading/Loading';
 import './Note.css';
 
@@ -45,6 +46,9 @@ const Note: React.FC = () => {
     const [summaryStyle, setSummaryStyle] = useState<string | undefined>(undefined);
     const [summaryUpdatedAt, setSummaryUpdatedAt] = useState<string | undefined>(undefined);
     const [isSummaryLoading, setIsSummaryLoading] = useState(false);
+
+    // [New] 초대 대기 인원
+    const [pendingInvitesCount, setPendingInvitesCount] = useState<number>(0);
 
     const { notes, updateNoteMetadata, fetchingIds, setFetchingId } = useNoteStore();
     const notesRef = useRef(notes);
@@ -227,6 +231,29 @@ const Note: React.FC = () => {
             setFetchingId(id, false);
         }
     }, [updateNoteMetadata, setFetchingId, userInfo]);
+
+    // [New] OWNER인 경우 초대 대기 목록 조회
+    useEffect(() => {
+        if (!noteId || myRole !== 'OWNER') {
+            setPendingInvitesCount(0);
+            return;
+        }
+
+        const fetchPendingInvites = async () => {
+            try {
+                const res = await getPendingInvitationsApi(noteId);
+                if (res && res.invitations) {
+                    // status가 REQUESTED인 것만 카운트 (혹은 기획에 따라 PENDING도 포함 가능, 여기선 가입 신청만)
+                    const requests = res.invitations.filter(inv => inv.status === 'REQUESTED');
+                    setPendingInvitesCount(requests.length);
+                }
+            } catch (error) {
+                console.error('[Note] Failed to fetch pending invitations:', error);
+            }
+        };
+
+        fetchPendingInvites();
+    }, [noteId, myRole]);
 
     // [New] 노트 진입 시 즐겨찾기 상태 강제 동기화 (로컬 상태)
     useEffect(() => {
@@ -453,6 +480,16 @@ const Note: React.FC = () => {
                         setNoteMembers(res.members);
                     }
                 }).catch(err => console.error('[Note] Failed to refresh members:', err));
+
+                // [New] OWNER라면 초대 현황도 갱신
+                if (myRole === 'OWNER') {
+                    getPendingInvitationsApi(noteId!).then(res => {
+                        if (res && res.invitations) {
+                            const requests = res.invitations.filter(inv => inv.status === 'REQUESTED');
+                            setPendingInvitesCount(requests.length);
+                        }
+                    }).catch(err => console.error('[Note] Failed to refresh pending invites:', err));
+                }
             }
 
             if (detail?.type === 'DELETE_NOTE' && detail.noteId === noteId) {
@@ -683,6 +720,7 @@ const Note: React.FC = () => {
                         showBlockBookmark={myRole === 'OWNER'} // [New]
                         members={noteMembers} // [New]
                         getBlockEditors={getBlockEditors} // [New] Pass awareness method
+                        pendingInvitesCount={pendingInvitesCount} // [New]
                     />
                 </div>
             )}
