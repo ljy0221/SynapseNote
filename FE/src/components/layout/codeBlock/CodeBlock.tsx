@@ -59,7 +59,7 @@ function getDefaultVersion(language: Language): string {
 
 const CodeBlock: React.FC<CodeBlockProps> = ({
     id,
-    language: initialLanguage,
+    language, // [Fix] Use prop directly instead of renaming
     code,
     noteId,
     onDelete: _onDelete,
@@ -92,7 +92,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
         return langs.size > 1;
     });
 
-    const [language, setLanguage] = useState<Language>(initialLanguage);
+    // [Fix] Use prop as source of truth for language (managed by Yjs)
     const [executionMode, setExecutionMode] = useState<ExecutionMode>('single');
     const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
     const [showCheckpoints, setShowCheckpoints] = useState(false);
@@ -227,7 +227,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
         const template = getLanguageTemplate(newLanguage);
         setEditedCode(template);
         onChange(id, template);
-        setLanguage(newLanguage);
+        // Language state is now managed by parent via Yjs, just notify parent
         if (noteId) setNoteLanguage(noteId, newLanguage);
         if (onLanguageChange) onLanguageChange(id, newLanguage);
     };
