@@ -111,6 +111,7 @@ const Login: React.FC = () => {
                                 }
 
                                 const state = isElectron ? 'ELECTRON' : 'WEB';
+
                                 const authUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email&state=${state}`;
                                 if (isElectron) {
                                     window.electronAPI.openExternal(authUrl);
@@ -136,6 +137,7 @@ const Login: React.FC = () => {
                                 }
 
                                 const state = isElectron ? 'ELECTRON' : 'WEB';
+
                                 const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=email profile&state=${state}`;
                                 if (isElectron) {
                                     window.electronAPI.openExternal(authUrl);

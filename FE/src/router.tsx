@@ -34,6 +34,8 @@ const routes = [
             { path: 'notes/invitation/:token', element: withSuspense(AcceptInvitation) },
             { path: 'invite/:code', element: withSuspense(InviteLanding) }, // [New] 초대 랜딩 페이지
             { path: 'mindmap', element: withSuspense(MindMap) },
+            // [Fix] 404 처리 (모든 알 수 없는 경로는 Home으로 리다이렉트 -> Web에서는 RootLayout이 잡아서 Overlay 표시)
+            { path: '*', element: <Navigate to="/home" replace /> },
         ],
     },
 ];

@@ -7,6 +7,7 @@ import './App.css';
 
 // Zustand Stores
 import { useThemeStore } from './store/useThemeStore';
+import { useAuthStore } from './store/useAuthStore';
 import { useToastStore } from './store/useToastStore';
 
 // 레이아웃 컴포넌트 (Lazy Loading)
@@ -29,6 +30,12 @@ const isElectron = typeof window !== 'undefined' && (window as any).electronAPI 
 const SIDEBAR_ROUTES = ['/note', '/home'];
 const FIXED_SIDEBAR_ROUTES = ['/home', '/note', '/mindmap']; // [New] 항상 열림 처리할 경로
 const TOOLBAR_ROUTES = ['/note'];
+
+// Web Guard용 Whitelist
+const WEB_WHITELIST = ['/login', '/invite', '/notes/invitation', '/auth'];
+
+// New Import
+import { WebRestrictedOverlay } from './components/common/layout/WebRestrictedOverlay';
 
 export default function RootLayout() {
     const [isSidebarActive, setIsSidebarActive] = useState(false);
@@ -90,11 +97,60 @@ export default function RootLayout() {
     useEffect(() => {
         if (!isElectron || !window.ipcRenderer) return;
 
-        const handleDeepLink = (_event: any, url: any) => {
+        const handleDeepLink = (_event: any, url: string) => {
             console.log('[App] Received deep link:', url);
             if (typeof url === 'string' && url.startsWith('synapse://')) {
-                const path = url.replace('synapse://', '/');
-                navigate(path);
+                try {
+                    // 1. 토큰 추출 및 자동 로그인
+                    // URL 파싱을 위해 임시로 http 프로토콜 사용 (custom protocol 파싱 이슈 방지)
+                    // 또는 단순히 문자열 파싱
+                    const urlObj = new URL(url);
+                    const token = urlObj.searchParams.get('token');
+
+                    if (token) {
+                        console.log('[App] Auto-login detected from deep link');
+                        // Zustand Store 직접 접근하여 로그인 처리
+                        useAuthStore.getState().login(token);
+                    }
+
+                    // 2. 경로 이동
+                    let path = url.replace('synapse://', '/');
+
+                    // 토큰이 있었다면 URL에서 제거하여 깔끔하게 만듦 (단, 다른 파라미터는 유지해야 함)
+                    if (token) {
+                        try {
+                            const urlObj = new URL(url); // Re-parse or reuse
+                            urlObj.searchParams.delete('token');
+
+                            // synapse://host/pathname?query -> /host/pathname?query
+                            // urlObj.pathname includes /host/pathname part usually in browser, but custom protocol?
+                            // URL('synapse://home?q=1') -> host='home', pathname='/' ? No.
+                            // Chrome: new URL('synapse://home/foo?q=1') -> host='home', pathname='/foo'.
+                            // So path should be constructed from pathname + search.
+                            // But we need to be careful about 'home' being host or part of path.
+                            // Currently we used `url.replace('synapse://', '/')`.
+                            // synapse://home -> /home
+                            // synapse://auth/... -> /auth/...
+
+                            // If we use string replacement, we just need to reconstruct the query string without token.
+                            const searchString = urlObj.searchParams.toString();
+                            const basePath = url.replace('synapse://', '/').split('?')[0]; // /home
+
+                            path = searchString ? `${basePath}?${searchString}` : basePath;
+                        } catch (e) {
+                            // Fallback if URL manipulation fails
+                            path = url.replace('synapse://', '/');
+                        }
+                    }
+                    // [Fix] 토큰이 없었다면(=Auth Callback 등), 쿼리 파라미터를 절대 제거하면 안 됨!
+
+                    navigate(path);
+                } catch (error) {
+                    console.error('[App] Deep link error:', error);
+                    // Fallback
+                    const path = url.replace('synapse://', '/').split('?')[0];
+                    navigate(path);
+                }
             }
         };
 
@@ -129,6 +185,22 @@ export default function RootLayout() {
             setIsSidebarActive(isSidebarAllowed);
         }
     }, [isSidebarAllowed, isFixedSidebar]);
+
+    // [New] Web Guard Logic
+    // 일렉트론이 아니고, 화이트리스트에 없는 경로라면 Overlay 표시
+    const isAllowedWebPath = WEB_WHITELIST.some(path => location.pathname.startsWith(path));
+    const showWebRestriction = !isElectron && !isAllowedWebPath;
+
+    // [Fix] URL을 /home으로 정리 (404나 이상한 경로 진입 시 주소창도 깔끔하게 /home으로 변경)
+    useEffect(() => {
+        if (showWebRestriction && location.pathname !== '/home') {
+            navigate('/home', { replace: true });
+        }
+    }, [showWebRestriction, location.pathname, navigate]);
+
+    if (showWebRestriction) {
+        return <WebRestrictedOverlay />;
+    }
 
     return (
         <div className="app-container">
