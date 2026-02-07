@@ -793,9 +793,9 @@ export const useYjsStore = (noteId: string | undefined) => {
       const yBlocks = doc.getArray<YBlockMap>('blocks');
       let yBlock: YBlockMap | undefined;
 
-      // Find block by ID
+      // Find block by ID - use 'blockId' key to match how blocks are stored
       for (const block of yBlocks) {
-        const bid = block.get('id');
+        const bid = block.get('blockId'); // [FIX] Changed from 'id' to 'blockId'
         if (bid === blockId || String(bid) === String(blockId)) {
           yBlock = block;
           break;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import VersionButton from '../../common/versionButton/VersionButton';
 import { DragControls } from 'framer-motion';
 import BlockRunButton from '../../common/blockRunButton/BlockRunButton';
@@ -105,9 +105,22 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     // [New] Track the last value sent to the parent to prevent stale prop overwrites
     const lastSentValueRef = useRef<string>(code);
 
-    // [New] Get Y.Text for collaborative editing
+    // [New] Get Y.Text for collaborative editing - memoized to prevent infinite rerenders
     const { getYTextForCodeBlock } = useYjsStore(noteId);
-    const yText = noteId ? getYTextForCodeBlock(id) : null;
+    const yText = useMemo(() => {
+        return noteId ? getYTextForCodeBlock(id) : null;
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [id, noteId]); // getYTextForCodeBlock is stable, don't include it
+
+    // [DEBUG] Log Y.Text status
+    useEffect(() => {
+        console.log(`[CodeBlock ${id}] Y.Text status:`, {
+            noteId,
+            hasYText: !!yText,
+            yTextType: yText?.constructor?.name,
+            yTextLength: yText?.length
+        });
+    }, [id, noteId, yText]);
 
     // CodeBlock now uses Y.Text for real-time collaboration
     const handleBookmark = () => {
