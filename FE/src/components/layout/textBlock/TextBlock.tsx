@@ -192,7 +192,8 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 types: ['heading', 'paragraph'],
             }),
             TabHandler,
-            ...(yText ? [Collaboration.configure({
+            ...(yDoc && yText ? [Collaboration.configure({
+                document: yDoc,
                 fragment: yText as any,
             })] : []),
         ],
