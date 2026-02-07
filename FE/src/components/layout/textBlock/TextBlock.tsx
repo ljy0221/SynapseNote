@@ -154,13 +154,8 @@ const TextBlock: React.FC<TextBlockProps> = ({
         extensions: [
             StarterKit.configure({
                 heading: { levels: [1, 2, 3] },
-                history: false,
-                link: false,
-                underline: false,
                 gapcursor: false,
                 dropcursor: false,
-                bulletList: false,
-                orderedList: false,
             }),
             Image,
             TextStyle,
@@ -208,12 +203,13 @@ const TextBlock: React.FC<TextBlockProps> = ({
             // [Fix] Parse HTML content if XmlFragment is empty
             if (yText && typeof content === 'string' && content.trim()) {
                 const fragmentLength = (yText as any).length || 0;
-                if (fragmentLength === 0) {
-                    console.log(`[TextBlock ${id}] onCreate: XmlFragment empty, parsing HTML content (length: ${content.length})`);
-                    editor.commands.setContent(content);
-                } else {
-                    console.log(`[TextBlock ${id}] onCreate: XmlFragment has content (length: ${fragmentLength}), skipping HTML parsing`);
-                }
+                // [TEMP FIX] Always parse HTML to fix escaped HTML issue
+                // TODO: Remove this after all data is migrated
+                console.log(`[TextBlock ${id}] onCreate: Forcing HTML parsing (XmlFragment length: ${fragmentLength}, content length: ${content.length})`);
+                console.log(`[TextBlock ${id}] onCreate: Content value:`, content);
+                // [Fix] Use emitUpdate: true to force Yjs synchronization
+                editor.commands.setContent(content, { emitUpdate: true });
+                console.log(`[TextBlock ${id}] onCreate: After setContent, XmlFragment length: ${(yText as any).length || 0}`);
             }
         },
         onSelectionUpdate: () => {

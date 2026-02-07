@@ -311,14 +311,12 @@ class BridgeService {
           if (block.properties) {
             const props = new Y.Map();
             Object.entries(block.properties).forEach(([k, v]) => {
-              // [Fix] For text blocks, convert HTML string to XmlFragment
+              // [Fix] For text blocks, store HTML as plain strings
+              // Frontend will handle parsing in onCreate callback
               if (block._class === 'text' && k === 'content' && typeof v === 'string') {
-                const fragment = htmlToXmlFragment(v);
-                props.set('content', fragment);
                 props.set('_initialHtml', v);
                 props.set('rawHtml', v);
-                console.log(`[Bridge] Converted HTML to XmlFragment for text block, HTML length: ${v.length}, Fragment length: ${fragment.length}`);
-                return; // Skip the default props.set below
+                console.log(`[Bridge] Set _initialHtml and rawHtml for text block, length: ${v.length}`);
               }
 
               // [Fix] Initialize as plain string/value from DB.

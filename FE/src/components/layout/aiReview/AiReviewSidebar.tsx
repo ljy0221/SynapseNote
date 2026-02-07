@@ -92,10 +92,10 @@ const AiReviewSidebar: React.FC<Props> = ({ noteId, blockId, language, onClose }
                 </div>
               )}
 
-              {/* 베스트 프랙티스 */}
+              {/* 개선 방향 */}
               {result.bestPractices.length > 0 && (
                 <div className="best-practices">
-                  <h3>베스트 프랙티스</h3>
+                  <h3>개선 방향</h3>
                   <ul>
                     {result.bestPractices.map((practice, idx) => (
                       <li key={idx}>
