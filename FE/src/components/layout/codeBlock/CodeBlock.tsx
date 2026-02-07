@@ -59,7 +59,7 @@ function getDefaultVersion(language: Language): string {
 
 const CodeBlock: React.FC<CodeBlockProps> = ({
     id,
-    language: initialLanguage,
+    language, // [Fix] Use prop directly instead of renaming
     code,
     noteId,
     onDelete: _onDelete,
@@ -93,8 +93,6 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     });
 
     // [Fix] Use prop as source of truth for language (managed by Yjs)
-    // Only maintain local state for pending changes during confirmation
-    const language = initialLanguage;
     const [executionMode, setExecutionMode] = useState<ExecutionMode>('single');
     const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
     const [showCheckpoints, setShowCheckpoints] = useState(false);
