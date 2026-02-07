@@ -89,9 +89,9 @@ export function formatReviewAsHtml(response: CodeReviewResponse): string {
         parts.push(`<p>✅ 코드에서 특별한 문제점이 발견되지 않았습니다.</p>`);
     }
 
-    // 베스트 프랙티스
+    // 개선 방향
     if (response.bestPractices.length > 0) {
-        parts.push(`<h2>✨ 베스트 프랙티스</h2>`);
+        parts.push(`<h2>✨ 개선 방향</h2>`);
         parts.push(`<ul>`);
         response.bestPractices.forEach((practice) => {
             parts.push(`<li>${escapeHtml(practice)}</li>`);
