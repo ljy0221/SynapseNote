@@ -688,7 +688,7 @@ const Note: React.FC = () => {
                         title={title}
                         onUpdateTitle={setTitle}
                         blocks={blocks}
-                        onUpdateBlock={(id, content) => {
+                        onUpdateBlock={(id: string | number, content: string) => {
                             updateBlock(id, content);
                             handleContentChange();
                         }}

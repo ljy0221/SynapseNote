@@ -47,6 +47,7 @@ export function getLanguageTemplate(language: Language): string {
  * @param code 확인할 코드
  * @returns 코드가 비어있으면 true
  */
-export function isCodeEmpty(code: string): boolean {
+export function isCodeEmpty(code: any): boolean {
+    if (typeof code !== 'string') return true;
     return code.trim() === '';
 }

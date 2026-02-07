@@ -33,6 +33,7 @@ interface CodeBlockProps {
     onDelete: (id: number | string) => void;
     onChange: (id: number | string, newCode: string) => void;
     onFocus: () => void;
+    onBlur?: () => void; // [New] Clear awareness on blur
     onAddBlockAfter?: (content: string) => void; // AI 리뷰 결과를 새 블록으로 추가
     onToggleBookmark?: () => void;
     // Native DnD removed
@@ -64,14 +65,15 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     onDelete: _onDelete,
     onChange,
     onFocus,
+    onBlur, // [New]
     onAddBlockAfter,
+    onToggleBookmark,
     dragControls,
+    isFocused,
     onContextMenu, // [New]
     onAiReviewResult, // [New]
     onLanguageChange,
-    isFocused,
     bookmark = false,
-    onToggleBookmark,
     readOnly = false, // [New]
     showBookmark = true, // [New]
     editors = [], // [New]
@@ -107,20 +109,21 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     const [aiReviewLoading, setAiReviewLoading] = useState(false);
     const aiReviewAbortRef = useRef<AbortController | null>(null);
 
+    // [New] Track the last value sent to the parent to prevent stale prop overwrites
+    const lastSentValueRef = useRef<string>(code);
+
+    // CodeBlock uses LWW (Last-Write-Wins) synchronization
     const handleBookmark = () => {
         onToggleBookmark?.();
     };
 
-    // 🔥 초기화만 마운트 시 1회 수행 (원격 업데이트는 Yjs가 직접 처리)
+    // 🔥 초기화만 마운트 시 1회 수행
     useEffect(() => {
-        console.log(`[CodeBlock] Mount - ID: ${id}`);
         if (isCodeEmpty(code) && isCodeEmpty(editedCode)) {
-            console.log(`[CodeBlock] Empty code detect - ID: ${id}, applying template`);
             const template = getLanguageTemplate(language);
             setEditedCode(template);
             onChange(id, template);
         }
-        return () => console.log(`[CodeBlock] Unmount - ID: ${id}`);
     }, []);
 
     useEffect(() => {
@@ -294,11 +297,10 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     // 로컬 에디터 포커스 상태 추적 (타이핑 중 업데이트 방지용)
     const [isEditorFocused, setIsEditorFocused] = useState(false);
 
-    // [핵심 수정] 외부 변경사항(Yjs)을 로컬 상태에 동기화
-    // 단, 사용자가 타이핑 중(포커스 상태)일 때는 무시하여 충돌 및 루프 방지
+    // [핵심] 외부 변경사항(Yjs)을 로컬 상태에 동기화
+    // 단, 사용자가 타이핑 중(포커스 상태)이거나 내가 방금 보낸 데이터와 같으면 무시하여 충돌 방지
     useEffect(() => {
-        if (!isEditorFocused && code !== editedCode) {
-            // console.log(`[CodeBlock] Remote update applied - ID: ${id}`);
+        if (!isEditorFocused && code !== editedCode && code !== lastSentValueRef.current) {
             setEditedCode(code);
         }
     }, [code, isEditorFocused]);
@@ -310,6 +312,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 
     const handleEditorBlur = () => {
         setIsEditorFocused(false);
+        onBlur?.(); // [New] Clear awareness state
     };
 
     return (
@@ -424,15 +427,15 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                     </div>
                 </div>
 
-                {/* 메인 코드 영역 */}
                 <div className="code-content-container">
                     <CodeMirrorEditor
                         value={editedCode}
                         language={language}
                         onChange={(value) => {
-                            if (readOnly) return; // [New]
+                            if (readOnly) return;
                             setEditedCode(value);
-                            onChange(id, value);
+                            lastSentValueRef.current = value;
+                            onChange(id, value); // LWW: always send changes to parent
                         }}
                         onFocus={handleEditorFocus}
                         onBlur={handleEditorBlur}
@@ -475,16 +478,16 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                 )}
             </div>
 
-            {/* 즐겨찾기 버튼 (블록 외부 우측) */}
-            {showBookmark && (
-                <div className="block-actions-right">
+            {/* Right Actions (Bookmark) */}
+            <div className="block-actions-right">
+                {showBookmark && (
                     <BlockBookmarkButton isBookmarked={bookmark} onClick={handleBookmark} />
-                </div>
-            )}
+                )}
+            </div>
 
             {/* [New] Show editor avatar if someone else is editing */}
             {editors.length > 0 && (
-                <BlockEditorAvatar editors={editors} />
+                <BlockEditorAvatar editors={editors.slice(0, 1)} />
             )}
 
             {/* Language Change Confirmation Modal */}
