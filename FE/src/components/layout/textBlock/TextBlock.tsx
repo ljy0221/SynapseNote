@@ -8,9 +8,8 @@ import { Extension } from '@tiptap/core';
 import Placeholder from '@tiptap/extension-placeholder';
 import Underline from '@tiptap/extension-underline';
 import Highlight from '@tiptap/extension-highlight';
-import TextAlign from '@tiptap/extension-text-align';
 import Link from '@tiptap/extension-link';
-import Collaboration from '@tiptap/extension-collaboration'; // [New]
+import TextAlign from '@tiptap/extension-text-align';
 import {
     Heading1,
     Heading2,
@@ -147,6 +146,10 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 gapcursor: false,
                 // @ts-ignore
                 dropcursor: false,
+                // @ts-ignore
+                bulletList: false,
+                // @ts-ignore
+                orderedList: false,
             }),
             // [Removed] Collaboration extension - using manual Y.Text sync instead
             Image,
@@ -165,6 +168,10 @@ const TextBlock: React.FC<TextBlockProps> = ({
             Highlight.configure({
                 multicolor: true,
             }),
+            TextAlign.configure({
+                types: ['heading', 'paragraph'],
+            }),
+            TabHandler,
         ],
         content: yText?.toString() || '',
         editorProps: {
@@ -226,8 +233,41 @@ const TextBlock: React.FC<TextBlockProps> = ({
         },
         onBlur: () => {
             setIsFocused(false);
+
+            // [New] Ensure editor matches Y.Text when focus out
+            if (editor && yText) {
+                const yContent = yText.toString();
+                const editorContent = editor.getHTML();
+                if (yContent !== editorContent) {
+                    console.log(`[TextBlock ${id}] Blurred. Syncing from Yjs to Editor.`);
+                    editor.commands.setContent(yContent, { emitUpdate: false }); // Correct options object
+                }
+            }
         },
     }, [yDoc, yText, noteId, id]); // [New] Re-create editor when Y.Text becomes available
+
+    // [New] Y.Text observer to handle incoming changes
+    useEffect(() => {
+        if (!yText || !editor) return;
+
+        const handleUpdate = () => {
+            // Only update if not focused to avoid cursor jumping
+            // If focused, we rely on onBlur to sync later
+            if (!editor.isFocused) {
+                const yContent = yText.toString();
+                const editorContent = editor.getHTML();
+                if (yContent !== editorContent) {
+                    console.log(`[TextBlock ${id}] Remote update detected. Updating editor.`);
+                    editor.commands.setContent(yContent, { emitUpdate: false });
+                }
+            }
+        };
+
+        yText.observe(handleUpdate);
+        return () => {
+            yText.unobserve(handleUpdate);
+        };
+    }, [yText, editor]);
 
     // [New] Initialize Y.Text with existing content if it's empty
     useEffect(() => {
@@ -244,7 +284,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
         if (yTextContent.length === 0 && content.trim().length > 0) {
             console.log(`[TextBlock ${id}] Initializing Y.Text with existing content:`, content.substring(0, 50));
             // Set initial content in Tiptap, which will sync to Y.Text
-            editor.commands.setContent(content);
+            editor.commands.setContent(content || '');
         } else {
             console.log(`[TextBlock ${id}] Skipping init - Y.Text not empty or content empty`);
         }
@@ -275,9 +315,9 @@ const TextBlock: React.FC<TextBlockProps> = ({
         if (editor && editor.isFocused) return;
 
         // 실제로 다른 경우에만 업데이트
-        if (editor && content !== editor.getHTML()) {
+        if (editor && (content || '') !== editor.getHTML()) {
             // emitUpdate: false로 불필요한 onUpdate 이벤트 방지하여 무한 루프 차단
-            editor.commands.setContent(content, { emitUpdate: false });
+            editor.commands.setContent(content || '', { emitUpdate: false });
         }
     }, [content, editor]);
     if (!editor) {
