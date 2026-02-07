@@ -34,6 +34,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   // [New] 대기 중인 Deep Link 조회 (Pull 방식)
   getDeepLink: () => ipcRenderer.invoke('docker:get-deep-link'),
+  // [New] 플랫폼 정보 노출 (OS 감지용)
+  platform: process.platform,
 })
 
 // Docker API 노출
