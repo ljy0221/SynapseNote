@@ -427,10 +427,11 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                         value={editedCode}
                         language={language}
                         onChange={(value) => {
-                            // [CRITICAL] Don't call onChange when Y.Text is active
-                            // Y.Text handles synchronization automatically via yCollab
+                            // [CRITICAL] When Y.Text is active, yCollab handles ALL sync
+                            // Don't call onChange at all - it triggers updateBlock which conflicts with CRDT
                             if (yText) return;
 
+                            // Only for non-collaborative mode (no noteId or Y.Text unavailable)
                             if (readOnly) return;
                             setEditedCode(value);
                             lastSentValueRef.current = value;
