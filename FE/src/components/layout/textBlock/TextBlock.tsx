@@ -134,7 +134,9 @@ const TextBlock: React.FC<TextBlockProps> = ({
     const yText = getYTextForBlock(id);
 
     if (yText && !yDoc) {
-        console.error(`[TextBlock ${id}] Invalid state: yText exists but yDoc is null. Collaboration disabled.`);
+        if (process.env.NODE_ENV === 'development') {
+            console.error(`[TextBlock ${id}] Invalid state: yText exists but yDoc is null. Collaboration disabled.`);
+        }
     }
 
     const editor = useEditor({
@@ -227,6 +229,9 @@ const TextBlock: React.FC<TextBlockProps> = ({
     // ========================================
     // 이미지 업로드 (백엔드 업로드 방식)
     // ========================================
+    // ========================================
+    // 이미지 업로드 (백엔드 업로드 방식)
+    // ========================================
     const addImage = async () => {
         const input = document.createElement('input');
         input.type = 'file';
@@ -235,6 +240,20 @@ const TextBlock: React.FC<TextBlockProps> = ({
         input.onchange = async (e) => {
             const file = (e.target as HTMLInputElement).files?.[0];
             if (!file) return;
+
+            // [Validation] 파일 유효성 검사
+            const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+            const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
+            if (!ALLOWED_TYPES.includes(file.type)) {
+                alert('지원하지 않는 파일 형식입니다. (jpg, jpeg, png, gif, webp)');
+                return;
+            }
+
+            if (file.size > MAX_FILE_SIZE) {
+                alert('파일 크기는 5MB 이하여야 합니다.');
+                return;
+            }
 
             setIsUploading(true);
 
@@ -260,6 +279,9 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 }
 
                 // 3. 이미지 조회 URL 요청
+                // [WARNING] 현재 발급받는 URL은 Presigned URL로 유효기간이 있습니다.
+                // 만료 후에는 이미지가 보이지 않을 수 있으므로, 장기적으로는
+                // 백엔드 프록시 API 또는 Public Read 설정이 필요합니다.
                 const readResponse = await api.get('/v1/images/read-url', {
                     params: { key },
                 });
@@ -271,7 +293,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
 
             } catch (error) {
                 console.error('이미지 업로드 실패:', error);
-                // alert('이미지 업로드에 실패했습니다.');
+                alert('이미지 업로드 중 오류가 발생했습니다.');
             } finally {
                 setIsUploading(false);
                 setTimeout(() => {
