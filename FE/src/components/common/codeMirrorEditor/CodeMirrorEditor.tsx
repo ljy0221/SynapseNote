@@ -292,6 +292,15 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
     // 앱 테마 가져오기
     const themeMode = useThemeStore((state) => state.themeMode);
 
+    // [Fix] Use refs to always access latest handlers
+    const onFocusRef = useRef(onFocus);
+    const onBlurRef = useRef(onBlur);
+
+    useEffect(() => {
+        onFocusRef.current = onFocus;
+        onBlurRef.current = onBlur;
+    }, [onFocus, onBlur]);
+
     // 자동 높이 조절 테마
     const autoHeightTheme = EditorView.theme({
         '&': {
@@ -327,8 +336,8 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
             EditorState.tabSize.of(settings.tabSize),
             EditorView.lineWrapping,
             EditorView.domEventHandlers({
-                focus: () => onFocus?.(),
-                blur: () => onBlur?.(), // [Add] blur 핸들러 추가
+                focus: () => onFocusRef.current?.(),
+                blur: () => onBlurRef.current?.(), // [Fix] Use ref to get latest handler
             }),
         ];
 
@@ -415,8 +424,8 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
                         }
                     }),
                     EditorView.domEventHandlers({
-                        focus: () => onFocus?.(),
-                        blur: () => onBlur?.(), // [Add]
+                        focus: () => onFocusRef.current?.(),
+                        blur: () => onBlurRef.current?.(), // [Fix] Use ref to get latest handler
                     }),
                 ]),
             });
