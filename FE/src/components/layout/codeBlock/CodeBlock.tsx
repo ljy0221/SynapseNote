@@ -32,6 +32,7 @@ interface CodeBlockProps {
     onDelete: (id: number | string) => void;
     onChange: (id: number | string, newCode: string) => void;
     onFocus: () => void;
+    onBlur?: () => void; // [New] Clear awareness on blur
     onAddBlockAfter?: (content: string) => void; // AI 리뷰 결과를 새 블록으로 추가
     onToggleBookmark?: () => void;
     // Native DnD removed
@@ -63,14 +64,15 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     onDelete: _onDelete,
     onChange,
     onFocus,
+    onBlur, // [New]
     onAddBlockAfter,
+    onToggleBookmark,
     dragControls,
+    isFocused,
     onContextMenu, // [New]
     onAiReviewResult, // [New]
     onLanguageChange,
-    isFocused,
     bookmark = false,
-    onToggleBookmark,
     readOnly = false, // [New]
     showBookmark = true, // [New]
     editors = [], // [New]
@@ -304,6 +306,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 
     const handleEditorBlur = () => {
         setIsEditorFocused(false);
+        onBlur?.(); // [New] Clear awareness state
     };
 
     return (
@@ -476,9 +479,11 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                 </div>
             )}
 
-            {/* [New] Show editor avatar if someone else is editing */}
+            {/* 편집 중인 사용자 아바타 (즐겨찾기 오른쪽) */}
             {editors.length > 0 && (
-                <BlockEditorAvatar editors={editors} />
+                <div className="block-editor-avatar-container">
+                    <BlockEditorAvatar editors={editors} />
+                </div>
             )}
 
             {/* Language Change Confirmation Modal */}
