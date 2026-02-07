@@ -11,9 +11,10 @@ interface NoteSideNavProps {
     onPermission: () => void;
     onSummary: () => void; // [New]
     role?: NoteMemberRole; // [New]
+    pendingInvitesCount?: number; // [New]
 }
 
-export const NoteSideNav: React.FC<NoteSideNavProps> = ({ onAddBlock, onInvite, onPermission, onSummary, role }) => {
+export const NoteSideNav: React.FC<NoteSideNavProps> = ({ onAddBlock, onInvite, onPermission, onSummary, role, pendingInvitesCount = 0 }) => {
     // [Fix] 권한 정보가 아직 없거나 VIEWER인 경우 사이드바 노출 안 함
     if (!role || role === 'VIEWER') return null;
 
@@ -65,6 +66,11 @@ export const NoteSideNav: React.FC<NoteSideNavProps> = ({ onAddBlock, onInvite, 
                     >
                         <Users size={20} />
                         <span className="nav-label">권한</span>
+                        {pendingInvitesCount > 0 && (
+                            <span className="nav-item-badge">
+                                {pendingInvitesCount > 99 ? '99+' : pendingInvitesCount}
+                            </span>
+                        )}
                     </button>
                 </div>
             )}
