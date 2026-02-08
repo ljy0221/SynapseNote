@@ -64,7 +64,7 @@ export const useYjsStore = (noteId: string | undefined) => {
   const userInfo = useAuthStore((state) => state.userInfo); // [New] Get user info for awareness
 
   // 환경 변수에서 WS URL 가져오기
-  const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:1234';
+  const wsUrl = (window as any).config?.VITE_WS_URL || import.meta.env.VITE_WS_URL || 'ws://localhost:1234';
 
   useEffect(() => {
     // noteId 없으면 초기화
