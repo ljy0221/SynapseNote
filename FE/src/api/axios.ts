@@ -1,5 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '../store/useAuthStore';
+import { env } from '../config/env';
 
 // 갱신 중 대기할 요청의 타입 정의
 interface FailedRequest {
@@ -21,7 +22,7 @@ const processQueue = (error: any, token: string | null = null) => {
 };
 
 export const api = axios.create({
-  baseURL: 'https://i14b102.p.ssafy.io/backend/api',
+  baseURL: env.VITE_API_BASE_URL,
   withCredentials: true, // 쿠키(RefreshToken) 전송 허용
   headers: {
     'Content-Type': 'application/json',
@@ -77,7 +78,7 @@ api.interceptors.response.use(
           '/v1/refresh',
           {},
           {
-            baseURL: 'https://i14b102.p.ssafy.io/backend',
+            baseURL: env.VITE_API_BASE_URL.replace('/api', ''), // Remove /api suffix for refresh endpoint
             withCredentials: true,
           }
         );

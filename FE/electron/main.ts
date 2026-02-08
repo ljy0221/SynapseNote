@@ -30,14 +30,26 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.mjs'),
       contextIsolation: true,
       nodeIntegration: false,
+      webSecurity: !VITE_DEV_SERVER_URL, // Disable web security in dev mode to bypass CORS
     },
   })
 
   // Origin 헤더 강제 변조 (백엔드 CORS 403 에러 방지)
+  // Dev 모드에서도 localhost:5173에서 오는 요청의 Origin을 변조
   win.webContents.session.webRequest.onBeforeSendHeaders(
-    { urls: ['https://i14b102.p.ssafy.io/*', 'wss://i14b102.p.ssafy.io/*'] },
+    {
+      urls: [
+        'https://i14b102.p.ssafy.io/*',
+        'http://i14b102.p.ssafy.io/*',
+        'wss://i14b102.p.ssafy.io/*',
+        'ws://i14b102.p.ssafy.io/*'
+      ]
+    },
     (details, callback) => {
+      console.log('[Electron] Intercepting request to:', details.url);
+      console.log('[Electron] Original Origin:', details.requestHeaders['Origin']);
       details.requestHeaders['Origin'] = 'https://i14b102.p.ssafy.io';
+      console.log('[Electron] Modified Origin:', details.requestHeaders['Origin']);
       callback({ requestHeaders: details.requestHeaders });
     }
   );
@@ -211,5 +223,13 @@ if (!gotTheLock) {
     }
   });
 
-  app.whenReady().then(createWindow)
+  app.whenReady().then(() => {
+    createWindow();
+
+    // [New] 앱이 준비되면 백그라운드 이미지 다운로드 시작 (3초 지연)
+    setTimeout(() => {
+      console.log('[Main] App Ready. Triggering background image check...');
+      execService.ensureAllImages();
+    }, 3000);
+  })
 }
