@@ -1,12 +1,13 @@
 package com.synapse.api.modules.note.service;
 
 import com.synapse.api.modules.block.document.BaseBlock;
-import com.synapse.api.modules.block.document.CodeBlock;
-import com.synapse.api.modules.block.dto.response.BlockPageResponse;
 import com.synapse.api.modules.block.service.BlockService;
+import com.synapse.api.modules.member.entity.Member;
+import com.synapse.api.modules.member.repository.MemberRepository;
+import com.synapse.api.modules.member.service.MemberService;
+import com.synapse.api.modules.mindmap.service.MindmapService;
 import com.synapse.api.modules.note.dto.request.ExecutionHistoryRequest;
 import com.synapse.api.modules.note.dto.request.NoteCreateRequest;
-import com.synapse.api.modules.note.dto.request.NotePositionUpdateRequest;
 import com.synapse.api.modules.note.dto.request.NoteUpdateRequest;
 import com.synapse.api.modules.note.dto.response.ExecutionHistoryResponse;
 import com.synapse.api.modules.note.dto.response.NoteDetailResponse;
@@ -18,8 +19,6 @@ import com.synapse.api.modules.note.entity.NoteMemberId;
 import com.synapse.api.modules.note.entity.NoteRole;
 import com.synapse.api.modules.note.repository.NoteMemberRepository;
 import com.synapse.api.modules.note.repository.NoteRepository;
-import com.synapse.api.modules.user.entity.User;
-import com.synapse.api.modules.user.repository.UserRepository;
 import com.synapse.api.util.exception.BusinessException;
 import com.synapse.api.util.response.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +39,10 @@ public class NoteService {
 
     private final NoteRepository noteRepository;
     private final NoteMemberRepository noteMemberRepository;
-    private final UserRepository userRepository;
+    private final MemberRepository memberRepository;
+    private final MemberService memberService;
+    private final NoteValidator noteValidator;
+    private final MindmapService mindmapService;
 
     // [위임] 블록 데이터 및 실행 로직 담당
     private final BlockService blockService;
@@ -49,31 +51,43 @@ public class NoteService {
     // 1. 노트 생성 (Create)
     // =========================================================================
     @Transactional
-    public NoteResponse createNote(UUID userId, NoteCreateRequest request) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+    public NoteResponse createNote(UUID memberId, NoteCreateRequest request) {
+        // [락 & 검증] 내 노트 50개 제한
+        Member member = memberRepository.findByIdWithLock(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        long ownedNoteCount = noteRepository.countByCreatedBy_IdAndDeletedAtIsNull(memberId);
+        if (ownedNoteCount >= 50) {
+            throw new BusinessException(ErrorCode.NOTE_LIMIT_EXCEEDED);
+        }
+
+        if (noteRepository.existsById(request.id())) {
+            throw new BusinessException(ErrorCode.NOTE_ID_DUPLICATE);
+        }
 
         // RDB: 노트 메타데이터 저장
         Note note = Note.builder()
+                .id(request.id())
                 .title(request.title())
                 .directoryPath(request.directoryPath())
-                .pointX(request.pointX())
-                .pointY(request.pointY())
-                .createdBy(user)
+                .createdBy(member)
                 .build();
         Note savedNote = noteRepository.save(note);
 
         // RDB: 멤버 권한 설정 (OWNER)
-        NoteMemberId memberId = new NoteMemberId(savedNote.getId(), user.getId());
+        NoteMemberId noteMemberId = new NoteMemberId(savedNote.getId(), member.getId());
         NoteMember noteMember = NoteMember.builder()
-                .id(memberId)
+                .id(noteMemberId)
                 .note(savedNote)
-                .user(user)
+                .member(member)
                 .role(NoteRole.OWNER)
                 .build();
         noteMemberRepository.save(noteMember);
 
-        log.info("Created note: {} by user: {}", savedNote.getId(), userId);
+        // 스트릭 (일일 1회 제한) - MemberService 위임
+        memberService.updateStreak(memberId);
+
+        log.info("Created note: {} by member: {}", savedNote.getId(), noteMemberId);
         return NoteResponse.from(savedNote);
     }
 
@@ -84,24 +98,40 @@ public class NoteService {
     /**
      * 노트 상세 조회: RDB(메타데이터) + Mongo(블록 리스트) 조합
      */
-    public NoteDetailResponse getNoteById(UUID noteId, UUID userId) {
+    public NoteDetailResponse getNoteById(UUID noteId, UUID memberId) {
         // 1. RDB 조회 (삭제된 노트 제외)
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
 
         // 2. 권한 검증
-        validateAccess(note, userId);
+        noteValidator.validateAccess(note, memberId);
 
         // 3. Mongo 블록 리스트 조회 (BlockService 위임)
-        List<BaseBlock> blocks = blockService.getBlocksByNoteId(noteId.toString());
+        List<BaseBlock> blocks = blockService.getBlocksByNoteId(noteId);
 
         // 4. DTO 조합
         return NoteDetailResponse.from(note, blocks);
     }
 
-    public NotePageResponse getAllNotes(UUID userId, int page, int size) {
+    public NotePageResponse getAllNotes(UUID memberId, int page, int size) {
         PageRequest pageRequest = PageRequest.of(page, size);
-        Page<Note> pageResult = noteRepository.findAllNotesByUserIdOrderByUpdatedAt(userId, pageRequest);
+        Page<Note> pageResult = noteRepository.findAllNotesByMemberId(memberId, pageRequest);
+
+        Page<NoteResponse> responsePage = pageResult.map(NoteResponse::from);
+        return NotePageResponse.from(responsePage);
+    }
+
+    public NotePageResponse getOwnedNotes(UUID memberId, int page, int size) {
+        PageRequest pageRequest = PageRequest.of(page, size);
+        Page<Note> pageResult = noteRepository.findOwnedNotesByMemberId(memberId, pageRequest);
+
+        Page<NoteResponse> responsePage = pageResult.map(NoteResponse::from);
+        return NotePageResponse.from(responsePage);
+    }
+
+    public NotePageResponse getSharedNotes(UUID memberId, int page, int size) {
+        PageRequest pageRequest = PageRequest.of(page, size);
+        Page<Note> pageResult = noteRepository.findSharedNotesByMemberId(memberId, pageRequest);
 
         Page<NoteResponse> responsePage = pageResult.map(NoteResponse::from);
         return NotePageResponse.from(responsePage);
@@ -112,30 +142,17 @@ public class NoteService {
     // =========================================================================
 
     @Transactional
-    public NoteResponse updateNote(UUID noteId, UUID userId, NoteUpdateRequest request) {
+    public NoteResponse updateNote(UUID noteId, UUID memberId, NoteUpdateRequest request) {
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
 
-        validateEditPermission(noteId, userId);
+        noteValidator.validateEditPermission(noteId, memberId);
 
         // Dirty Checking으로 업데이트 (제목, 경로 등)
         note.updateTitle(request.title());
         note.updateDirectoryPath(request.directoryPath());
 
         return NoteResponse.from(note);
-    }
-
-    /**
-     * [요청하신 메소드] 노트 좌표 수정 (Canvas View)
-     */
-    @Transactional
-    public void updatePosition(UUID noteId, UUID userId, NotePositionUpdateRequest request) {
-        Note note = noteRepository.findById(noteId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
-
-        validateEditPermission(noteId, userId);
-
-        note.updatePosition(request.pointX(), request.pointY());
     }
 
     // =========================================================================
@@ -146,21 +163,22 @@ public class NoteService {
      * [요청하신 메소드] 노트 삭제 (Soft Delete)
      */
     @Transactional
-    public void deleteNote(UUID noteId, UUID userId) {
+    public void deleteNote(UUID noteId, UUID memberId) {
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
 
-        validateOwnership(note, userId);
+        noteValidator.validateOwnership(note, memberId);
 
         // RDB Soft Delete (deletedAt 설정)
         note.delete();
 
-        // (선택) MongoDB 블록 처리는?
-        // 방법 A: 놔둔다. (RDB에서 조회가 안 되니 접근 불가. 나중에 복구 가능)
-        // 방법 B: BlockService를 호출해 같이 Soft Delete 처리한다.
-        // 여기선 RDB가 진입점이므로 RDB만 처리해도 충분합니다.
+        // [Delegation] 마인드맵 엣지 및 위치 정보 삭제 (MindmapService에 위임)
+        mindmapService.deleteMindmapDataByNoteId(noteId);
 
-        log.info("Soft deleted note: {} by user: {}", noteId, userId);
+        // MongoDB 블록도 Soft Delete
+        blockService.softDeleteBlocksByNoteId(noteId);
+
+        log.info("Soft deleted note and blocks: {}, deleted mindmap edges", noteId);
     }
 
     // =========================================================================
@@ -168,124 +186,82 @@ public class NoteService {
     // =========================================================================
 
     @Transactional
-    public void saveExecutionHistory(UUID noteId, String blockId, UUID userId, ExecutionHistoryRequest request) {
-        validateEditPermission(noteId, userId);
+    public void saveExecutionHistory(UUID noteId, UUID blockId, UUID memberId, ExecutionHistoryRequest request) {
+        noteValidator.validateEditPermission(noteId, memberId);
 
         // 실행 및 저장은 BlockService에 전적으로 위임
-        blockService.saveExecutionHistory(noteId.toString(), blockId, request);
+        blockService.saveExecutionHistory(noteId, blockId, request);
     }
 
     /**
      * [요청하신 메소드] 실행 히스토리 조회
      */
-    public List<ExecutionHistoryResponse> getExecutionHistory(UUID noteId, String blockId, UUID userId) {
+    public List<ExecutionHistoryResponse> getExecutionHistory(UUID noteId, UUID blockId, UUID memberId) {
         // 1. 노트 접근 권한 확인
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
-        validateAccess(note, userId);
+        noteValidator.validateAccess(note, memberId);
 
         // 2. 히스토리 조회 위임
-        return blockService.getExecutionHistory(noteId.toString(), blockId);
+        return blockService.getExecutionHistory(noteId, blockId);
     }
 
     @Transactional
-    public void bookmarkNote(UUID userId, UUID noteId) {
+    public void bookmarkNote(UUID memberId, UUID noteId) {
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
 
-        validateOwnership(note, userId);
+        noteValidator.validateOwnership(note, memberId);
 
         note.setBookmark();
     }
 
     @Transactional
-    public void unbookmarkNote(UUID userId, UUID noteId) {
+    public void unbookmarkNote(UUID memberId, UUID noteId) {
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
 
-        validateOwnership(note, userId);
+        noteValidator.validateOwnership(note, memberId);
 
         note.unBookmark();
     }
 
-    public NotePageResponse getNoteBookmarks(UUID userId, int page, int size) {
+    public NotePageResponse getNoteBookmarks(UUID memberId, int page, int size) {
         PageRequest pageRequest = PageRequest.of(page, size);
-        Page<Note> pageResult = noteRepository.findBookmarkedNotesByUserId(userId, pageRequest);
+        Page<Note> pageResult = noteRepository.findBookmarkedNotesByMemberId(memberId, pageRequest);
 
         Page<NoteResponse> responsePage = pageResult.map(NoteResponse::from);
         return NotePageResponse.from(responsePage);
     }
 
-    public List<NoteResponse> searchNotes(UUID userId, String query) {
+    public List<NoteResponse> searchNotes(UUID memberId, String query) {
         // RDB에서 검색 수행
-        List<Note> results = noteRepository.searchByUserAndQuery(userId, query);
+        List<Note> results = noteRepository.searchByMemberAndQuery(memberId, query);
         return results.stream()
                 .map(NoteResponse::from)
                 .toList();
     }
 
     @Transactional
-    public void bookmarkBlock(UUID userId, UUID noteId, String blockId) {
+    public void bookmarkBlock(UUID memberId, UUID noteId, UUID blockId) {
         // 노트 조회 및 접근 권한 검증
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
-        validateAccess(note, userId);
+        noteValidator.validateAccess(note, memberId);
 
-        // BlockService에 위임
-        blockService.bookmarkBlock(blockId, noteId.toString());
+        // BlockService에 위임 (memberId 전달)
+        blockService.bookmarkBlock(blockId, noteId, memberId);
     }
 
     @Transactional
-    public void unbookmarkBlock(UUID userId, UUID noteId, String blockId) {
+    public void unbookmarkBlock(UUID memberId, UUID noteId, UUID blockId) {
         // 노트 조회 및 접근 권한 검증
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
-        validateAccess(note, userId);
+        noteValidator.validateAccess(note, memberId);
 
-        // BlockService에 위임
-        blockService.unbookmarkBlock(blockId, noteId.toString());
+        // BlockService에 위임 (memberId 전달)
+        blockService.unbookmarkBlock(blockId, noteId, memberId);
     }
 
-    public BlockPageResponse getBlockBookmarks(UUID userId, UUID noteId, int page, int size) {
-        // 노트 조회 및 접근 권한 검증
-        Note note = noteRepository.findById(noteId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
-        validateAccess(note, userId);
-
-        // BlockService에서 블록 목록 조회
-        Page<BaseBlock> blockPage = blockService.getBookmarkedBlocks(noteId.toString(), page, size);
-
-        return BlockPageResponse.from(blockPage, note.getDirectoryPath());
-    }
-
-    private void validateAccess(Note note, UUID userId) {
-        if (note.getCreatedBy().getId().equals(userId))
-            return;
-
-        boolean isMember = noteMemberRepository.existsByNoteIdAndUserId(note.getId(), userId);
-        if (!isMember) {
-            throw new BusinessException(ErrorCode.NOTE_ACCESS_DENIED);
-        }
-    }
-
-    private void validateEditPermission(UUID noteId, UUID userId) {
-        Note note = noteRepository.findById(noteId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
-
-        if (note.getCreatedBy().getId().equals(userId))
-            return;
-
-        NoteRole role = noteMemberRepository.findRoleByNoteIdAndUserId(noteId, userId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_ACCESS_DENIED));
-
-        if (!role.canEdit()) {
-            throw new BusinessException(ErrorCode.NOTE_EDIT_PERMISSION_DENIED);
-        }
-    }
-
-    private void validateOwnership(Note note, UUID userId) {
-        if (!note.getCreatedBy().getId().equals(userId)) {
-            throw new BusinessException(ErrorCode.NOTE_DELETE_PERMISSION_DENIED);
-        }
-    }
 }

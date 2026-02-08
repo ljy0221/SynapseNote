@@ -1,5 +1,7 @@
 package com.synapse.api.modules.note.entity;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.synapse.api.util.entity.EnumParser;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -24,4 +26,10 @@ public enum NoteRole {
     public boolean canView() {
         return true;
     }
+
+    @JsonCreator
+    public static NoteRole from(String value) {
+        return EnumParser.fromString(value, NoteRole.class);
+    }
+
 }

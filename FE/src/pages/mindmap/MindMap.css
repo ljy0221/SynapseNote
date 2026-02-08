@@ -2,17 +2,22 @@
 .mindmap-page {
     display: flex;
     flex-direction: column;
-    height: 100%;
+
+    /* Unified Panel Style */
+    width: calc(100% - 40px);
+    height: calc(100% - 100px);
+    margin: 80px 20px 20px 20px;
+
+    border: 3px solid color-mix(in srgb, var(--color-point), transparent 50%);
+    border-radius: 20px;
     background-color: var(--color-main);
-    /* 웜톤 베이스 */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+
     color: var(--font-color);
     font-family: var(--font-family);
 
-    /* [Fix] 글로벌 헤더(60px)만큼 상단 여백 확보 */
-    padding-top: 60px;
     box-sizing: border-box;
     overflow: hidden;
-    /* 스크롤 방지 */
 }
 
 .page-header {
@@ -138,16 +143,12 @@
     background-color: var(--color-sub);
     /* 캔버스는 메인보다 살짝 어두운 톤 */
 
-    /* [New] 테마 색상 테두리 적용 (안쪽으로 생기게 하여 레이아웃 영향 최소화) */
+    /* [New] 테마 색상 테두리 적용 (상위 컨테이너로 이동됨) */
     box-sizing: border-box;
-    /* color-mix를 사용하여 --color-point의 투명도를 50%로 조절 */
-    border: 3px solid color-mix(in srgb, var(--color-point), transparent 50%);
-    border-radius: 8px;
-    /* 헤더와의 조화를 위해 약간 둥글게 */
-    margin: 4px;
-    /* 헤더와 약간 띄움 */
+    border: none;
+    border-radius: inherit;
+    margin: 0;
     overflow: hidden;
-    /* 둥근 모서리 삐져나감 방지 */
 }
 
 /* [New] 좌상단 모드 라벨 스타일 */
@@ -166,10 +167,10 @@
     font-weight: 800;
     letter-spacing: 0.5px;
 
-    padding: 6px 12px;
+    padding: 8px 16px;
     background-color: var(--color-main);
     border: 1px solid var(--color-sub);
-    border-radius: 20px;
+    border-radius: 12px;
     color: var(--font-color);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
@@ -226,4 +227,38 @@
 .status-badge-floating.edit {
     color: var(--color-point);
     border-color: var(--color-point);
+}
+
+/* [New] 연결 모드 상단 안내문 */
+.mode-guidance-top {
+    position: absolute;
+    top: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+
+    padding: 12px 24px;
+    background-color: var(--color-main);
+    border: 2px solid var(--color-point);
+    border-radius: 12px;
+
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-point);
+
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
 }

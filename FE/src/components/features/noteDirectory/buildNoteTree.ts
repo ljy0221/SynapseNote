@@ -21,7 +21,7 @@ export function buildNoteTree(
   };
 
   for (const note of notes) {
-    // ✅ '/' 인 경우 가상 디렉토리로 치환 (UI 전용)
+    //  '/' 인 경우 가상 디렉토리로 치환 (UI 전용)
     const normalizedPath =
       note.directoryPath === '/'
         ? DEFAULT_DIR_PATH
@@ -53,12 +53,25 @@ export function buildNoteTree(
 
       current = child;
 
-      // ✅ 마지막 디렉토리에 노트 추가
+      //  마지막 디렉토리에 노트 추가
       if (index === parts.length - 1) {
         current.notes.push(note);
       }
     });
   }
+
+  /**  재귀적으로 정렬 (자음/알파벳 순) */
+  const sortTree = (node: NoteTreeNode) => {
+    // 디렉토리 정렬
+    node.children.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+    // 노트 정렬 (최신 생성순)
+    node.notes.sort((a, b) => b.createdAt - a.createdAt);
+
+    // 자식들도 정렬
+    node.children.forEach(sortTree);
+  };
+
+  sortTree(root);
 
   return root;
 }

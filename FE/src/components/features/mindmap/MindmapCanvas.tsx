@@ -14,7 +14,9 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 
 // 같은 폴더에 있는 NoteNode를 가져옵니다.
+// 같은 폴더에 있는 NoteNode를 가져옵니다.
 import NoteNode from './NoteNode';
+import SynapseEdge from './SynapseEdge';
 import MindmapControls from './MindmapControls';
 
 /**
@@ -112,8 +114,16 @@ const MindmapCanvas: React.FC<MindmapCanvasProps> = ({
      * 커스텀 노드 타입 등록
      * 리렌더링 시 객체가 새로 생성되는 것을 방지하기 위해 useMemo를 사용합니다.
      */
+    /**
+     * 커스텀 노드/엣지 타입 등록
+     * 리렌더링 시 객체가 새로 생성되는 것을 방지하기 위해 useMemo를 사용합니다.
+     */
     const nodeTypes = useMemo(() => ({
         note: NoteNode,
+    }), []);
+
+    const edgeTypes = useMemo(() => ({
+        synapse: SynapseEdge,
     }), []);
 
     return (
@@ -130,6 +140,7 @@ const MindmapCanvas: React.FC<MindmapCanvasProps> = ({
                 onNodeDrag={onNodeDrag}
                 onNodeDragStop={onNodeDragStop}
                 nodeTypes={nodeTypes}
+                edgeTypes={edgeTypes}
                 nodesDraggable={isEditMode}
                 nodesConnectable={isEditMode} // 편집 모드일 때만 선 연결 가능
                 proOptions={{ hideAttribution: true }}
