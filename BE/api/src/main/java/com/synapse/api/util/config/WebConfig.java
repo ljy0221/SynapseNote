@@ -18,10 +18,8 @@ public class WebConfig implements WebMvcConfigurer {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // 자격 증명 허용
         configuration.setAllowCredentials(true);
 
-        // 허용할 HTTP 메소드
         configuration.addAllowedMethod("GET");
         configuration.addAllowedMethod("POST");
         configuration.addAllowedMethod("PUT");
@@ -29,15 +27,13 @@ public class WebConfig implements WebMvcConfigurer {
         configuration.addAllowedMethod("PATCH");
         configuration.addAllowedMethod("OPTIONS");
 
-        // 허용할 HTTP 헤더
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of("Set-Cookie"));
 
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:5173",
                 "http://127.0.0.1:5173",
-                "https://i14b102.p.ssafy.io"
-        ));
+                "https://i14b102.p.ssafy.io"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
