@@ -96,17 +96,21 @@ const Login: React.FC = () => {
                             onClick={() => {
                                 const isElectron = !!window.electronAPI;
                                 const isDev = import.meta.env.DEV;
-                                // Electron always uses WEB_CLIENT_ID
-                                const clientId = isElectron
-                                    ? env.VITE_GITHUB_WEB_CLIENT_ID
-                                    : env.VITE_GITHUB_WEB_CLIENT_ID;
 
+                                let clientId;
                                 let redirectUri;
+
                                 if (isElectron) {
+                                    // Electron: dev mode uses VITE_GITHUB_CLIENT_ID, production uses VITE_GITHUB_WEB_CLIENT_ID
+                                    clientId = isDev
+                                        ? env.VITE_GITHUB_CLIENT_ID
+                                        : env.VITE_GITHUB_WEB_CLIENT_ID;
                                     redirectUri = isDev
                                         ? env.VITE_GITHUB_REDIRECT_URI
                                         : env.VITE_GITHUB_PRODUCTION_REDIRECT_URI;
                                 } else {
+                                    // Web: always uses WEB_CLIENT_ID and WEB_REDIRECT_URI
+                                    clientId = env.VITE_GITHUB_WEB_CLIENT_ID;
                                     redirectUri = env.VITE_GITHUB_WEB_REDIRECT_URI;
                                 }
 
