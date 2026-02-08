@@ -2,7 +2,9 @@ import React, { useRef, useEffect, useState } from 'react';
 import { X, User as UserIcon, Edit2, Check, UserX, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { WithdrawalModal } from './WithdrawalModal';
-import { ModalHeader } from './ModalHeader'; // 추가
+import { ModalHeader } from './ModalHeader';
+import { useToastStore } from '../../../store/useToastStore';
+import { useAuthStore } from '../../../store/useAuthStore';
 import './UserProfileModal.css';
 
 interface UserProfileModalProps {
@@ -17,6 +19,12 @@ interface UserProfileModalProps {
 
 export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, user }) => {
     const modalRef = useRef<HTMLDivElement>(null);
+
+    // Selector 최적화
+    const showToast = useToastStore((state) => state.showToast);
+    const logout = useAuthStore((state) => state.logout);
+    const updateUserNickname = useAuthStore((state) => state.updateUserNickname);
+    const withdrawAccount = useAuthStore((state) => state.withdrawAccount);
 
     // 모달 외부 클릭 시 닫기
     useEffect(() => {
@@ -42,13 +50,24 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
     useEffect(() => {
         if (isOpen && user) {
             setTempName(user.name);
+            setIsWithdrawalOpen(false); // 모달 열릴 때 탈퇴 모달 상태 초기화
         }
     }, [isOpen, user]);
 
-    const handleSaveNickname = () => {
-        // TODO: API 연동
-        console.log('New Nickname:', tempName);
-        setIsEditing(false);
+    const handleSaveNickname = async () => {
+        if (!tempName.trim()) {
+            showToast('닉네임을 입력해주세요.');
+            return;
+        }
+
+        try {
+            await updateUserNickname(tempName);
+            // 성공 시 스토어 내부에서 토스트 출력됨
+            setIsEditing(false);
+        } catch (error) {
+            // 에러 시 스토어 내부에서 에러 로그 및 throw
+            showToast('닉네임 변경에 실패했습니다.', 'error');
+        }
     };
 
     const handleCancelEdit = () => {
@@ -63,21 +82,24 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
     const navigate = useNavigate();
 
     const handleLogout = () => {
-        // 토큰 삭제
-        localStorage.removeItem('authToken');
-        // RefreshToken은 HttpOnly Cookie로 관리되므로 클라이언트에서 삭제 불가 (브라우저 정책 따름)
+        logout(); // Store action
 
         // 로그인 페이지로 이동
         navigate('/login');
         onClose();
     };
 
-    const handleConfirmWithdraw = () => {
-        console.log('Withdraw account confirmed');
-        setIsWithdrawalOpen(false);
-        onClose();
-        // 탈퇴 후에도 로그아웃 처리 필요하면 추가
-        handleLogout();
+    const handleConfirmWithdraw = async () => {
+        try {
+            await withdrawAccount();
+            setIsWithdrawalOpen(false);
+            onClose();
+            // 탈퇴 후 로그인 페이지로 이동
+            navigate('/login');
+        } catch (error) {
+            // 에러는 스토어에서 처리됨
+            console.error('Withdrawal failed:', error);
+        }
     };
 
     if (!isOpen) return null;
@@ -85,7 +107,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
     return (
         <div className="user-profile-modal-overlay">
             <div className="user-profile-modal-content" ref={modalRef} onClick={(e) => e.stopPropagation()}>
-                {/* 모달 헤더 (메인 헤더 스타일 통일) */}
+                {/* 모달 헤더 */}
                 <ModalHeader onClose={onClose} />
 
                 <div className="profile-image-wrapper">
@@ -97,15 +119,15 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
                 </div>
 
                 <div className="profile-info-container">
-                    {/* 이메일 (ID 역할) */}
+                    {/* 이메일 (ID) */}
                     <div className="profile-field">
-                        <label className="profile-label">아이디 (Email)</label>
+                        <label className="profile-label">ID</label>
                         <div className="profile-value">{user?.email || '-'}</div>
                     </div>
 
-                    {/* 닉네임 (수정 가능) */}
+                    {/* 닉네임 (지식제공자) */}
                     <div className="profile-field">
-                        <label className="profile-label">닉네임</label>
+                        <label className="profile-label">지식제공자</label>
                         <div className="profile-nickname-row">
                             {isEditing ? (
                                 <div className="nickname-edit-box">

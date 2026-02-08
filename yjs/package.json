@@ -4,14 +4,15 @@
   "private": true,
   "type": "commonjs",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "start": "tsx src/index.ts",
+    "dev": "dotenv -e ../Infra/.env.dev -- tsx watch src/index.ts",
+    "start": "dotenv -e .env -- tsx src/index.ts",
     "build": "tsc",
     "start:prod": "node dist/index.js"
   },
   "dependencies": {
     "@types/lodash": "^4.17.23",
     "dotenv": "^17.2.3",
+    "htmlparser2": "^10.1.0",
     "lodash": "^4.17.23",
     "mongoose": "^9.1.5",
     "ws": "^8.19.0",
@@ -20,6 +21,7 @@
   },
   "devDependencies": {
     "@types/ws": "^8.18.1",
+    "dotenv-cli": "^11.0.0",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }

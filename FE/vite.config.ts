@@ -4,15 +4,16 @@ import electron from 'vite-plugin-electron/simple'
 import react from '@vitejs/plugin-react'
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => {
+export default defineConfig(async ({ mode }) => {
   const isWebBuild = process.env.VITE_BUILD_TARGET === 'web'
+
 
   const plugins = [react()]
 
-  // Only add Electron plugin for Electron builds
+  // Only add Electron plugin for Electron builds.
   if (!isWebBuild) {
     plugins.push(
-      electron({
+      await electron({
         main: {
           // Shortcut of `build.lib.entry`.
           entry: 'electron/main.ts',
@@ -42,6 +43,23 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           secure: false,
         },
+      },
+    },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'react-vendor': ['react', 'react-dom', 'react-router-dom', 'zustand'],
+            'ui-fa': ['@fortawesome/react-fontawesome'],
+            'ui-motion': ['framer-motion'],
+            'vis-vendor': ['d3-force', 'reactflow'],
+          },
+        },
+      },
+      // Production optimization: drop console logs and debugger
+      // Production optimization: drop console logs and debugger
+      esbuild: {
+        drop: mode === 'production' ? ['debugger'] : [],
       },
     },
   }
