@@ -57,8 +57,9 @@ export default defineConfig(async ({ mode }) => {
         },
       },
       // Production optimization: drop console logs and debugger
+      // Production optimization: drop console logs and debugger
       esbuild: {
-        drop: mode === 'production' ? ['console', 'debugger'] : [],
+        drop: mode === 'production' ? ['debugger'] : [],
       },
     },
   }

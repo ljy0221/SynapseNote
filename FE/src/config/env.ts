@@ -1,4 +1,5 @@
 export interface AppConfig {
+    VITE_API_BASE_URL: string;
     VITE_GOOGLE_CLIENT_ID: string;
     VITE_GOOGLE_REDIRECT_URI: string;
     VITE_GOOGLE_PRODUCTION_REDIRECT_URI: string;
@@ -25,6 +26,7 @@ const getEnv = (key: keyof AppConfig): any => {
 };
 
 export const env: AppConfig = {
+    VITE_API_BASE_URL: getEnv('VITE_API_BASE_URL') || 'https://i14b102.p.ssafy.io/backend/api',
     VITE_GOOGLE_CLIENT_ID: getEnv('VITE_GOOGLE_CLIENT_ID'),
     VITE_GOOGLE_REDIRECT_URI: getEnv('VITE_GOOGLE_REDIRECT_URI'),
     VITE_GOOGLE_PRODUCTION_REDIRECT_URI: getEnv('VITE_GOOGLE_PRODUCTION_REDIRECT_URI'),
@@ -40,3 +42,4 @@ export const env: AppConfig = {
     VITE_TURN_CREDENTIAL: getEnv('VITE_TURN_CREDENTIAL'),
     DEV: import.meta.env.DEV, // Special case for Vite internal vars
 };
+
