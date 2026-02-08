@@ -10,8 +10,6 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 /**
  * WebSocket STOMP 설정
  * WebRTC 시그널링을 위한 STOMP 엔드포인트 및 메시지 브로커 설정
- * 
- * 인증은 JwtChannelInterceptor에서 STOMP CONNECT 프레임 처리 시 수행됨
  */
 @Configuration
 @EnableWebSocketMessageBroker

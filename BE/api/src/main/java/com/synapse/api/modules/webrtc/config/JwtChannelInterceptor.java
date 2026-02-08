@@ -14,10 +14,7 @@ import org.springframework.stereotype.Component;
 import java.util.UUID;
 
 /**
- * STOMP Channel Interceptor for JWT Authentication
  * STOMP CONNECT 프레임에서 JWT 토큰을 검증하고 세션에 memberId를 저장
- * 
- * 이것이 WebRTC 시그널링의 유일한 인증 지점입니다 (STOMP 표준)
  */
 @Slf4j
 @Component
