@@ -96,16 +96,16 @@ const Login: React.FC = () => {
                                 const isElectron = !!window.electronAPI;
                                 const isDev = import.meta.env.DEV;
                                 const clientId = isElectron
-                                    ? import.meta.env.VITE_GITHUB_CLIENT_ID
-                                    : import.meta.env.VITE_GITHUB_WEB_CLIENT_ID;
+                                    ? ((window as any).config?.VITE_GITHUB_CLIENT_ID || import.meta.env.VITE_GITHUB_CLIENT_ID)
+                                    : ((window as any).config?.VITE_GITHUB_WEB_CLIENT_ID || import.meta.env.VITE_GITHUB_WEB_CLIENT_ID);
 
                                 let redirectUri;
                                 if (isElectron) {
                                     redirectUri = isDev
-                                        ? import.meta.env.VITE_GITHUB_REDIRECT_URI
-                                        : import.meta.env.VITE_GITHUB_PRODUCTION_REDIRECT_URI;
+                                        ? ((window as any).config?.VITE_GITHUB_REDIRECT_URI || import.meta.env.VITE_GITHUB_REDIRECT_URI)
+                                        : ((window as any).config?.VITE_GITHUB_PRODUCTION_REDIRECT_URI || import.meta.env.VITE_GITHUB_PRODUCTION_REDIRECT_URI);
                                 } else {
-                                    redirectUri = import.meta.env.VITE_GITHUB_WEB_REDIRECT_URI;
+                                    redirectUri = (window as any).config?.VITE_GITHUB_WEB_REDIRECT_URI || import.meta.env.VITE_GITHUB_WEB_REDIRECT_URI;
                                 }
 
                                 const state = isElectron ? 'ELECTRON' : 'WEB';
@@ -123,15 +123,15 @@ const Login: React.FC = () => {
                             onClick={() => {
                                 const isElectron = !!window.electronAPI;
                                 const isDev = import.meta.env.DEV;
-                                const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+                                const clientId = (window as any).config?.VITE_GOOGLE_CLIENT_ID || import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
                                 let redirectUri;
                                 if (isElectron) {
                                     redirectUri = isDev
-                                        ? import.meta.env.VITE_GOOGLE_REDIRECT_URI
-                                        : import.meta.env.VITE_GOOGLE_PRODUCTION_REDIRECT_URI;
+                                        ? ((window as any).config?.VITE_GOOGLE_REDIRECT_URI || import.meta.env.VITE_GOOGLE_REDIRECT_URI)
+                                        : ((window as any).config?.VITE_GOOGLE_PRODUCTION_REDIRECT_URI || import.meta.env.VITE_GOOGLE_PRODUCTION_REDIRECT_URI);
                                 } else {
-                                    redirectUri = import.meta.env.VITE_GOOGLE_WEB_REDIRECT_URI;
+                                    redirectUri = (window as any).config?.VITE_GOOGLE_WEB_REDIRECT_URI || import.meta.env.VITE_GOOGLE_WEB_REDIRECT_URI;
                                 }
 
                                 const state = isElectron ? 'ELECTRON' : 'WEB';
