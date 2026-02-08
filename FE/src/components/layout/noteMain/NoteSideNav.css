@@ -1,0 +1,143 @@
+/* src/components/layout/noteMain/NoteSideNav.css */
+.note-side-nav {
+    position: sticky;
+    top: 20px;
+    /* When scrolling, stick near top of viewport */
+    /* 헤더 높이 등을 고려한 상단 여백 */
+    width: fit-content;
+    /* Allow container to determine width */
+    height: fit-content;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    /* Align contents to right (closer to note content) */
+    gap: 1rem;
+    padding: 0;
+    /* padding removed to fit gutter */
+    z-index: 100;
+}
+
+.nav-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    /* Match MindmapToolbar gap */
+
+    /* Match MindmapToolbar styling */
+    background-color: var(--color-main);
+    border: 2px solid var(--color-sub);
+    /* Added stronger border as requested */
+    padding: 8px;
+    /* Match MindmapToolbar padding (was 12px) */
+    border-radius: 20px;
+
+    /* Backdrop and Shadow logic from MindmapToolbar */
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 4px 10px rgba(0, 0, 0, 0.04);
+
+    transition: all 0.3s ease;
+}
+
+.nav-group:hover {
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    /* Match MindmapCommonButton dimensions */
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+
+    /* Default State matching MindmapCommonButton */
+    border: 1px solid var(--color-sub);
+    background: transparent;
+    color: var(--font-color);
+
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0.6;
+    position: relative;
+    padding: 0;
+}
+
+.nav-item:hover {
+    /* Match MindmapCommonButton hover */
+    background-color: var(--color-sub);
+    border-color: var(--color-point);
+    color: var(--color-point);
+    /* Text/Icon color to point color */
+    opacity: 1;
+    transform: translateY(-2px);
+    filter: brightness(1.1);
+}
+
+.nav-item:active {
+    transform: scale(0.95);
+    background-color: rgba(245, 158, 11, 0.08);
+    /* Amber hint */
+}
+
+/* Tooltip style (nav-label) - Keeping existing logic but refining style */
+.nav-label {
+    font-size: 11px;
+    font-weight: 500;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(-10px);
+    /* Slide in from right */
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+    position: absolute;
+    right: 54px;
+    /* Position to the left of the button */
+    top: 50%;
+    margin-top: -12px;
+    /* Center vertially approx */
+
+    background-color: var(--color-sub);
+    color: var(--font-color);
+    border: 1px solid var(--color-point);
+
+    padding: 4px 8px;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    white-space: nowrap;
+    z-index: 110;
+    pointer-events: none;
+}
+
+.nav-item:hover .nav-label {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+}
+
+/* Notification Badge */
+.nav-item-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 9px;
+    background-color: #ef4444;
+    /* Red color */
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 120;
+    pointer-events: none;
+    border: 2px solid var(--color-main);
+    /* Border to separate from button */
+}

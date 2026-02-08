@@ -1,6 +1,6 @@
 package com.synapse.api.modules.note.entity;
 
-import com.synapse.api.modules.user.entity.User;
+import com.synapse.api.modules.member.entity.Member;
 import com.synapse.api.util.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -11,7 +11,7 @@ import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "note_members", indexes = {
-        @Index(name = "idx_note_members_user_id", columnList = "user_id")
+        @Index(name = "idx_note_members_member_id", columnList = "member_id")
 })
 @Getter
 @SuperBuilder
@@ -28,9 +28,9 @@ public class NoteMember extends BaseEntity {
     private Note note;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("userId")
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @MapsId("memberId")
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)

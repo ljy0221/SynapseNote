@@ -6,13 +6,15 @@ interface ToastNotificationProps {
     isVisible: boolean;
     onClose: () => void;
     duration?: number;
+    type?: 'success' | 'error' | 'info' | 'warning'; // [New] 타입 추가
 }
 
 export const ToastNotification: React.FC<ToastNotificationProps> = ({
     message,
     isVisible,
     onClose,
-    duration = 2000
+    duration = 2000,
+    type = 'success' // 기본값 success
 }) => {
     useEffect(() => {
         if (isVisible) {
@@ -26,7 +28,7 @@ export const ToastNotification: React.FC<ToastNotificationProps> = ({
     if (!isVisible) return null;
 
     return (
-        <div className="toast-notification">
+        <div className={`toast-notification ${type}`}>
             {message}
         </div>
     );

@@ -12,6 +12,7 @@ public enum ErrorCode {
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "COMMON_002", "지원하지 않는 HTTP 메서드입니다"),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON_003", "서버 내부 오류가 발생했습니다"),
     INVALID_TYPE_VALUE(HttpStatus.BAD_REQUEST, "COMMON_004", "잘못된 타입입니다"),
+    INVALID_ENUM_TYPE(HttpStatus.BAD_REQUEST, "COMMON_005", "ENUM 타입이 올바르지 않습니다"),
 
     // Auth
     AUTH_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "AUTH_001", "인증되지 않은 사용자입니다"),
@@ -20,12 +21,14 @@ public enum ErrorCode {
     TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "AUTH_004", "토큰이 잘못되었습니다"),
     HEADER_INVALID(HttpStatus.FORBIDDEN, "AUTH_005", "인증 헤더가 잘못되었습니다"),
     INVALID_REFRESH_TOKEN(HttpStatus.FORBIDDEN, "AUTH_006", "리프레시 토큰이 유효하지 않습니다"),
+    NOT_FOUND_REFRESH(HttpStatus.FORBIDDEN, "AUTH_007", "리프레시 토큰이 존재하지 않습니다"),
+    DELETED_MEMBER(HttpStatus.FORBIDDEN, "AUTH_008", "이미 탈퇴한 회원은 30일 동안 재가입할 수 없습니다"),
 
-    // User
-    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_001", "사용자를 찾을 수 없습니다"),
-    USER_ALREADY_EXISTS(HttpStatus.CONFLICT, "USER_002", "이미 존재하는 사용자입니다"),
-    VALIDATION_INVALID_PARAMETER(HttpStatus.BAD_REQUEST, "USER_003", "잘못된 요청 파라미터입니다"),
-    USER_ALREADY_EXISTS_ANOTHER_PROVIDER(HttpStatus.CONFLICT, "USER_004", "이 이메일은 다른 소셜 로그인으로 이미 가입되어 있습니다"),
+    // Member
+    MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "MEMBER_001", "사용자를 찾을 수 없습니다"),
+    MEMBER_ALREADY_EXISTS(HttpStatus.CONFLICT, "MEMBER_002", "이미 존재하는 사용자입니다"),
+    VALIDATION_INVALID_PARAMETER(HttpStatus.BAD_REQUEST, "MEMBER_003", "잘못된 요청 파라미터입니다"),
+    MEMBER_ALREADY_EXISTS_ANOTHER_PROVIDER(HttpStatus.CONFLICT, "MEMBER_004", "이 이메일은 다른 소셜 로그인으로 이미 가입되어 있습니다"),
 
     // Note
     NOTE_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTE_001", "노트를 찾을 수 없습니다"),
@@ -35,6 +38,7 @@ public enum ErrorCode {
     NOTE_CONTENT_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTE_005", "노트 콘텐츠를 찾을 수 없습니다"),
     NOTE_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTE_006", "노트 멤버를 찾을 수 없습니다"),
     CODE_BLOCK_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTE_007", "코드 블록을 찾을 수 없습니다"),
+    NOTE_ID_DUPLICATE(HttpStatus.CONFLICT, "NOTE_008", "이미 존재하는 노트 ID입니다"),
 
     // Invitation (NOTE_010 ~ NOTE_019)
     INVITATION_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTE_010", "초대를 찾을 수 없습니다"),
@@ -47,6 +51,10 @@ public enum ErrorCode {
     CANNOT_CHANGE_OWN_ROLE(HttpStatus.BAD_REQUEST, "NOTE_017", "자신의 권한은 변경할 수 없습니다"),
     CANNOT_REMOVE_SELF(HttpStatus.BAD_REQUEST, "NOTE_018", "자기 자신은 삭제할 수 없습니다"),
     INVITATION_ONLY_OWNER(HttpStatus.FORBIDDEN, "NOTE_019", "초대는 OWNER만 가능합니다"),
+    NOTE_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "NOTE_020", "노트 생성 제한(50개)을 초과했습니다"),
+    SHARED_NOTE_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "NOTE_021", "공유 노트 제한(10개)을 초과했습니다"),
+    TARGET_SHARED_NOTE_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "NOTE_023", "상대방의 공유 노트 제한(10개)을 초과했습니다"),
+    NOTE_PARTICIPANT_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "NOTE_022", "노트 참가자 제한(6명)을 초과했습니다"),
 
     // Mindmap
     NOTE_NOT_IN_MINDMAP(HttpStatus.NOT_FOUND, "MINDMAP_001", "노트가 마인드맵에 존재하지않습니다."),
@@ -63,9 +71,8 @@ public enum ErrorCode {
     SYSTEM_INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "SYSTEM_002", "일시적인 서버 오류가 발생했습니다"),
 
     // OAuthAccount
-    PARSING_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "OAUTH_001", "응답 파싱 중 오류가 발생했습니다"),
-    OAUTH_PROVIDER_ERROR(HttpStatus.BAD_GATEWAY, "OAUTH_002", "OAuth2 제공자로부터 오류 응답을 받았습니다"),
-    OAUTH_TOKEN_ISSUE(HttpStatus.BAD_GATEWAY, "OAUTH_003", "OAuth2 제공자로부터 Access Token을 받지 못했습니다"),
+    OAUTH_PROVIDER_ERROR(HttpStatus.BAD_GATEWAY, "OAUTH_001", "OAuth2 제공자로부터 오류 응답을 받았습니다"),
+    OAUTH_TOKEN_ISSUE(HttpStatus.BAD_GATEWAY, "OAUTH_002", "OAuth2 제공자로부터 Access Token을 받지 못했습니다"),
 
     // AWS S3
     IMAGE_DELETE_FAIL(HttpStatus.BAD_GATEWAY, "IMAGE_001", "이미지 삭제 중 스토리지 서버(S3)와의 통신에 실패했습니다."),
@@ -76,8 +83,20 @@ public enum ErrorCode {
     INVALID_BLOCK_CONTENTS(HttpStatus.BAD_REQUEST, "BLOCK_002", "블록 content 형식이 올바르지 않습니다."),
     INVALID_BLOCK_TYPE(HttpStatus.BAD_REQUEST, "BLOCK_003", "블록 타입이 올바르지 않습니다."),
     UNSUPPORTED_LANGUAGE(HttpStatus.BAD_REQUEST, "BLOCK_004", "지원하지 않는 언어 타입입니다."),
-    UNSUPPORTED_BLOCK_TYPE(HttpStatus.BAD_REQUEST, "BLOCK_005", "지원하지 않는 블록 타입입니다.");
+    UNSUPPORTED_BLOCK_TYPE(HttpStatus.BAD_REQUEST, "BLOCK_005", "지원하지 않는 블록 타입입니다."),
+    BLOCK_HISTORY_NOT_FOUND(HttpStatus.NOT_FOUND, "BLOCK_006", "블록 히스토리를 찾을 수 없습니다."),
+    BLOCK_ROLLBACK_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "BLOCK_007", "블록 롤백에 실패했습니다."),
+    BLOCK_VERSION_CONFLICT(HttpStatus.CONFLICT, "BLOCK_008", "블록 버전 충돌이 발생했습니다."),
+    INVALID_SLOT_NUMBER(HttpStatus.BAD_REQUEST, "BLOCK_009", "슬롯 번호는 1-5 범위여야 합니다."),
+    INVALID_BLOCK_TYPE_FOR_HISTORY(HttpStatus.BAD_REQUEST, "BLOCK_010", "히스토리 기능은 코드 블록에서만 사용할 수 있습니다."),
+    BOOKMARK_NOT_FOUND(HttpStatus.NOT_FOUND, "BLOCK_011", "북마크를 찾을 수 없습니다."),
 
+    // AI
+    AI_INVALID_REQUEST(HttpStatus.BAD_REQUEST, "AI_001", "코드 길이가 너무 깁니다.(500자)"),
+    AI_INVALID_RESPONSE(HttpStatus.BAD_REQUEST, "AI_002", "잘못된 응답입니다."),
+    AI_PROVIDER_NOT_SUPPORTED(HttpStatus.NOT_FOUND, "AI_003", "지원하지 않는 모델입니다."),
+    AI_SERVICE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "AI_004", "AI 서버가 응답하지 않습니다."),
+    AI_TIMEOUT(HttpStatus.REQUEST_TIMEOUT, "AI_005", "응답시간이 초과되었습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

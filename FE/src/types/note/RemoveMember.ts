@@ -1,4 +1,4 @@
 export interface RemoveMemberResponse {
-  userId: string;
+  memberId: string;
   removedAt: string;
 }

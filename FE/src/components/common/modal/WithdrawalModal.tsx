@@ -42,8 +42,8 @@ export const WithdrawalModal: React.FC<WithdrawalModalProps> = ({ isOpen, onClos
                 </div>
 
                 <p className="withdrawal-description">
-                    계정을 삭제하면 모든 데이터가 사라지며 복구할 수 없습니다.<br />
-                    탈퇴를 진행하려면 아래 문구를 정확히 입력해주세요.
+                    계정을 삭제하면 모든 데이터가 사라지며 <br /> 복구할 수 없습니다.<br />
+                    30일 이내에 재가입 불가합니다.
                 </p>
 
                 <div className="withdrawal-verification-section">
