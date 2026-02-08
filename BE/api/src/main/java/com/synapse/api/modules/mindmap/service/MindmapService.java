@@ -1,19 +1,24 @@
 package com.synapse.api.modules.mindmap.service;
 
+import com.synapse.api.modules.member.entity.Member;
+import com.synapse.api.modules.member.repository.MemberRepository;
 import com.synapse.api.modules.mindmap.dto.MindmapEdgeDto;
 import com.synapse.api.modules.mindmap.dto.MindmapNodeDto;
 import com.synapse.api.modules.mindmap.dto.NodePositionDto;
-import com.synapse.api.modules.mindmap.dto.request.MindmapEdgeRequest;
-import com.synapse.api.modules.mindmap.dto.request.AddMindmapNodeRequest;
-import com.synapse.api.modules.mindmap.dto.request.UpdateMindmapPositionsRequest;
+
+import com.synapse.api.modules.mindmap.dto.request.SyncMindmapRequest;
 import com.synapse.api.modules.mindmap.dto.response.MindmapResponse;
 import com.synapse.api.modules.mindmap.entity.MindmapEdge;
+import com.synapse.api.modules.mindmap.entity.MindmapNodePosition;
+import com.synapse.api.modules.mindmap.entity.MindmapNodePositionId;
 import com.synapse.api.modules.mindmap.repository.MindmapEdgeRepository;
+import com.synapse.api.modules.mindmap.repository.MindmapNodePositionRepository;
 import com.synapse.api.modules.note.entity.Note;
 import com.synapse.api.modules.note.repository.NoteRepository;
+import com.synapse.api.modules.note.service.NoteValidator;
 import com.synapse.api.util.exception.BusinessException;
 import com.synapse.api.util.response.ErrorCode;
-import jakarta.validation.Valid;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,67 +35,20 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class MindmapService {
     private final MindmapEdgeRepository mindmapEdgeRepository;
+    private final MindmapNodePositionRepository mindmapNodePositionRepository;
     private final NoteRepository noteRepository;
+    private final MemberRepository memberRepository;
+    private final NoteValidator noteValidator;
 
-    @Transactional
-    public void addMindMapNode(UUID userId, @Valid AddMindmapNodeRequest request) {
-        Note note = noteRepository.findById(request.noteId())
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
+    public MindmapResponse getMindmap(UUID memberId) {
+        List<Note> notes = noteRepository.findMindMapNodesByMember(memberId);
+        List<MindmapEdge> edges = mindmapEdgeRepository.findAllByMember(memberId);
 
-        validNoteOwner(userId, note);
-
-        note.updatePosition(request.pointX(), request.pointY());
-    }
-
-    @Transactional
-    public void addMindMapEdge(UUID userId, @Valid MindmapEdgeRequest request) {
-        Note child = noteRepository.findById(request.child())
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
-        Note parent = noteRepository.findById(request.parent())
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
-
-        validNoteOwner(userId, child);
-        validNoteOwner(userId, parent);
-
-        MindmapEdge mindMapEdge = MindmapEdge.createMindMapEdge(child, parent);
-
-        mindmapEdgeRepository.save(mindMapEdge);
-    }
-
-    @Transactional
-    public void deleteNode(UUID userId, UUID nodeId) {
-        mindmapEdgeRepository.deleteByTo_Id(nodeId);
-        mindmapEdgeRepository.deleteByFrom_Id(nodeId);
-
-        Note note = noteRepository.findById(nodeId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
-
-        validNoteOwner(userId, note);
-
-        note.deleteNode();
-    }
-
-    @Transactional
-    public void deleteMindmap(UUID userId) {
-        mindmapEdgeRepository.deleteAllByUserId(userId);
-        noteRepository.resetMindmapNodePositions(userId);
-    }
-
-    @Transactional
-    public void deleteConnection(UUID userId, MindmapEdgeRequest request) {
-        int deleted = mindmapEdgeRepository.deleteByUserAndEdge(
-                userId,
-                request.parent(),
-                request.child());
-
-        if (deleted == 0) {
-            throw new BusinessException(ErrorCode.MINDMAP_EDGE_NOT_DELETABLE);
-        }
-    }
-
-    public MindmapResponse getMindmap(UUID userId) {
-        List<Note> notes = noteRepository.findMindMapNodesByUser(userId);
-        List<MindmapEdge> edges = mindmapEdgeRepository.findAllByUser(userId);
+        // 개인 위치 정보 조회
+        List<MindmapNodePosition> personalPositions = mindmapNodePositionRepository
+                .findAllByIdMemberId(memberId);
+        Map<UUID, MindmapNodePosition> personalPositionMap = personalPositions.stream()
+                .collect(Collectors.toMap(p -> p.getId().getNoteId(), p -> p));
 
         Map<UUID, Long> fanoutMap = edges.stream()
                 .collect(Collectors.groupingBy(
@@ -98,13 +56,17 @@ public class MindmapService {
                         Collectors.counting()));
 
         List<MindmapNodeDto> nodeDtos = notes.stream()
-                .map(n -> new MindmapNodeDto(
-                        n.getId(),
-                        n.getTitle(),
-                        n.getPointX(),
-                        n.getPointY(),
-                        fanoutMap.getOrDefault(n.getId(), 0L).intValue(),
-                        n.getDirectoryPath()))
+                .map(n -> {
+                    MindmapNodePosition pos = personalPositionMap.get(n.getId());
+
+                    return new MindmapNodeDto(
+                            n.getId(),
+                            n.getTitle(),
+                            pos.getPointX(),
+                            pos.getPointY(),
+                            fanoutMap.getOrDefault(n.getId(), 0L).intValue(),
+                            n.getDirectoryPath());
+                })
                 .toList();
 
         List<MindmapEdgeDto> edgeDtos = edges.stream()
@@ -116,42 +78,135 @@ public class MindmapService {
         return new MindmapResponse(nodeDtos, edgeDtos);
     }
 
-    private static void validNoteOwner(UUID userId, Note note) {
-        if (!note.getCreatedBy().getId().equals(userId)) {
-            throw new BusinessException(ErrorCode.NOTE_ACCESS_DENIED);
-        }
-    }
-
     @Transactional
-    public void updateNodePositions(UUID userId, UpdateMindmapPositionsRequest request) {
-        if (request.nodes() == null || request.nodes().isEmpty()) {
-            return;
-        }
+    public void syncMindmap(UUID memberId, SyncMindmapRequest request) {
+        if (request.nodes() != null) {
+            // 1. 현재 테이블에 저장된 사용자의 개인 위치 목록 조회
+            List<MindmapNodePosition> existingPositions = mindmapNodePositionRepository
+                    .findAllByIdMemberId(memberId);
+            Map<UUID, MindmapNodePosition> existingMap = existingPositions.stream()
+                    .collect(Collectors.toMap(p -> p.getId().getNoteId(), p -> p));
 
-        List<UUID> nodeIds = request.nodes().stream()
-                .map(NodePositionDto::nodeId)
-                .toList();
+            if (!request.nodes().isEmpty()) {
+                List<UUID> requestNodeIds = request.nodes().stream()
+                        .map(NodePositionDto::nodeId)
+                        .toList();
 
-        List<Note> notes = noteRepository.findAllById(nodeIds);
+                // 노트 존재 여부 및 권한 확인을 위해 노트 조회
+                List<Note> notes = noteRepository.findAllById(requestNodeIds);
+                Map<UUID, Note> noteMap = notes.stream().collect(Collectors.toMap(Note::getId, n -> n));
 
-        if (notes.size() != nodeIds.size()) {
-            throw new BusinessException(ErrorCode.NOTE_NOT_FOUND);
-        }
+                if (notes.size() != requestNodeIds.size()) {
+                    throw new BusinessException(ErrorCode.NOTE_NOT_FOUND);
+                }
 
-        for (Note note : notes) {
-            validNoteOwner(userId, note);
+                List<MindmapNodePosition> toSave = new java.util.ArrayList<>();
 
-            if (note.getPointX() == null || note.getPointY() == null) {
-                throw new BusinessException(ErrorCode.NOTE_NOT_IN_MINDMAP);
+                for (NodePositionDto dto : request.nodes()) {
+                    Note note = noteMap.get(dto.nodeId());
+                    // 공유받은 노트 등 권한 체크
+                    noteValidator.validateAccess(note, memberId);
+
+                    MindmapNodePosition position = existingMap.get(dto.nodeId());
+                    if (position != null) {
+                        position.updatePosition(dto.x(), dto.y());
+                        toSave.add(position);
+                        existingMap.remove(dto.nodeId()); // 처리됨 표시
+                    } else {
+                        // 새로 생성
+                        MindmapNodePositionId id = new MindmapNodePositionId(memberId,
+                                dto.nodeId());
+                        toSave.add(MindmapNodePosition.builder()
+                                .id(id)
+                                .pointX(dto.x())
+                                .pointY(dto.y())
+                                .build());
+                    }
+                }
+                mindmapNodePositionRepository.saveAll(toSave);
+            }
+
+            if (!existingMap.isEmpty()) {
+                mindmapNodePositionRepository.deleteAll(existingMap.values());
             }
         }
 
-        Map<UUID, NodePositionDto> positionMap = request.nodes().stream()
-                .collect(Collectors.toMap(NodePositionDto::nodeId, dto -> dto));
-
-        for (Note note : notes) {
-            NodePositionDto dto = positionMap.get(note.getId());
-            note.updatePosition(dto.x(), dto.y());
+        if (request.edges() != null) {
+            syncEdges(memberId, request.edges());
         }
+    }
+
+    private void syncEdges(UUID memberId, List<MindmapEdgeDto> requestedEdges) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        List<MindmapEdge> existingEdges = mindmapEdgeRepository.findAllByMember(memberId);
+
+        Map<String, MindmapEdge> existingEdgeMap = existingEdges.stream()
+                .collect(Collectors.toMap(
+                        e -> e.getFrom().getId().toString() + ":"
+                                + e.getTo().getId().toString(),
+                        e -> e));
+
+        Map<String, MindmapEdgeDto> requestedEdgeMap = requestedEdges.stream()
+                .collect(Collectors.toMap(
+                        e -> e.fromId().toString() + ":" + e.toId().toString(),
+                        e -> e,
+                        (e1, e2) -> e1));
+        List<MindmapEdge> edgesToDelete = existingEdges.stream()
+                .filter(e -> !requestedEdgeMap
+                        .containsKey(e.getFrom().getId().toString() + ":"
+                                + e.getTo().getId().toString()))
+                .toList();
+
+        if (!edgesToDelete.isEmpty()) {
+            mindmapEdgeRepository.deleteAll(edgesToDelete);
+        }
+
+        List<MindmapEdgeDto> edgesToAdd = requestedEdges.stream()
+                .filter(e -> !existingEdgeMap
+                        .containsKey(e.fromId().toString() + ":" + e.toId().toString()))
+                .toList();
+
+        if (!edgesToAdd.isEmpty()) {
+            java.util.Set<UUID> relatedNodeIds = java.util.stream.Stream.concat(
+                    edgesToAdd.stream().map(MindmapEdgeDto::fromId),
+                    edgesToAdd.stream().map(MindmapEdgeDto::toId)).collect(Collectors.toSet());
+
+            Map<UUID, Note> relatedNotes = noteRepository.findAllById(relatedNodeIds).stream()
+                    .collect(Collectors.toMap(Note::getId, n -> n));
+
+            if (relatedNotes.size() != relatedNodeIds.size()) {
+                throw new BusinessException(ErrorCode.NOTE_NOT_FOUND);
+            }
+
+            List<MindmapEdge> newEdges = new java.util.ArrayList<>();
+
+            for (MindmapEdgeDto req : edgesToAdd) {
+                Note child = relatedNotes.get(req.fromId());
+                Note parent = relatedNotes.get(req.toId());
+
+                // 소유자뿐만 아니라 공유받은 사용자도 엣지 생성 가능
+                noteValidator.validateAccess(child, memberId);
+                noteValidator.validateAccess(parent, memberId);
+
+                newEdges.add(MindmapEdge.of(child, parent, member));
+            }
+
+            mindmapEdgeRepository.saveAll(newEdges);
+        }
+    }
+
+    /**
+     * 노트 삭제 시 연결된 모든 엣지 및 위치 정보 삭제
+     */
+    @Transactional
+    public void deleteMindmapDataByNoteId(UUID noteId) {
+        mindmapEdgeRepository.deleteByFrom_Id(noteId);
+        mindmapEdgeRepository.deleteByTo_Id(noteId);
+
+        mindmapNodePositionRepository.deleteByIdNoteId(noteId);
+
+        log.debug("Deleted all mindmap edges and positions connected to note: {}", noteId);
     }
 }

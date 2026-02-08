@@ -1,8 +1,11 @@
 package com.synapse.api.modules.note.controller;
 
+import com.synapse.api.modules.block.dto.response.BlockDetailResponse;
 import com.synapse.api.modules.block.dto.response.BlockPageResponse;
+import com.synapse.api.modules.block.service.BlockService;
 import com.synapse.api.modules.note.dto.request.ExecutionHistoryRequest;
 import com.synapse.api.modules.note.dto.request.NoteCreateRequest;
+import com.synapse.api.modules.note.dto.request.NoteFilter;
 import com.synapse.api.modules.note.dto.request.NoteUpdateRequest;
 import com.synapse.api.modules.note.dto.response.ExecutionHistoryResponse;
 import com.synapse.api.modules.note.dto.response.NoteDetailResponse;
@@ -12,7 +15,7 @@ import com.synapse.api.modules.note.service.NoteService;
 import com.synapse.api.util.response.DataResponse;
 import com.synapse.api.util.response.StatusResponse;
 import com.synapse.api.util.response.SuccessCode;
-import com.synapse.api.util.security.CustomUserDetails;
+import com.synapse.api.util.security.CustomMemberDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,89 +32,101 @@ import java.util.UUID;
 public class NoteController {
 
     private final NoteService noteService;
+    private final BlockService blockService;
 
     @PostMapping("/v1/notes")
     public DataResponse<NoteResponse> createNote(
-            @AuthenticationPrincipal CustomUserDetails details,
+            @AuthenticationPrincipal CustomMemberDetails details,
             @Valid @RequestBody NoteCreateRequest request) {
-        UUID userId = details.id();
-        log.info("Creating note by user: {}", userId);
-        NoteResponse response = noteService.createNote(userId, request);
+        UUID memberId = details.id();
+        log.info("Creating note by member: {}", memberId);
+        NoteResponse response = noteService.createNote(memberId, request);
         return DataResponse.of(SuccessCode.CREATED, response);
     }
 
     @GetMapping("/v1/notes")
     public DataResponse<NotePageResponse> getAllNotes(
-            @AuthenticationPrincipal CustomUserDetails details,
+            @AuthenticationPrincipal CustomMemberDetails details,
+            @RequestParam(required = false) NoteFilter filter,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
-        UUID userId = details.id();
-        log.info("Getting all notes for user: {} (page: {}, size: {})", userId, page, size);
-        NotePageResponse response = noteService.getAllNotes(userId, page - 1, size);
+        UUID memberId = details.id();
+        log.info("Getting notes for member: {} with filter: {} (page: {}, size: {})", memberId, filter, page, size);
+
+        NotePageResponse response;
+        if (filter == NoteFilter.OWNED) {
+            response = noteService.getOwnedNotes(memberId, page - 1, size);
+        } else if (filter == NoteFilter.SHARED) {
+            response = noteService.getSharedNotes(memberId, page - 1, size);
+        } else {
+            // filter가 null이거나 ALL이면 전체 조회
+            response = noteService.getAllNotes(memberId, page - 1, size);
+        }
+
         return DataResponse.of(response);
     }
 
     @GetMapping("/v1/notes/{noteId}")
     public DataResponse<NoteDetailResponse> getNoteById(
-            @AuthenticationPrincipal CustomUserDetails details,
+            @AuthenticationPrincipal CustomMemberDetails details,
             @PathVariable UUID noteId) {
-        UUID userId = details.id();
-        log.info("Getting note: {} for user: {}", noteId, userId);
-        NoteDetailResponse response = noteService.getNoteById(noteId, userId);
+        UUID memberId = details.id();
+        log.info("Getting note: {} for member: {}", noteId, memberId);
+        NoteDetailResponse response = noteService.getNoteById(noteId, memberId);
         return DataResponse.of(response);
     }
 
     @PutMapping("/v1/notes/{noteId}")
     public DataResponse<NoteResponse> updateNote(
-            @AuthenticationPrincipal CustomUserDetails details,
+            @AuthenticationPrincipal CustomMemberDetails details,
             @PathVariable UUID noteId,
             @Valid @RequestBody NoteUpdateRequest request) {
-        UUID userId = details.id();
-        log.info("Updating note: {} by user: {}", noteId, userId);
-        NoteResponse response = noteService.updateNote(noteId, userId, request);
+        UUID memberId = details.id();
+        log.info("Updating note: {} by member: {}", noteId, memberId);
+        NoteResponse response = noteService.updateNote(noteId, memberId, request);
         return DataResponse.of(response);
     }
 
     @DeleteMapping("/v1/notes/{noteId}")
     public DataResponse<Void> deleteNote(
-            @AuthenticationPrincipal CustomUserDetails details,
+            @AuthenticationPrincipal CustomMemberDetails details,
             @PathVariable UUID noteId) {
-        UUID userId = details.id();
-        log.info("Deleting note: {} by user: {}", noteId, userId);
-        noteService.deleteNote(noteId, userId);
+        UUID memberId = details.id();
+        log.info("Deleting note: {} by member: {}", noteId, memberId);
+        noteService.deleteNote(noteId, memberId);
         return DataResponse.of(SuccessCode.NO_CONTENT, null);
     }
 
     @GetMapping("/v1/notes/search")
     public DataResponse<List<NoteResponse>> searchNotes(
-            @AuthenticationPrincipal CustomUserDetails details,
+            @AuthenticationPrincipal CustomMemberDetails details,
             @RequestParam String q) {
-        UUID userId = details.id();
-        log.info("Searching notes with query: {} for user: {}", q, userId);
-        List<NoteResponse> response = noteService.searchNotes(userId, q);
+        UUID memberId = details.id();
+        log.info("Searching notes with query: {} for member: {}", q, memberId);
+        List<NoteResponse> response = noteService.searchNotes(memberId, q);
         return DataResponse.of(response);
     }
 
     @PostMapping("/v1/notes/{noteId}/blocks/{blockId}/executions")
     public StatusResponse saveExecutionHistory(
-            @AuthenticationPrincipal CustomUserDetails details,
+            @AuthenticationPrincipal CustomMemberDetails details,
             @PathVariable UUID noteId,
-            @PathVariable String blockId,
+            @PathVariable UUID blockId,
             @Valid @RequestBody ExecutionHistoryRequest request) {
-        UUID userId = details.id();
+        UUID memberId = details.id();
         log.info("Saving execution history for block: {} in note: {}", blockId, noteId);
-        noteService.saveExecutionHistory(noteId, blockId, userId, request);
+        noteService.saveExecutionHistory(noteId, blockId, memberId, request);
         return StatusResponse.of();
     }
 
     @GetMapping("/v1/notes/{noteId}/blocks/{blockId}/executions")
     public DataResponse<List<ExecutionHistoryResponse>> getExecutionHistory(
-            @AuthenticationPrincipal CustomUserDetails details,
+            @AuthenticationPrincipal CustomMemberDetails details,
             @PathVariable UUID noteId,
-            @PathVariable String blockId) {
-        UUID userId = details.id();
+            @PathVariable UUID blockId) {
+        UUID memberId = details.id();
         log.info("Getting execution history for block: {} in note: {}", blockId, noteId);
-        List<ExecutionHistoryResponse> response = noteService.getExecutionHistory(noteId, blockId, userId);
+        List<ExecutionHistoryResponse> response = noteService.getExecutionHistory(noteId, blockId, memberId);
         return DataResponse.of(response);
     }
 
@@ -121,29 +136,29 @@ public class NoteController {
 
     @PostMapping("/v1/notes/{noteId}/bookmarks")
     public StatusResponse bookmarkNote(
-            @AuthenticationPrincipal CustomUserDetails details,
+            @AuthenticationPrincipal CustomMemberDetails details,
             @PathVariable UUID noteId) {
-        UUID userId = details.id();
-        noteService.bookmarkNote(userId, noteId);
+        UUID memberId = details.id();
+        noteService.bookmarkNote(memberId, noteId);
         return StatusResponse.of();
     }
 
     @DeleteMapping("/v1/notes/{noteId}/bookmarks")
     public StatusResponse unbookmarkNote(
-            @AuthenticationPrincipal CustomUserDetails details,
+            @AuthenticationPrincipal CustomMemberDetails details,
             @PathVariable UUID noteId) {
-        UUID userId = details.id();
-        noteService.unbookmarkNote(userId, noteId);
+        UUID memberId = details.id();
+        noteService.unbookmarkNote(memberId, noteId);
         return StatusResponse.of();
     }
 
     @GetMapping("/v1/notes/bookmarks")
     public DataResponse<NotePageResponse> getNoteBookmarks(
-            @AuthenticationPrincipal CustomUserDetails details,
+            @AuthenticationPrincipal CustomMemberDetails details,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
-        UUID userId = details.id();
-        NotePageResponse response = noteService.getNoteBookmarks(userId, page - 1, size);
+        UUID memberId = details.id();
+        NotePageResponse response = noteService.getNoteBookmarks(memberId, page - 1, size);
         return DataResponse.of(response);
     }
 
@@ -153,32 +168,50 @@ public class NoteController {
 
     @PostMapping("/v1/notes/{noteId}/blocks/{blockId}/bookmarks")
     public StatusResponse bookmarkBlock(
-            @AuthenticationPrincipal CustomUserDetails details,
+            @AuthenticationPrincipal CustomMemberDetails details,
             @PathVariable UUID noteId,
-            @PathVariable String blockId) {
-        UUID userId = details.id();
-        noteService.bookmarkBlock(userId, noteId, blockId);
+            @PathVariable UUID blockId) {
+        UUID memberId = details.id();
+        noteService.bookmarkBlock(memberId, noteId, blockId);
         return StatusResponse.of();
     }
 
     @DeleteMapping("/v1/notes/{noteId}/blocks/{blockId}/bookmarks")
     public StatusResponse unbookmarkBlock(
-            @AuthenticationPrincipal CustomUserDetails details,
+            @AuthenticationPrincipal CustomMemberDetails details,
             @PathVariable UUID noteId,
-            @PathVariable String blockId) {
-        UUID userId = details.id();
-        noteService.unbookmarkBlock(userId, noteId, blockId);
+            @PathVariable UUID blockId) {
+        UUID memberId = details.id();
+        noteService.unbookmarkBlock(memberId, noteId, blockId);
         return StatusResponse.of();
     }
 
-    @GetMapping("/v1/notes/{noteId}/blocks/bookmarks")
+    @GetMapping("/v1/notes/blocks/bookmarks")
     public DataResponse<BlockPageResponse> getBlockBookmarks(
-            @AuthenticationPrincipal CustomUserDetails details,
-            @PathVariable UUID noteId,
+            @AuthenticationPrincipal CustomMemberDetails details,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
-        UUID userId = details.id();
-        BlockPageResponse response = noteService.getBlockBookmarks(userId, noteId, page - 1, size);
+        UUID memberId = details.id();
+        BlockPageResponse response = blockService.getAllBookmarkedBlocks(memberId, page - 1, size);
         return DataResponse.of(response);
+    }
+
+    @GetMapping("/v1/notes/{noteId}/blocks")
+    public DataResponse<List<BlockDetailResponse>> getBlocks(@AuthenticationPrincipal CustomMemberDetails details,
+            @PathVariable UUID noteId) {
+        List<BlockDetailResponse> response = blockService.getBlocks(details.id(), noteId);
+        return DataResponse.of(response);
+    }
+
+    /**
+     * Yjs 블록 하드 딜리트용 북마크 물리 삭제 API
+     * (BlockService.hardDeleteBookmark 호출)
+     */
+    @DeleteMapping("/v1/blocks/{blockId}/bookmarks/hard")
+    public StatusResponse hardDeleteBlockBookmark(
+            @PathVariable UUID blockId) {
+        log.info("Request to hard delete bookmark for block: {}", blockId);
+        blockService.hardDeleteBookmark(blockId);
+        return StatusResponse.of();
     }
 }

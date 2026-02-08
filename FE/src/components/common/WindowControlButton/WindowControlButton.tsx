@@ -1,5 +1,6 @@
 import React from 'react';
 import './WindowControlButton.css';
+import { isMac } from '../../../utils/detectOS';
 
 /**
  * WindowControlButton Component
@@ -11,6 +12,11 @@ const WindowControlButton: React.FC = () => {
     const handleClose = () => (window as any).electronAPI?.close();
     const handleMinimize = () => (window as any).electronAPI?.minimize();
     const handleMaximize = () => (window as any).electronAPI?.maximize();
+
+    // Mac에서는 OS 자체 버튼을 사용하므로 숨김 처리
+    if (isMac()) {
+        return null;
+    }
 
     return (
         <div className="window-control-zone">

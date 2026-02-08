@@ -9,10 +9,12 @@ import lombok.experimental.SuperBuilder;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Getter
 @SuperBuilder
@@ -25,18 +27,19 @@ import java.time.LocalDateTime;
                 @JsonSubTypes.Type(value = CodeBlock.class, name = "code"),
                 @JsonSubTypes.Type(value = TextBlock.class, name = "text"),
 })
-public abstract class BaseBlock {
+public class BaseBlock {
 
         @Id
         private String id; // MongoDB ObjectId
 
         @Indexed
-        private String noteId; // PostgreSQL Note ID (UUID.toString())
+        private UUID noteId; // PostgreSQL Note ID (UUID.toString())
+
+        @Indexed
+        private UUID ownerId; // Note owner's ID (from Note.createdBy.id)
 
         @Indexed(unique = true)
-        private String blockId; // Yjs/Frontend UUID
-
-        private boolean bookmark;
+        private UUID blockId; // Yjs/Frontend UUID
 
         private Double order; // 정렬 순서
 
@@ -46,16 +49,15 @@ public abstract class BaseBlock {
         @LastModifiedDate
         private LocalDateTime updatedAt;
 
-        // DB에는 저장하지 않고, JSON 응답에만 포함 (하위 클래스에서 구현)
-        public abstract String getType();
+        private LocalDateTime deletedAt;
 
-        // 북마크 설정
-        public void setBookmark() {
-                this.bookmark = true;
+        // DB에는 저장하지 않고, JSON 응답에만 포함 (하위 클래스에서 구현)
+        public BlockType getType() {
+                return BlockType.UNKNOWN;
         }
 
-        // 북마크 해제
-        public void unBookmark() {
-                this.bookmark = false;
+        // Soft Delete
+        public void delete() {
+                this.deletedAt = LocalDateTime.now();
         }
 }

@@ -1,6 +1,6 @@
 package com.synapse.api.modules.note.entity;
 
-import com.synapse.api.modules.user.entity.User;
+import com.synapse.api.modules.member.entity.Member;
 import com.synapse.api.util.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -8,7 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.UuidGenerator;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -27,8 +27,8 @@ import java.util.UUID;
 public class Invitation extends BaseEntity {
 
     @Id
-    @GeneratedValue(generator = "uuid-v7")
-    @GenericGenerator(name = "uuid-v7", strategy = "com.synapse.api.util.generator.UuidV7Generator")
+    @GeneratedValue
+    @UuidGenerator(style = UuidGenerator.Style.TIME)
     @Column(columnDefinition = "UUID")
     private UUID id;
 
@@ -41,14 +41,14 @@ public class Invitation extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "invited_by_id", nullable = false)
-    private User invitedBy;
+    private Member invitedBy;
 
-    @Column(name = "invited_email", nullable = false, length = 255)
+    @Column(name = "invited_email")
     private String invitedEmail;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "invited_user_id")
-    private User invitedUser;
+    @JoinColumn(name = "invited_member_id")
+    private Member invitedMember;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -64,8 +64,8 @@ public class Invitation extends BaseEntity {
     @Column(name = "accepted_at")
     private LocalDateTime acceptedAt;
 
-    public void accept(User user) {
-        this.invitedUser = user;
+    public void accept(Member member) {
+        this.invitedMember = member;
         this.status = InvitationStatus.ACCEPTED;
         this.acceptedAt = LocalDateTime.now();
     }

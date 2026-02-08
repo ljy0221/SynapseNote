@@ -1,12 +1,5 @@
-좋아, 지금 README 구조가 이미 잘 잡혀 있어서
-**“파일명 첫 글자 대문자 컨벤션 + axios/request 예외”**만 명확히 반영해서 정리해줄게.
-
-아래는 **그대로 덮어써도 되는 수정 반영본 README**야 👇
-(의미 바뀐 부분은 🔸 주석으로 강조했어 — 실제 문서엔 주석 제거해도 됨)
-
----
-
-# 📘 src/api 설계 규약 & 사용 가이드
+--
+# src/api 설계 규약 & 사용 가이드
 
 이 문서는 **프론트엔드에서 사용하는 모든 API 요청을
 일관된 방식으로 정의하고 사용하는 것을 목표로 한다.**
@@ -16,7 +9,7 @@
 
 ---
 
-## 🎯 목적
+## 목적
 
 * API 명세를 **코드 레벨에서 선 정의**
 * 각 화면(UI)은 **필요한 데이터만 가공해서 사용**
@@ -26,12 +19,12 @@
 
 ---
 
-## 🧱 전체 디렉토리 구조
+## 전체 디렉토리 구조
 
 ```txt
 src/api/
- ├─ axios.ts              # 🔸 예외: 소문자 유지 (axios 인스턴스)
- ├─ request.ts            # 🔸 예외: 소문자 유지 (공통 요청 래퍼)
+ ├─ axios.ts              # 예외: 소문자 유지 (axios 인스턴스)
+ ├─ request.ts            # 예외: 소문자 유지 (공통 요청 래퍼)
  ├─ notes/
  │   ├─ Notes.api.ts
  │   ├─ Notes.adapter.ts
@@ -43,7 +36,7 @@ src/api/
 
 ---
 
-## 📁 파일명 네이밍 규칙 (중요)
+## 파일명 네이밍 규칙 (중요)
 
 ### 기본 규칙
 
@@ -53,7 +46,7 @@ src/api/
   * `Bookmarks.adapter.ts`
   * `UpdateNote.api.ts` 등
 
-### 🔸 예외 규칙 (반드시 지킬 것)
+### 예외 규칙 (반드시 지킬 것)
 
 다음 파일들은 **인프라 레벨 공통 모듈**이므로
 **소문자 파일명을 유지한다.**
@@ -61,12 +54,12 @@ src/api/
 * `axios.ts`
 * `request.ts`
 
-> ⚠️ 대소문자가 다른 파일은 **완전히 다른 모듈**로 취급되므로
+> 대소문자가 다른 파일은 **완전히 다른 모듈**로 취급되므로
 > `Axios.ts`, `Request.ts` 같은 파일이 생기지 않도록 주의한다.
 
 ---
 
-## 🔐 axios.ts 규칙
+## axios.ts 규칙
 
 ### 역할
 
@@ -98,7 +91,7 @@ api.interceptors.request.use(config => {
 
 ---
 
-## 🔁 request.ts (공통 API 요청 래퍼)
+## request.ts (공통 API 요청 래퍼)
 
 ### 목적
 
@@ -131,7 +124,7 @@ export const request = async <T>(
 
 ---
 
-## 📄 API 파일 규칙 (`*.api.ts`)
+## API 파일 규칙 (`*.api.ts`)
 
 ### 역할
 
@@ -165,7 +158,7 @@ export const getNotesApi = (params?: {
 
 ---
 
-## 🔄 Adapter 파일 규칙 (`*.adapter.ts`)
+## Adapter 파일 규칙 (`*.adapter.ts`)
 
 ### 역할
 
@@ -194,7 +187,7 @@ export const adaptNotesForSidebar = (
 
 ---
 
-## 🧩 컴포넌트 사용 규칙
+## 컴포넌트 사용 규칙
 
 컴포넌트는 **API 응답 구조를 직접 알지 않는다.**
 반드시 adapter 결과만 사용한다.
@@ -206,13 +199,13 @@ const notes = adaptNotesForSidebar(res);
 
 ### 컴포넌트 금지 사항
 
-* ❌ `res.data.xxx` 접근
-* ❌ URL 직접 사용
-* ❌ axios / request 직접 import
+* `res.data.xxx` 접근
+* URL 직접 사용
+* axios / request 직접 import
 
 ---
 
-## 🧪 타입 정의 규칙 (`src/types`)
+## 타입 정의 규칙 (`src/types`)
 
 * 타입은 **백엔드 응답 구조 기준으로 정의**
 * adapter에 맞추어 타입을 축소하거나 변형하지 않는다
@@ -229,7 +222,7 @@ export interface GetNotesResponse {
 
 ---
 
-## 📌 설계 원칙 요약
+## 설계 원칙 요약
 
 | 구분        | 허용               | 금지              |
 | --------- | ---------------- | --------------- |
@@ -240,7 +233,7 @@ export interface GetNotesResponse {
 
 ---
 
-## ⚠️ 주의 사항
+## 주의 사항
 
 * 과도한 추상화 금지
 * 범용 adapter 남발 금지
@@ -249,7 +242,7 @@ export interface GetNotesResponse {
 
 ---
 
-## ✨ Adapter를 추가하는 기준
+## Adapter를 추가하는 기준
 
 * 같은 API를 **여러 화면에서 다르게 사용할 때**
 * pagination / metadata 필요 여부가 달라질 때

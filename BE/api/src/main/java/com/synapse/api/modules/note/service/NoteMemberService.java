@@ -30,13 +30,13 @@ public class NoteMemberService {
      * 멤버 목록 조회
      * - 노트 접근 권한 있는 사용자만 가능
      */
-    public NoteMemberListResponse getMembers(UUID noteId, UUID userId) {
+    public NoteMemberListResponse getMembers(UUID noteId, UUID memberId) {
         // 1. 노트 존재 확인
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
 
         // 2. 접근 권한 확인
-        validateAccess(note, userId);
+        validateAccess(note, memberId);
 
         // 3. 멤버 목록 조회
         List<NoteMember> members = noteMemberRepository.findByNoteId(noteId);
@@ -46,7 +46,7 @@ public class NoteMemberService {
                 .map(NoteMemberResponse::from)
                 .toList();
 
-        log.info("Retrieved {} members for note: {} by user: {}", members.size(), noteId, userId);
+        log.info("Retrieved {} members for note: {} by member: {}", members.size(), noteId, memberId);
 
         return NoteMemberListResponse.from(memberResponses);
     }
@@ -57,7 +57,7 @@ public class NoteMemberService {
      * - 자기 자신의 권한은 변경 불가
      */
     @Transactional
-    public NoteMemberResponse updateMemberRole(UUID noteId, UUID targetUserId, UUID requesterId, MemberRoleUpdateRequest request) {
+    public NoteMemberResponse updateMemberRole(UUID noteId, UUID targetMemberId, UUID requesterId, MemberRoleUpdateRequest request) {
         // 1. 노트 존재 확인
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
@@ -66,19 +66,19 @@ public class NoteMemberService {
         validateOwnership(note, requesterId);
 
         // 3. 자기 자신의 권한 변경 불가
-        if (requesterId.equals(targetUserId)) {
+        if (requesterId.equals(targetMemberId)) {
             throw new BusinessException(ErrorCode.CANNOT_CHANGE_OWN_ROLE);
         }
 
         // 4. 대상 멤버 조회
-        NoteMember targetMember = noteMemberRepository.findByNoteIdAndUserId(noteId, targetUserId)
+        NoteMember targetMember = noteMemberRepository.findByNoteIdAndMemberId(noteId, targetMemberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_MEMBER_NOT_FOUND));
 
         // 5. 권한 변경 (Dirty Checking)
         targetMember.changeRole(request.role());
 
-        log.info("Updated member role for user: {} in note: {} to {} by user: {}",
-                targetUserId, noteId, request.role(), requesterId);
+        log.info("Updated member role for member: {} in note: {} to {} by member: {}",
+                targetMemberId, noteId, request.role(), requesterId);
 
         return NoteMemberResponse.from(targetMember);
     }
@@ -89,7 +89,7 @@ public class NoteMemberService {
      * - 자기 자신은 삭제 불가
      */
     @Transactional
-    public void removeMember(UUID noteId, UUID targetUserId, UUID requesterId) {
+    public void removeMember(UUID noteId, UUID targetMemberId, UUID requesterId) {
         // 1. 노트 존재 확인
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_NOT_FOUND));
@@ -98,27 +98,27 @@ public class NoteMemberService {
         validateOwnership(note, requesterId);
 
         // 3. 자기 자신 삭제 불가
-        if (requesterId.equals(targetUserId)) {
+        if (requesterId.equals(targetMemberId)) {
             throw new BusinessException(ErrorCode.CANNOT_REMOVE_SELF);
         }
 
         // 4. 대상 멤버 조회
-        NoteMember targetMember = noteMemberRepository.findByNoteIdAndUserId(noteId, targetUserId)
+        NoteMember targetMember = noteMemberRepository.findByNoteIdAndMemberId(noteId, targetMemberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTE_MEMBER_NOT_FOUND));
 
         // 5. Soft Delete
         targetMember.delete();
 
-        log.info("Removed member: {} from note: {} by user: {}", targetUserId, noteId, requesterId);
+        log.info("Removed member: {} from note: {} by member: {}", targetMemberId, noteId, requesterId);
     }
 
     /**
      * 접근 권한 검증
      */
-    private void validateAccess(Note note, UUID userId) {
-        if (note.getCreatedBy().getId().equals(userId)) return;
+    private void validateAccess(Note note, UUID memberId) {
+        if (note.getCreatedBy().getId().equals(memberId)) return;
 
-        boolean isMember = noteMemberRepository.existsByNoteIdAndUserId(note.getId(), userId);
+        boolean isMember = noteMemberRepository.existsByNoteIdAndMemberId(note.getId(), memberId);
         if (!isMember) {
             throw new BusinessException(ErrorCode.NOTE_ACCESS_DENIED);
         }
@@ -127,8 +127,8 @@ public class NoteMemberService {
     /**
      * OWNER 권한 검증
      */
-    private void validateOwnership(Note note, UUID userId) {
-        if (!note.getCreatedBy().getId().equals(userId)) {
+    private void validateOwnership(Note note, UUID memberId) {
+        if (!note.getCreatedBy().getId().equals(memberId)) {
             throw new BusinessException(ErrorCode.NOTE_DELETE_PERMISSION_DENIED);
         }
     }

@@ -22,3 +22,23 @@ export interface DeleteMindmapEdgeRequest {
   parentId: string;
   childId: string;
 }
+
+// ----------------------------------------------------
+// [New] 마인드맵 싱크 (위치+연결 일괄 저장)
+// ----------------------------------------------------
+
+export interface NodePositionDto {
+  nodeId: string;
+  x: number;
+  y: number;
+}
+
+export interface MindmapEdgeDto {
+  fromId: string;
+  toId: string;
+}
+
+export interface SyncMindmapRequest {
+  nodes: NodePositionDto[];
+  edges: MindmapEdgeDto[];
+}

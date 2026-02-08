@@ -1,7 +1,7 @@
 export type NoteMemberRole = 'OWNER' | 'EDITOR' | 'VIEWER';
 
 export interface UpdateMemberRoleResponse {
-  userId: string;
+  memberId: string;
   email: string;
   name: string;
   role: NoteMemberRole;
