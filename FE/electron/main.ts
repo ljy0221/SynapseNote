@@ -223,5 +223,13 @@ if (!gotTheLock) {
     }
   });
 
-  app.whenReady().then(createWindow)
+  app.whenReady().then(() => {
+    createWindow();
+
+    // [New] 앱이 준비되면 백그라운드 이미지 다운로드 시작 (3초 지연)
+    setTimeout(() => {
+      console.log('[Main] App Ready. Triggering background image check...');
+      execService.ensureAllImages();
+    }, 3000);
+  })
 }
