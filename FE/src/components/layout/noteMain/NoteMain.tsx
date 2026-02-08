@@ -133,8 +133,12 @@ const NoteMain: React.FC<NoteMainProps> = ({
 
         const handleAiReviewResult = (htmlContent: string) => {
             const nextBlock = blocks[index + 1];
-            // 다음 블록이 텍스트 블록이고 AI 리뷰 헤더로 시작하면 업데이트
-            if (nextBlock && nextBlock.type === 'text' && nextBlock.content.startsWith('<h1>🤖 AI 코드 리뷰</h1>')) {
+            // 다음 블록이 텍스트 블록이고 코드 리뷰 헤더로 시작하면 업데이트
+            // Note: aiReviewFormatter generates: <h1 style="margin-bottom: 24px;">코드 리뷰</h1>
+            if (nextBlock && nextBlock.type === 'text' && (
+                nextBlock.content.includes('<h1>코드 리뷰</h1>') ||
+                nextBlock.content.includes('>코드 리뷰</h1>') // Handle potential attribute variations
+            )) {
                 onUpdateBlock(nextBlock.id, htmlContent);
             } else {
                 // 아니면 새 블록 추가

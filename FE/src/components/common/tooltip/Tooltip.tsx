@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import './Tooltip.css';
 
 interface TooltipProps {
-    title?: string; // 툴팁 제목 (강조)
-    content?: string; // 툴팁 내용 (설명)
+    title?: React.ReactNode; // 툴팁 제목 (강조)
+    content?: React.ReactNode; // 툴팁 내용 (설명)
     children: React.ReactNode;
-    placement?: 'top' | 'right' | 'bottom' | 'left' | 'bottom-end';
+    placement?: 'top' | 'right' | 'bottom' | 'left' | 'bottom-end' | 'bottom-start';
 }
 
 /**
