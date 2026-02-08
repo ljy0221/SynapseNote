@@ -434,7 +434,7 @@ export const useYjsStore = (noteId: string | undefined) => {
 
       // [Fix] Self-healing for corrupted data (if yContent is a string or missing methods)
       // For text blocks, we must use Y.XmlFragment for Tiptap.
-      const isXmlFragment = yContent && (yContent.constructor?.name === 'YXmlFragment');
+      const isXmlFragment = yContent && (yContent instanceof Y.XmlFragment);
 
       if (yContent && !isXmlFragment && typeof yContent.insert !== 'function') {
         console.warn(`[Yjs] Corrupted content detected for block ${blockId}. Repairing...`);
@@ -647,10 +647,10 @@ export const useYjsStore = (noteId: string | undefined) => {
         const key = 'content';
         let fragment = properties.get(key);
 
-        // Check if migration needed
+        // Check if migration needed (use instanceof instead of constructor.name which breaks in minified builds)
         const isSharedType = !!(fragment && typeof (fragment as any).observe === 'function');
         const hasToArray = !!(fragment && typeof (fragment as any).toArray === 'function');
-        const isXmlFragment = !!(fragment && hasToArray && (fragment as any).constructor?.name?.includes('XmlFragment'));
+        const isXmlFragment = !!(fragment && fragment instanceof Y.XmlFragment);
 
         const needsMigration = !fragment || !isSharedType || !hasToArray || !isXmlFragment;
 
@@ -808,10 +808,8 @@ export const useYjsStore = (noteId: string | undefined) => {
       const key = 'content';
       let fragment = properties.get(key);
 
-      // Check if it's actually an XmlFragment
-      const isSharedType = fragment && typeof fragment === 'object';
-      const hasToArray = isSharedType && typeof (fragment as any).toArray === 'function';
-      const isXmlFragment = hasToArray && (fragment as any).constructor?.name?.includes('XmlFragment');
+      // Check if it's actually an XmlFragment (use instanceof instead of constructor.name which breaks in minified builds)
+      const isXmlFragment = fragment && fragment instanceof Y.XmlFragment;
 
       // [New] Auto-migrate: Create XmlFragment if it doesn't exist or is wrong type
       if (!isXmlFragment) {
