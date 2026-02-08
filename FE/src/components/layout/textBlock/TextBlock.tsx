@@ -43,7 +43,31 @@ import { api } from '../../../api/axios';
 const DivNode = Node.create({
     name: 'div',
     group: 'block',
-    content: 'block+',
+    content: 'block*',
+    addAttributes() {
+        return {
+            style: {
+                default: null,
+                parseHTML: element => element.getAttribute('style'),
+                renderHTML: attributes => {
+                    if (!attributes.style) {
+                        return {}
+                    }
+                    return { style: attributes.style }
+                },
+            },
+            class: {
+                default: null,
+                parseHTML: element => element.getAttribute('class'),
+                renderHTML: attributes => {
+                    if (!attributes.class) {
+                        return {}
+                    }
+                    return { class: attributes.class }
+                },
+            },
+        }
+    },
     parseHTML() {
         return [{ tag: 'div' }];
     },
@@ -169,6 +193,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
             Highlight.configure({ multicolor: true }),
             TextAlign.configure({ types: ['heading', 'paragraph'] }),
             TabHandler,
+            DivNode, // [Fix] Add DivNode to extensions
             // [Fix] Always enable Collaboration
             ...(yDoc && yText ? [Collaboration.configure({
                 document: yDoc,
