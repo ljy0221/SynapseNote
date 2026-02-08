@@ -22,7 +22,7 @@ export const TiptapCollaborativeEditor = ({
             StarterKit,
             Collaboration.configure({
                 document: yText.doc!,
-                field: yText,
+                fragment: yText as any, // Y.Text behaves as a fragment here
             }),
         ],
         onUpdate: ({ editor }) => {

@@ -660,10 +660,11 @@ export const useYjsStore = (noteId: string | undefined) => {
         // [Fix] Check if XmlFragment contains malformed content (text with invalid HTML tags)
         // This happens when content like "<bold>text</bold>" was stored as plain text
         if (fragment && isXmlFragment) {
+          // [Fix] Disable aggressive malformed check. It seems to be deleting valid content or content that Tiptap can handle.
+          // The previous regex was /<bold>|<\/bold>|<italic>|<\/italic>|<underline>|<\/underline>/i
+          // If Tiptap produces these or if they are harmless, we shouldn't wipe the block.
+          /*
           const xmlString = (fragment as any).toString();
-
-          // Check if the XML string contains TipTap schema tags (like <bold>) or other invalid tags
-          // These indicate the content was stored as plain text instead of proper nodes
           const hasMalformedTags = /<bold>|<\/bold>|<italic>|<\/italic>|<underline>|<\/underline>/i.test(xmlString);
 
           if (hasMalformedTags) {
@@ -689,6 +690,7 @@ export const useYjsStore = (noteId: string | undefined) => {
             properties.set('_initialHtml', htmlContent);
             console.log(`[Yjs] Stored malformed content as _initialHtml for re-parsing`);
           }
+          */
         }
       });
     }, 'local');
