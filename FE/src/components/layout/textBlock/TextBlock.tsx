@@ -149,6 +149,10 @@ const TextBlock: React.FC<TextBlockProps> = ({
     // [New] Track IME composition state
     const isComposingRef = useRef(false);
 
+    // [New] Debounce timer for Notion-style delayed updates
+    const updateTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const pendingUpdateRef = useRef<string | null>(null);
+
     const handleBookmark = () => {
         onToggleBookmark?.();
     };
@@ -219,6 +223,17 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 },
                 compositionend: () => {
                     isComposingRef.current = false;
+
+                    // [New] Flush pending update immediately after composition ends
+                    if (updateTimerRef.current) {
+                        clearTimeout(updateTimerRef.current);
+                        updateTimerRef.current = null;
+                    }
+                    if (pendingUpdateRef.current !== null && editor) {
+                        console.log(`[TextBlock ${id}] Flushing update after composition end`);
+                        onUpdate?.(id, pendingUpdateRef.current);
+                        pendingUpdateRef.current = null;
+                    }
                     return false;
                 },
             },
@@ -256,14 +271,25 @@ const TextBlock: React.FC<TextBlockProps> = ({
             setUpdateTrigger(prev => prev + 1);
         },
         onUpdate: ({ editor }) => {
-            // [Fix] Skip update callback during IME composition
-            // This prevents duplicate characters from being sent to Yjs
-            if (editor.view.composing || isComposingRef.current) {
-                console.log(`[TextBlock ${id}] Skipping update during IME composition`);
-                return;
-            }
             const html = editor.getHTML();
-            onUpdate?.(id, html);
+
+            // [New] Notion-style debounced updates
+            // Store the pending update
+            pendingUpdateRef.current = html;
+
+            // Clear existing timer
+            if (updateTimerRef.current) {
+                clearTimeout(updateTimerRef.current);
+            }
+
+            // [New] Set new timer - update after 300ms of no typing
+            updateTimerRef.current = setTimeout(() => {
+                if (pendingUpdateRef.current !== null) {
+                    console.log(`[TextBlock ${id}] Flushing debounced update`);
+                    onUpdate?.(id, pendingUpdateRef.current);
+                    pendingUpdateRef.current = null;
+                }
+            }, 300); // 300ms delay like Notion
         },
         onFocus: () => {
             setIsFocused(true);
@@ -271,8 +297,19 @@ const TextBlock: React.FC<TextBlockProps> = ({
         },
         onBlur: () => {
             setIsFocused(false);
+
+            // [New] Flush pending update on blur
+            if (updateTimerRef.current) {
+                clearTimeout(updateTimerRef.current);
+                updateTimerRef.current = null;
+            }
+            if (pendingUpdateRef.current !== null) {
+                console.log(`[TextBlock ${id}] Flushing update on blur`);
+                onUpdate?.(id, pendingUpdateRef.current);
+                pendingUpdateRef.current = null;
+            }
         },
-    }, [yDoc, yText, noteId, id]);
+    }, [yDoc, yText, noteId, id, onUpdate, onFocus]);
 
     // 외부에서 포커스 요청 시 에디터 포커스
     useEffect(() => {
@@ -287,6 +324,15 @@ const TextBlock: React.FC<TextBlockProps> = ({
             editor.setEditable(!readOnly);
         }
     }, [editor, readOnly]);
+
+    // [New] Cleanup debounce timer on unmount
+    useEffect(() => {
+        return () => {
+            if (updateTimerRef.current) {
+                clearTimeout(updateTimerRef.current);
+            }
+        };
+    }, []);
 
     // [Fix] Convert string content to XmlFragment for TipTap (only once)
     // When content is loaded from MongoDB as HTML string, convert it to XmlFragment
