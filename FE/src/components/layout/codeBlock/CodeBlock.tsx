@@ -3,7 +3,6 @@ import VersionButton from '../../common/versionButton/VersionButton';
 import { DragControls } from 'framer-motion';
 import BlockRunButton from '../../common/blockRunButton/BlockRunButton';
 import BlockCopyButton from '../../common/blockCopyButton/BlockCopyButton';
-
 import CodeMirrorEditor from '../../common/codeMirrorEditor/CodeMirrorEditor';
 import type { Language, ExecutionResult, ExecutionMode, SessionInfo } from '../../../types/execution/ExecutionTypes';
 import { Server, RectangleEllipsis } from 'lucide-react';
@@ -23,6 +22,7 @@ import ConfirmModal from '../../common/modal/ConfirmModal';
 import AlertModal from '../../common/modal/AlertModal'; // [New]
 import { BlockEditorAvatar } from '../../common/blockEditorAvatar/BlockEditorAvatar'; // [New]
 import { AwarenessUser } from '../../../hooks/useYjsStore'; // [New]
+import { useYjsStore } from '../../../hooks/useYjsStore'; // [New] Import hook for Y.Text access
 
 interface CodeBlockProps {
     id: number | string;
@@ -80,7 +80,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 }) => {
     const [result, setResult] = useState<ExecutionResult | null>(null);
     const [loading, setLoading] = useState(false);
-    const [editedCode, setEditedCode] = useState(code);
+    // [REMOVED] editedCode state - Y.Text handles this now
     const { settings, setNoteLanguage, trackBlockLanguage } = useCodeEditorStore();
 
     // Optimize selector to prevent re-renders and log spam
@@ -109,8 +109,12 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     const [aiReviewLoading, setAiReviewLoading] = useState(false);
     const aiReviewAbortRef = useRef<AbortController | null>(null);
 
-    // [New] Track the last value sent to the parent to prevent stale prop overwrites
-    const lastSentValueRef = useRef<string>(code);
+    // [New] Get Y.Text from Yjs store for collaborative editing
+    const { getYTextForCodeBlock } = useYjsStore(noteId);
+    const ytext = noteId ? getYTextForCodeBlock?.(id.toString()) : null;
+
+    // [REMOVED] lastSentValueRef - not needed with Y.Text
+    // [REMOVED] isEditorFocused tracking - Y.Text handles conflicts automatically
 
     // CodeBlock uses LWW (Last-Write-Wins) synchronization
     const handleBookmark = () => {
@@ -119,12 +123,13 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 
     // 🔥 초기화만 마운트 시 1회 수행
     useEffect(() => {
-        if (isCodeEmpty(code) && isCodeEmpty(editedCode)) {
+        // [New] With Y.Text, initialization is handled by Yjs store
+        // Only set template if Y.Text is empty
+        if (ytext && ytext.length === 0) {
             const template = getLanguageTemplate(language);
-            setEditedCode(template);
-            onChange(id, template);
+            ytext.insert(0, template);
         }
-    }, []);
+    }, [ytext]); // Run when ytext becomes available
 
     useEffect(() => {
         if (noteId && language !== 'java') {
@@ -152,7 +157,8 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     }, []);
 
     const handleCopy = () => {
-        if (typeof editedCode === "string") navigator.clipboard.writeText(editedCode);
+        const currentCode = ytext ? ytext.toString() : code;
+        if (typeof currentCode === "string") navigator.clipboard.writeText(currentCode);
         showToast('코드가 클립보드에 복사되었습니다.', 'success');
     };
 
@@ -169,14 +175,14 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                     blockId: id.toString(),
                     language,
                     version: getDefaultVersion(language),
-                    code: editedCode,
+                    code: ytext ? ytext.toString() : code,
                     timeout: settings.executionTimeout,
                 })
                 : await window.dockerAPI.execute({
                     blockId: id.toString(),
                     language,
                     version: getDefaultVersion(language),
-                    code: editedCode,
+                    code: ytext ? ytext.toString() : code,
                     mode: executionMode,
                     noteId: noteId,
                     timeout: settings.executionTimeout,
@@ -212,7 +218,8 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     };
 
     const handleLanguageChange = (newLanguage: Language) => {
-        if (isCodeEmpty(editedCode)) {
+        const currentCode = ytext ? ytext.toString() : code;
+        if (isCodeEmpty(currentCode)) {
             // 코드가 비어있는 경우 즉시 변경
             applyLanguageChange(newLanguage);
             return;
@@ -225,8 +232,14 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 
     const applyLanguageChange = (newLanguage: Language) => {
         const template = getLanguageTemplate(newLanguage);
-        setEditedCode(template);
-        onChange(id, template);
+        // [New] Update Y.Text directly
+        if (ytext) {
+            ytext.delete(0, ytext.length);
+            ytext.insert(0, template);
+        } else {
+            // Fallback for non-collaborative mode
+            onChange(id, template);
+        }
         // Language state is now managed by parent via Yjs, just notify parent
         if (noteId) setNoteLanguage(noteId, newLanguage);
         if (onLanguageChange) onLanguageChange(id, newLanguage);
@@ -246,8 +259,14 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     };
 
     const handleRestore = (code: string) => {
-        setEditedCode(code);
-        onChange(id, code);
+        // [New] Update Y.Text directly
+        if (ytext) {
+            ytext.delete(0, ytext.length);
+            ytext.insert(0, code);
+        } else {
+            // Fallback for non-collaborative mode
+            onChange(id, code);
+        }
     };
 
     // [핵심 수정] AI 리뷰 핸들러: Yjs에만 저장, MongoDB에는 저장하지 않음
@@ -263,7 +282,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
             const response = await requestCodeReview(
                 noteId,
                 id.toString(),
-                createReviewRequest(language, editedCode as string),
+                createReviewRequest(language, ytext ? ytext.toString() : code),
                 aiReviewAbortRef.current.signal
             );
 
@@ -286,24 +305,14 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
         }
     };
 
-    // 로컬 에디터 포커스 상태 추적 (타이핑 중 업데이트 방지용)
-    const [isEditorFocused, setIsEditorFocused] = useState(false);
-
-    // [핵심] 외부 변경사항(Yjs)을 로컬 상태에 동기화
-    // 단, 사용자가 타이핑 중(포커스 상태)이거나 내가 방금 보낸 데이터와 같으면 무시하여 충돌 방지
-    useEffect(() => {
-        if (!isEditorFocused && code !== editedCode && code !== lastSentValueRef.current) {
-            setEditedCode(code);
-        }
-    }, [code, isEditorFocused]);
+    // [REMOVED] Local editor focus tracking - not needed with Y.Text
+    // [REMOVED] useEffect for syncing code prop to editedCode - Y.Text handles this
 
     const handleEditorFocus = () => {
-        setIsEditorFocused(true);
         onFocus();
     };
 
     const handleEditorBlur = () => {
-        setIsEditorFocused(false);
         onBlur?.(); // [New] Clear awareness state
     };
 
@@ -421,13 +430,16 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 
                 <div className="code-content-container">
                     <CodeMirrorEditor
-                        value={editedCode}
+                        value={code}
+                        ytext={ytext} // [New] Pass Y.Text for collaborative editing
                         language={language}
                         onChange={(value) => {
                             if (readOnly) return;
-                            setEditedCode(value);
-                            lastSentValueRef.current = value;
-                            onChange(id, value); // LWW: always send changes to parent
+                            // [New] onChange is only used for fallback when ytext is null
+                            // When ytext is provided, yCollab handles all updates
+                            if (!ytext) {
+                                onChange(id, value);
+                            }
                         }}
                         onFocus={handleEditorFocus}
                         onBlur={handleEditorBlur}
@@ -463,7 +475,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                     <CheckpointSidebar
                         noteId={noteId}
                         blockId={id.toString()}
-                        currentCode={editedCode}
+                        currentCode={ytext ? ytext.toString() : code}
                         onClose={() => setShowCheckpoints(false)}
                         onRestore={handleRestore}
                     />
