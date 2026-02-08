@@ -8,9 +8,8 @@ export const WebRestrictedOverlay: React.FC = () => {
     const { themeMode, toggleTheme } = useThemeStore();
 
     const handleDownload = () => {
-        // [Refactor] OS별 링크 분기는 나중에 필요하면 navigator.userAgent로 구현
-        // 현재는 GitHub Release 페이지로 통합
-        const downloadUrl = 'https://github.com/S14P11B102/Synapse-Desktop/releases/latest';
+        // [Change] Update download link to S3 URL
+        const downloadUrl = 'https://enwhsznbucket.s3.ap-southeast-2.amazonaws.com/prod/release/synapse-v0.0.1.exe';
         window.open(downloadUrl, '_blank');
     };
 
@@ -74,7 +73,7 @@ export const WebRestrictedOverlay: React.FC = () => {
                         boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
                     }}
                 >
-                    앱 다운로드
+                    Windows 앱 다운로드
                 </button>
 
                 <button
