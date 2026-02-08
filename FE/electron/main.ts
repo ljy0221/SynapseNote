@@ -33,6 +33,15 @@ function createWindow() {
     },
   })
 
+  // Origin 헤더 강제 변조 (백엔드 CORS 403 에러 방지)
+  win.webContents.session.webRequest.onBeforeSendHeaders(
+    { urls: ['https://i14b102.p.ssafy.io/*', 'wss://i14b102.p.ssafy.io/*'] },
+    (details, callback) => {
+      details.requestHeaders['Origin'] = 'https://i14b102.p.ssafy.io';
+      callback({ requestHeaders: details.requestHeaders });
+    }
+  );
+
   win.webContents.on('did-finish-load', () => {
     win?.webContents.send('main-process-message', (new Date).toLocaleString())
   })
