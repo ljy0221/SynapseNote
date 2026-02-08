@@ -182,6 +182,15 @@ const TextBlock: React.FC<TextBlockProps> = ({
         }
     }
 
+    // [New] Use refs to avoid dependency issues
+    const onUpdateRef = useRef(onUpdate);
+    const onFocusRef = useRef(onFocus);
+
+    useEffect(() => {
+        onUpdateRef.current = onUpdate;
+        onFocusRef.current = onFocus;
+    }, [onUpdate, onFocus]);
+
     const editor = useEditor({
         extensions: [
             StarterKit.configure({
@@ -231,7 +240,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                     }
                     if (pendingUpdateRef.current !== null && editor) {
                         console.log(`[TextBlock ${id}] Flushing update after composition end`);
-                        onUpdate?.(id, pendingUpdateRef.current);
+                        onUpdateRef.current?.(id, pendingUpdateRef.current);
                         pendingUpdateRef.current = null;
                     }
                     return false;
@@ -271,9 +280,16 @@ const TextBlock: React.FC<TextBlockProps> = ({
             setUpdateTrigger(prev => prev + 1);
         },
         onUpdate: ({ editor }) => {
+            // [Fix] Skip onUpdate when using Collaboration
+            // Yjs handles synchronization automatically via Collaboration extension
+            if (yDoc && yText) {
+                console.log(`[TextBlock ${id}] Skipping onUpdate - using Yjs Collaboration`);
+                return;
+            }
+
+            // [Fallback] For non-collaborative mode, use debounced updates
             const html = editor.getHTML();
 
-            // [New] Notion-style debounced updates
             // Store the pending update
             pendingUpdateRef.current = html;
 
@@ -282,18 +298,18 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 clearTimeout(updateTimerRef.current);
             }
 
-            // [New] Set new timer - update after 300ms of no typing
+            // Set new timer - update after 300ms of no typing
             updateTimerRef.current = setTimeout(() => {
                 if (pendingUpdateRef.current !== null) {
                     console.log(`[TextBlock ${id}] Flushing debounced update`);
-                    onUpdate?.(id, pendingUpdateRef.current);
+                    onUpdateRef.current?.(id, pendingUpdateRef.current);
                     pendingUpdateRef.current = null;
                 }
-            }, 300); // 300ms delay like Notion
+            }, 300);
         },
         onFocus: () => {
             setIsFocused(true);
-            onFocus();
+            onFocusRef.current();
         },
         onBlur: () => {
             setIsFocused(false);
@@ -305,11 +321,11 @@ const TextBlock: React.FC<TextBlockProps> = ({
             }
             if (pendingUpdateRef.current !== null) {
                 console.log(`[TextBlock ${id}] Flushing update on blur`);
-                onUpdate?.(id, pendingUpdateRef.current);
+                onUpdateRef.current?.(id, pendingUpdateRef.current);
                 pendingUpdateRef.current = null;
             }
         },
-    }, [yDoc, yText, noteId, id, onUpdate, onFocus]);
+    }, [yDoc, yText, noteId, id, content, openModal]);
 
     // 외부에서 포커스 요청 시 에디터 포커스
     useEffect(() => {
