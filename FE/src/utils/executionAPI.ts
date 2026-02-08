@@ -1,4 +1,5 @@
 import type { ExecutionResult } from '../types/execution/ExecutionTypes';
+import { api } from '../api/axios';
 
 // "/v1/notes/{noteId}/blocks/{blockId}/executions"
 export async function saveExecutionToBackend(
@@ -7,23 +8,10 @@ export async function saveExecutionToBackend(
   result: ExecutionResult
 ): Promise<void> {
   try {
-    const authToken = getAuthToken();
-    if (!authToken) {
-      console.warn('인증 토큰이 없어 실행 히스토리를 저장하지 않습니다.');
-      return;
-    }
-    // "/v1/notes/{noteId}/blocks/{blockId}/executions"
-    await fetch(`/api/v1/notes/${noteId}/blocks/${blockId}/executions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authToken}`,
-      },
-      body: JSON.stringify({
-        output: result.output,
-        executionTimeMs: result.executionTime,
-        status: result.status,
-      }),
+    await api.post(`/v1/notes/${noteId}/blocks/${blockId}/executions`, {
+      output: result.output,
+      executionTimeMs: result.executionTime,
+      status: result.status,
     });
   } catch (error) {
     console.error('실행 히스토리 저장 실패:', error);
@@ -38,32 +26,15 @@ export async function getExecutionHistory(
   size: number = 10
 ): Promise<any[]> {
   try {
-    const authToken = getAuthToken();
-    if (!authToken) {
-      return [];
-    }
+    const res = await api.get(`/v1/notes/${noteId}/blocks/${blockId}/executions`, {
+      params: { page, size },
+    });
 
-    const response = await fetch(
-      `/api/v1/notes/${noteId}/blocks/${blockId}/executions?page=${page}&size=${size}`,
-      {
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-        },
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error('히스토리 조회 실패');
-    }
-
-    return await response.json();
+    // 서버 응답이 DataResponse 형태면 data.data에 실제 값이 있음.
+    // 서버가 그냥 배열을 주면 res.data가 배열일 수 있음.
+    return res.data?.data ?? res.data ?? [];
   } catch (error) {
     console.error('실행 히스토리 조회 실패:', error);
     return [];
   }
-}
-
-function getAuthToken(): string | null {
-  // localStorage에서 JWT 토큰 가져오기
-  return localStorage.getItem('authToken');
 }

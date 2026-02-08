@@ -1,0 +1,215 @@
+/* src/components/layout/aiReview/AiReviewSection.css */
+
+.ai-review-section {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(99, 102, 241, 0.05));
+  border-top: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 0 0 12px 12px;
+  overflow: hidden;
+}
+
+/* 헤더 */
+.ai-review-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+  user-select: none;
+}
+
+.ai-review-section-header:hover {
+  background: rgba(139, 92, 246, 0.1);
+}
+
+.ai-review-section-header .header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai-review-section-header .header-icon {
+  color: #8b5cf6;
+}
+
+.ai-review-section-header .header-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--font-color);
+}
+
+.ai-review-section-header .issue-count {
+  font-size: 12px;
+  color: var(--font-color-sub);
+  background: rgba(139, 92, 246, 0.15);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.ai-review-section-header .loading-text {
+  font-size: 12px;
+  color: #8b5cf6;
+  font-style: italic;
+}
+
+.ai-review-section-header .header-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--font-color-sub);
+}
+
+.ai-review-section-header .header-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--font-color-sub);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ai-review-section-header .header-btn:hover:not(:disabled) {
+  background: rgba(139, 92, 246, 0.15);
+  color: #8b5cf6;
+}
+
+.ai-review-section-header .header-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ai-review-section-header .header-btn .spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 콘텐츠 */
+.ai-review-section-content {
+  padding: 16px;
+  max-height: 400px;
+  overflow-y: auto;
+  border-top: 1px solid rgba(139, 92, 246, 0.1);
+}
+
+/* 로딩 상태 */
+.section-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  gap: 16px;
+  color: var(--font-color-sub);
+}
+
+.section-loading .loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--color-border);
+  border-top: 3px solid #8b5cf6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* 에러 상태 */
+.section-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 20px;
+  gap: 12px;
+  text-align: center;
+  color: #ef4444;
+}
+
+.section-error .retry-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--color-sub);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  color: var(--font-color);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.section-error .retry-btn:hover {
+  background: var(--color-hover);
+}
+
+/* 결과 영역 */
+.section-results {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.section-results h4 {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--font-color);
+}
+
+.review-summary {
+  background: var(--color-sub);
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+}
+
+.review-summary p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--font-color);
+}
+
+.no-issues {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 20px;
+  background: rgba(16, 185, 129, 0.1);
+  border-radius: 8px;
+  color: #10b981;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.best-practices ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.best-practices li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--font-color);
+}
+
+.best-practices li svg {
+  color: #10b981;
+  flex-shrink: 0;
+  margin-top: 3px;
+}

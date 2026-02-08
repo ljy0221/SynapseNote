@@ -2,19 +2,19 @@ import { ipcRenderer, contextBridge } from 'electron'
 
 // --------- Expose some API to the Renderer process ---------
 contextBridge.exposeInMainWorld('ipcRenderer', {
-  on(...args) {
+  on(...args: any[]) {
     const [channel, listener] = args
     return ipcRenderer.on(channel, (event, ...args) => listener(event, ...args))
   },
-  off(...args) {
-    const [channel, ...omit] = args
-    return ipcRenderer.off(channel, ...omit)
+  off(...args: any[]) {
+    const [channel, listener] = args
+    return ipcRenderer.off(channel, listener)
   },
-  send(...args) {
+  send(...args: any[]) {
     const [channel, ...omit] = args
     return ipcRenderer.send(channel, ...omit)
   },
-  invoke(...args) {
+  invoke(...args: any[]) {
     const [channel, ...omit] = args
     return ipcRenderer.invoke(channel, ...omit)
   },
@@ -27,6 +27,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   close: () => ipcRenderer.send('window-close'),
 
   openExternal: (url: string) => ipcRenderer.send('open-external', url),
+  onDeepLinkUrl: (callback: (event: any, url: string) => void) => {
+    ipcRenderer.on('deep-link-url', callback);
+  },
+  removeDeepLinkListener: (callback: (event: any, url: string) => void) => {
+    ipcRenderer.removeListener('deep-link-url', callback);
+  },
+  // [New] 대기 중인 Deep Link 조회 (Pull 방식)
+  getDeepLink: () => ipcRenderer.invoke('docker:get-deep-link'),
+  // [New] 플랫폼 정보 노출 (OS 감지용)
+  platform: process.platform,
 })
 
 // Docker API 노출

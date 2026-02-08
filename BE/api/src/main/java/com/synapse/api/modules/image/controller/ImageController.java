@@ -6,7 +6,7 @@ import com.synapse.api.modules.image.dto.response.UploadUrlResponse;
 import com.synapse.api.modules.image.service.ImageService;
 import com.synapse.api.util.response.DataResponse;
 import com.synapse.api.util.response.StatusResponse;
-import com.synapse.api.util.security.CustomUserDetails;
+import com.synapse.api.util.security.CustomMemberDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -34,7 +34,7 @@ public class ImageController {
     }
 
     @DeleteMapping("/v1/images/note")
-        public StatusResponse deleteImageAtNote(@AuthenticationPrincipal CustomUserDetails details,
+        public StatusResponse deleteImageAtNote(@AuthenticationPrincipal CustomMemberDetails details,
                                      @RequestParam UUID noteId,
                                      @RequestParam String key) {
             imageService.deleteImageAtNote(details.id(), noteId, key);

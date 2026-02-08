@@ -2,22 +2,28 @@
 .block-run-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  background-color: var(--color-point, #f0a500); /* 목업의 주황색 */
-  color: white;
-  border: none;
-  padding: 4px 12px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 600;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background-color: transparent;
+  color: var(--font-color);
+  border: 1px solid rgba(128, 128, 128, 0.2);
+  padding: 0;
+  border-radius: 4px;
   cursor: pointer;
-  transition: filter 0.2s;
+  transition: all 0.2s ease;
 }
 
-.block-run-btn:hover {
-  filter: brightness(1.1);
+.block-run-btn:hover:not(:disabled) {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: var(--color-point);
+}
+
+.block-run-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .run-icon {
-  font-size: 10px;
+  font-size: 16px;
 }
