@@ -4,6 +4,7 @@ import { WebsocketProvider } from 'y-websocket';
 import { Awareness } from 'y-protocols/awareness';
 import { BlockData, BlockType } from '../types/note/Block';
 import { useAuthStore } from '../store/useAuthStore';
+import { env } from '../config/env';
 
 // Type for awareness state
 export interface AwarenessUser {
@@ -63,8 +64,14 @@ export const useYjsStore = (noteId: string | undefined) => {
   const accessToken = useAuthStore((state) => state.accessToken);
   const userInfo = useAuthStore((state) => state.userInfo); // [New] Get user info for awareness
 
+
+
+  // ... (rest of imports)
+
+  // ...
+
   // 환경 변수에서 WS URL 가져오기
-  const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:1234';
+  const wsUrl = env.VITE_WS_URL || 'ws://localhost:1234';
 
   useEffect(() => {
     // noteId 없으면 초기화
