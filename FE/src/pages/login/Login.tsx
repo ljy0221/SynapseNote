@@ -1,10 +1,9 @@
 // src/pages/Login.tsx
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-// 1. SocialLoginButton 임포트 추가
 import { SocialLoginButton } from "../../components/common/socialLoginButton/SocialLoginButton";
 import { SynapseLogo } from "../../components/common/logo/SynapseLogo";
-import HomeButton from "../../components/common/homeButton/HomeButton.tsx";
+
 
 const Login: React.FC = () => {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -33,7 +32,7 @@ const Login: React.FC = () => {
         if (errorMessage) {
             const timer = setTimeout(() => {
                 setErrorMessage(null);
-            }, 3000); // 3초로 변경
+            }, 3000);
 
             return () => clearTimeout(timer);
         }
@@ -42,7 +41,7 @@ const Login: React.FC = () => {
     return (
         <div style={{ display: 'flex', width: '100vw', height: '100vh', position: 'relative' }}>
 
-            {/* [좌측] 브랜드 비주얼 영역 */}
+            {/* 브랜드 비주얼 영역 */}
             <div style={{
                 flex: 1.2,
                 display: 'flex',
@@ -78,8 +77,7 @@ const Login: React.FC = () => {
                     Team : 대머리쫀득쿠키
                 </div>
             </div>
-
-            {/* [우측] 로그인 액션 영역 */}
+            {/* 로그인 액션 영역 */}
             <div style={{
                 flex: 1,
                 display: 'flex',
@@ -125,7 +123,7 @@ const Login: React.FC = () => {
                             onClick={() => {
                                 const isElectron = !!window.electronAPI;
                                 const isDev = import.meta.env.DEV;
-                                const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID; // Google shares Client ID
+                                const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
                                 let redirectUri;
                                 if (isElectron) {
@@ -148,10 +146,10 @@ const Login: React.FC = () => {
                         />
                     </div>
 
-                    {/* 에러 메시지 표시 영역 (고정 높이) */}
+                    {/* 에러 메시지 표시 영역 */}
                     <div style={{
                         marginTop: '24px',
-                        height: '60px', // 정확한 고정 높이로 레이아웃 완전 고정
+                        height: '60px',
                         display: 'flex',
                         alignItems: 'flex-start',
                     }}>
@@ -175,6 +173,7 @@ const Login: React.FC = () => {
                 </div>
             </div>
         </div>
+
     );
 };
 

@@ -7,6 +7,7 @@ import react from '@vitejs/plugin-react'
 export default defineConfig(async ({ mode }) => {
   const isWebBuild = process.env.VITE_BUILD_TARGET === 'web'
 
+
   const plugins = [react()]
 
   // Only add Electron plugin for Electron builds.
@@ -54,6 +55,10 @@ export default defineConfig(async ({ mode }) => {
             'vis-vendor': ['d3-force', 'reactflow'],
           },
         },
+      },
+      // Production optimization: drop console logs and debugger
+      esbuild: {
+        drop: mode === 'production' ? ['console', 'debugger'] : [],
       },
     },
   }
