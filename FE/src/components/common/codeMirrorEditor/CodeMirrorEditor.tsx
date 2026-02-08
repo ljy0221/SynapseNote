@@ -11,6 +11,8 @@ import { autocompletion } from '@codemirror/autocomplete';
 import { useCodeEditorStore } from '../../../store/useCodeEditorStore';
 import { useThemeStore } from '../../../store/useThemeStore';
 import type { ThemeMode } from '../../../store/useThemeStore';
+import { yCollab } from 'y-codemirror.next'; // [New] Yjs collaboration
+import * as Y from 'yjs'; // [New] Yjs types
 import './CodeMirrorEditor.css';
 
 interface CodeMirrorEditorProps {
@@ -22,6 +24,7 @@ interface CodeMirrorEditorProps {
     readOnly?: boolean;
     minHeight?: string;
     maxHeight?: string;
+    ytext?: Y.Text | null; // [New] Y.Text for collaborative editing
 }
 
 const getLanguageExtension = (language: string) => {
@@ -282,6 +285,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
     readOnly = false,
     minHeight = '100px',
     maxHeight = '500px',
+    ytext = null, // [New] Y.Text for collaborative editing
 }) => {
     const editorRef = useRef<HTMLDivElement>(null);
     const viewRef = useRef<EditorView | null>(null);
@@ -342,18 +346,25 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
         ];
 
         // [New] Add yCollab if Y.Text is provided for collaborative editing
-        extensions.push(
-            EditorView.updateListener.of((update) => {
-                // 사용자가 직접 타이핑했을 때만 onChange 호출 (무한 루프 방지)
-                // programmatic update 중에는 호출 안 함
-                if (update.docChanged && !isDispatchingRef.current) {
-                    onChange(update.state.doc.toString());
-                }
-            })
-        );
+        if (ytext) {
+            // Use Y.Text for CRDT-based collaborative editing
+            // Pass null for awareness as we don't need cursor sharing in CodeMirror
+            extensions.push(yCollab(ytext, null));
+        } else {
+            // Fallback to controlled mode for non-collaborative editing
+            extensions.push(
+                EditorView.updateListener.of((update) => {
+                    // 사용자가 직접 타이핑했을 때만 onChange 호출 (무한 루프 방지)
+                    // programmatic update 중에는 호출 안 함
+                    if (update.docChanged && !isDispatchingRef.current) {
+                        onChange(update.state.doc.toString());
+                    }
+                })
+            );
+        }
 
         const state = EditorState.create({
-            doc: value, // [New] Use Y.Text content if available
+            doc: ytext ? ytext.toString() : value, // [New] Use Y.Text content if available
             extensions,
         });
 
@@ -368,12 +379,13 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
             view.destroy();
             viewRef.current = null;
         };
-    }, []); // [CRITICAL] Recreate editor when yText changes to ensure proper yCollab binding
+    }, [ytext]); // [CRITICAL] Recreate editor when yText changes to ensure proper yCollab binding
 
     // value prop 변경 시 에디터 업데이트 (커서 위치 보존)
     useEffect(() => {
         // [CRITICAL] Skip value updates when Y.Text is active
         // yCollab handles all synchronization automatically
+        if (ytext) return;
 
         if (viewRef.current && value !== undefined) {
             const currentValue = viewRef.current.state.doc.toString();
@@ -398,39 +410,49 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
                 isDispatchingRef.current = false;
             }
         }
-    }, [value]);
+    }, [value, ytext]);
 
     // 언어, 테마, 설정 변경 시 재구성
     useEffect(() => {
         if (viewRef.current) {
-            viewRef.current.dispatch({
-                effects: StateEffect.reconfigure.of([
-                    basicSetup,
-                    drawSelection(), // [New] Explicitly add drawSelection
-                    getLanguageExtension(language),
-                    createCustomTheme(themeMode),
-                    syntaxHighlighting(createHighlightStyle(themeMode)),
-                    autocompletion({
-                        activateOnTyping: true,
-                        override: [],
-                    }),
-                    autoHeightTheme,
-                    EditorState.readOnly.of(readOnly),
-                    EditorState.tabSize.of(settings.tabSize),
-                    EditorView.lineWrapping,
+            const reconfigExtensions = [
+                basicSetup,
+                drawSelection(), // [New] Explicitly add drawSelection
+                getLanguageExtension(language),
+                createCustomTheme(themeMode),
+                syntaxHighlighting(createHighlightStyle(themeMode)),
+                autocompletion({
+                    activateOnTyping: true,
+                    override: [],
+                }),
+                autoHeightTheme,
+                EditorState.readOnly.of(readOnly),
+                EditorState.tabSize.of(settings.tabSize),
+                EditorView.lineWrapping,
+                EditorView.domEventHandlers({
+                    focus: () => onFocusRef.current?.(),
+                    blur: () => onBlurRef.current?.(), // [Fix] Use ref to get latest handler
+                }),
+            ];
+
+            // [New] Add yCollab or updateListener based on ytext availability
+            if (ytext) {
+                reconfigExtensions.push(yCollab(ytext, null));
+            } else {
+                reconfigExtensions.push(
                     EditorView.updateListener.of((update) => {
                         if (update.docChanged) {
                             onChange(update.state.doc.toString());
                         }
-                    }),
-                    EditorView.domEventHandlers({
-                        focus: () => onFocusRef.current?.(),
-                        blur: () => onBlurRef.current?.(), // [Fix] Use ref to get latest handler
-                    }),
-                ]),
+                    })
+                );
+            }
+
+            viewRef.current.dispatch({
+                effects: StateEffect.reconfigure.of(reconfigExtensions),
             });
         }
-    }, [language, themeMode, settings.tabSize, readOnly]);
+    }, [language, themeMode, settings.tabSize, readOnly, ytext]);
 
     return <div ref={editorRef} className="codemirror-container" />;
 };
