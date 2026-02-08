@@ -19,12 +19,11 @@ public class JwtUtil {
 
     private final SecretKey secretKey;
 
-    // secret key 가져오기
     public JwtUtil(@Value("${spring.jwt.secret}") String secret) {
-        this.secretKey = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), Jwts.SIG.HS256.key().build().getAlgorithm());
+        this.secretKey = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8),
+                Jwts.SIG.HS256.key().build().getAlgorithm());
     }
 
-    // Access Token 토큰 발급
     public String generateAccessToken(UUID id) {
         long expiredMs = Constant.ACCESS_EXPIRED * 1000;
         return Jwts.builder()
@@ -35,7 +34,6 @@ public class JwtUtil {
                 .compact();
     }
 
-    // web socket ticket 발급
     public String generateTicket(UUID userId, String userName, UUID noteId, Instant expiresAt) {
         return Jwts.builder()
                 .issuer("synapse")
@@ -48,20 +46,19 @@ public class JwtUtil {
                 .compact();
     }
 
-    // id 가져오기
     public UUID getId(String token) {
-        String stringId = Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().get("id", String.class);
+        String stringId = Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().get("id",
+                String.class);
         return UUID.fromString(stringId);
     }
 
-    // 토큰 만료 확인
     public boolean isExpired(String token) throws MalformedJwtException {
         try {
-            return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().getExpiration().before(new Date());
+            return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().getExpiration()
+                    .before(new Date());
         } catch (ExpiredJwtException e) {
             return true;
         }
     }
 
 }
-

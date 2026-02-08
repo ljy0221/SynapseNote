@@ -161,8 +161,7 @@ public class CodeAssistantService {
                               "lineNumber": null
                             }
                           ],
-                          "bestPractices": ["모범 사례 1", "모범 사례 2"],
-                          "summary": "전체적인 총평. 다음 구조로 작성하되, 마크다운 기호(**, -, #)는 사용하지 마세요:\\n\\n[강점]\\n(내용)\\n\\n[개선점]\\n(내용)\\n\\n[총평]\\n(내용)\\n\\n각 문장은 간결하게 작성하고, 문장 끝에는 마침표를 확실히 찍으세요. 이모지는 절대 사용하지 마세요."
+                          "bestPractices": ["모범 사례 1", "모범 사례 2"]
                         }
                         """);
 
@@ -179,7 +178,6 @@ public class CodeAssistantService {
 
             List<CodeReviewResponse.ReviewItem> reviews = parseReviewItems(root.get("reviews"));
             List<String> bestPractices = parseBestPractices(root.get("bestPractices"));
-            String summary = root.get("summary").asText();
 
             return new CodeReviewResponse(
                     blockId,
@@ -187,7 +185,6 @@ public class CodeAssistantService {
                     code,
                     reviews,
                     bestPractices,
-                    summary,
                     LocalDateTime.now());
 
         } catch (JsonProcessingException e) {

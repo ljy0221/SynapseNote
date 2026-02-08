@@ -10,7 +10,6 @@ public record CodeReviewResponse(
                 String originalCode,
                 List<ReviewItem> reviews,
                 List<String> bestPractices,
-                String summary,
                 LocalDateTime reviewedAt) {
         public record ReviewItem(
                         String severity,
