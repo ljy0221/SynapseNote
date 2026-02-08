@@ -27,7 +27,6 @@ import {
     ListOrdered,
     Quote,
     Minus,
-    Link as LinkIcon,
     Image as ImageIcon,
     Palette,
 } from 'lucide-react';
@@ -633,14 +632,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
                             >
                                 <Minus size={16} />
                             </button>
-                            <button
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={setLink}
-                                className={`toolbar-btn ${editor.isActive('link') ? 'is-active' : ''}`}
-                                title="링크"
-                            >
-                                <LinkIcon size={16} />
-                            </button>
+
                             <button
                                 onMouseDown={(e) => e.preventDefault()}
                                 onClick={addImage}

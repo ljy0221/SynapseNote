@@ -35,6 +35,9 @@ export class DockerExecService {
       if (!request.noteId) throw new Error('noteId is required for session mode');
       if (request.language === 'java') throw new Error('Session mode not supported for Java');
 
+      // 0. 이미지 확인 (없으면 다운로드 대기)
+      await this.ensureImage(request.language);
+
       // 세션 생성 또는 재사용
       const sessionInfo = await this.sessionManager.createSession(
         request.noteId,
@@ -106,6 +109,9 @@ export class DockerExecService {
         tempFilePath = join(tmpdir(), `${fileName}.${extension}`);
         writeFileSync(tempFilePath, request.code, 'utf8');
       }
+
+      // 이미지 확인 (없으면 다운로드 대기)
+      await this.ensureImage(request.language);
 
       const dockerArgs = this.buildDockerCommand(request, tempFilePath, tempDir);
       const result = await this.runDocker(dockerArgs, request.timeout || 10000);
@@ -179,5 +185,50 @@ export class DockerExecService {
     if (language === 'python') return 'py';
     if (language === 'javascript') return 'js';
     return 'java';
+  }
+
+  /**
+   * 이미지 존재 여부 확인 및 다운로드 (타임아웃 방지)
+   */
+  async ensureImage(language: Language): Promise<void> {
+    const config = DOCKER_SECURITY_CONFIG[language];
+    const image = config.image;
+
+    try {
+      // 1. 이미지 존재 확인
+      const inspectResult = await this.runDocker(['image', 'inspect', image], 5000);
+      if (inspectResult.exitCode !== 0) {
+        throw new Error('Image not found');
+      }
+      console.log(`[Docker LOG] Image already exists: ${image}`); // [New] 확인 로그 추가
+    } catch {
+      console.log(`[Docker LOG] Image not found: ${image}. Pulling...`);
+      try {
+        // 2. 이미지 다운로드 (10분 타임아웃)
+        const pullResult = await this.runDocker(['pull', image], 600000);
+        if (pullResult.exitCode !== 0) {
+          throw new Error(`Pull failed with code ${pullResult.exitCode}: ${pullResult.stderr}`);
+        }
+        console.log(`[Docker LOG] Image pulled successfully: ${image}`);
+      } catch (error: any) {
+        console.error(`[Docker LOG] Failed to pull image ${image}:`, error.message);
+        throw new Error(`Docker image download failed: ${image}`); // 실행 중단
+      }
+    }
+  }
+
+  /**
+   * 모든 지원 언어의 이미지를 백그라운드에서 확인/다운로드
+   */
+  async ensureAllImages(): Promise<void> {
+    const languages: Language[] = ['python', 'javascript', 'java'];
+    console.log('[Docker LOG] Starting background image check...');
+
+    // 병렬로 진행하되, 실패해도 앱 실행에는 지장 없도록 개별 catch
+    languages.forEach(lang => {
+      this.ensureImage(lang).catch(err => {
+        console.error(`[Docker LOG] Background pull failed for ${lang}:`, err.message);
+      });
+    });
   }
 }
