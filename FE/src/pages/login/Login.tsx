@@ -96,8 +96,9 @@ const Login: React.FC = () => {
                             onClick={() => {
                                 const isElectron = !!window.electronAPI;
                                 const isDev = import.meta.env.DEV;
+                                // Electron always uses WEB_CLIENT_ID
                                 const clientId = isElectron
-                                    ? env.VITE_GITHUB_CLIENT_ID
+                                    ? env.VITE_GITHUB_WEB_CLIENT_ID
                                     : env.VITE_GITHUB_WEB_CLIENT_ID;
 
                                 let redirectUri;

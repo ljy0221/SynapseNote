@@ -43,7 +43,7 @@ export const useNoteStore = create(
                 const now = Date.now();
                 const diff = now - lastCreatedTime;
                 // 30초 (30000ms) 경과 확인
-                return diff > 3000;
+                return diff > 30000;
             },
 
             updateLastCreatedTime: () => {
