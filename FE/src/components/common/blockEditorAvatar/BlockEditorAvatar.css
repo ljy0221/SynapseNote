@@ -1,0 +1,66 @@
+.block-editor-avatar-container {
+    position: absolute;
+    top: 8px;
+    /* right position set via inline style for dynamic control */
+    z-index: 10;
+    cursor: pointer;
+    /* Enable cursor change for tooltip */
+}
+
+/* No conditional positioning needed - controlled via inline styles */
+
+.block-editor-avatar {
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    border: 2px solid white;
+    position: relative;
+}
+
+.block-editor-avatar-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.block-editor-avatar-initials {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Multiple editors styling */
+.block-editor-avatar-group {
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.block-editor-avatar-first {
+    z-index: 2;
+}
+
+.block-editor-avatar-overlap {
+    z-index: 1;
+    margin-left: -18px; /* Heavily overlap - only 6px visible (24px - 18px) */
+    font-size: 10px; /* Smaller font for +N */
+}
+
+/* Tooltip content styling */
+.block-editor-tooltip-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.block-editor-tooltip-name {
+    white-space: nowrap;
+    font-size: 12px;
+}

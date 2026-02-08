@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -15,117 +16,134 @@ import javax.naming.AuthenticationException;
 import java.nio.file.AccessDeniedException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
 
-    // 커스텀 예외 처리
-    @ExceptionHandler(BaseException.class)
-    public ResponseEntity<ErrorResponse> handleBaseException(
-            BaseException e,
-            HttpServletRequest request) {
+        @ExceptionHandler(BaseException.class)
+        public ResponseEntity<ErrorResponse> handleBaseException(
+                        BaseException e,
+                        HttpServletRequest request) {
 
-        log.error("BaseException: code={}, message={}, path={}",
-                e.getErrorCode().name(), e.getMessage(), request.getRequestURI(), e);
+                log.error("BaseException: code={}, message={}, path={}",
+                                e.getErrorCode().name(), e.getMessage(), request.getRequestURI(), e);
 
-        return ResponseEntity
-                .status(e.getErrorCode().getHttpStatus())
-                .body(ErrorResponse.of(e.getErrorCode()));
-    }
+                return ResponseEntity
+                                .status(e.getErrorCode().getHttpStatus())
+                                .body(ErrorResponse.of(e.getErrorCode()));
+        }
 
-    // Validation 예외 처리
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidationException(
-            MethodArgumentNotValidException e,
-            HttpServletRequest request) {
+        @ExceptionHandler(MethodArgumentNotValidException.class)
+        public ResponseEntity<ErrorResponse> handleValidationException(
+                        MethodArgumentNotValidException e,
+                        HttpServletRequest request) {
 
-        Map<String, Object> details = new HashMap<>();
-        e.getBindingResult().getFieldErrors().forEach(error -> {
-            details.put(error.getField(), error.getDefaultMessage());
-        });
+                Map<String, Object> details = new HashMap<>();
+                e.getBindingResult().getFieldErrors().forEach(error -> {
+                        details.put(error.getField(), error.getDefaultMessage());
+                });
 
-        log.warn("Validation failed: {}", details);
+                log.warn("Validation failed: {}", details);
 
-        ErrorResponse response = ErrorResponse.of(ErrorCode.INVALID_INPUT_VALUE);
+                ErrorResponse response = ErrorResponse.of(ErrorCode.INVALID_INPUT_VALUE);
 
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(response);
-    }
+                return ResponseEntity
+                                .status(HttpStatus.BAD_REQUEST)
+                                .body(response);
+        }
 
-    // 인증 예외 처리
-    @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<ErrorResponse> handleAuthenticationException(
-            AuthenticationException e,
-            HttpServletRequest request) {
+        @ExceptionHandler(AuthenticationException.class)
+        public ResponseEntity<ErrorResponse> handleAuthenticationException(
+                        AuthenticationException e,
+                        HttpServletRequest request) {
 
-        log.warn("Authentication failed: {}", e.getMessage());
+                log.warn("Authentication failed: {}", e.getMessage());
 
-        ErrorResponse response = ErrorResponse.of(ErrorCode.AUTH_UNAUTHORIZED);
+                ErrorResponse response = ErrorResponse.of(ErrorCode.AUTH_UNAUTHORIZED);
 
-        return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
-                .body(response);
-    }
+                return ResponseEntity
+                                .status(HttpStatus.UNAUTHORIZED)
+                                .body(response);
+        }
 
-    // 권한 예외 처리
-    @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ErrorResponse> handleAccessDeniedException(
-            AccessDeniedException e,
-            HttpServletRequest request) {
+        @ExceptionHandler(AccessDeniedException.class)
+        public ResponseEntity<ErrorResponse> handleAccessDeniedException(
+                        AccessDeniedException e,
+                        HttpServletRequest request) {
 
-        log.warn("Access denied: {}", e.getMessage());
+                log.warn("Access denied: {}", e.getMessage());
 
-        ErrorResponse response = ErrorResponse.of(ErrorCode.AUTH_FORBIDDEN);
+                ErrorResponse response = ErrorResponse.of(ErrorCode.AUTH_FORBIDDEN);
 
-        return ResponseEntity
-                .status(HttpStatus.FORBIDDEN)
-                .body(response);
-    }
+                return ResponseEntity
+                                .status(HttpStatus.FORBIDDEN)
+                                .body(response);
+        }
 
-    // IllegalArgument 예외 처리
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(
-            IllegalArgumentException e,
-            HttpServletRequest request) {
+        @ExceptionHandler(IllegalArgumentException.class)
+        public ResponseEntity<ErrorResponse> handleIllegalArgumentException(
+                        IllegalArgumentException e,
+                        HttpServletRequest request) {
 
-        log.warn("Illegal argument: {}", e.getMessage());
+                log.warn("Illegal argument: {}", e.getMessage());
 
-        ErrorResponse response = ErrorResponse.of(ErrorCode.VALIDATION_INVALID_PARAMETER);
+                ErrorResponse response = ErrorResponse.of(ErrorCode.VALIDATION_INVALID_PARAMETER);
 
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(response);
-    }
+                return ResponseEntity
+                                .status(HttpStatus.BAD_REQUEST)
+                                .body(response);
+        }
 
-    // 데이터베이스 예외 처리
-    @ExceptionHandler(DataAccessException.class)
-    public ResponseEntity<ErrorResponse> handleDataAccessException(
-            DataAccessException e,
-            HttpServletRequest request) {
+        @ExceptionHandler(DataAccessException.class)
+        public ResponseEntity<ErrorResponse> handleDataAccessException(
+                        DataAccessException e,
+                        HttpServletRequest request) {
 
-        log.error("Database error", e);
+                log.error("Database error", e);
 
-        ErrorResponse response = ErrorResponse.of(ErrorCode.SYSTEM_DATABASE_ERROR);
+                ErrorResponse response = ErrorResponse.of(ErrorCode.SYSTEM_DATABASE_ERROR);
 
-        return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(response);
-    }
+                return ResponseEntity
+                                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                .body(response);
+        }
 
-    // 처리되지 않은 모든 예외
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleException(
-            Exception e,
-            HttpServletRequest request) {
+        @ExceptionHandler(HttpMessageNotReadableException.class)
+        public ResponseEntity<ErrorResponse> handleHttpMessageNotReadable(
+                        HttpMessageNotReadableException e,
+                        HttpServletRequest request) {
+                Throwable t = e;
+                while (t != null) {
+                        if (t instanceof BaseException be) {
+                                log.debug("Deserialization failed with BaseException: code={}, path={}",
+                                                be.getErrorCode().name(), request.getRequestURI(), e);
 
-        log.error("Unhandled exception", e);
+                                return ResponseEntity
+                                                .status(be.getErrorCode().getHttpStatus())
+                                                .body(ErrorResponse.of(be.getErrorCode()));
+                        }
+                        t = t.getCause();
+                }
 
-        ErrorResponse response = ErrorResponse.of(ErrorCode.SYSTEM_INTERNAL_ERROR);
+                log.debug("HttpMessageNotReadable: {}", Objects.requireNonNull(e).getMessage());
+                return ResponseEntity
+                                .status(HttpStatus.BAD_REQUEST)
+                                .body(ErrorResponse.of(ErrorCode.INVALID_INPUT_VALUE));
+        }
 
-        return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(response);
-    }
+        @ExceptionHandler(Exception.class)
+        public ResponseEntity<ErrorResponse> handleException(
+                        Exception e,
+                        HttpServletRequest request) {
+
+                log.error("Unhandled exception", e);
+
+                ErrorResponse response = ErrorResponse.of(ErrorCode.SYSTEM_INTERNAL_ERROR);
+
+                return ResponseEntity
+                                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                .body(response);
+        }
 }

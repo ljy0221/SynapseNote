@@ -1,13 +1,15 @@
 package com.synapse.api.modules.note.entity;
 
+import com.synapse.api.modules.member.entity.Member;
 import com.synapse.api.modules.mindmap.entity.MindmapEdge;
-import com.synapse.api.modules.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.Where; // (선택) Soft Delete 자동 처리용
+import org.hibernate.annotations.SQLRestriction;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import org.springframework.data.domain.Persistable;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -21,12 +23,10 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @EntityListeners(AuditingEntityListener.class)
-// [선택] 조회 시 삭제된(deleted_at is not null) 데이터는 자동으로 제외
-@Where(clause = "deleted_at IS NULL")
-public class Note {
+@SQLRestriction("deleted_at IS NULL")
+public class Note implements Persistable<UUID> {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @Column(nullable = false)
@@ -35,15 +35,16 @@ public class Note {
     // 디렉토리 경로 (예: /work/projects)
     private String directoryPath;
 
-    // Canvas 뷰일 때 좌표 (없으면 null)
-    @Column(name = "point_x")
-    private Double pointX;
-
-    @Column(name = "point_y")
-    private Double pointY;
-
     @Column
     private boolean bookmark;
+
+    // AI 요약 필드
+    @Column(columnDefinition = "TEXT")
+    private String summary;
+
+    private String summaryStyle;
+
+    private LocalDateTime summaryUpdatedAt;
 
     // [핵심] 낙관적 락 (Optimistic Locking)
     // 메타데이터(제목, 위치 등)가 동시에 수정될 때 충돌 방지
@@ -64,12 +65,14 @@ public class Note {
     // 생성자 (User와 연관관계)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id", nullable = false)
-    private User createdBy;
+    private Member createdBy;
 
     @OneToMany(mappedBy = "from", cascade = CascadeType.REMOVE)
+    @Builder.Default
     private List<MindmapEdge> fanoutEdges = new ArrayList<>();
 
     @OneToMany(mappedBy = "to", cascade = CascadeType.REMOVE)
+    @Builder.Default
     private List<MindmapEdge> faninEdges = new ArrayList<>();
 
     public void updateTitle(String title) {
@@ -78,11 +81,6 @@ public class Note {
 
     public void updateDirectoryPath(String path) {
         this.directoryPath = path;
-    }
-
-    public void updatePosition(Double x, Double y) {
-        this.pointX = x;
-        this.pointY = y;
     }
 
     public void delete() {
@@ -94,16 +92,23 @@ public class Note {
         this.deletedAt = null;
     }
 
-    public void deleteNode() {
-        this.pointX = null;
-        this.pointY = null;
-    }
-
     public void setBookmark() {
         bookmark = true;
     }
 
     public void unBookmark() {
         bookmark = false;
+    }
+
+    public void updateSummary(String summary, String style) {
+        this.summary = summary;
+        this.summaryStyle = style;
+        this.summaryUpdatedAt = LocalDateTime.now();
+    }
+
+    // Persistable 구현: 클라이언트 전송 ID 사용 시 JPA가 새 엔티티로 인식하도록 함
+    @Override
+    public boolean isNew() {
+        return createdAt == null;
     }
 }

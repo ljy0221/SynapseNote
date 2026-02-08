@@ -1,0 +1,81 @@
+.member-avatar-group {
+    display: flex;
+    align-items: center;
+    /* direction: row-reverse; */
+    /* row-reverse if you want the first item on top, keeping normal for now */
+}
+
+.member-avatar-item {
+    border-radius: 50%;
+    margin-right: -8px;
+    /* Overlap effect */
+    border: 2px solid var(--color-bg);
+    /* Cutout effect */
+    background-color: var(--color-sub);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s, z-index 0.2s;
+    cursor: default;
+}
+
+.member-avatar-item:hover {
+    transform: translateY(-2px);
+    z-index: 10;
+}
+
+.member-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.member-avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--color-sub);
+    color: var(--font-color-sub);
+}
+
+.member-avatar-placeholder.initials {
+    font-weight: 600;
+    font-size: 11px;
+    /* Adjust based on avatar size */
+    letter-spacing: -0.5px;
+}
+
+.member-avatar-overflow {
+    border-radius: 50%;
+    margin-left: -8px;
+    /* Should counteract the item margin if placed last, or be consistent */
+    border: 2px solid var(--color-bg);
+    background-color: var(--color-sub);
+    color: var(--font-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    z-index: 5;
+    position: relative;
+    /* ensure overflow bubble is also circular and consistent */
+}
+
+/* Status dot (optional for future) */
+.member-status-dot {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 1.5px solid var(--color-bg);
+}
+
+.member-status-dot.online {
+    background-color: #22c55e;
+}

@@ -1,7 +1,7 @@
 // src/types/note/updateNote.ts
 export interface UpdateNoteRequest {
-  title: string;
-  directoryPath: string;
+  title?: string;
+  directoryPath?: string;
 }
 
 export interface UpdateNoteResponse {

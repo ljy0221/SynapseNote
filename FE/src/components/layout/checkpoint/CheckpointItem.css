@@ -1,0 +1,173 @@
+/* FE/src/components/layout/checkpoint/CheckpointItem.css */
+.checkpoint-item {
+    background: var(--color-sub);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    padding: 16px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.checkpoint-item.empty {
+    border-style: dashed;
+    opacity: 0.8;
+}
+
+.checkpoint-item:hover {
+    background: var(--color-hover);
+    border-color: var(--color-point);
+    transform: translateY(-2px);
+}
+
+.checkpoint-item:active {
+    transform: translateY(0);
+}
+
+.checkpoint-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.checkpoint-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.checkpoint-badge {
+    background: var(--color-border);
+    color: var(--font-color-sub);
+    opacity: 0.8;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: 800;
+    width: fit-content;
+    letter-spacing: 0.05em;
+}
+
+.saved .checkpoint-badge {
+    background: var(--color-point);
+    color: #fff;
+    /* 포인트 컬러 위 항상 흰색 가정 */
+    opacity: 1;
+}
+
+.checkpoint-date {
+    font-size: 0.75rem;
+    color: var(--font-color);
+    opacity: 0.7;
+    font-weight: 500;
+}
+
+.checkpoint-content-info {
+    display: flex;
+    align-items: center;
+}
+
+.checkpoint-slot-visual {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: var(--font-color);
+    opacity: 0.8;
+    background: var(--color-main);
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.saved .checkpoint-slot-visual {
+    opacity: 1;
+    background: var(--color-hover);
+}
+
+.checkpoint-slot-visual span {
+    font-weight: 500;
+}
+
+.empty-icon {
+    opacity: 0.4;
+}
+
+.saved-icon {
+    color: var(--color-point);
+}
+
+.checkpoint-item-actions {
+    display: flex;
+    gap: 4px;
+    position: relative;
+    z-index: 10;
+}
+
+.slot-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+    background: var(--color-border);
+    color: var(--font-color);
+}
+
+.slot-btn:hover:not(:disabled) {
+    background: var(--color-hover);
+}
+
+.slot-btn.save:hover:not(:disabled) {
+    background: var(--color-point);
+    color: white;
+}
+
+.slot-btn.restore:hover:not(:disabled) {
+    background: #00c853;
+    color: white;
+}
+
+/* Delete styles removed */
+
+.slot-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.slot-processing-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+}
+
+/* Glass effect highlight on hover */
+.checkpoint-item::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    /* Use simpler gradient or remove if hard to match theme */
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 50%);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.checkpoint-item:hover::after {
+    opacity: 0.5;
+}
