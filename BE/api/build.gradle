@@ -54,6 +54,14 @@ dependencies {
 	// --- UUID v7 Generator ---
 	implementation 'com.github.f4b6a3:uuid-creator:6.0.0'
 
+	// --- WebRTC & WebSocket ---
+	implementation 'org.springframework.boot:spring-boot-starter-websocket'  // STOMP 포함
+	implementation 'org.kurento:kurento-client:7.1.0'
+	implementation 'org.kurento:kurento-utils-js:7.1.0'
+	
+	// --- Fix Kurento Gson Conflict ---
+	implementation 'com.google.code.gson:gson:2.8.9'
+
 	// --- Test ---
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'

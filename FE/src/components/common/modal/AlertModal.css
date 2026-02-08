@@ -1,0 +1,9 @@
+/* AlertModal.css */
+@import './CommonModal.css';
+
+/* CommonModal.css 사용 */
+.btn-confirm:hover {
+    /* AlertModal 특유의 hover 오버라이드 (필요 시 유지) */
+    background-color: var(--color-point);
+    color: white;
+}

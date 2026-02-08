@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import BlockTypeMenu from '../blockTypeMenu/BlockTypeMenu';
-import { BlockType } from '../../../pages/note/Note';
+import { BlockType } from '../../../types/note/Block';
 import './HeadingBlock.css';
 
 interface HeadingBlockProps {

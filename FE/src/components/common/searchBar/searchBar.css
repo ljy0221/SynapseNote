@@ -4,62 +4,66 @@
   align-items: center;
   width: 100%;
   max-width: 500px;
+  cursor: text;
 }
 
 .search-form {
   display: flex;
   width: 100%;
-  /* Theme.css의 서브 배경색 활용 */
   background-color: var(--color-sub); 
-  border-radius: 25px;
-  padding: 3px 18px;
-  transition: all 0.3s ease;
-  /* 기본 테두리는 투명하게 유지 */
-  border: 1px solid color-mix(in srgb, var(--font-color), transparent 90%);
+  border-radius: 20px;
+  padding: 4px 16px;
+  transition: all 0.2s ease;
+  border: 1px solid color-mix(in srgb, var(--font-color), transparent 92%);
+  align-items: center;
 }
 
-/* 포커스 되었을 때 포인트 컬러(파란색 계열) 활용 */
+.search-form:hover {
+  border-color: color-mix(in srgb, var(--color-point), transparent 50%);
+  background-color: color-mix(in srgb, var(--color-sub), white 2%);
+}
+
 .search-form:focus-within {
   background-color: var(--color-main);
   border-color: var(--color-point);
-  box-shadow: 0 0 5px color-mix(in srgb, var(--color-point), transparent 85%);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-point), transparent 80%);
 }
 
 .search-input {
   flex: 1;
   border: none;
   background: transparent;
-  padding: 8px;
-  /* 폰트 굵기를 가늘게 조정 */
-  font-weight: 300; 
+  padding: 10px 4px;
+  font-weight: 400; 
   font-size: 14px;
   outline: none;
   font-family: var(--font-family);
   color: var(--font-color);
 }
 
-/* 플레이스홀더 색상도 폰트 컬러에 맞춰 투명도 조절 */
 .search-input::placeholder {
   color: var(--font-color);
-  opacity: 0.6;
+  opacity: 0.5;
 }
 
 .search-button {
   background: none;
   border: none;
   cursor: pointer;
-  padding: 0 0 0 8px; /* 왼쪽 간격만 살짝 줌 */
+  padding: 0 4px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .search-icon {
-  /* 아이콘 크기를 기존 16px에서 14px로 축소하여 더 얇아 보이게 함 */
-  font-size: 14px; 
+  font-size: 16px; 
   color: var(--font-color);
-  opacity: 0.8;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.search-form:focus-within .search-icon {
+  opacity: 1;
+  color: var(--color-point);
 }

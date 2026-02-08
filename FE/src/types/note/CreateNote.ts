@@ -3,21 +3,20 @@
  * BE: NoteCreateRequest.java 와 대응
  */
 export interface CreateNoteRequest {
+  id: string;
   title: string;
   invitationUrl: string;
   directoryPath: string;
 }
 
 export interface CreateNoteResponse {
-  success: boolean;
-  data: {
-    noteId: string;
-    title: string;
-    directoryPath: string;
-    pointX: number;
-    pointY: number;
-    role: 'OWNER' | 'EDITOR' | 'VIEWER';
-    createdAt: string;
-    updatedAt: string;
-  };
+  noteId: string;
+  memberId: string;
+  title: string;
+  directoryPath: string;
+  pointX: number;
+  pointY: number;
+  role: 'OWNER' | 'EDITOR' | 'VIEWER';
+  createdAt: string;
+  updatedAt: string;
 }

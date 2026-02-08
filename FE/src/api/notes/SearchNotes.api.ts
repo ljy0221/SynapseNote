@@ -4,6 +4,7 @@ import type { SearchNotesResponse } from '../../types/note/SearchNotes';
 
 export const searchNotesApi = (params: {
   keyword: string;
+  filter?: 'OWNED' | 'SHARED' | 'ALL';
 }): Promise<SearchNotesResponse> => {
   return request<SearchNotesResponse>(
     'get',
