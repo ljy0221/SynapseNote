@@ -1,6 +1,7 @@
 package com.synapse.api.modules.webrtc.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.kurento.client.Composite;
@@ -34,7 +35,6 @@ public class WebRtcRoomManager {
     private final Map<UUID, Room> rooms = new ConcurrentHashMap<>();
 
     // memberId -> Set<noteId> (사용자가 참여 중인 룸 목록)
-    // 성능 최적화: 사용자 제거 시 O(n) -> O(1) 조회
     private final Map<UUID, Set<UUID>> userRoomMap = new ConcurrentHashMap<>();
 
     /**
@@ -98,7 +98,6 @@ public class WebRtcRoomManager {
 
     /**
      * 모든 룸에서 사용자 제거 (연결 해제 시)
-     * 성능 최적화: userRoomMap을 사용하여 O(1) 조회
      */
     public void removeUserFromAllRooms(UUID memberId) {
         Set<UUID> userRooms = userRoomMap.get(memberId);
@@ -133,7 +132,6 @@ public class WebRtcRoomManager {
         private final UUID noteId;
         private final MediaPipeline pipeline;
         private final Composite composite;
-        // MemberId(UUID) -> Participant
         private final Map<UUID, Participant> participants = new ConcurrentHashMap<>();
 
         public Room(UUID noteId, MediaPipeline pipeline) {
@@ -242,7 +240,7 @@ public class WebRtcRoomManager {
     }
 
     @Getter
-    @lombok.AllArgsConstructor
+    @AllArgsConstructor
     public static class ParticipantInfo {
         private UUID memberId;
         private String name;

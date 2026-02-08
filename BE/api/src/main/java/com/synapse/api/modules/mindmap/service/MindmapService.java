@@ -186,7 +186,7 @@ public class MindmapService {
                 Note child = relatedNotes.get(req.fromId());
                 Note parent = relatedNotes.get(req.toId());
 
-                // [Modified] 소유자뿐만 아니라 공유받은 사용자도 엣지 생성 가능
+                // 소유자뿐만 아니라 공유받은 사용자도 엣지 생성 가능
                 noteValidator.validateAccess(child, memberId);
                 noteValidator.validateAccess(parent, memberId);
 
@@ -199,8 +199,6 @@ public class MindmapService {
 
     /**
      * 노트 삭제 시 연결된 모든 엣지 및 위치 정보 삭제
-     *
-     * @param noteId 삭제할 노트 ID
      */
     @Transactional
     public void deleteMindmapDataByNoteId(UUID noteId) {

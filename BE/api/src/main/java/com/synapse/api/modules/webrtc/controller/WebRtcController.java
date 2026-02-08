@@ -1,9 +1,11 @@
 package com.synapse.api.modules.webrtc.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.synapse.api.modules.webrtc.dto.request.*;
 import com.synapse.api.modules.webrtc.dto.response.*;
 
 import com.synapse.api.modules.webrtc.service.WebRtcRoomManager;
+import com.synapse.api.modules.webrtc.service.WebRtcRoomManager.Room;
 import com.synapse.api.modules.webrtc.service.WebRtcService;
 import com.synapse.api.util.exception.BusinessException;
 
@@ -17,6 +19,8 @@ import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -31,7 +35,7 @@ public class WebRtcController {
     private final WebRtcRoomManager roomManager;
     private final SimpMessagingTemplate messagingTemplate;
     private final WebRtcService webRtcService;
-    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
 
     /**
      * 룸 참여
@@ -56,11 +60,11 @@ public class WebRtcController {
         // Room Manager에 참여 처리
         roomManager.joinRoom(noteId, memberId, memberName);
 
-        // [FIX] 본인에게 JOINED 메시지 전송 (클라이언트 Offer 트리거용)
+        // 본인에게 JOINED 메시지 전송 (클라이언트 Offer 트리거용)
         try {
-            WebRtcRoomManager.Room room = roomManager.getRoom(noteId);
-            java.util.List<WebRtcRoomManager.ParticipantInfo> participants = (room != null) ? room.getParticipantInfos()
-                    : java.util.Collections.emptyList();
+            Room room = roomManager.getRoom(noteId);
+            List<WebRtcRoomManager.ParticipantInfo> participants = (room != null) ? room.getParticipantInfos()
+                    : Collections.emptyList();
 
             String participantsJson = objectMapper.writeValueAsString(participants);
 
@@ -69,7 +73,7 @@ public class WebRtcController {
             joinedMsg.setNoteId(noteId);
             joinedMsg.setMemberId(memberId);
             joinedMsg.setPayload(participantsJson);
-            joinedMsg.setStatus("READY"); // Client checks this to start Offer
+            joinedMsg.setStatus("READY");
 
             messagingTemplate.convertAndSendToUser(memberId.toString(), "/queue/webrtc", joinedMsg);
             log.info("Sent JOINED confirmation to member {}", memberId);
@@ -108,7 +112,7 @@ public class WebRtcController {
 
         log.info("Member {} changed mute status to {} in room {}", memberId, isMuted, noteId);
 
-        WebRtcRoomManager.Room room = roomManager.getRoom(noteId);
+        Room room = roomManager.getRoom(noteId);
         if (room != null) {
             WebRtcRoomManager.Participant participant = room.getParticipant(memberId);
             if (participant != null) {
@@ -116,9 +120,8 @@ public class WebRtcController {
 
                 // 다른 사용자들에게 알림
                 try {
-                    // JSON Payload: {"isMuted": true}
                     String payload = objectMapper
-                            .writeValueAsString(java.util.Collections.singletonMap("isMuted", isMuted));
+                            .writeValueAsString(Collections.singletonMap("isMuted", isMuted));
 
                     SignalingMessage notification = new SignalingMessage();
                     notification.setType("USER_MUTE_CHANGED");
@@ -146,7 +149,7 @@ public class WebRtcController {
 
         log.info("Received offer from member {} in room {}, callId: {}", memberId, noteId, callId);
 
-        WebRtcRoomManager.Room room = roomManager.getRoom(noteId);
+        Room room = roomManager.getRoom(noteId);
         if (room == null) {
             sendError(memberId, "Room not found: " + noteId);
             return;
@@ -207,7 +210,7 @@ public class WebRtcController {
         log.info("Received ICE candidate from member {} in room {}, callId: {}. Candidate: {}",
                 memberId, noteId, callId, request.getCandidate());
 
-        WebRtcRoomManager.Room room = roomManager.getRoom(noteId);
+        Room room = roomManager.getRoom(noteId);
         if (room == null) {
             sendError(memberId, "Room not found: " + noteId);
             return;
@@ -265,13 +268,13 @@ public class WebRtcController {
         UUID memberId = (UUID) headerAccessor.getSessionAttributes().get("memberId");
         UUID noteId = request.getNoteId();
 
-        WebRtcRoomManager.Room room = roomManager.getRoom(noteId);
-        java.util.List<WebRtcRoomManager.ParticipantInfo> participants;
+        Room room = roomManager.getRoom(noteId);
+        List<WebRtcRoomManager.ParticipantInfo> participants;
 
         if (room != null) {
             participants = room.getParticipantInfos();
         } else {
-            participants = java.util.Collections.emptyList();
+            participants = Collections.emptyList();
         }
 
         SignalingMessage response = new SignalingMessage();
