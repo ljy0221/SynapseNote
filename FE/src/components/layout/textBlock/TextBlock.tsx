@@ -117,6 +117,7 @@ const TabHandler = Extension.create({
     },
 });
 
+
 const TextBlock: React.FC<TextBlockProps> = ({
     id,
     noteId,
@@ -144,6 +145,9 @@ const TextBlock: React.FC<TextBlockProps> = ({
     const [isFocused, setIsFocused] = useState(false);
     const [showColorPicker, setShowColorPicker] = useState(false);
     const { openModal } = useModalStore();
+
+    // [New] Track IME composition state
+    const isComposingRef = useRef(false);
 
     const handleBookmark = () => {
         onToggleBookmark?.();
@@ -207,6 +211,17 @@ const TextBlock: React.FC<TextBlockProps> = ({
             attributes: {
                 class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl focus:outline-none',
             },
+            // [New] Handle IME composition events
+            handleDOMEvents: {
+                compositionstart: () => {
+                    isComposingRef.current = true;
+                    return false;
+                },
+                compositionend: () => {
+                    isComposingRef.current = false;
+                    return false;
+                },
+            },
             handleClick: (view, pos, event) => {
                 const attrs = view.state.doc.resolve(pos).marks().find(mark => mark.type.name === 'link')?.attrs;
                 const link = attrs?.href;
@@ -241,6 +256,12 @@ const TextBlock: React.FC<TextBlockProps> = ({
             setUpdateTrigger(prev => prev + 1);
         },
         onUpdate: ({ editor }) => {
+            // [Fix] Skip update callback during IME composition
+            // This prevents duplicate characters from being sent to Yjs
+            if (editor.view.composing || isComposingRef.current) {
+                console.log(`[TextBlock ${id}] Skipping update during IME composition`);
+                return;
+            }
             const html = editor.getHTML();
             onUpdate?.(id, html);
         },
