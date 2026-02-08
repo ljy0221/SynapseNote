@@ -1,5 +1,5 @@
 .toast-notification {
-    position: fixed;
+    position: absolute;
     bottom: 24px;
     left: 50%;
     transform: translateX(-50%);
@@ -11,9 +11,40 @@
     border: 1px solid var(--color-point);
     z-index: 10000;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 700;
     pointer-events: none;
     animation: fadeInOut 2.3s ease-in-out forwards;
+}
+
+/* Success Type (Default) */
+.toast-notification.success {
+    border-color: var(--color-point);
+    color: var(--font-color);
+}
+
+/* Error Type */
+.toast-notification.error {
+    border-color: #ef4444;
+    /* Red-500 equivalent */
+    color: #ef4444;
+    background-color: rgba(239, 68, 68, 0.1);
+    /* Light red background */
+}
+
+/* Warning Type */
+.toast-notification.warning {
+    border-color: #f59e0b;
+    /* Amber-500 */
+    color: #f59e0b;
+    background-color: rgba(245, 158, 11, 0.1);
+}
+
+/* Info Type */
+.toast-notification.info {
+    border-color: #3b82f6;
+    /* Blue-500 */
+    color: #3b82f6;
+    background-color: rgba(59, 130, 246, 0.1);
 }
 
 @keyframes fadeInOut {

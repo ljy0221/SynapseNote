@@ -8,13 +8,25 @@ import type {
   UpdateMindmapNodesPositionRequest,
   CreateMindmapEdgeRequest,
   DeleteMindmapEdgeRequest,
+  SyncMindmapRequest, // [New]
 } from '../../types/mindmap/Requests';
 
+/** 마인드맵 동기화 (노드 위치 + 엣지 정보 일괄 저장) */
+export const syncMindmapApi = (
+  body: SyncMindmapRequest
+) => {
+  return request<ApiResponse>(
+    'post',
+    `/v1/mindmaps`,
+    { body }
+  );
+};
+
 /** 마인드맵 조회 */
-export const getMindmapApi = (mindmapId: string) => {
-  return request<ApiResponse<MindmapDetail>>(
+export const getMindmapApi = () => {
+  return request<MindmapDetail>(
     'get',
-    `/v1/mindmaps/${mindmapId}`
+    `/v1/mindmaps`
   );
 };
 

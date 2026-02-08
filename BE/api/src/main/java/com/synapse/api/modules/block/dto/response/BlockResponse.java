@@ -1,25 +1,27 @@
 package com.synapse.api.modules.block.dto.response;
 
 import com.synapse.api.modules.block.document.BaseBlock;
+import com.synapse.api.modules.block.document.BlockType;
 import com.synapse.api.modules.block.document.CodeBlock;
 import com.synapse.api.modules.block.document.TextBlock;
 import lombok.Builder;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Builder
 public record BlockResponse(
-        String blockId,
-        String noteId,
+        UUID blockId,
+        UUID noteId,
         String notePath,
-        String type,
+        BlockType type,
         Object content, // CodeBlock.CodeProperties or TextBlock.TextProperties
         boolean bookmark,
         Double order,
         LocalDateTime createdAt,
         LocalDateTime updatedAt) {
 
-    public static BlockResponse from(BaseBlock block, String notePath) {
+    public static BlockResponse from(BaseBlock block, String notePath, boolean isBookmarked) {
         Object content = null;
         if (block instanceof CodeBlock codeBlock) {
             content = codeBlock.getProperties().getCode();
@@ -33,7 +35,7 @@ public record BlockResponse(
                 .notePath(notePath)
                 .type(block.getType())
                 .content(content)
-                .bookmark(block.isBookmark())
+                .bookmark(isBookmarked)
                 .order(block.getOrder())
                 .createdAt(block.getCreatedAt())
                 .updatedAt(block.getUpdatedAt())

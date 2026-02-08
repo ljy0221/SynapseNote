@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, FileText, Network, Sparkles, User } from 'lucide-react';
+import { LayoutDashboard, FileText, Network, User } from 'lucide-react';
 import { SideMenuButton } from '../../common/sideMenuButton/SideMenuButton';
 import { UserProfileModal } from '../../common/modal/UserProfileModal';
-import { useUser } from '../../../context/UserContext';
+import { useAuthStore } from '../../../store/useAuthStore';
 import './SideMenuBar.css';
 
 export const SideMenuBar: React.FC = () => {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
-    const { userInfo, isLoading } = useUser();
+    const { userInfo, isLoading } = useAuthStore();
 
     return (
         <>
@@ -17,7 +17,6 @@ export const SideMenuBar: React.FC = () => {
                     <SideMenuButton to="/home" icon={<LayoutDashboard size={22} />} label="홈" />
                     <SideMenuButton to="/note" icon={<FileText size={22} />} label="노트" />
                     <SideMenuButton to="/mindmap" icon={<Network size={22} />} label="마인드맵" />
-                    <SideMenuButton to="/recommend" icon={<Sparkles size={22} />} label="추천" />
                 </div>
 
                 {/* 하단: 프로필 모달 오픈 버튼 */}

@@ -1,82 +1,64 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { BookDashed } from 'lucide-react';
 import NoteBookmarkItem from './NoteBookmarkItem';
 
 import type { BookmarkedNote } from '../../../types/bookmark/Bookmark';
 
-import { getBookmarksApi } from '../../../api/bookmark/Bookmarks.api';
 import {
-  adaptBookmarkedNotes,
-} from '../../../api/bookmark/Bookmarks.adapter';
-import { removeBookmarkApi } from '../../../api/bookmark/Bookmarks.api';
-
-
+  getBookmarksApi,
+  removeBookmarkApi,
+} from '../../../api/bookmark/Bookmarks.api';
+import { adaptBookmarkedNotes } from '../../../api/bookmark/Bookmarks.adapter';
+import { emitNotesChanged } from '../../../events/NotesEvents';
 
 const NoteBookmarkList = () => {
   const [notes, setNotes] = useState<BookmarkedNote[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchBookmarks = async () => {
-      setIsLoading(true);
-      try {
-        const res = await getBookmarksApi();
-        const bookmarkedNotes = adaptBookmarkedNotes(res);
-
-        setNotes(bookmarkedNotes);
-
-        // ✅ 성공 로그 (개발용)
-        console.log(
-          '[NoteBookmarkList] 즐겨찾기 로딩 성공',
-          {
-            count: bookmarkedNotes.length,
-            notes: bookmarkedNotes,
-          }
-        );
-      } catch (e) {
-        console.error('[NoteBookmarkList] 즐겨찾기 로딩 실패', e);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchBookmarks();
+  const fetchBookmarks = useCallback(async (isSilent = false) => {
+    if (!isSilent) setIsLoading(true);
+    try {
+      const res = await getBookmarksApi();
+      // [New] 북마크 추가 시간(또는 생성 시간) 최신순 정렬
+      const sorted = adaptBookmarkedNotes(res).sort((a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      setNotes(sorted);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  const handleRemove = async (noteId: string) => {
-    // 1. optimistic UI
-    setNotes(prev => prev.filter(n => n.noteId !== noteId));
+  useEffect(() => {
+    fetchBookmarks();
+  }, [fetchBookmarks]);
 
-    console.log(
-      '[NoteBookmarkList] 즐겨찾기 제거 (optimistic)',
-      { noteId }
-    );
+  useEffect(() => {
+    const handleChanged = () => {
+      fetchBookmarks(true); // 즐겨찾기 변경 시에도 조용히 갱신
+    };
+
+    window.addEventListener('notes-changed', handleChanged);
+    return () => window.removeEventListener('notes-changed', handleChanged);
+  }, [fetchBookmarks]);
+
+  const handleRemove = async (noteId: string) => {
+    // optimistic UI
+    setNotes(prev => prev.filter(n => n.noteId !== noteId));
 
     try {
       await removeBookmarkApi(noteId);
-
-      console.log(
-        '[NoteBookmarkList] 즐겨찾기 제거 성공',
-        { noteId }
-      );
-    } catch (e) {
-      console.error(
-        '[NoteBookmarkList] 즐겨찾기 제거 실패',
-        e
-      );
-
-      // ❌ rollback (다시 불러오는 게 가장 안전)
+      emitNotesChanged(); // 사이드바 등 다른 컴포넌트 동기화
+    } catch {
+      // rollback: 서버 기준 재동기화
       try {
         const res = await getBookmarksApi();
         setNotes(adaptBookmarkedNotes(res));
-      } catch (reloadError) {
-        console.error(
-          '[NoteBookmarkList] 즐겨찾기 재동기화 실패',
-          reloadError
-        );
+      } catch {
+        // 여기서는 더 이상 할 수 있는 게 없음 → 조용히 실패
       }
     }
   };
-
 
   if (isLoading) {
     return <div className="bookmark-loading">Loading...</div>;
@@ -85,7 +67,8 @@ const NoteBookmarkList = () => {
   if (notes.length === 0) {
     return (
       <div className="bookmark-empty">
-        즐겨찾기한 노트가 없습니다.
+        <BookDashed size={48} className="bookmark-empty-icon" />
+        <span className="empty-text">아직 즐겨찾기한 지식이 없습니다!</span>
       </div>
     );
   }

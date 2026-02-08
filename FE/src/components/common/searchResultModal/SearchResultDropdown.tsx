@@ -6,6 +6,7 @@ interface SearchResultDropdownProps {
   query: string;
   results: SearchedNote[];
   isLoading: boolean;
+  currentMemberId?: string;
   onClose: () => void;
   onSelectNote: (noteId: string) => void;
 }
@@ -14,6 +15,7 @@ const SearchResultDropdown: React.FC<SearchResultDropdownProps> = ({
   query,
   results,
   isLoading,
+  currentMemberId,
   onClose,
   onSelectNote,
 }) => {
@@ -65,20 +67,27 @@ const SearchResultDropdown: React.FC<SearchResultDropdownProps> = ({
         )}
 
         {!isLoading &&
-          results.map(note => (
-            <div
-              key={note.noteId}
-              className="search-dropdown-item"
-              onClick={() => onSelectNote(note.noteId)}
-            >
-              <div className="search-dropdown-title">
-                {note.title}
+          results.map(note => {
+            const isShared = currentMemberId && note.createdBy !== currentMemberId;
+            return (
+              <div
+                key={note.noteId}
+                className="search-dropdown-item"
+                onClick={() => onSelectNote(note.noteId)}
+              >
+                <div className="search-dropdown-title-row">
+                  <div className="search-dropdown-title">
+                    {note.title}
+                  </div>
+                  {isShared ? (
+                    <span className="shared-badge">공유됨</span>
+                  ) : (
+                    <span className="owned-badge">내 노트</span>
+                  )}
+                </div>
               </div>
-              <div className="search-dropdown-path">
-                {note.directoryPath}
-              </div>
-            </div>
-          ))}
+            );
+          })}
       </div>
     </div>
   );
