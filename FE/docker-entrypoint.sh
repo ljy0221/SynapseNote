@@ -12,8 +12,13 @@ env | grep '^VITE_' | while read -r line; do
   key=$(echo "$line" | cut -d= -f1)
   value=$(echo "$line" | cut -d= -f2-)
   
+  # Safe escaping for JSON string:
+  # 1. Escape backslashes first ( \ -> \\ )
+  # 2. Escape double quotes ( " -> \" )
+  safe_value=$(echo "$value" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g')
+
   # Write to config.js
-  echo "  $key: \"$value\"," >> "$CONFIG_FILE"
+  echo "  $key: \"$safe_value\"," >> "$CONFIG_FILE"
 done
 
 echo "};" >> "$CONFIG_FILE"

@@ -1,9 +1,10 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { Client } from '@stomp/stompjs';
 import { SignalingMessage, AnswerMessage, IceCandidateMessage, Participant } from '../types/webrtc/WebRTC';
+import { env } from '../config/env';
 
 // Derive WebRTC URL from YJS URL (shared base)
-const BASE_WS_URL = (window as any).config?.VITE_WS_URL || import.meta.env.VITE_WS_URL || 'wss://i14b102.p.ssafy.io/yjs';
+const BASE_WS_URL = env.VITE_WS_URL || 'wss://i14b102.p.ssafy.io/yjs';
 const SIGNALING_SERVER_URL = BASE_WS_URL.replace(/\/yjs$/, '/webrtc');
 
 interface UseWebRTCOptions {
@@ -61,9 +62,9 @@ export const useWebRTC = ({ noteId, memberId, token, onConnect }: UseWebRTCOptio
         const pc = new RTCPeerConnection({
             iceServers: [
                 {
-                    urls: (window as any).config?.VITE_TURN_URL || import.meta.env.VITE_TURN_URL,
-                    username: (window as any).config?.VITE_TURN_USERNAME || import.meta.env.VITE_TURN_USERNAME,
-                    credential: (window as any).config?.VITE_TURN_CREDENTIAL || import.meta.env.VITE_TURN_CREDENTIAL
+                    urls: env.VITE_TURN_URL,
+                    username: env.VITE_TURN_USERNAME,
+                    credential: env.VITE_TURN_CREDENTIAL
                 }
             ]
         });

@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { SocialLoginButton } from "../../components/common/socialLoginButton/SocialLoginButton";
 import { SynapseLogo } from "../../components/common/logo/SynapseLogo";
+import { env } from '../../config/env';
 
 
 const Login: React.FC = () => {
@@ -96,16 +97,16 @@ const Login: React.FC = () => {
                                 const isElectron = !!window.electronAPI;
                                 const isDev = import.meta.env.DEV;
                                 const clientId = isElectron
-                                    ? ((window as any).config?.VITE_GITHUB_CLIENT_ID || import.meta.env.VITE_GITHUB_CLIENT_ID)
-                                    : ((window as any).config?.VITE_GITHUB_WEB_CLIENT_ID || import.meta.env.VITE_GITHUB_WEB_CLIENT_ID);
+                                    ? env.VITE_GITHUB_CLIENT_ID
+                                    : env.VITE_GITHUB_WEB_CLIENT_ID;
 
                                 let redirectUri;
                                 if (isElectron) {
                                     redirectUri = isDev
-                                        ? ((window as any).config?.VITE_GITHUB_REDIRECT_URI || import.meta.env.VITE_GITHUB_REDIRECT_URI)
-                                        : ((window as any).config?.VITE_GITHUB_PRODUCTION_REDIRECT_URI || import.meta.env.VITE_GITHUB_PRODUCTION_REDIRECT_URI);
+                                        ? env.VITE_GITHUB_REDIRECT_URI
+                                        : env.VITE_GITHUB_PRODUCTION_REDIRECT_URI;
                                 } else {
-                                    redirectUri = (window as any).config?.VITE_GITHUB_WEB_REDIRECT_URI || import.meta.env.VITE_GITHUB_WEB_REDIRECT_URI;
+                                    redirectUri = env.VITE_GITHUB_WEB_REDIRECT_URI;
                                 }
 
                                 const state = isElectron ? 'ELECTRON' : 'WEB';
@@ -123,15 +124,15 @@ const Login: React.FC = () => {
                             onClick={() => {
                                 const isElectron = !!window.electronAPI;
                                 const isDev = import.meta.env.DEV;
-                                const clientId = (window as any).config?.VITE_GOOGLE_CLIENT_ID || import.meta.env.VITE_GOOGLE_CLIENT_ID;
+                                const clientId = env.VITE_GOOGLE_CLIENT_ID;
 
                                 let redirectUri;
                                 if (isElectron) {
                                     redirectUri = isDev
-                                        ? ((window as any).config?.VITE_GOOGLE_REDIRECT_URI || import.meta.env.VITE_GOOGLE_REDIRECT_URI)
-                                        : ((window as any).config?.VITE_GOOGLE_PRODUCTION_REDIRECT_URI || import.meta.env.VITE_GOOGLE_PRODUCTION_REDIRECT_URI);
+                                        ? env.VITE_GOOGLE_REDIRECT_URI
+                                        : env.VITE_GOOGLE_PRODUCTION_REDIRECT_URI;
                                 } else {
-                                    redirectUri = (window as any).config?.VITE_GOOGLE_WEB_REDIRECT_URI || import.meta.env.VITE_GOOGLE_WEB_REDIRECT_URI;
+                                    redirectUri = env.VITE_GOOGLE_WEB_REDIRECT_URI;
                                 }
 
                                 const state = isElectron ? 'ELECTRON' : 'WEB';
