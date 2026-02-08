@@ -35,8 +35,7 @@ import { useModalStore } from '../../../store/useModalStore';
 import './TextBlock.css';
 import { BlockBookmarkButton } from '../../common/blockBookmarkButton/BlockBookmarkButton';
 import { BlockEditorAvatar } from '../../common/blockEditorAvatar/BlockEditorAvatar';
-import { AwarenessUser, useYjsStore } from '../../../hooks/useYjsStore';
-import Collaboration from '@tiptap/extension-collaboration';
+import { AwarenessUser } from '../../../hooks/useYjsStore';
 import { api } from '../../../api/axios';
 
 // Div Node for Layout
@@ -134,14 +133,6 @@ const TextBlock: React.FC<TextBlockProps> = ({
     showBookmark = true,
     editors = [],
 }) => {
-    console.log(`[TextBlock ${id}] Component rendered with props:`, {
-        id,
-        noteId,
-        content,
-        contentType: typeof content,
-        contentLength: content ? content.length : 0
-    });
-
     const [isFocused, setIsFocused] = useState(false);
     const [showColorPicker, setShowColorPicker] = useState(false);
     const { openModal } = useModalStore();
@@ -168,19 +159,8 @@ const TextBlock: React.FC<TextBlockProps> = ({
     // 이미지 업로드 상태
     const [isUploading, setIsUploading] = useState(false);
 
-    // [Fix] Track if content has been converted to prevent re-running
-    const hasConvertedRef = useRef(false);
-
-    // Get Y.Doc and Y.Text for Collaboration
-    const { getYDoc, getYTextForBlock } = useYjsStore(noteId);
-    const yDoc = getYDoc();
-    const yText = getYTextForBlock(id);
-
-    if (yText && !yDoc) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error(`[TextBlock ${id}] Invalid state: yText exists but yDoc is null. Collaboration disabled.`);
-        }
-    }
+    // Ref to track whether a remote update is being applied (prevent onUpdate loop)
+    const isRemoteUpdateRef = useRef(false);
 
     // [New] Use refs to avoid dependency issues
     const onUpdateRef = useRef(onUpdate);
@@ -210,39 +190,36 @@ const TextBlock: React.FC<TextBlockProps> = ({
             Highlight.configure({ multicolor: true }),
             TextAlign.configure({ types: ['heading', 'paragraph'] }),
             TabHandler,
-            DivNode, // [Fix] Add DivNode to extensions
-            // [Fix] Always enable Collaboration
-            ...(yDoc && yText ? [Collaboration.configure({
-                document: yDoc,
-                fragment: yText as any,
-            })] : []),
+            DivNode,
         ],
-        // [Fix] Always use content if it's a string (from MongoDB)
-        // TipTap will parse HTML and Collaboration will sync to Yjs
         content: (typeof content === 'string' && content.trim()) ? content : '',
         editorProps: {
             attributes: {
                 class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl focus:outline-none',
             },
-            // [New] Handle IME composition events
             handleDOMEvents: {
                 compositionstart: () => {
                     isComposingRef.current = true;
                     return false;
                 },
                 compositionend: () => {
-                    isComposingRef.current = false;
-
-                    // [New] Flush pending update immediately after composition ends
-                    if (updateTimerRef.current) {
-                        clearTimeout(updateTimerRef.current);
-                        updateTimerRef.current = null;
-                    }
-                    if (pendingUpdateRef.current !== null && editor) {
-                        console.log(`[TextBlock ${id}] Flushing update after composition end`);
-                        onUpdateRef.current?.(id, pendingUpdateRef.current);
-                        pendingUpdateRef.current = null;
-                    }
+                    // Use setTimeout to ensure ProseMirror finishes processing
+                    // the final composed character before we start the debounce
+                    setTimeout(() => {
+                        isComposingRef.current = false;
+                        // If there's a pending update buffered during composition, start debounce
+                        if (pendingUpdateRef.current !== null) {
+                            if (updateTimerRef.current) {
+                                clearTimeout(updateTimerRef.current);
+                            }
+                            updateTimerRef.current = setTimeout(() => {
+                                if (pendingUpdateRef.current !== null) {
+                                    onUpdateRef.current?.(id, pendingUpdateRef.current);
+                                    pendingUpdateRef.current = null;
+                                }
+                            }, 300);
+                        }
+                    }, 0);
                     return false;
                 },
             },
@@ -251,7 +228,6 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 const link = attrs?.href;
 
                 if (link && event.target instanceof HTMLAnchorElement) {
-                    // 링크 클릭 시 외부 링크 경고 모달 표시
                     openModal('EXTERNAL_LINK_WARNING', {
                         url: link,
                         onConfirm: () => {
@@ -263,45 +239,27 @@ const TextBlock: React.FC<TextBlockProps> = ({
                 return false;
             }
         },
-        onCreate: ({ editor }) => {
-            // [Fix] Parse HTML content if XmlFragment is empty
-            if (yText && typeof content === 'string' && content.trim()) {
-                const fragmentLength = (yText as any).length || 0;
-                // [TEMP FIX] Always parse HTML to fix escaped HTML issue
-                // TODO: Remove this after all data is migrated
-                console.log(`[TextBlock ${id}] onCreate: Forcing HTML parsing (XmlFragment length: ${fragmentLength}, content length: ${content.length})`);
-                console.log(`[TextBlock ${id}] onCreate: Content value:`, content);
-                // [Fix] Use emitUpdate: true to force Yjs synchronization
-                editor.commands.setContent(content, { emitUpdate: true });
-                console.log(`[TextBlock ${id}] onCreate: After setContent, XmlFragment length: ${(yText as any).length || 0}`);
-            }
-        },
         onSelectionUpdate: () => {
             setUpdateTrigger(prev => prev + 1);
         },
         onUpdate: ({ editor }) => {
-            // [Fix] Skip onUpdate when using Collaboration
-            // Yjs handles synchronization automatically via Collaboration extension
-            if (yDoc && yText) {
-                console.log(`[TextBlock ${id}] Skipping onUpdate - using Yjs Collaboration`);
+            // Skip if this update was triggered by applying remote content
+            if (isRemoteUpdateRef.current) return;
+
+            const html = editor.getHTML();
+            pendingUpdateRef.current = html;
+
+            // During IME composition, only buffer - don't start the debounce timer
+            if (isComposingRef.current) {
                 return;
             }
 
-            // [Fallback] For non-collaborative mode, use debounced updates
-            const html = editor.getHTML();
-
-            // Store the pending update
-            pendingUpdateRef.current = html;
-
-            // Clear existing timer
+            // Start debounce timer
             if (updateTimerRef.current) {
                 clearTimeout(updateTimerRef.current);
             }
-
-            // Set new timer - update after 300ms of no typing
             updateTimerRef.current = setTimeout(() => {
                 if (pendingUpdateRef.current !== null) {
-                    console.log(`[TextBlock ${id}] Flushing debounced update`);
                     onUpdateRef.current?.(id, pendingUpdateRef.current);
                     pendingUpdateRef.current = null;
                 }
@@ -314,18 +272,17 @@ const TextBlock: React.FC<TextBlockProps> = ({
         onBlur: () => {
             setIsFocused(false);
 
-            // [New] Flush pending update on blur
+            // Flush pending update on blur
             if (updateTimerRef.current) {
                 clearTimeout(updateTimerRef.current);
                 updateTimerRef.current = null;
             }
             if (pendingUpdateRef.current !== null) {
-                console.log(`[TextBlock ${id}] Flushing update on blur`);
                 onUpdateRef.current?.(id, pendingUpdateRef.current);
                 pendingUpdateRef.current = null;
             }
         },
-    }, [yDoc, yText, noteId, id, content, openModal]);
+    }, [noteId, id, openModal]);
 
     // 외부에서 포커스 요청 시 에디터 포커스
     useEffect(() => {
@@ -350,41 +307,23 @@ const TextBlock: React.FC<TextBlockProps> = ({
         };
     }, []);
 
-    // [Fix] Convert string content to XmlFragment for TipTap (only once)
-    // When content is loaded from MongoDB as HTML string, convert it to XmlFragment
+    // Remote content sync: apply changes from other users when editor is not focused
+    const prevContentRef = useRef(content);
     useEffect(() => {
-        console.log(`[TextBlock ${id}] Content conversion useEffect:`, {
-            editor: !!editor,
-            yDoc: !!yDoc,
-            yText: !!yText,
-            content: content,
-            contentType: typeof content,
-            hasConverted: hasConvertedRef.current
-        });
+        if (!editor || editor.isDestroyed) return;
+        // Only react when content prop actually changed
+        if (content === prevContentRef.current) return;
+        prevContentRef.current = content;
 
-        if (!editor || !yDoc || !yText || !content || hasConvertedRef.current) return;
+        // Don't apply remote content while user is actively editing or composing
+        if (editor.isFocused || isComposingRef.current) return;
 
-        // Check if content is a string (from MongoDB)
-        if (typeof content === 'string' && content.trim()) {
-            // Check if XmlFragment is empty
-            const fragmentLength = (yText as any).length || 0;
-            if (fragmentLength === 0) {
-                console.log(`[TextBlock ${id}] Converting string content to XmlFragment, length: ${content.length}`);
-
-                // Use TipTap to parse HTML and populate XmlFragment
-                editor.commands.setContent(content);
-                hasConvertedRef.current = true; // Mark as converted
-
-                console.log(`[TextBlock ${id}] Conversion complete, XmlFragment length: ${(yText as any).length}`);
-            } else {
-                // XmlFragment already has data, skip conversion
-                hasConvertedRef.current = true;
-                console.log(`[TextBlock ${id}] XmlFragment already populated (length: ${fragmentLength}), skipping conversion`);
-            }
+        if (content) {
+            isRemoteUpdateRef.current = true;
+            editor.commands.setContent(content, { emitUpdate: false });
+            isRemoteUpdateRef.current = false;
         }
-    }, [editor, yDoc, yText, content, id]);
-
-    // 🔥 원격 변경사항 동기화 (깜빡임 방지)
+    }, [content, editor]);
     if (!editor) {
         return null;
     }
