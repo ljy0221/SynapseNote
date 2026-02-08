@@ -323,7 +323,12 @@ export const useYjsStore = (noteId: string | undefined) => {
 
         const properties = new Y.Map();
         if (block.type === 'code') {
-          properties.set('code', block.content || '');
+          // [New] Use Y.Text for code blocks to enable CRDT-based collaborative editing
+          const yText = new Y.Text();
+          if (block.content) {
+            yText.insert(0, block.content);
+          }
+          properties.set('code', yText);
           properties.set('language', 'javascript');
           properties.set('version', '17');
           properties.set('executionMode', 'local');
@@ -364,7 +369,12 @@ export const useYjsStore = (noteId: string | undefined) => {
 
       const properties = new Y.Map();
       if (type === 'code') {
-        properties.set('code', initialContent || ''); // Plain string for LWW
+        // [New] Use Y.Text for code blocks to enable CRDT-based collaborative editing
+        const yText = new Y.Text();
+        if (initialContent) {
+          yText.insert(0, initialContent);
+        }
+        properties.set('code', yText);
         properties.set('language', 'javascript');
         properties.set('version', '17');
         properties.set('executionMode', 'local');
@@ -415,10 +425,9 @@ export const useYjsStore = (noteId: string | undefined) => {
     // 🔥 Transaction origin 'local' 추가: 로컬 변경임을 표시
     doc.transact(() => {
       if (type === 'code') {
-        // LWW Strategy: Direct set
-        if (properties.get('code') !== newContent) {
-          properties.set('code', newContent);
-        }
+        // [REMOVED] LWW Strategy for code blocks
+        // Y.Text handles updates automatically via yCollab extension
+        // No manual updates needed here
         return;
       }
 
@@ -609,7 +618,12 @@ export const useYjsStore = (noteId: string | undefined) => {
 
         const properties = new Y.Map();
         if (block.type === 'code') {
-          properties.set('code', block.content || '');
+          // [New] Use Y.Text for code blocks to enable CRDT-based collaborative editing
+          const yText = new Y.Text();
+          if (block.content) {
+            yText.insert(0, block.content);
+          }
+          properties.set('code', yText);
           properties.set('language', 'javascript');
           properties.set('version', '17');
           properties.set('executionMode', 'local');
