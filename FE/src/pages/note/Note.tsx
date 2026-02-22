@@ -127,15 +127,15 @@ const Note: React.FC = () => {
         try {
             console.log(`[Note] Requesting API for: ${id}`);
 
-            // [Modified] 멤버 API 실패가 전체 노트로딩을 방해하지 않도록 별도 처리
-            const noteRes = await getNoteDetailApi(id);
-            let membersRes = { members: [] as any[] };
-            try {
-                membersRes = await getNoteMembersApi(id);
-                setNoteMembers(membersRes.members || []); // [New]
-            } catch (err) {
-                console.warn('[Note] Failed to fetch member list, using detail info only:', err);
-            }
+            // [Modified] 노트 상세와 멤버 목록을 병렬로 요청하여 로딩 시간 단축
+            const [noteRes, membersRes] = await Promise.all([
+                getNoteDetailApi(id),
+                getNoteMembersApi(id).catch((err: unknown) => {
+                    console.warn('[Note] Failed to fetch member list, using detail info only:', err);
+                    return { members: [] as any[] };
+                }),
+            ]);
+            setNoteMembers(membersRes.members || []); // [New]
 
             if (noteRes) {
                 // [New] 사이드바 정보(목록)에서도 경로 확인
