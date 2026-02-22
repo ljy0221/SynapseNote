@@ -41,7 +41,7 @@ public interface NoteRepository extends JpaRepository<Note, UUID> {
     // 2. 내 노트 목록 조회 (특정 디렉토리 하위 조회 시 사용 가능)
     List<Note> findByCreatedByIdAndDeletedAtIsNull(UUID memberId);
 
-    @Query("SELECT n FROM Note n WHERE n.id = :id AND n.deletedAt IS NULL")
+    @Query("SELECT n FROM Note n JOIN FETCH n.createdBy WHERE n.id = :id AND n.deletedAt IS NULL")
     Optional<Note> findById(@Param("id") UUID id);
 
     // 3. 디렉토리별 조회 (탐색기 기능용)
@@ -56,6 +56,7 @@ public interface NoteRepository extends JpaRepository<Note, UUID> {
 
     @Query("""
             SELECT DISTINCT n FROM Note n
+            JOIN FETCH n.createdBy
             JOIN MindmapNodePosition mnp ON n.id = mnp.id.noteId AND mnp.id.memberId = :memberId
             LEFT JOIN NoteMember nm ON n.id = nm.note.id AND nm.member.id = :memberId AND nm.deletedAt IS NULL
             WHERE (n.createdBy.id = :memberId OR nm.id IS NOT NULL)
@@ -110,8 +111,9 @@ public interface NoteRepository extends JpaRepository<Note, UUID> {
     @Query("SELECT n.id FROM Note n WHERE n.createdBy.id = :memberId AND n.deletedAt IS NULL")
     List<UUID> findAllNoteIdsByMemberId(@Param("memberId") UUID memberId);
 
-    // 여러 ID로 노트 조회 (DeletedAt IS NULL)
-    List<Note> findAllByIdInAndDeletedAtIsNull(List<UUID> ids);
+    // 여러 ID로 노트 조회 (createdBy JOIN FETCH — MindmapService N+1 방지)
+    @Query("SELECT n FROM Note n JOIN FETCH n.createdBy WHERE n.id IN :ids AND n.deletedAt IS NULL")
+    List<Note> findAllByIdInAndDeletedAtIsNull(@Param("ids") List<UUID> ids);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
