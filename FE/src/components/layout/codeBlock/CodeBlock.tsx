@@ -32,7 +32,7 @@ interface CodeBlockProps {
     noteId?: string;
     onDelete: (id: number | string) => void;
     onChange: (id: number | string, newCode: string) => void;
-    onFocus: () => void;
+    onFocus: (id: number | string) => void;
     onBlur?: () => void; // [New] Clear awareness on blur
     onAddBlockAfter?: (content: string) => void; // AI 리뷰 결과를 새 블록으로 추가
     onToggleBookmark?: () => void;
@@ -309,7 +309,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     // [REMOVED] useEffect for syncing code prop to editedCode - Y.Text handles this
 
     const handleEditorFocus = () => {
-        onFocus();
+        onFocus(id);
     };
 
     const handleEditorBlur = () => {
@@ -513,4 +513,4 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     );
 };
 
-export default CodeBlock;
+export default React.memo(CodeBlock);

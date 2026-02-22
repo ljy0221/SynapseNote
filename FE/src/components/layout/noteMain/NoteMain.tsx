@@ -1,4 +1,5 @@
 import React from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import CodeBlock from '../codeBlock/CodeBlock';
 import TextBlock from '../textBlock/TextBlock';
 import { NoteSideNav } from './NoteSideNav';
@@ -86,6 +87,17 @@ const NoteMain: React.FC<NoteMainProps> = ({
     const [localBlocks, setLocalBlocks] = React.useState<BlockData[]>(blocks);
     const isDraggingRef = React.useRef(false); // [New] Track dragging state to prevent conflict with external updates
 
+    // Scroll container ref for virtualization (readOnly mode)
+    const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+
+    // Virtual list for readOnly mode (avoids rendering all blocks at once)
+    const rowVirtualizer = useVirtualizer({
+        count: readOnly ? localBlocks.length : 0,
+        getScrollElement: () => scrollContainerRef.current,
+        estimateSize: () => 150,
+        overscan: 5,
+    });
+
     // Sync props.blocks to localBlocks when props change (and not actively dragging)
     React.useEffect(() => {
         if (!isDraggingRef.current) {
@@ -124,7 +136,7 @@ const NoteMain: React.FC<NoteMainProps> = ({
 
     // Removed legacy native DnD handlers
 
-    const renderBlock = (block: BlockData, index: number, dragControls: any) => {
+    const renderBlock = React.useCallback((block: BlockData, index: number, dragControls: any) => {
         const commonProps = {
             dragControls: dragControls, // Passed from DraggableBlock
             isFocused: block.id === focusedBlockId,
@@ -159,7 +171,7 @@ const NoteMain: React.FC<NoteMainProps> = ({
                         readOnly={readOnly} // [New]
                         onUpdate={onUpdateBlock as any}
                         onDelete={onDeleteBlock as any} // Still keeping it for safety, though UI removed
-                        onFocus={() => onFocusBlock(block.id)}
+                        onFocus={onFocusBlock}
                         onToggleBookmark={() => onToggleBookmark?.(block.id, bookmarkedBlockIds ? bookmarkedBlockIds.has(block.id.toString()) : false)}
                         showBookmark={showBlockBookmark} // [New]
                         editors={getBlockEditors ? getBlockEditors(block.id.toString()) : []} // [New]
@@ -178,7 +190,7 @@ const NoteMain: React.FC<NoteMainProps> = ({
                         readOnly={readOnly} // [New]
                         onDelete={onDeleteBlock as any}
                         onChange={onUpdateBlock as any}
-                        onFocus={() => onFocusBlock(block.id)}
+                        onFocus={onFocusBlock}
                         onAddBlockAfter={(content: string) => onAddBlockAfter(block.id, 'text', content)}
                         onAiReviewResult={handleAiReviewResult}
                         onToggleBookmark={() => onToggleBookmark?.(block.id, bookmarkedBlockIds ? bookmarkedBlockIds.has(block.id.toString()) : false)}
@@ -190,10 +202,10 @@ const NoteMain: React.FC<NoteMainProps> = ({
             default:
                 return null;
         }
-    };
+    }, [focusedBlockId, bookmarkedBlockIds, onUpdateBlock, onDeleteBlock, onFocusBlock, onToggleBookmark, onAddBlockAfter, getBlockEditors, showBlockBookmark, noteId, readOnly, blocks, onUpdateBlockLanguage]);
 
     return (
-        <div className="note-main-layout">
+        <div className="note-main-layout" ref={scrollContainerRef}>
 
             <div className="note-body-wrapper">
                 {/* External sidebar area removed */}
@@ -239,8 +251,26 @@ const NoteMain: React.FC<NoteMainProps> = ({
                                     onGenerateSummary={onGenerateSummary ?? (() => { })}
                                 />
                                 {readOnly ? (
-                                    <div className="readonly-blocks-list">
-                                        {localBlocks.map((block, index) => renderBlock(block, index, null))}
+                                    <div
+                                        className="readonly-blocks-list"
+                                        style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: 'relative' }}
+                                    >
+                                        {rowVirtualizer.getVirtualItems().map((virtualItem) => (
+                                            <div
+                                                key={localBlocks[virtualItem.index].id}
+                                                data-index={virtualItem.index}
+                                                ref={rowVirtualizer.measureElement}
+                                                style={{
+                                                    position: 'absolute',
+                                                    top: 0,
+                                                    left: 0,
+                                                    width: '100%',
+                                                    transform: `translateY(${virtualItem.start}px)`,
+                                                }}
+                                            >
+                                                {renderBlock(localBlocks[virtualItem.index], virtualItem.index, null)}
+                                            </div>
+                                        ))}
                                     </div>
                                 ) : (
                                     <Reorder.Group
