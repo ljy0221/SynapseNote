@@ -22,6 +22,9 @@ import com.synapse.api.util.redis.TokenRedisService;
 import com.synapse.api.util.response.ErrorCode;
 import com.synapse.api.util.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -119,6 +122,7 @@ public class MemberService {
         return member;
     }
 
+    @Cacheable(value = "profile", key = "#memberId")
     public ProfileResponse getProfile(UUID memberId) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
@@ -146,6 +150,10 @@ public class MemberService {
     }
 
     @Transactional
+    @Caching(evict = {
+        @CacheEvict(value = "profile", key = "#memberId"),
+        @CacheEvict(value = "streak", key = "#memberId")
+    })
     public void withdraw(UUID memberId, String accessToken, String refreshToken) {
 
         // (선택) 존재 검증은 가볍게 exists로
@@ -172,6 +180,7 @@ public class MemberService {
     }
 
     @Transactional
+    @CacheEvict(value = "profile", key = "#memberId")
     public ProfileResponse updateNickname(UUID memberId, String newName) {
         String trimmedName = newName.trim();
 
@@ -199,6 +208,7 @@ public class MemberService {
                 .build();
     }
 
+    @Cacheable(value = "streak", key = "#memberId")
     public List<StreakResponse> getStreak(UUID memberId) {
         LocalDate today = LocalDate.now();
         int year = today.getYear();
@@ -231,6 +241,7 @@ public class MemberService {
     }
 
     @Transactional
+    @CacheEvict(value = "streak", key = "#memberId")
     public void updateStreak(UUID memberId) {
         LocalDate today = LocalDate.now();
         StreakId streakId = new StreakId(
@@ -245,6 +256,7 @@ public class MemberService {
     }
 
     @Transactional
+    @CacheEvict(value = "profile", key = "#memberId")
     public ProfileResponse updateTheme(UUID memberId, UpdateThemeRequest request) {
         // 사용자 조회
         Member member = memberRepository.findById(memberId)
