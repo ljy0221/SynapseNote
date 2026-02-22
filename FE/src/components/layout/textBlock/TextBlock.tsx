@@ -80,7 +80,7 @@ interface TextBlockProps {
     content?: string;
     bookmark?: boolean;
     onUpdate?: (id: number | string, content: string) => void;
-    onFocus: () => void;
+    onFocus: (id: number | string) => void;
     onDelete: (id: number | string) => void;
     onToggleBookmark?: () => void;
     // Framer Motion controls
@@ -264,7 +264,7 @@ const TextBlock: React.FC<TextBlockProps> = ({
         },
         onFocus: () => {
             setIsFocused(true);
-            onFocusRef.current();
+            onFocusRef.current(id);
         },
         onBlur: () => {
             setIsFocused(false);
@@ -641,4 +641,4 @@ const TextBlock: React.FC<TextBlockProps> = ({
     );
 };
 
-export default TextBlock;
+export default React.memo(TextBlock);

@@ -7,7 +7,6 @@ import com.synapse.api.modules.ai.dto.response.NoteSummaryResponse;
 import com.synapse.api.modules.ai.service.CodeAssistantService;
 import com.synapse.api.modules.ai.service.NoteSummaryService;
 import com.synapse.api.util.response.DataResponse;
-import com.synapse.api.util.response.SuccessCode;
 import com.synapse.api.util.security.CustomMemberDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +15,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/api")
@@ -27,7 +27,7 @@ public class AiController {
     private final NoteSummaryService noteSummaryService;
 
     @PostMapping("/v1/notes/{noteId}/blocks/{blockId}/ai/review")
-    public DataResponse<CodeReviewResponse> reviewCode(
+    public CompletableFuture<DataResponse<CodeReviewResponse>> reviewCode(
             @AuthenticationPrincipal CustomMemberDetails details,
             @PathVariable UUID noteId,
             @PathVariable UUID blockId,
@@ -37,14 +37,12 @@ public class AiController {
         log.info("Code review requested: noteId={}, blockId={}, user={}, language={}",
                 noteId, blockId, userId, request.language());
 
-        CodeReviewResponse response = codeAssistantService.reviewCode(
-                noteId, blockId, userId, request);
-
-        return DataResponse.of(response);
+        return codeAssistantService.reviewCode(noteId, blockId, userId, request)
+                .thenApply(DataResponse::of);
     }
 
     @PostMapping("/v1/notes/{noteId}/ai/summary")
-    public DataResponse<NoteSummaryResponse> summarizeNote(
+    public CompletableFuture<DataResponse<NoteSummaryResponse>> summarizeNote(
             @AuthenticationPrincipal CustomMemberDetails details,
             @PathVariable UUID noteId,
             @Valid @RequestBody NoteSummaryRequest request) {
@@ -52,9 +50,7 @@ public class AiController {
         UUID userId = details.id();
         log.info("Note summary requested: noteId={}, user={}", noteId, userId);
 
-        NoteSummaryResponse response = noteSummaryService.summarizeNote(
-                noteId, userId, request);
-
-        return DataResponse.of(response);
+        return noteSummaryService.summarizeNote(noteId, userId, request)
+                .thenApply(DataResponse::of);
     }
 }

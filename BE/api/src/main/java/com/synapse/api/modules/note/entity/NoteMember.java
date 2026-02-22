@@ -11,7 +11,8 @@ import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "note_members", indexes = {
-        @Index(name = "idx_note_members_member_id", columnList = "member_id")
+        @Index(name = "idx_note_members_member_id", columnList = "member_id"),
+        @Index(name = "idx_note_members_note_id", columnList = "note_id")
 })
 @Getter
 @SuperBuilder

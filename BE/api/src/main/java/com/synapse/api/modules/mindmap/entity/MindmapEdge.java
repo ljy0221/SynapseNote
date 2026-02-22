@@ -7,7 +7,9 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "mindmap_edges")
+@Table(name = "mindmap_edges", indexes = {
+        @Index(name = "idx_mindmap_edges_member_id", columnList = "member_id")
+})
 @Getter
 @AllArgsConstructor
 @Builder

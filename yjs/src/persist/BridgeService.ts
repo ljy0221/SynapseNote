@@ -256,7 +256,7 @@ function xmlElementToHtml(element: Y.XmlElement): string {
 
 class BridgeService {
   private debounceTimers: Map<string, NodeJS.Timeout> = new Map();
-  private readonly DEBOUNCE_TIME = 2000;
+  private readonly DEBOUNCE_TIME = Number(process.env.MONGO_SYNC_DEBOUNCE_MS ?? 2000);
 
   constructor() {
     this.handleUpdate = this.handleUpdate.bind(this);

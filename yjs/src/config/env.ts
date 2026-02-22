@@ -16,6 +16,6 @@ export function loadEnv(): EnvConfig {
 
     SPRING_BASE_URL: process.env.SPRING_BASE_URL ?? "http://localhost:8080",
     MONGO_URI: process.env.MONGO_URI ?? "",
-    MONGO_SYNC_DEBOUNCE_MS: Number(process.env.MONGO_SYNC_DEBOUNCE_MS ?? 100000),
+    MONGO_SYNC_DEBOUNCE_MS: Number(process.env.MONGO_SYNC_DEBOUNCE_MS ?? 2000),
   };
 }
