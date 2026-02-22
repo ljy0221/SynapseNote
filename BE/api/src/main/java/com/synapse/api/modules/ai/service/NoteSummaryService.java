@@ -15,12 +15,14 @@ import com.synapse.api.util.response.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
@@ -35,7 +37,8 @@ public class NoteSummaryService {
         @Value("${ai.summary.provider}")
         private String summaryProvider;
 
-        public NoteSummaryResponse summarizeNote(UUID noteId, UUID userId,
+        @Async("aiTaskExecutor")
+        public CompletableFuture<NoteSummaryResponse> summarizeNote(UUID noteId, UUID userId,
                         NoteSummaryRequest request) {
                 // 1. AI 호출 (트랜잭션 외부 - DB 커넥션 점유하지 않음)
                 String summaryText = generateSummaryText(noteId, userId, request);
@@ -44,7 +47,7 @@ public class NoteSummaryService {
                 saveSummary(noteId, summaryText, request.style());
 
                 // 3. 응답 생성 (통계 정보 포함)
-                return buildResponse(noteId, summaryText, request.style());
+                return CompletableFuture.completedFuture(buildResponse(noteId, summaryText, request.style()));
         }
 
         /**

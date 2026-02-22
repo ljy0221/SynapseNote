@@ -15,13 +15,14 @@ import com.synapse.api.util.response.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
@@ -38,8 +39,8 @@ public class CodeAssistantService {
 
     private static final int MAX_CODE_LENGTH = 5000;
 
-    @Transactional(readOnly = true)
-    public CodeReviewResponse reviewCode(UUID noteId, UUID blockId,
+    @Async("aiTaskExecutor")
+    public CompletableFuture<CodeReviewResponse> reviewCode(UUID noteId, UUID blockId,
             UUID userId, CodeReviewRequest request) {
 
         // 1. 편집 권한 검증
@@ -100,7 +101,8 @@ public class CodeAssistantService {
         log.info("Code review completed: noteId={}, blockId={}, provider={}",
                 noteId, blockId, provider);
 
-        return parseCodeReviewResponse(blockId, language, code, aiResponse);
+        return CompletableFuture.completedFuture(
+                parseCodeReviewResponse(blockId, language, code, aiResponse));
     }
 
     private String buildCodeReviewSystemPrompt(String language) {
