@@ -17,7 +17,10 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "notes")
+@Table(name = "notes", indexes = {
+        @Index(name = "idx_notes_created_by_deleted", columnList = "created_by_id, deleted_at"),
+        @Index(name = "idx_notes_created_by_id", columnList = "created_by_id")
+})
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor

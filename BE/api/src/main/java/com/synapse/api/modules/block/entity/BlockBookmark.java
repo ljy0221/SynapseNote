@@ -9,7 +9,9 @@ import lombok.experimental.SuperBuilder;
 import java.util.UUID;
 
 @Entity
-@Table(name = "block_bookmarks")
+@Table(name = "block_bookmarks", indexes = {
+        @Index(name = "idx_block_bookmarks_note_id", columnList = "note_id")
+})
 @Getter
 @SuperBuilder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

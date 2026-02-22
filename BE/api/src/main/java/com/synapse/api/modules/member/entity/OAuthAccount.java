@@ -13,7 +13,10 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.util.UUID;
 
 @Entity
-@Table(name = "oauth_accounts")
+@Table(name = "oauth_accounts", indexes = {
+        @Index(name = "idx_oauth_provider_provider_id", columnList = "provider, provider_id"),
+        @Index(name = "idx_oauth_member_id", columnList = "member_id")
+})
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
