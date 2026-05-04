@@ -39,6 +39,7 @@ public class TokenService {
         }
 
         String newAccessToken = jwtUtil.generateAccessToken(memberId);
+        tokenRedisService.deleteRefreshToken(refreshToken); // 기존 토큰 삭제
         String newRefreshToken = tokenRedisService.generateRefreshToken(memberId);
 
         return TokenResult.builder()
