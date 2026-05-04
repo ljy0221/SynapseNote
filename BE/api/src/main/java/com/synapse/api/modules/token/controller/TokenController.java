@@ -22,8 +22,7 @@ public class TokenController {
     public DataResponse<AccessTokenResponse> refreshToken(HttpServletRequest request, HttpServletResponse response) {
         String refresh = tokenService.extractRefreshToken(request);
         TokenResult result = tokenService.refreshToken(refresh);
-
-        tokenService.addRefreshTokenToCookie(response, refresh);
+        tokenService.addRefreshTokenToCookie(response, result.refresh);
 
         AccessTokenResponse responseDto = AccessTokenResponse.builder()
                 .accessToken(result.access())
