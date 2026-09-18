@@ -84,11 +84,11 @@ export default defineConfig(async ({ mode }) => {
               '@codemirror/state',
               '@codemirror/view',
               '@codemirror/autocomplete',
-              '@codemirror/lang-javascript',
-              '@codemirror/lang-python',
-              '@codemirror/lang-java',
               '@codemirror/theme-one-dark',
             ],
+            // Left out of codemirror-vendor deliberately: each language grammar is
+            // dynamically imported per-block (see CodeMirrorEditor.tsx), so it needs
+            // its own chunk rather than being bundled into every note's editor load.
           },
         },
       },
