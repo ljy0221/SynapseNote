@@ -1,5 +1,19 @@
 /* src/components/layout/noteMain/NoteMain.css */
 
+/* Matches useVirtualizer's estimateSize (150px) so a pending/failed lazy
+   CodeBlock chunk doesn't collapse to 0px and cause a virtualizer re-measure jump. */
+.code-block-loading {
+    min-height: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 8px;
+    background-color: #1e1e1e;
+    color: #aaaaaa;
+    box-sizing: border-box;
+}
+
 .note-main-layout {
     flex: 1;
     /* 남은 공간 차지 */
