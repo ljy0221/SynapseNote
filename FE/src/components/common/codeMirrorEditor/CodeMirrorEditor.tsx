@@ -1,10 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { EditorView, basicSetup } from 'codemirror';
-import { EditorState, StateEffect } from '@codemirror/state';
+import { EditorState, StateEffect, type Extension } from '@codemirror/state';
 import { drawSelection } from '@codemirror/view'; // [New] Explicit import
-import { python } from '@codemirror/lang-python';
-import { javascript } from '@codemirror/lang-javascript';
-import { java } from '@codemirror/lang-java';
 import { syntaxHighlighting, HighlightStyle } from '@codemirror/language';
 import { tags as t } from '@lezer/highlight';
 import { autocompletion } from '@codemirror/autocomplete';
@@ -27,17 +24,60 @@ interface CodeMirrorEditorProps {
     ytext?: Y.Text | null; // [New] Y.Text for collaborative editing
 }
 
-const getLanguageExtension = (language: string) => {
-    switch (language) {
-        case 'python':
-            return python();
-        case 'javascript':
-            return javascript();
-        case 'java':
-            return java();
-        default:
-            return javascript();
+type SupportedLanguage = CodeMirrorEditorProps['language'];
+
+const LANGUAGE_LOADERS: Record<SupportedLanguage, () => Promise<Extension>> = {
+    python: () => import('@codemirror/lang-python').then((m) => m.python()),
+    javascript: () => import('@codemirror/lang-javascript').then((m) => m.javascript()),
+    java: () => import('@codemirror/lang-java').then((m) => m.java()),
+};
+
+// Cache the resolved Promise per language (module-level, shared by every block) so
+// concurrent/repeat mounts of the same language reuse one fetch and one Extension
+// identity, instead of each block re-fetching and re-instantiating its own grammar.
+const languageExtensionCache = new Map<SupportedLanguage, Promise<Extension>>();
+
+const loadLanguageExtension = (language: SupportedLanguage): Promise<Extension> => {
+    let cached = languageExtensionCache.get(language);
+    if (!cached) {
+        const loader = LANGUAGE_LOADERS[language] ?? LANGUAGE_LOADERS.javascript;
+        // Evict on rejection so a transient failure (network blip, stale chunk hash
+        // after redeploy) doesn't permanently poison this language for the page session.
+        cached = loader().catch((err) => {
+            languageExtensionCache.delete(language);
+            throw err;
+        });
+        languageExtensionCache.set(language, cached);
     }
+    return cached;
+};
+
+// Loads only the selected language's grammar package on demand, so a note
+// with only Python blocks never fetches the Java/JavaScript CodeMirror packages.
+const useLanguageExtension = (language: SupportedLanguage): Extension | null => {
+    const [extension, setExtension] = useState<Extension | null>(null);
+
+    useEffect(() => {
+        let cancelled = false;
+        // Deliberately not resetting to null here: keep showing the previous
+        // language's highlighting until the new one resolves, rather than a
+        // blank-grammar flash (and avoid a redundant reconfigure dispatch).
+
+        loadLanguageExtension(language).then(
+            (ext) => {
+                if (!cancelled) setExtension(ext);
+            },
+            (err) => {
+                if (!cancelled) console.error(`[CodeMirrorEditor] Failed to load grammar for "${language}"`, err);
+            }
+        );
+
+        return () => {
+            cancelled = true;
+        };
+    }, [language]);
+
+    return extension;
 };
 
 // 앱 테마별 CodeMirror 커스텀 테마
@@ -290,6 +330,15 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
     const editorRef = useRef<HTMLDivElement>(null);
     const viewRef = useRef<EditorView | null>(null);
 
+    // Loaded asynchronously; null until the language's chunk resolves (basicSetup
+    // still provides a usable editor in the meantime, just without syntax highlighting).
+    const languageExtension = useLanguageExtension(language);
+
+    // yCollab(ytext, ...) allocates fresh Yjs binding state on every call, so it must
+    // stay identity-stable across reconfigures (keyed only on ytext) or every unrelated
+    // reconfigure (e.g. a grammar resolving) tears down and rebuilds the collab binding.
+    const collabExtension = React.useMemo(() => (ytext ? yCollab(ytext, null) : null), [ytext]);
+
     // Zustand 스토어에서 설정만 가져오기 (인스턴스 관리 제거)
     const { settings } = useCodeEditorStore();
 
@@ -325,10 +374,10 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
         if (!editorRef.current) return;
 
         // [New] Build extensions array conditionally
-        const extensions = [
+        const extensions: Extension[] = [
             basicSetup,
             drawSelection(), // [New] Explicitly add drawSelection
-            getLanguageExtension(language),
+            ...(languageExtension ? [languageExtension] : []),
             createCustomTheme(themeMode),
             syntaxHighlighting(createHighlightStyle(themeMode)),
             autocompletion({
@@ -346,10 +395,8 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
         ];
 
         // [New] Add yCollab if Y.Text is provided for collaborative editing
-        if (ytext) {
-            // Use Y.Text for CRDT-based collaborative editing
-            // Pass null for awareness as we don't need cursor sharing in CodeMirror
-            extensions.push(yCollab(ytext, null));
+        if (collabExtension) {
+            extensions.push(collabExtension);
         } else {
             // Fallback to controlled mode for non-collaborative editing
             extensions.push(
@@ -379,6 +426,9 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
             view.destroy();
             viewRef.current = null;
         };
+        // languageExtension intentionally omitted: adding it here would destroy/recreate
+        // the EditorView (and the yCollab binding) whenever the grammar finishes loading.
+        // Effect 3 applies it in place via reconfigure instead.
     }, [ytext]); // [CRITICAL] Recreate editor when yText changes to ensure proper yCollab binding
 
     // value prop 변경 시 에디터 업데이트 (커서 위치 보존)
@@ -415,10 +465,10 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
     // 언어, 테마, 설정 변경 시 재구성
     useEffect(() => {
         if (viewRef.current) {
-            const reconfigExtensions = [
+            const reconfigExtensions: Extension[] = [
                 basicSetup,
                 drawSelection(), // [New] Explicitly add drawSelection
-                getLanguageExtension(language),
+                ...(languageExtension ? [languageExtension] : []),
                 createCustomTheme(themeMode),
                 syntaxHighlighting(createHighlightStyle(themeMode)),
                 autocompletion({
@@ -436,8 +486,8 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
             ];
 
             // [New] Add yCollab or updateListener based on ytext availability
-            if (ytext) {
-                reconfigExtensions.push(yCollab(ytext, null));
+            if (collabExtension) {
+                reconfigExtensions.push(collabExtension);
             } else {
                 reconfigExtensions.push(
                     EditorView.updateListener.of((update) => {
@@ -452,7 +502,11 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
                 effects: StateEffect.reconfigure.of(reconfigExtensions),
             });
         }
-    }, [language, themeMode, settings.tabSize, readOnly, ytext]);
+        // `language` intentionally excluded: it only affects reconfigExtensions through
+        // languageExtension, and tracking both would apply a stale grammar for one
+        // dispatch during a language switch (old languageExtension, new language label)
+        // before languageExtension itself updates on the next render.
+    }, [languageExtension, collabExtension, themeMode, settings.tabSize, readOnly]);
 
     return <div ref={editorRef} className="codemirror-container" />;
 };
