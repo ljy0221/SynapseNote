@@ -1,6 +1,5 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import CodeBlock from '../codeBlock/CodeBlock';
 import TextBlock from '../textBlock/TextBlock';
 import { NoteSideNav } from './NoteSideNav';
 import { DraggableBlock } from './DraggableBlock';
@@ -16,6 +15,9 @@ import './NoteMain.css';
 import { NoteMemberRole, NoteMemberItem } from '../../../types/note/GetNoteMembers'; // [New]
 import { MemberAvatarGroup } from '../../common/memberAvatarGroup/MemberAvatarGroup'; // [New]
 import { AwarenessUser } from '../../../hooks/useYjsStore'; // [New]
+import { LazyLoadErrorBoundary } from '../../common/errorBoundary/LazyLoadErrorBoundary';
+
+const CodeBlock = React.lazy(() => import('../codeBlock/CodeBlock'));
 
 interface NoteMainProps {
     title: string;
@@ -86,6 +88,23 @@ const NoteMain: React.FC<NoteMainProps> = ({
     // [New] Framer Motion Local State
     const [localBlocks, setLocalBlocks] = React.useState<BlockData[]>(blocks);
     const isDraggingRef = React.useRef(false); // [New] Track dragging state to prevent conflict with external updates
+
+    // Warm the CodeBlock chunk during idle time so the Suspense fallback is rarely visible
+    // while keeping it off the critical path of the initial note render. Gated on the note
+    // actually containing a code block so text-only notes never fetch CodeMirror at all.
+    const hasCodeBlock = React.useMemo(() => localBlocks.some((b) => b.type === 'code'), [localBlocks]);
+
+    React.useEffect(() => {
+        if (!hasCodeBlock) return;
+        const idleRequest = window.requestIdleCallback ?? ((cb: () => void) => window.setTimeout(cb, 200));
+        const idleCancel: (handle: number) => void = window.cancelIdleCallback
+            ? (handle) => window.cancelIdleCallback(handle)
+            : (handle) => window.clearTimeout(handle);
+        const id = idleRequest(() => {
+            import('../codeBlock/CodeBlock').catch(() => {});
+        });
+        return () => idleCancel(id);
+    }, [hasCodeBlock]);
 
     // Scroll container ref for virtualization (readOnly mode)
     const scrollContainerRef = React.useRef<HTMLDivElement>(null);
@@ -179,25 +198,28 @@ const NoteMain: React.FC<NoteMainProps> = ({
                 );
             case 'code':
                 return (
-                    <CodeBlock
-                        key={block.id}
-                        {...commonProps}
-                        id={block.id as any}
-                        noteId={noteId}
-                        language={(block.language as any) || 'javascript'}
-                        code={block.content}
-                        bookmark={bookmarkedBlockIds ? bookmarkedBlockIds.has(block.id.toString()) : false}
-                        readOnly={readOnly} // [New]
-                        onDelete={onDeleteBlock as any}
-                        onChange={onUpdateBlock as any}
-                        onFocus={onFocusBlock}
-                        onAddBlockAfter={(content: string) => onAddBlockAfter(block.id, 'text', content)}
-                        onAiReviewResult={handleAiReviewResult}
-                        onToggleBookmark={() => onToggleBookmark?.(block.id, bookmarkedBlockIds ? bookmarkedBlockIds.has(block.id.toString()) : false)}
-                        onLanguageChange={onUpdateBlockLanguage}
-                        showBookmark={showBlockBookmark} // [New]
-                        editors={getBlockEditors ? getBlockEditors(block.id.toString()) : []} // [New]
-                    />
+                    <LazyLoadErrorBoundary key={block.id}>
+                        <Suspense fallback={<div className="code-block-loading" />}>
+                            <CodeBlock
+                                {...commonProps}
+                                id={block.id as any}
+                                noteId={noteId}
+                                language={(block.language as any) || 'javascript'}
+                                code={block.content}
+                                bookmark={bookmarkedBlockIds ? bookmarkedBlockIds.has(block.id.toString()) : false}
+                                readOnly={readOnly} // [New]
+                                onDelete={onDeleteBlock as any}
+                                onChange={onUpdateBlock as any}
+                                onFocus={onFocusBlock}
+                                onAddBlockAfter={(content: string) => onAddBlockAfter(block.id, 'text', content)}
+                                onAiReviewResult={handleAiReviewResult}
+                                onToggleBookmark={() => onToggleBookmark?.(block.id, bookmarkedBlockIds ? bookmarkedBlockIds.has(block.id.toString()) : false)}
+                                onLanguageChange={onUpdateBlockLanguage}
+                                showBookmark={showBlockBookmark} // [New]
+                                editors={getBlockEditors ? getBlockEditors(block.id.toString()) : []} // [New]
+                            />
+                        </Suspense>
+                    </LazyLoadErrorBoundary>
                 );
             default:
                 return null;
