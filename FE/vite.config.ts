@@ -92,11 +92,12 @@ export default defineConfig(async ({ mode }) => {
           },
         },
       },
-      // Production optimization: drop console logs and debugger
-      // Production optimization: drop console logs and debugger
-      esbuild: {
-        drop: mode === 'production' ? ['debugger'] : [],
-      },
+    },
+    // `esbuild` is a top-level Vite config key, not a `build.*` key — nested under
+    // `build` it is silently ignored and this drop never actually applied.
+    // Production optimization: drop `debugger` statements from the production build.
+    esbuild: {
+      drop: mode === 'production' ? ['debugger'] : [],
     },
   }
 })
